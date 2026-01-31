@@ -444,6 +444,29 @@ iframe{
   z-index: 10000;
   box-shadow: 0 4px 16px rgba(0,0,0,.12);
 }
+#shell-topbar {
+  pointer-events: auto;
+}
+
+iframe {
+  pointer-events: auto;
+}
+#content {
+  position: relative;
+}
+
+iframe {
+  position: relative;
+  z-index: 1;
+}
+
+#shell-topbar {
+  position: fixed;
+  z-index: 99999;
+}
+iframe {
+  height: calc(100vh - var(--topbar-height));
+}
 
 </style>
 </head>
@@ -787,6 +810,14 @@ function enableTabDrag(tabEl) {
     tabs.splice(targetIndex, 0, moved);
   });
 }
+function adjustContentTop() {
+  const topbar = document.getElementById("shell-topbar");
+  document.documentElement.style.setProperty(
+    "--topbar-height",
+    topbar.offsetHeight + "px"
+  );
+}
+
 function tabsOverflow() {
   const container = document.getElementById("tabs");
   let totalWidth = 0;

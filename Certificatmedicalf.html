@@ -34,6 +34,35 @@
 #emailSelectModal .modal-actions { margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
 #emailSelectModal .btn-cancel { background:#e2e8f0; color:#1e293b; border:none; padding:8px 12px; border-radius:8px; }
 #emailSelectModal .btn-confirm { background:#2563eb; color:#fff; border:none; padding:8px 12px; border-radius:8px; }
+#confirmPrescriptionModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+}
+
+#confirmPrescriptionModal .modal-content {
+  background: #ffffff;
+  max-width: 520px;
+  width: 90%;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+#confirmPrescriptionModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 9999;
+}
+
 </style>
 </head>
 
@@ -697,50 +726,34 @@ window.pdfIdExistante = idUnique;
 -------------------------------------------------- */
 function openConfirmModal() {
 
-  // Construire la prévisualisation du certificat
-  const nom = document.getElementById("nom").value.trim();
-  const prenom = document.getElementById("prenom").value.trim();
-  const dateNaissance = document.getElementById("dateNaissance").value;
-  const sexe = document.getElementById("sexe").value;
-
-  if (!nom || !prenom) {
-    afficherBulle("⛔ Veuillez remplir Nom et Prénom.", "alerte");
-    return;
-  }
-
-  // Préparation du texte du certificat
-  let preview = `Certificat médical\n`;
-  preview += `Patient : ${prenom} ${nom}\n`;
-  preview += `Né(e) le : ${dateNaissance}\n`;
-  preview += `Sexe : ${sexe}\n\n`;
-  preview += `Mentions :\n`;
-
   const conditions = [
-    { id: 'condition1', inputId: 'input1', label: "Aptitude classe :" },
+    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :" },
     { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :" },
     { id: 'condition3', inputId: 'input3', label: "Dispense de sport :" },
     { id: 'condition4', inputId: 'input4', label: "Absence :" }
   ];
 
+  let preview = "";
   let auMoinsUne = false;
 
-  conditions.forEach(c => {
+  conditions.forEach((c, index) => {
     const cb = document.getElementById(c.id);
     if (cb && cb.checked) {
       auMoinsUne = true;
-      const val = document.getElementById(c.inputId)?.value || "";
-      preview += ` - ${c.label} ${val}\n`;
+      let valeur = document.getElementById(c.inputId)?.value || "";
+      if (index === 2 || index === 3) valeur += " jour(s)";
+      preview += `- ${c.label} ${valeur}\n`;
     }
   });
 
   if (!auMoinsUne) {
-    preview += "Aucune mention cochée.\n";
+    afficherBulle("⛔ Veuillez cocher au moins une mention.", "warning");
+    return;
   }
 
-  // Injection dans la modale
+  // Injection TEXTE uniquement (non éditable)
   document.getElementById("preview-ordo").textContent = preview;
 
-  // Afficher la modale
   document.getElementById("confirmPrescriptionModal").style.display = "flex";
 }
 

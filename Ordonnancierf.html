@@ -1403,19 +1403,34 @@ document.getElementById("patient-birthdate").addEventListener("input", function 
 
     document.getElementById("patient-age").value = age;
   }
-function afficherBulle(texte, type) {
-    let container = document.getElementById('bubble-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'bubble-container';
-      document.body.appendChild(container);
+// utilitaire notifications
+  function afficherBulle(msg, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.padding = '10px 14px';
+    el.style.borderRadius = '8px';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    el.style.fontSize = '14px';
+    el.style.fontWeight = '500';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    el.style.transition = 'opacity 0.25s, transform 0.25s';
+
+    switch (type) {
+      case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
+      case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
+      case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
+      default: el.style.background = '#333'; el.style.color = '#fff'; break;
     }
-    const bulle = document.createElement('div');
-    bulle.className = `bubble ${type}`;
-    bulle.textContent = texte;
-    container.appendChild(bulle);
+
+    container.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+
     setTimeout(() => {
-      bulle.remove();
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-8px)';
+      el.addEventListener('transitionend', () => el.remove());
     }, 3000);
   }
   window.addEventListener("DOMContentLoaded", () => {
@@ -1495,7 +1510,7 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     }
 
     closeEmailSelectModal();
-    showLoadingModal();
+    
 
     // --- 1) Génération du PDF via ta fonction existante creerPDF()
     console.log("📄 Génération du PDF via genererordo()...");
@@ -1622,7 +1637,7 @@ const htmlFinal = htmlMessage
             html_message: htmlFinal
           }, compte.publicKey);
 
-          afficherBulle(`📨 Envoyé : ${emailTrim}`, "administratif");
+          afficherBulle(`📨 Envoyé : ${emailTrim}`, "default");
           envoye = true;
           break;
         } catch (err) {
@@ -1637,8 +1652,8 @@ const htmlFinal = htmlMessage
       if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
     }
 
-    hideLoadingModal();
-    afficherBulle("📨 Envois terminés !", "administratif");
+    
+    afficherBulle("📨 Envois terminés !", "default");
     // recharge la page pour réinitialiser l'UI (optionnel)
     
 

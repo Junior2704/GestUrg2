@@ -1645,7 +1645,7 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
 </body>
 </html>`;
 
-    // --- 6) Remplacement des balises du template HTML
+// --- 6) Remplacement des balises du template HTML
 const htmlFinal = htmlMessage
   .replace(/{{patient_prenom}}/g, firstName)
   .replace(/{{patient_nom}}/g, lastName)
@@ -1660,34 +1660,22 @@ try {
 
   afficherBulle("📤 Envoi en cours...", "default");
 
-let envoiOK = false;
-
-try {
   const response = await fetch(APPS_SCRIPT_URL, {
     method: "POST",
     body: formData
   });
 
   if (!response.ok) throw new Error("Erreur Apps Script");
-  envoiOK = true;
+
+  afficherBulle("📨 Envois terminés !", "default");
 
 } catch (err) {
   console.error("Erreur envoi Apps Script :", err);
   afficherBulle("❌ Erreur lors de l'envoi des emails", "alerte");
 }
 
-if (envoiOK) {
-  afficherBulle("📨 Envois terminés !", "default");
-}
+});  
 
-    
-
-  } catch (err) {
-    hideLoadingModal();
-    console.error("Erreur confirmEmails :", err);
-    alert("Erreur lors de l'envoi : " + (err.message || err));
-  }
-});
 
 
 

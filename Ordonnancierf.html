@@ -1364,29 +1364,32 @@ document.getElementById("patient-birthdate").addEventListener("input", function 
     return params.get('id');
   }
 
-  async function remplirInfosPatientDepuisFirestore() {
-    const id = getIdFromURL();
-    if (!id) return;
+async function remplirInfosPatientDepuisFirestore() {
+  const id = getIdFromURL();
+  if (!id) return;
 
-    try {
-      const docRef = db.collection("patients").doc(id);
-      const docSnap = await docRef.get();
+  try {
+    const docRef = db.collection("patients").doc(id);
+    const docSnap = await docRef.get();
 
-      if (docSnap.exists) {
-        const data = docSnap.data();
-        document.getElementById("patient-first-name").value = data.prenom || "";
-        document.getElementById("patient-last-name").value = data.nom || "";
-        document.getElementById("patient-birthdate").value = data.dateNaissance || "";
-        document.getElementById("sexe").value = data.sexe || "M";
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      document.getElementById("patient-first-name").value = data.prenom || "";
+      document.getElementById("patient-last-name").value = data.nom || "";
+      document.getElementById("patient-birthdate").value = data.dateNaissance || "";
+      document.getElementById("sexe").value = data.sexe || "M";
 
-        calculerAge(); 
-        updatePatientDisplay(); 
-        console.warn("Aucun patient trouvé avec cet ID");
-      }
-    } catch (error) {
-      console.error("Erreur de récupération du patient :", error);
+      calculerAge(); 
+      updatePatientDisplay();
+    } else {
+      console.warn("Aucun patient trouvé avec cet ID");
     }
+
+  } catch (error) {
+    console.error("Erreur de récupération du patient :", error);
   }
+}
+
 
   function calculerAge() {
     const birthdate = document.getElementById("patient-birthdate").value;

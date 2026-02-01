@@ -1644,29 +1644,21 @@ console.log(APPS_SCRIPT_URL)
   </table>
 </body>
 </html>`;
-    const htmlFinal = htmlMessage
-      .replace(/{{patient_prenom}}/g, firstName)
-      .replace(/{{patient_nom}}/g, lastName)
-      .replace(/{{lien_compte_rendu}}/g, lienPdf);
-
 const formData = new FormData();
-  formData.append("emails", JSON.stringify(destinataires));
-  formData.append("subject", "Votre ordonnance est disponible !");
-  formData.append("html", htmlFinal);
+formData.append("emails", JSON.stringify(destinataires));
+formData.append("subject", "Votre ordonnance est disponible !");
+formData.append("html", htmlFinal);
 
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: formData,
-    mode: "no-cors" // on n'attend pas de réponse
-  });
+fetch(APPS_SCRIPT_URL, {
+  method: "POST",
+  body: formData,
+  mode: "no-cors" // on n'attend pas de réponse
+});
 
-
-// pas besoin d'attendre response
+// on affiche juste le message côté front
 afficherBulle("📤 Envoi en cours...", "default");
+afficherBulle("📨 Envois terminés !", "success");
 
-
-
-    afficherBulle("📨 Envois terminés !", "success");
 
   } catch (err) {
     console.error("❌ Erreur globale envoi ordonnance :", err);

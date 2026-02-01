@@ -1539,7 +1539,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5
 
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
-    // Récupère les adresses sélectionnées dans la modale
+    // Récupère les adresses sélectionnées
     const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
     let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
 
@@ -1553,33 +1553,30 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     }
 
     closeEmailSelectModal();
-    
 
-    // --- 1) Génération du PDF via ta fonction existante creerPDF()
-    console.log("📄 Génération du PDF via genererordo()...");
-    const pdfBase64 = await genererOrdo(false); // renvoie le base64
-    console.log("✅ PDF généré, taille base64:", pdfBase64.length);
+    // 1️⃣ Génération PDF
+    const pdfBase64 = await genererOrdo(false);
 
-    // --- 2) Création d'un ID unique pour Firestore
+    // 2️⃣ ID unique Firestore
     let idUnique, docSnap;
     do {
       idUnique = Math.random().toString(36).substring(2, 10);
       docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
     } while (docSnap.exists);
 
-    // --- 3) Récupération des infos patient pour nommer le fichier
-    const doc = await patientRef.get();
-    if (!doc.exists) {
-      hideLoadingModal();
+    // 3️⃣ Infos patient
+    const docPatient = await patientRef.get();
+    if (!docPatient.exists) {
       afficherBulle("❌ Patient non trouvé", "alerte");
       return;
     }
-    const data = doc.data();
+
+    const data = docPatient.data();
     const firstName = data.prenom || "";
     const lastName = data.nom || "";
-    const fileName =  `Ordonnance - ${firstName} ${lastName}.pdf`;
+    const fileName = `Ordonnance - ${firstName} ${lastName}.pdf`;
 
-    // --- 4) Enregistrement dans Firestore
+    // 4️⃣ Firestore
     await db.collection("liens_pdfs").doc(idUnique).set({
       base64: pdfBase64,
       nomFichier: fileName,
@@ -1587,97 +1584,35 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     });
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
-    console.log("✅ Lien Firestore :", lienPdf);
 
-    // --- 5) Prépare le corps du mail (template HTML comme avant)
-    const htmlMessage = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Ordonnance médicale</title>
-</head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
-    <tr>
-      <td style="background-color:#1a73e8; padding:24px; text-align:center;">
-        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
-        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
-        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
-      </td>
-    </tr>
+    // 5️⃣ HTML mail
+    const htmlFinal = htmlMessage
+      .replace(/{{patient_prenom}}/g, firstName)
+      .replace(/{{patient_nom}}/g, lastName)
+      .replace(/{{lien_compte_rendu}}/g, lienPdf);
 
-    <tr>
-      <td style="padding:30px;">
-        <h2 style="color:#1a73e8; font-weight:600; margin-top:0;">Votre ordonnance médicale</h2>
+    // 6️⃣ Envoi Apps Script
+    const formData = new FormData();
+    formData.append("emails", JSON.stringify(destinataires));
+    formData.append("subject", "Votre ordonnance est disponible !");
+    formData.append("html", htmlFinal);
 
-        <p style="font-size:16px; line-height:1.6;">
-          Bonjour <strong>{{patient_prenom}} {{patient_nom}}</strong>,
-        </p>
+    afficherBulle("📤 Envoi en cours...", "default");
 
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          Votre ordonnance vient d’être validée par le médecin responsable et est désormais disponible.
-          Elle vous permettra d’obtenir les médicaments prescrits en pharmacie ou en établissement agréé.
-        </p>
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: formData
+    });
 
-        <div style="text-align:center; margin:30px 0;">
-          <a href="{{lien_compte_rendu}}" 
-             style="background-color:#1a73e8; color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; display:inline-block;">
-            🩺 Voir l'ordonnance
-          </a>
-        </div>
+    if (!response.ok) throw new Error("Erreur Apps Script");
 
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          ⚠️ Ce lien reste actif 7 jours pour garantir la confidentialité de vos données.
-          Au-delà, le document sera automatiquement supprimé.
-        </p>
+    afficherBulle("📨 Envois terminés !", "success");
 
-        <p style="font-size:14px; color:#777;">
-          Pour toute question, merci de contacter le service des Urgences :
-          <a href="mailto:urgences.hopj@gmail.com" style="color:#1a73e8;">urgences.hopj@gmail.com</a>
-        </p>
-
-        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
-        <p style="font-size:13px; color:#999; text-align:center;">
-          Service des Urgences<br>
-          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-// --- 6) Remplacement des balises du template HTML
-const htmlFinal = htmlMessage
-  .replace(/{{patient_prenom}}/g, firstName)
-  .replace(/{{patient_nom}}/g, lastName)
-  .replace(/{{lien_compte_rendu}}/g, lienPdf);
-
-// --- 7) Envoi vers Google Apps Script (Sheets → Gmail)
-try {
-  const formData = new FormData();
-  formData.append("emails", JSON.stringify(destinataires));
-  formData.append("subject", "Votre ordonnance est disponible !");
-  formData.append("html", htmlFinal);
-
-  afficherBulle("📤 Envoi en cours...", "default");
-
-  const response = await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: formData
-  });
-
-  if (!response.ok) throw new Error("Erreur Apps Script");
-
-  afficherBulle("📨 Envois terminés !", "default");
-
-} catch (err) {
-  console.error("Erreur envoi Apps Script :", err);
-  afficherBulle("❌ Erreur lors de l'envoi des emails", "alerte");
-}
-
-});  
+  } catch (err) {
+    console.error("❌ Erreur globale envoi ordonnance :", err);
+    afficherBulle("❌ Erreur lors de l'envoi", "alerte");
+  }
+});
 
 
 

@@ -984,6 +984,7 @@ let id;         // ✅ global aussi
 
 window.addEventListener("DOMContentLoaded", async () => {
   hideLoadingModal();
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5rFPDL_5MoLgqMqMnCdL2UkHXc9VKOlBja-rKf7ewawb9qIW5LPJK/exec";
 
   // --- Initialisation Firebase ---
   const firebaseConfig = {
@@ -1605,52 +1606,34 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
 </body>
 </html>`;
 
-    // --- 6) Multi-compte EmailJS (fallback)
-    const comptesEmailJS = [
-      { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
-      { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
-      { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
-    ];
-
-    // --- 7) Envoi pour chaque destinataire (une requête EmailJS par adresse)
-    for (const email of destinataires) {
-      const emailTrim = email.trim();
-      if (!emailTrim || !emailTrim.includes("@")) {
-        afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte");
-        continue;
-      }
-
-      let envoye = false;
-      let derniereErreur = "";
-      for (const compte of comptesEmailJS) {
-        try {
-          console.log(`📨 Envoi à ${emailTrim} via ${compte.serviceID}...`);
-		  // Remplacement manuel des balises {{…}}
+    // --- 6) Remplacement des balises du template HTML
 const htmlFinal = htmlMessage
   .replace(/{{patient_prenom}}/g, firstName)
   .replace(/{{patient_nom}}/g, lastName)
   .replace(/{{lien_compte_rendu}}/g, lienPdf);
 
-          await emailjs.send(compte.serviceID, compte.templateID, {
-            to_email: emailTrim,
-            subject: "Votre ordonnance est disponible !",
-            html_message: htmlFinal
-          }, compte.publicKey);
+// --- 7) Envoi vers Google Apps Script (Sheets → Gmail)
+try {
+  const formData = new FormData();
+  formData.append("emails", JSON.stringify(destinataires));
+  formData.append("subject", "Votre ordonnance est disponible !");
+  formData.append("html", htmlFinal);
 
-          afficherBulle(`📨 Envoyé : ${emailTrim}`, "default");
-          envoye = true;
-          break;
-        } catch (err) {
-          console.warn(`⚠️ Échec ${compte.serviceID} -> ${err && err.text ? err.text : err}`);
-          derniereErreur = err && err.text ? err.text : String(err);
-          // si erreur de quota, on essaye le compte suivant, sinon on sort de la boucle comptes
-          if (derniereErreur.toLowerCase().includes("quota")) continue;
-          else break;
-        }
-      }
+  afficherBulle("📤 Envoi en cours...", "default");
 
-      if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
-    }
+  const response = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) throw new Error("Erreur Apps Script");
+
+  afficherBulle("📨 Ordonnance envoyée avec succès", "default");
+
+} catch (err) {
+  console.error("Erreur envoi Apps Script :", err);
+  afficherBulle("❌ Erreur lors de l'envoi des emails", "alerte");
+}
 
     
     afficherBulle("📨 Envois terminés !", "default");

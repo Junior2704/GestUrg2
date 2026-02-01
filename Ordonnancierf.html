@@ -1520,7 +1520,6 @@ document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
 });
 
 document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5rFPDL_5MoLgqMqMnCdL2UkHXc9VKOlBja-rKf7ewawb9qIW5LPJK/exec";
 
   // pas de pdfBase64 préexistant dans cette page — on générera le PDF au moment de l'envoi
   const doc = await patientRef.get();
@@ -1533,6 +1532,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5
   console.log("📧 Emails trouvés (dossier) :", emails);
   openEmailSelectModal(emails);
 });
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5rFPDL_5MoLgqMqMnCdL2UkHXc9VKOlBja-rKf7ewawb9qIW5LPJK/exec";
+
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
     // Récupère les adresses sélectionnées dans la modale
@@ -1659,22 +1660,26 @@ try {
 
   afficherBulle("📤 Envoi en cours...", "default");
 
+let envoiOK = false;
+
+try {
   const response = await fetch(APPS_SCRIPT_URL, {
     method: "POST",
     body: formData
   });
 
   if (!response.ok) throw new Error("Erreur Apps Script");
-
+  envoiOK = true;
 
 } catch (err) {
   console.error("Erreur envoi Apps Script :", err);
   afficherBulle("❌ Erreur lors de l'envoi des emails", "alerte");
 }
 
-    
-    afficherBulle("📨 Envois terminés !", "default");
-    // recharge la page pour réinitialiser l'UI (optionnel)
+if (envoiOK) {
+  afficherBulle("📨 Envois terminés !", "default");
+}
+
     
 
   } catch (err) {

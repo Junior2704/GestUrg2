@@ -1535,7 +1535,7 @@ document.getElementById("btnEnvoyerMail").addEventListener("click", async () => 
   console.log("📧 Emails trouvés (dossier) :", emails);
   openEmailSelectModal(emails);
 });
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGRmg32EQPyMq5rFPDL_5MoLgqMqMnCdL2UkHXc9VKOlBja-rKf7ewawb9qIW5LPJK/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwcSYtnTMz0cBvVyiD1qWfZg4mh9w6LijQtgKJhGzk0LT__cKsebSny8xOYb0kHAB8c/exec";
 
 document.getElementById("confirmEmails").addEventListener("click", async function () {
 console.log(APPS_SCRIPT_URL)
@@ -1649,15 +1649,17 @@ console.log(APPS_SCRIPT_URL)
       .replace(/{{patient_nom}}/g, lastName)
       .replace(/{{lien_compte_rendu}}/g, lienPdf);
 
-    const formData = new FormData();
-formData.append("emails", JSON.stringify(destinataires));
-formData.append("subject", "Votre ordonnance est disponible !");
-formData.append("html", htmlFinal);
+const formData = new FormData();
+  formData.append("emails", JSON.stringify(destinataires));
+  formData.append("subject", "Votre ordonnance est disponible !");
+  formData.append("html", htmlFinal);
 
-fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: formData // juste envoyer les données
-});
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: formData,
+    mode: "no-cors" // on n'attend pas de réponse
+  });
+
 
 // pas besoin d'attendre response
 afficherBulle("📤 Envoi en cours...", "default");

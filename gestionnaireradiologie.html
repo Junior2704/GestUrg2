@@ -550,36 +550,41 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
     closeEditModal.onclick = () => { editModal.style.display = "none"; currentEdit = null; };
 
     async function loadPatients() {
-      const patientsCol = collection(db, "patients");
-      const snapshot = await getDocs(patientsCol);
-      const filtered = [];
+  const snapshot = await getDocs(collection(db, "patients"));
+  const result = [];
 
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (!data.hospitalisationActive) return;
-        const idx = data.hospitalisationIndex;
-        const hosps = data.hospitalisations;
-        if (!Array.isArray(hosps) || !hosps[idx]) return;
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    const hospId = data.hospitalisationActiveId;
 
-        const current = hosps[idx];
-        const exams = [];
-        (current.examens || []).forEach((ex, i) => {
-          if (!ex.realise) exams.push({ ...ex, realIndex: i });
-        });
-        if (exams.length === 0) return;
+    if (!hospId) continue;
 
-        filtered.push({
-          id: docSnap.id,
-          nom: data.nom,
-          prenom: data.prenom,
-          dateNaissance: data.dateNaissance,
-          examensNonRealises: exams,
-          hospIndex: idx,
-          fullData: data
-        });
-      });
-      return filtered;
-    }
+    const hospRef = doc(db, "hospitalisations", hospId);
+    const hospSnap = await getDoc(hospRef);
+    if (!hospSnap.exists()) continue;
+
+    const hosp = hospSnap.data();
+
+    const examensNonRealises = (hosp.examens || [])
+      .map((ex, i) => ({ ...ex, examIndex: i }))
+      .filter(ex => !ex.realise);
+
+    if (examensNonRealises.length === 0) continue;
+
+    result.push({
+      patientId: docSnap.id,
+      nom: data.nom,
+      prenom: data.prenom,
+      dateNaissance: data.dateNaissance,
+      position: data.position,
+      hospitalisationId: hospId,
+      examensNonRealises
+    });
+  }
+
+  return result;
+}
+
 
     function formaterDate(dateStr) {
       const d = new Date(dateStr);
@@ -626,7 +631,15 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
           <p><b>☢️ Type :</b> ${e.type || "N/A"}</p>
           <p><b>💬 Commentaire :</b> ${e.commentaire || ""}</p>
           <p><b>📅 Date demande :</b> ${e.dateDemande || "N/A"}</p>
-          <button onclick="window.openEditModal('${patient.id}', ${patient.hospIndex}, ${e.realIndex})">Réaliser l'examen</button>
+<button onclick="
+  window.openEditModal(
+    '${patient.patientId}',
+    '${patient.hospitalisationId}',
+    ${e.examIndex}
+  )
+">
+  Réaliser l'examen
+</button>
         </div>
       `).join("");
 
@@ -672,41 +685,48 @@ chargerHistoriqueComplet(patient.id);
     }
 
     validerBtn.onclick = async () => {
-      if (!window.currentEdit) return;
-const { patientId, hospIndex, examIndex } = window.currentEdit;
+  if (!window.currentEdit) return;
 
-      const docRef = doc(db, "patients", patientId);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) return afficherBulle("❌ Patient introuvable", "alerte");
+  const { hospitalisationId, examIndex } = window.currentEdit;
+  const compteRendu = compteRenduInput.value.trim();
 
-      const patientData = docSnap.data();
-      const examen = patientData.hospitalisations?.[hospIndex]?.examens?.[examIndex];
-      if (!examen) return afficherBulle("❌ Structure des examens incorrecte", "alerte");
+  if (!compteRendu) {
+    afficherBulle("❌ Compte-rendu vide", "alerte");
+    return;
+  }
 
-      const compteRendu = compteRenduInput.value.trim();
-      if (compteRendu === "") return afficherBulle("❌ Compte-rendu vide", "alerte");
+  const hospRef = doc(db, "hospitalisations", hospitalisationId);
+  const hospSnap = await getDoc(hospRef);
 
-      examen.compteRendu = compteRendu;
-      examen.realise = true;
-    examen.dateRealisation = formatDate(new Date().toISOString());
+  if (!hospSnap.exists()) {
+    afficherBulle("❌ Hospitalisation introuvable", "alerte");
+    return;
+  }
 
-      await updateDoc(docRef, { hospitalisations: patientData.hospitalisations });
-      afficherBulle("✔️ Examen enregistré", "administratif");
-      editModal.style.display = "none";
-      detailPanel.style.display = "none";
+  const hospData = hospSnap.data();
+  const examen = hospData.examens?.[examIndex];
 
-      const patients = await loadPatients();
-      renderTable(patients);
-    };
+  if (!examen) {
+    afficherBulle("❌ Examen introuvable", "alerte");
+    return;
+  }
 
-    ajouterHorodatageBtn.onclick = () => {
-      const now = new Date();
-      compteRenduInput.value += `\n[${now.toLocaleString('fr-FR')}] `;
-    };
+  examen.realise = true;
+  examen.compteRendu = compteRendu;
+  examen.dateRealisation = new Date().toISOString();
 
-    const patients = await loadPatients();
-    renderTable(patients);
+  await updateDoc(hospRef, {
+    examens: hospData.examens
   });
+
+  afficherBulle("✔️ Examen enregistré", "administratif");
+  editModal.style.display = "none";
+  detailPanel.style.display = "none";
+
+  const patients = await loadPatients();
+  renderTable(patients);
+};
+
 
   // --- 🫧 Notifications bulles ---
   function afficherBulle(message, type) {
@@ -724,84 +744,84 @@ const { patientId, hospIndex, examIndex } = window.currentEdit;
     setTimeout(() => bubble.remove(), 5500);
   }
 
-  async function chargerHistoriqueComplet(patientId) {
+ async function chargerHistoriqueComplet(patientId) {
   const contenu = document.getElementById("hospitalisationsContent");
   if (!contenu) {
-    console.error("Element #hospitalisationsContent introuvable");
+    console.error("❌ #hospitalisationsContent introuvable");
     return;
   }
-  contenu.innerHTML = "<p>⏳ Chargement...</p>";
+
+  contenu.innerHTML = "<p>⏳ Chargement de l'historique...</p>";
 
   try {
-    const patientRef = doc(db, "patients", patientId);
-const patientDoc = await getDoc(patientRef);
+    const q = query(
+      collection(db, "hospitalisations"),
+      where("patientId", "==", patientId)
+    );
 
-    if (!patientDoc.exists) {
-      contenu.innerHTML = "<p>❌ Patient introuvable</p>";
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      contenu.innerHTML = "<p>Aucune hospitalisation trouvée.</p>";
       return;
     }
 
-    const data = patientDoc.data();
-    let hospitalisations = Array.isArray(data.hospitalisations) ? data.hospitalisations : [];
-
-if (hospitalisations.length > 1) {
-      hospitalisations = hospitalisations.slice(0, -1);
-    } else {
-      hospitalisations = []; // aucune hospitalisation précédente
-    }
+    // 🔽 on garde uniquement les hospitalisations terminées
+    const hospitalisations = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(h => h.dateFin); // exclut l'active
+      // .sort((a, b) => new Date(b.dateDebut) - new Date(a.dateDebut)); // optionnel
 
     if (hospitalisations.length === 0) {
       contenu.innerHTML = "<p>Aucune hospitalisation antérieure.</p>";
       return;
     }
 
+    // 🔄 plus récentes d'abord
+    hospitalisations.sort(
+      (a, b) => new Date(b.dateDebut) - new Date(a.dateDebut)
+    );
+
     contenu.innerHTML = "";
 
-    hospitalisations
-      .slice() // copie
-      .reverse() // plus récentes d'abord
-      .forEach((hospi, idx) => {
-        const card = document.createElement("div");
-        card.className = "card";
+    hospitalisations.forEach(hospi => {
+      const card = document.createElement("div");
+      card.className = "card";
 
-      const date = hospi.dateDebut || hospi.dateDebut || "Date inconnue";
-		 const datef = hospi.dateFin || hospi.dateFin || "Date inconnue";
-      const motif = hospi.motif || "—";
-      const gravite = hospi.gravite || "—";
-      const evolution = hospi.evolution || "Aucune évolution enregistrée.";
       const dossier = hospi.dossierMedical || {};
       const sortie = hospi.sortie || null;
-	  const rapport = hospi.rapport || "Pas de rapport d'hospitalisation validé";
 
-      // construire le HTML via un tableau de parties (plus sûr)
       const parts = [];
 
-      parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${date}</div>`);
-		parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${datef}</div>`);
-      parts.push(`<div class="entry"><strong>Motif :</strong> ${motif}</div>`);
-      parts.push(`<div class="entry"><strong>Gravité :</strong> ${gravite}</div>`);
+      parts.push(`<div><strong>📅 Admission :</strong> ${hospi.dateDebut || "—"}</div>`);
+      parts.push(`<div><strong>📅 Sortie :</strong> ${hospi.dateFin || "—"}</div>`);
+      parts.push(`<div><strong>Motif :</strong> ${hospi.motif || "—"}</div>`);
+      parts.push(`<div><strong>Gravité :</strong> ${hospi.gravite || "—"}</div>`);
+
       parts.push(`<hr>`);
+
       parts.push(`<h3>📋 Dossier médical</h3>`);
-		parts.push(`<p><strong>Questionnaire IAO :</strong><br>${dossier.questionnaire || "—"}</p>`);
+      parts.push(`<p><strong>Questionnaire IAO :</strong><br>${dossier.questionnaire || "—"}</p>`);
       parts.push(`<p><strong>Antécédents :</strong><br>${dossier.antecedents || "—"}</p>`);
       parts.push(`<p><strong>Traitements :</strong><br>${dossier.traitements || "—"}</p>`);
       parts.push(`<p><strong>Histoire de la maladie :</strong><br>${dossier.histoire || "—"}</p>`);
       parts.push(`<p><strong>CR Auscultation :</strong><br>${dossier.auscultation || "—"}</p>`);
-      parts.push(`<hr>`);
-      parts.push(`<h3>📈 Évolution aux urgences</h3>`);
-      parts.push(`<p style="white-space:pre-wrap">${evolution}</p>`);
 
-      // ajout de la sortie si présente
+      parts.push(`<hr>`);
+
+      parts.push(`<h3>📈 Évolution aux urgences</h3>`);
+      parts.push(`<p style="white-space:pre-wrap">${hospi.evolution || "—"}</p>`);
+
       if (sortie) {
         parts.push(`<hr>`);
         parts.push(`<h3>🚪 Sortie</h3>`);
         parts.push(`<p><strong>Type :</strong> ${sortie.type || "—"}</p>`);
 
         if (sortie.serviceHospitalisation)
-          parts.push(`<p><strong>🏥 Service hospitalisation :</strong> ${sortie.serviceHospitalisation}</p>`);
+          parts.push(`<p><strong>🏥 Service :</strong> ${sortie.serviceHospitalisation}</p>`);
 
         if (sortie.destinationTransfert)
-          parts.push(`<p><strong>↔️ Destination transfert :</strong> ${sortie.destinationTransfert}</p>`);
+          parts.push(`<p><strong>↔️ Transfert :</strong> ${sortie.destinationTransfert}</p>`);
 
         if (sortie.avisSpecialiste)
           parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${sortie.avisSpecialiste}</p>`);
@@ -814,21 +834,24 @@ if (hospitalisations.length > 1) {
 
         if (sortie.autreSortieTexte)
           parts.push(`<p><strong>🔤 Autre :</strong> ${sortie.autreSortieTexte}</p>`);
-
-        if (sortie.autreOptionTexte)
-          parts.push(`<p><strong>🔤 Autre option :</strong> ${sortie.autreOptionTexte}</p>`);
       }
- parts.push(`<p><strong></strong> ${rapport}</p>`);
-      // affecter le HTML final
+
+      if (hospi.rapport) {
+        parts.push(`<hr>`);
+        parts.push(`<h3>📄 Rapport d'hospitalisation</h3>`);
+        parts.push(`<p>${hospi.rapport}</p>`);
+      }
+
       card.innerHTML = parts.join("\n");
       contenu.appendChild(card);
     });
 
   } catch (err) {
-    console.error("Erreur chargement historique :", err);
+    console.error("❌ Erreur chargement historique :", err);
     contenu.innerHTML = "<p>❌ Erreur lors du chargement de l'historique.</p>";
   }
 }
+
 // ✅ Fonction accessible globalement pour ouvrir la modale d'édition
 window.openEditModal = (patientId, hospIndex, examIndex) => {
   const editModal = document.getElementById("editModal");

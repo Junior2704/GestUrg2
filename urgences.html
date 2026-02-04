@@ -861,94 +861,120 @@ function remplirFormulaireDepuisPatient(id, data) {
 }
 
 
-async function ajouterPatientVisuel(id, nom, prenom, salleId) {
+aasync function ajouterPatientVisuel(id, nom, prenom, salleId) {
+  const salle = document.getElementById(salleId);
+  if (!salle) return;
+
   try {
-    const salle = document.getElementById(salleId);
-    if (!salle) return;
+    const patientDoc = await db.collection("patients").doc(id).get();
+    if (!patientDoc.exists) return;
+    const patient = patientDoc.data();
 
-    const config = sallesConfig[salleId] || { taille: 3, flexible: true };
-    const patientsDansSalle = salle.querySelectorAll(".patient").length;
-
-    // Salle non flexible et pleine → message d'erreur
-    if (!config.flexible && patientsDansSalle >= config.taille) {
-      afficherBulle(`❌ Impossible d'ajouter ${nom} ${prenom} : salle pleine`, "error");
-      return;
+    // Hospitalisation active
+    let hosp = {};
+    if (patient.hospitalisationActiveId) {
+      const hospiDoc = await db
+        .collection("hospitalisations")
+        .doc(patient.hospitalisationActiveId)
+        .get();
+      if (hospiDoc.exists) hosp = hospiDoc.data();
     }
 
-    // Créer la bulle patient
+    const gravite = hosp.gravite || "P0";
+
+    // --- Gestion flexible/non flexible ---
+    const config = sallesConfig[salleId] || { capacite: 3, flexible: true };
+    const nbPatientsActuels = salle.querySelectorAll(".patient").length;
+
+    if (!config.flexible && nbPatientsActuels >= config.capacite) {
+      afficherBulle(`Salle ${salleId} pleine. Entrée refusée.`, "error");
+      return; // refuse l'ajout
+    }
+
+    // Créer le div patient
     const div = document.createElement("div");
     div.className = "patient";
     div.dataset.id = id;
     div.draggable = true;
     div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
 
-    // Couleur par gravité (exemple)
-    div.style.backgroundColor = "#4CAF50";
+    const couleurs = {
+      P0: "#4CAF50",
+      P1: "#FFFF00",
+      P2: "#FF9800",
+      P3: "#F44336",
+      Urgences_Vitales: "#000000",
+      Administratif: "#4169E1"
+    };
+    div.style.backgroundColor = couleurs[gravite] || "gray";
 
-    // Drag & drop
+    // Étoile rouge si allergies importantes
+    if (patient.importanceAllergies === true) {
+      const star = document.createElement("span");
+      star.className = "allergie-star";
+      star.textContent = "*";
+      div.appendChild(star);
+    }
+
+    // Double-clic pour ouvrir la fiche patient
+    div.ondblclick = () => {
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${nom} ${prenom}`,
+          url: `fiche.html?id=${id}&from=urgences`
+        },
+        "*"
+      );
+    };
+
+    // Drag events
     div.addEventListener("dragstart", e => {
       e.dataTransfer.setData("id", id);
     });
 
+    // --- Ajouter visuellement dans la salle ---
     salle.appendChild(div);
 
-    // Si salle flexible et dépasse la taille, on gère les "⋯"
-    if (config.flexible && salle.querySelectorAll(".patient").length > config.taille) {
-      // Retirer patients dépassants de la vue
-      const toutesBulles = Array.from(salle.querySelectorAll(".patient"));
-      toutesBulles.forEach((p, i) => {
-        if (i >= config.taille) p.style.display = "none";
+    // --- Gestion du nombre de bulles visibles ---
+    const patientsDansSalle = salle.querySelectorAll(".patient");
+    const maxVisible = config.flexible ? config.capacite : config.capacite;
+    if (config.flexible && patientsDansSalle.length > config.capacite) {
+      // masquer les patients au-delà de la capacité
+      patientsDansSalle.forEach((p, idx) => {
+        if (idx >= config.capacite) p.style.display = "none";
       });
-
-      // Ajouter ou mettre à jour le "⋯"
-      let more = salle.querySelector(".more-bubbles");
-      if (!more) {
-        more = document.createElement("div");
-        more.className = "more-bubbles";
-        more.textContent = "⋯";
-        more.style.cursor = "pointer";
-        more.style.fontSize = "1.5rem";
-        more.style.color = "#333";
-        more.style.position = "absolute";
-        more.style.bottom = "5px";
-        more.style.right = "5px";
-        more.onclick = () => {
-          afficherModalListePatients(salleId);
-        };
-        salle.appendChild(more);
+      // afficher le "..."
+      if (!salle.querySelector(".plus-patients")) {
+        const plusDiv = document.createElement("div");
+        plusDiv.className = "patient plus-patients";
+        plusDiv.textContent = "⋯";
+        plusDiv.title = `${patientsDansSalle.length - config.capacite} patient(s) supplémentaires`;
+        salle.appendChild(plusDiv);
+      } else {
+        salle.querySelector(".plus-patients").textContent = "⋯";
       }
     }
 
-    appliquerTailleSalle(salleId);
-
+    masquerLoader();
   } catch (err) {
     console.error("Erreur ajout patient visuel :", err);
   }
 }
 
+// Recharger plan complet
+async function rechargerPlan() {
+  document.querySelectorAll(".patient").forEach(p => p.remove());
+  ajusterTailleSalles();
+  await chargerPatients();
+}
 
-
-
-  salles.forEach(zone => {
-    zone.addEventListener("dragover", e => {
-      e.preventDefault();
-      zone.classList.add("dragover");
-    });
-    zone.addEventListener("dragleave", e => {
-      zone.classList.remove("dragover");
-    });
-    zone.addEventListener("drop", e => {
-      e.preventDefault();
-      zone.classList.remove("dragover");
-      const id = e.dataTransfer.getData("id");
-      const patientDiv = document.querySelector(`.patient[data-id="${id}"]`);
-      if (patientDiv) {
-        zone.appendChild(patientDiv);
-        // Met à jour la position en BDD
-        db.collection("patients").doc(id).update({ position: zone.id });
-      }
-    });
-  });
+// Initialisation
+document.addEventListener("DOMContentLoaded", () => {
+  ajusterTailleSalles();
+  rechargerPlan();
+  setInterval(rechargerPlan, 30000); // rafraîchissement toutes les 30s
+});
 function appliquerTailleSalle(salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
@@ -1096,6 +1122,17 @@ function createPopover(content, x, y) {
   return div;
 }
 
+function ajusterTailleSalles() {
+  Object.keys(sallesConfig).forEach(id => {
+    const salle = document.getElementById(id);
+    if (!salle) return;
+    const capacite = sallesConfig[id].capacite;
+    // Taille proportionnelle (exemple : 50px par place, min 100px)
+    const taille = Math.max(100, capacite * 50);
+    salle.style.width = `${taille}px`;
+    // hauteur fixe déjà définie
+  });
+}
 
 
    async function nettoyerPDFs() {
@@ -1175,10 +1212,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function rechargerPlan() {
-   document.querySelectorAll(".patient").forEach(p => p.remove());
-  chargerPatients();
-}
+
 setInterval(() => {
             rechargerPlan();
         }, 30000);

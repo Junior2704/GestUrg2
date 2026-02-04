@@ -703,6 +703,12 @@ async function showDetails(patient) {
 
     validerBtn.onclick = async () => {
   if (!window.currentEdit) return;
+  if (!window.currentEdit?.hospitalisationId) {
+  console.error("❌ hospitalisationId manquant", window.currentEdit);
+  afficherBulle("Erreur interne (hospitalisation)", "alerte");
+  return;
+}
+
 
   const { hospitalisationId, examIndex } = window.currentEdit;
   const compteRendu = compteRenduInput.value.trim();
@@ -874,17 +880,20 @@ renderTable(patients);
 }
 
 // ✅ Fonction accessible globalement pour ouvrir la modale d'édition
-window.openEditModal = (patientId, hospIndex, examIndex) => {
+window.openEditModal = (patientId, hospitalisationId, examIndex) => {
   const editModal = document.getElementById("editModal");
   const compteRenduInput = document.getElementById("compteRenduInput");
 
-  // on stocke l’état dans un objet global
-  window.currentEdit = { patientId, hospIndex, examIndex };
+  // ✅ on stocke CE DONT ON A VRAIMENT BESOIN
+  window.currentEdit = {
+    hospitalisationId,
+    examIndex
+  };
 
-  // réinitialisation du champ texte
   compteRenduInput.value = "";
   editModal.style.display = "flex";
 };
+
 // ✅ Fonction de formatage de date (jj/mm/aaaa - hh:mm:ss)
 function formatDate(isoString) {
   const date = new Date(isoString);

@@ -555,6 +555,14 @@ body, #mainContent {
 }
 
 
+.plus-indicateur {
+  font-weight: bold;
+  background: #e6f0fc;
+  padding: 2px 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 3px rgba(0,0,0,0.2);
+  user-select: none;
+}
 
 
   </style>
@@ -732,7 +740,33 @@ function sansAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
- 
+ const sallesConfig = {
+  "salle-attente": { taille: 8, flexible: false },
+  "iao": { taille: 6, flexible: true },
+  "nv-couche": { taille: 4, flexible: false },
+  "PEC-valide": { taille: 5, flexible: true },
+  "PEC-couche": { taille: 4, flexible: false },
+  "dechoc": { taille: 2, flexible: false },
+  "box1": { taille: 2, flexible: true },
+  "box2": { taille: 2, flexible: true },
+  "box3": { taille: 2, flexible: true },
+  "box4": { taille: 2, flexible: true },
+  "box5": { taille: 2, flexible: true },
+  "box6": { taille: 2, flexible: true },
+  "box7": { taille: 2, flexible: true },
+  "box8": { taille: 2, flexible: true },
+  "box9": { taille: 2, flexible: true },
+  "box10": { taille: 2, flexible: true },
+  "boxTrauma1": { taille: 3, flexible: true },
+  "boxTrauma2": { taille: 3, flexible: true },
+  "boxTrauma3": { taille: 3, flexible: true },
+  "boxTrauma4": { taille: 3, flexible: true },
+  "boxTrauma5": { taille: 3, flexible: true },
+  "imagerie": { taille: 4, flexible: true },
+  "psy": { taille: 4, flexible: true },
+  "sortie": { taille: 99, flexible: true } // salle infinie
+};
+
 function remplirFormulaireDepuisPatient(id, data) {
   document.getElementById("idPatient").value = id;
   document.getElementById("sexePatient").value = data.sexe || "";
@@ -773,93 +807,77 @@ function remplirFormulaireDepuisPatient(id, data) {
 }
 
 
-  // Ajoute patient visuel sur la salle donnée
-  async function ajouterPatientVisuel(id, nom, prenom, salleId) {
+async function ajouterPatientVisuel(id, nom, prenom, salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
 
-  try {
-    // Charger le patient
-    const patientDoc = await db.collection("patients").doc(id).get();
-    if (!patientDoc.exists) return;
-    const patient = patientDoc.data();
+  const config = sallesConfig[salleId] || { taille: 5, flexible: true };
+  const patientsDansSalle = salle.querySelectorAll(".patient").length;
 
-    // Charger l'hospitalisation active
-    let hosp = {};
-    if (patient.hospitalisationActiveId) {
-      const hospiDoc = await db
-        .collection("hospitalisations")
-        .doc(patient.hospitalisationActiveId)
-        .get();
-      if (hospiDoc.exists) hosp = hospiDoc.data();
+  if (!config.flexible && patientsDansSalle >= config.taille) {
+    afficherBulle(`❌ Impossible d'ajouter ${nom} ${prenom} : salle pleine`, "error");
+    return;
+  }
+
+  // Création de la bulle patient
+  const div = document.createElement("div");
+  div.className = "patient";
+  div.dataset.id = id;
+  div.draggable = true;
+  div.ondblclick = () => {
+    window.parent.postMessage({
+      type: "OPEN_TAB",
+      title: `Fiche Urgences ${nom} ${prenom}`,
+      url: `fiche.html?id=${id}&from=urgences`
+    }, "*");
+  };
+  div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
+
+  // couleur selon gravité etc.
+  const patientDoc = await db.collection("patients").doc(id).get();
+  const patient = patientDoc.data();
+  let gravite = "P0";
+  if (patient.hospitalisationActiveId) {
+    const hospiDoc = await db.collection("hospitalisations").doc(patient.hospitalisationActiveId).get();
+    if (hospiDoc.exists) gravite = hospiDoc.data().gravite || "P0";
+  }
+  const couleurs = { P0:"#4CAF50", P1:"#FFFF00", P2:"#FF9800", P3:"#F44336", Urgences_Vitales:"#000", Administratif:"#4169E1" };
+  div.style.backgroundColor = couleurs[gravite] || "gray";
+
+  // Etoile si allergies
+  if (patient.importanceAllergies === true) {
+    const star = document.createElement("span");
+    star.className = "allergie-star";
+    star.textContent = "*";
+    div.appendChild(star);
+  }
+
+  salle.appendChild(div);
+
+  // ✅ Si flexible et dépasse la taille max, on affiche le compteur "…" et modal
+  if (config.flexible && patientsDansSalle + 1 > config.taille) {
+    if (!salle.querySelector(".plus-indicateur")) {
+      const plus = document.createElement("div");
+      plus.className = "plus-indicateur";
+      plus.textContent = "⋯";
+      plus.style.cursor = "pointer";
+      plus.style.position = "absolute";
+      plus.style.bottom = "5px";
+      plus.style.right = "5px";
+      plus.style.fontSize = "18px";
+      plus.style.color = "#0078d4";
+      salle.appendChild(plus);
+
+      plus.addEventListener("click", () => {
+        const patientsList = Array.from(salle.querySelectorAll(".patient"))
+          .map(p => p.textContent)
+          .join("\n");
+        alert(`Patients dans ${salleId} :\n${patientsList}`);
+      });
     }
-
-    const gravite = hosp.gravite || "P0";
-
-    const div = document.createElement("div");
-    div.className = "patient";
-    div.dataset.id = id;
-    div.draggable = true;
-    div.ondblclick = () => {
-      window.parent.postMessage(
-        {
-          type: "OPEN_TAB",
-          title: `Fiche Urgences ${nom} ${prenom}`,
-          url: `fiche.html?id=${id}&from=urgences`
-        },
-        "*"
-      );
-    };
-    div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
-
-    const couleurs = {
-      P0: "#4CAF50",
-      P1: "#FFFF00",
-      P2: "#FF9800",
-      P3: "#F44336",
-      Urgences_Vitales: "#000000",
-      Administratif: "#4169E1"
-    };
-    div.style.backgroundColor = couleurs[gravite] || "gray";
-
-    // Étoile rouge si allergies importantes
-    if (patient.importanceAllergies === true) {
-      const star = document.createElement("span");
-      star.className = "allergie-star";
-      star.textContent = "*";
-      div.appendChild(star);
-    }
-
-    // Drag events
-    div.addEventListener("dragstart", e => {
-      e.dataTransfer.setData("id", id);
-    });
-
-    salle.appendChild(div);
-
-    // Popover
-    let pop;
-    div.addEventListener("mouseenter", (e) => {
-      const content = `
-        <strong>${nom} ${prenom}</strong><br/>
-        Naissance : ${patient.dateNaissance || 'N/A'}<br/>
-        Motif : ${hosp.motif || 'N/A'}<br/>
-        Gravité : ${gravite || 'N/A'}<br/>
-        Statut : ${hosp.pdcStatut || 'Aucun'}<br/>
-        Circuit : ${hosp.circuit || 'Aucun'}<br/>
-      `;
-      pop = createPopover(content, e.clientX + 10, e.clientY + 10);
-    });
-
-    div.addEventListener("mouseleave", () => {
-      if (pop) pop.remove();
-    });
-
-    masquerLoader();
-  } catch (err) {
-    console.error("Erreur ajout patient visuel :", err);
   }
 }
+
 
 
 

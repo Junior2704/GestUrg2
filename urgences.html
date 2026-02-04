@@ -94,23 +94,6 @@
     }
 
     /* Plan des salles */
-	.salle {
-  width: 100%;
-  height: 200px;                  /* ✅ Hauteur fixe pour toutes les salles */
-  overflow-y: auto;               /* ✅ Scroll vertical si besoin */
-  background: white;
-  border-radius: 14px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;                      /* ✅ Espace entre bulles */
-  position: relative;
-  user-select: none;
-  transition: box-shadow 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
-  cursor: pointer;
-  box-sizing: border-box;
-}
 
 .patient {
   width: 36px;
@@ -565,13 +548,18 @@ body, #mainContent {
 }
 
 .salle {
-  display: flex;
-  flex-wrap: wrap; /* permet aux bulles de se placer sur plusieurs lignes */
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 36px);
+  grid-auto-rows: 36px;
   gap: 8px;
-  min-height: 50px; /* ajustable selon le nombre de places */
-  padding: 10px;
   position: relative;
+  box-sizing: border-box;
 }
+
 .patient {
   width: 36px;
   height: 36px;
@@ -883,13 +871,15 @@ if (salle.querySelector(`.patient[data-id="${id}"]`)) return;
     const gravite = hosp.gravite || "P0";
 
     // --- Gestion flexible/non flexible ---
-    const config = sallesConfig[salleId] || { capacite: 3, flexible: true };
-    const nbPatientsActuels = salle.querySelectorAll(".patient").length;
+    const config = sallesConfig[salleId];
+const nbPatients = salle.querySelectorAll(".patient").length;
 
-    if (!config.flexible && nbPatientsActuels >= config.capacite) {
-      afficherBulle(`Salle ${salleId} pleine. Entrée refusée.`, "error");
-      return; // refuse l'ajout
-    }
+// 🚫 salle non flexible
+if (!config.flexible && nbPatients >= config.capacite) {
+  afficherBulle(`Salle ${salleId} pleine`, "error");
+  return;
+}
+
 
     // Créer le div patient
     const div = document.createElement("div");
@@ -936,25 +926,25 @@ if (salle.querySelector(`.patient[data-id="${id}"]`)) return;
     // --- Ajouter visuellement dans la salle ---
     salle.appendChild(div);
 
-    // --- Gestion du nombre de bulles visibles ---
-    const patientsDansSalle = salle.querySelectorAll(".patient");
-    const maxVisible = config.flexible ? config.capacite : config.capacite;
-    if (config.flexible && patientsDansSalle.length > config.capacite) {
-      // masquer les patients au-delà de la capacité
-      patientsDansSalle.forEach((p, idx) => {
-        if (idx >= config.capacite) p.style.display = "none";
-      });
-      // afficher le "..."
-      if (!salle.querySelector(".plus-patients")) {
-        const plusDiv = document.createElement("div");
-        plusDiv.className = "patient plus-patients";
-        plusDiv.textContent = "⋯";
-        plusDiv.title = `${patientsDansSalle.length - config.capacite} patient(s) supplémentaires`;
-        salle.appendChild(plusDiv);
-      } else {
-        salle.querySelector(".plus-patients").textContent = "⋯";
-      }
-    }
+ const patients = Array.from(salle.querySelectorAll(".patient"));
+
+patients.forEach((p, i) => {
+  p.style.display = i < config.capacite ? "flex" : "none";
+});
+
+// indicateur +X
+let indicateur = salle.querySelector(".plus-indicateur");
+if (patients.length > config.capacite) {
+  if (!indicateur) {
+    indicateur = document.createElement("div");
+    indicateur.className = "plus-indicateur";
+    salle.appendChild(indicateur);
+  }
+  indicateur.textContent = `+${patients.length - config.capacite}`;
+} else if (indicateur) {
+  indicateur.remove();
+}
+
 
     masquerLoader();
   } catch (err) {
@@ -1123,18 +1113,19 @@ function createPopover(content, x, y) {
 }
 
 function ajusterTailleSalles() {
-  Object.keys(sallesConfig).forEach(id => {
+  Object.entries(sallesConfig).forEach(([id, config]) => {
     const salle = document.getElementById(id);
     if (!salle) return;
-    const config = sallesConfig[id];
-    const capacite = config.capacite || 3;
-    // Taille proportionnelle (50px par patient visible, min 100px)
-    const largeur = Math.max(100, capacite * 50);
-    salle.style.width = `${largeur}px`;
-    // hauteur flexible ou fixe selon besoin
-    salle.style.minHeight = `${Math.max(100, capacite * 40)}px`;
+
+    const capacite = config.capacite;
+    const colonnes = Math.min(4, capacite);
+    const lignes = Math.ceil(capacite / colonnes);
+
+    salle.style.gridTemplateColumns = `repeat(${colonnes}, 36px)`;
+    salle.style.minHeight = `${lignes * 36 + (lignes - 1) * 8 + 40}px`;
   });
 }
+
 
 
    async function nettoyerPDFs() {

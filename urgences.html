@@ -811,29 +811,23 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
 
-  const config = sallesConfig[salleId] || { taille: 5, flexible: true };
-  const patientsDansSalle = salle.querySelectorAll(".patient").length;
+  const config = sallesConfig[salleId] || { taille: 3, flexible: true };
+  const patientsDansSalle = Array.from(salle.querySelectorAll(".patient"));
 
-  if (!config.flexible && patientsDansSalle >= config.taille) {
+  // Flexible false => bloquer si dépasse
+  if (!config.flexible && patientsDansSalle.length >= config.taille) {
     afficherBulle(`❌ Impossible d'ajouter ${nom} ${prenom} : salle pleine`, "error");
     return;
   }
 
-  // Création de la bulle patient
+  // Crée la bulle patient
   const div = document.createElement("div");
   div.className = "patient";
   div.dataset.id = id;
   div.draggable = true;
-  div.ondblclick = () => {
-    window.parent.postMessage({
-      type: "OPEN_TAB",
-      title: `Fiche Urgences ${nom} ${prenom}`,
-      url: `fiche.html?id=${id}&from=urgences`
-    }, "*");
-  };
   div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
 
-  // couleur selon gravité etc.
+  // couleur gravité etc.
   const patientDoc = await db.collection("patients").doc(id).get();
   const patient = patientDoc.data();
   let gravite = "P0";
@@ -844,7 +838,7 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
   const couleurs = { P0:"#4CAF50", P1:"#FFFF00", P2:"#FF9800", P3:"#F44336", Urgences_Vitales:"#000", Administratif:"#4169E1" };
   div.style.backgroundColor = couleurs[gravite] || "gray";
 
-  // Etoile si allergies
+  // Allergies
   if (patient.importanceAllergies === true) {
     const star = document.createElement("span");
     star.className = "allergie-star";
@@ -854,10 +848,17 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
 
   salle.appendChild(div);
 
-  // ✅ Si flexible et dépasse la taille max, on affiche le compteur "…" et modal
-  if (config.flexible && patientsDansSalle + 1 > config.taille) {
-    if (!salle.querySelector(".plus-indicateur")) {
-      const plus = document.createElement("div");
+  // Si flexible et dépasse la taille max => afficher "⋯"
+  if (config.flexible && patientsDansSalle.length + 1 > config.taille) {
+    // masquer les bulles après le nombre max
+    patientsDansSalle.forEach((p, index) => {
+      if (index >= config.taille - 1) p.style.display = "none";
+    });
+
+    // supprimer ancien indicateur si présent
+    let plus = salle.querySelector(".plus-indicateur");
+    if (!plus) {
+      plus = document.createElement("div");
       plus.className = "plus-indicateur";
       plus.textContent = "⋯";
       plus.style.cursor = "pointer";
@@ -869,6 +870,7 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
       salle.appendChild(plus);
 
       plus.addEventListener("click", () => {
+        // afficher la liste complète des patients dans une modal simple
         const patientsList = Array.from(salle.querySelectorAll(".patient"))
           .map(p => p.textContent)
           .join("\n");
@@ -877,6 +879,7 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
     }
   }
 }
+
 
 
 

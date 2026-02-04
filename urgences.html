@@ -781,6 +781,45 @@ function sansAccents(str) {
   "psy": { taille: 4, flexible: false },
   "sortie": { taille: 5, flexible: true } // salle infinie
 };
+function mettreAJourSalle(salleId) {
+  const salle = document.getElementById(salleId);
+  if (!salle) return;
+  const config = sallesConfig[salleId] || { taille: 3, flexible: true };
+
+  const patients = Array.from(salle.querySelectorAll(".patient"));
+  let plus = salle.querySelector(".plus-indicateur");
+
+  if (patients.length <= config.taille || !config.flexible) {
+    // Tout visible si sous la taille max ou salle non flexible
+    patients.forEach(p => p.style.display = "flex");
+    if (plus) plus.remove();
+  } else {
+    // Flexible et nombre > taille => n’affiche que "taille" bulles + ⋯
+    patients.forEach((p, index) => {
+      p.style.display = index < config.taille ? "flex" : "none";
+    });
+
+    if (!plus) {
+      plus = document.createElement("div");
+      plus.className = "plus-indicateur";
+      plus.textContent = "⋯";
+      plus.style.cursor = "pointer";
+      plus.style.position = "absolute";
+      plus.style.bottom = "5px";
+      plus.style.right = "5px";
+      plus.style.fontSize = "18px";
+      plus.style.color = "#0078d4";
+      salle.appendChild(plus);
+
+      plus.addEventListener("click", () => {
+        const patientsList = Array.from(salle.querySelectorAll(".patient"))
+          .map(p => p.textContent)
+          .join("\n");
+        alert(`Patients dans ${salleId} :\n${patientsList}`);
+      });
+    }
+  }
+}
 
 function remplirFormulaireDepuisPatient(id, data) {
   document.getElementById("idPatient").value = id;
@@ -823,80 +862,107 @@ function remplirFormulaireDepuisPatient(id, data) {
 
 
 async function ajouterPatientVisuel(id, nom, prenom, salleId) {
-  const salle = document.getElementById(salleId);
-  if (!salle) return;
+  try {
+    const salle = document.getElementById(salleId);
+    if (!salle) return;
 
-  const config = sallesConfig[salleId] || { taille: 3, flexible: true };
-  const patientsDansSalle = Array.from(salle.querySelectorAll(".patient"));
+    const config = sallesConfig[salleId] || { taille: 3, flexible: true };
+    const patientsDansSalle = salle.querySelectorAll(".patient").length;
 
-  // Flexible false => bloquer si dépasse
-  if (!config.flexible && patientsDansSalle.length >= config.taille) {
-    afficherBulle(`❌ Impossible d'ajouter ${nom} ${prenom} : salle pleine`, "error");
-    return;
-  }
+    // Bloque si salle non flexible et pleine
+    if (!config.flexible && patientsDansSalle >= config.taille) {
+      afficherBulle(`❌ Impossible d'ajouter ${nom} ${prenom} : salle pleine`, "error");
+      return;
+    }
 
-  // Crée la bulle patient
-  const div = document.createElement("div");
-  div.className = "patient";
-  div.dataset.id = id;
-  div.draggable = true;
-  div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
+    // Récupérer les données du patient dans Firestore
+    const patientDoc = await db.collection("patients").doc(id).get();
+    if (!patientDoc.exists) return;
+    const patient = patientDoc.data();
 
-  // couleur gravité etc.
-  const patientDoc = await db.collection("patients").doc(id).get();
-  const patient = patientDoc.data();
-  let gravite = "P0";
-  if (patient.hospitalisationActiveId) {
-    const hospiDoc = await db.collection("hospitalisations").doc(patient.hospitalisationActiveId).get();
-    if (hospiDoc.exists) gravite = hospiDoc.data().gravite || "P0";
-  }
-  const couleurs = { P0:"#4CAF50", P1:"#FFFF00", P2:"#FF9800", P3:"#F44336", Urgences_Vitales:"#000", Administratif:"#4169E1" };
-  div.style.backgroundColor = couleurs[gravite] || "gray";
+    // Charger hospitalisation active si elle existe
+    let hosp = {};
+    if (patient.hospitalisationActiveId) {
+      const hospiDoc = await db
+        .collection("hospitalisations")
+        .doc(patient.hospitalisationActiveId)
+        .get();
+      if (hospiDoc.exists) hosp = hospiDoc.data();
+    }
 
-  // Allergies
-  if (patient.importanceAllergies === true) {
-    const star = document.createElement("span");
-    star.className = "allergie-star";
-    star.textContent = "*";
-    div.appendChild(star);
-  }
+    const gravite = hosp.gravite || "P0";
 
-  salle.appendChild(div);
+    // Créer la bulle patient
+    const div = document.createElement("div");
+    div.className = "patient";
+    div.dataset.id = id;
+    div.draggable = true;
+    div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
 
-  // Si flexible et dépasse la taille max => afficher "⋯"
-  if (config.flexible && patientsDansSalle.length + 1 > config.taille) {
-    // masquer les bulles après le nombre max
-    patientsDansSalle.forEach((p, index) => {
-      if (index >= config.taille - 1) p.style.display = "none";
+    // Couleur selon gravité
+    const couleurs = {
+      P0: "#4CAF50",
+      P1: "#FFFF00",
+      P2: "#FF9800",
+      P3: "#F44336",
+      Urgences_Vitales: "#000000",
+      Administratif: "#4169E1"
+    };
+    div.style.backgroundColor = couleurs[gravite] || "gray";
+
+    // Étoile rouge si allergies importantes
+    if (patient.importanceAllergies === true) {
+      const star = document.createElement("span");
+      star.className = "allergie-star";
+      star.textContent = "*";
+      div.appendChild(star);
+    }
+
+    // Double clic → ouvre fiche patient
+    div.ondblclick = () => {
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${nom} ${prenom}`,
+          url: `fiche.html?id=${id}&from=urgences`
+        },
+        "*"
+      );
+    };
+
+    // Drag & drop
+    div.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("id", id);
     });
 
-    // supprimer ancien indicateur si présent
-    let plus = salle.querySelector(".plus-indicateur");
-    if (!plus) {
-      plus = document.createElement("div");
-      plus.className = "plus-indicateur";
-      plus.textContent = "⋯";
-      plus.style.cursor = "pointer";
-      plus.style.position = "absolute";
-      plus.style.bottom = "5px";
-      plus.style.right = "5px";
-      plus.style.fontSize = "18px";
-      plus.style.color = "#0078d4";
-      salle.appendChild(plus);
+    // Ajouter la bulle dans la salle
+    salle.appendChild(div);
 
-      plus.addEventListener("click", () => {
-        // afficher la liste complète des patients dans une modal simple
-        const patientsList = Array.from(salle.querySelectorAll(".patient"))
-          .map(p => p.textContent)
-          .join("\n");
-        alert(`Patients dans ${salleId} :\n${patientsList}`);
-      });
-    }
+    // Mettre à jour la salle pour gérer visibilité + ⋯
+    mettreAJourSalle(salleId);
+
+    // Popover au survol
+    let pop;
+    div.addEventListener("mouseenter", (e) => {
+      const content = `
+        <strong>${nom} ${prenom}</strong><br/>
+        Naissance : ${patient.dateNaissance || 'N/A'}<br/>
+        Motif : ${hosp.motif || 'N/A'}<br/>
+        Gravité : ${gravite || 'N/A'}<br/>
+        Statut : ${hosp.pdcStatut || 'Aucun'}<br/>
+        Circuit : ${hosp.circuit || 'Aucun'}<br/>
+      `;
+      pop = createPopover(content, e.clientX + 10, e.clientY + 10);
+    });
+
+    div.addEventListener("mouseleave", () => {
+      if (pop) pop.remove();
+    });
+
+  } catch (err) {
+    console.error("Erreur ajout patient visuel :", err);
   }
 }
-
-
-
 
 
 

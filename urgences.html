@@ -567,6 +567,22 @@ body, #mainContent {
   align-items: center;
   justify-content: center;
 }
+#plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+.salle {
+  background: white;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+  display: grid;
+  grid-template-columns: repeat(4, 36px);
+  grid-auto-rows: 36px;
+  gap: 8px;
+  min-height: 140px;
+}
 
   </style>
 </head>
@@ -1111,20 +1127,19 @@ function createPopover(content, x, y) {
   document.body.appendChild(div);
   return div;
 }
-
 function ajusterTailleSalles() {
   Object.entries(sallesConfig).forEach(([id, config]) => {
     const salle = document.getElementById(id);
     if (!salle) return;
 
-    const capacite = config.capacite;
-    const colonnes = Math.min(4, capacite);
-    const lignes = Math.ceil(capacite / colonnes);
+    const colonnes = Math.min(4, config.capacite);
+    const lignes = Math.ceil(config.capacite / colonnes);
 
     salle.style.gridTemplateColumns = `repeat(${colonnes}, 36px)`;
-    salle.style.minHeight = `${lignes * 36 + (lignes - 1) * 8 + 40}px`;
+    salle.style.minHeight = `${lignes * 36 + (lignes - 1) * 8 + 50}px`;
   });
 }
+
 
 
 
@@ -1204,11 +1219,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+document.querySelectorAll(".salle").forEach(salle => {
+  salle.addEventListener("dragover", e => {
+    e.preventDefault();
+    salle.classList.add("dragover");
+  });
+
+  salle.addEventListener("dragleave", () => {
+    salle.classList.remove("dragover");
+  });
+
+  salle.addEventListener("drop", async e => {
+    e.preventDefault();
+    salle.classList.remove("dragover");
+
+    const patientId = e.dataTransfer.getData("id");
+    if (!patientId) return;
+
+    await db.collection("patients").doc(patientId).update({
+      position: salle.id
+    });
+
+    rechargerPlan();
+  });
+});
 
 
-setInterval(() => {
-            rechargerPlan();
-        }, 30000);
+
   chargerPatients();
      nettoyerPDFs();
 </script>

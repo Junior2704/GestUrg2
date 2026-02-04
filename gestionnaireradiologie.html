@@ -442,6 +442,9 @@ body {
 <div id="mainContent">
 
 
+<button id="refreshPatientsBtn" style="margin-bottom:10px;">
+  🔄 Actualiser la liste des patients
+</button>
 
 <table>
   <thead>
@@ -752,7 +755,7 @@ async function showDetails(patient) {
 
   examen.realise = true;
   examen.compteRendu = compteRendu;
-  examen.dateRealisation = new Date().toISOString();
+examen.dateRealisation = formatDate(new Date().toISOString());
 
   await updateDoc(hospRef, {
     examens: hospData.examens
@@ -947,6 +950,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
+document.getElementById("refreshPatientsBtn").onclick = async () => {
+  afficherBulle("🔄 Actualisation des patients...", "administratif");
+  const patients = await loadPatients();
+  renderTable(patients);
+};
+
 </script>
 
 <div id="bubble-container"></div>

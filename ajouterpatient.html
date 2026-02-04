@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+
+<meta charset="UTF-8">
+<title>Ajout Patient – Urgences</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f4f8;
+  margin: 0;
+  padding-bottom: 80px;
+}
+
+.modal {
+  max-width: 700px;
+  margin: 30px auto;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+h2 {
+  margin-top: 0;
+  color: #005ea2;
+}
+
+/* ---------- CONTENU ONGLET ---------- */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #0078d4;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button:hover { background: #005ea2; }
+
+.result {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.result:hover {
+  background: #eef6ff;
+}
+
+/* ---------- BARRE DE NAVIGATION BAS ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: white;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  text-align: center;
+  cursor: pointer;
+  color: #0078d4;
+}
+
+.nav-btn span {
+  display: block;
+  font-size: 20px;
+}
+
+.nav-btn.disabled {
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.nav-btn.active {
+  font-weight: bold;
+  color: #005ea2;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 320px;
+  text-align: center;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="modal">
+  <h2>➕ Ajout / Hospitalisation patient</h2>
+
+  <!-- ONGLET 1 -->
+  <div id="tab1" class="tab-content active">
+    <label>Recherche patient</label>
+    <input id="search" placeholder="Nom ou prénom">
+
+    <div id="results"></div>
+
+    <button id="createPatient">➕ Créer ce patient</button>
+  </div>
+
+  <!-- ONGLET 2 -->
+  <div id="tab2" class="tab-content">
+  <label>ID Patient</label>
+<input id="idPatient" readonly placeholder="—">
+
+    <label>Nom</label>
+    <input id="nom">
+
+    <label>Prénom</label>
+    <input id="prenom">
+
+    <label>Sexe</label>
+    <select id="sexe">
+     <option value="">-- Sélectionnez --</option>
+  <option value="M">M</option>
+  <option value="Mme">Mme</option>
+  <option value="L'enfant">L'enfant</option>
+    </select>
+
+    <label>Date de naissance</label>
+    <input type="date" id="naissance">
+<label>Adresse</label>
+<input id="adresse">
+
+<label>Téléphone</label>
+<input id="telephone">
+
+<label>Email</label>
+<input type="email" id="email">
+
+    <button id="validateIdentity">➡️ Valider l'identité</button>
+  </div>
+
+<!-- ONGLET 3 – Données médicales -->
+<div id="tab3" class="tab-content">
+   <label>Médecin(s) traitant(s)</label>
+  <textarea id="medtraitant" style="height:80px; width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;"></textarea>
+
+  <label>Vigilance(s)</label>
+  <input type="text" id="vigilances" class="text2" placeholder="Ex : surveillance particulière" />
+
+  <label>Allergies</label>
+  <input type="text" id="allergies" class="text2" placeholder="Ex : Pénicilline, arachides..." />
+
+  <button id="saveMedicalData">➡️ Valider les données médicales</button>
+</div>
+
+<!-- ONGLET 4 – Hospitalisation -->
+<div id="tab4" class="tab-content">
+  <label>Motif d’entrée</label>
+  <input id="motif">
+
+  <label>Gravité</label>
+  <select id="gravite">
+    <option value="P0">P0</option>
+  <option value="P1">P1</option>
+  <option value="P2">P2</option>
+  <option value="P3">P3</option>
+  <option value="Urgences_Vitales">Urgences vitales</option>
+  <option value="Administratif">Administratif</option>
+  </select>
+
+  <label>Moyen d’entrée</label>
+  <input id="moyen">
+
+  <label for="circuit">🧭 Circuit particulier</label>
+  <select id="circuit">
+    <option value=""></option>
+    <option value="Pédiatrie">Pédiatrie</option>
+    <option value="Traumatologie">Traumatologie</option>
+    <option value="Gynécologie">Gynécologie</option>
+    <option value="Psychiatrie">Psychiatrie</option>
+    <option value="Ophtalmologie">Ophtalmologie</option>
+  </select>
+
+  <label for="service">🏥 Service idéal</label>
+  <select id="service"><option value="">Chargement...</option></select>
+
+  <button id="validateAll">✅ Valider hospitalisation</button>
+</div>
+
+
+</div>
+
+<!-- BARRE DE NAVIGATION -->
+<div class="bottom-nav">
+  <button id="nav1" class="nav-btn active">
+    <span>🔍</span>Recherche
+  </button>
+  <button id="nav2" class="nav-btn disabled">
+    <span>👤</span>Identité
+  </button>
+  <button id="nav3" class="nav-btn disabled">
+    <span>🩺</span>Données Médicales
+  </button>
+  <button id="nav4" class="nav-btn disabled">
+    <span>🏥</span>Hospitalisation
+  </button>
+</div>
+
+<!-- MODALE INFO -->
+<div id="infoModal" class="modal-overlay">
+  <div class="modal-box">
+    <p id="infoModalText"></p>
+    <button onclick="closeInfoModal()">OK</button>
+  </div>
+</div>
+
+<script>
+/* ---------- ÉTAT ---------- */
+let patientSelected = false;
+let identityValidated = false;
+/* ---------- FIREBASE ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function showInfoModal(message, reset = false) {
+  infoModalText.textContent = message;
+  infoModal.classList.add("show");
+  infoModal.dataset.reset = reset ? "1" : "0";
+}
+
+function closeInfoModal() {
+  infoModal.classList.remove("show");
+  if (infoModal.dataset.reset === "1") {
+    resetApp();
+  }
+}
+async function chargerServices() {
+  try {
+    const doc = await db.collection("référentiels").doc("spécialités").get();
+    const services = doc.data()?.spécialités || [];
+
+    const select = document.getElementById("service");
+    select.innerHTML = ""; // vide les anciennes options
+
+    services.forEach(service => {
+      const option = document.createElement("option");
+      option.value = service;
+      option.textContent = service;
+      select.appendChild(option);
+    });
+  } catch (e) {
+    console.error("Erreur chargement services :", e);
+  }
+}
+
+// Appel au chargement de la page
+chargerServices();
+
+function resetApp() {
+  patientSelected = false;
+  identityValidated = false;
+  search.value = "";
+  results.innerHTML = "";
+  updateNav();
+  openTab(1);
+}
+
+/* ---------- UTIL ---------- */
+function openTab(n) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  document.getElementById("tab"+n).classList.add("active");
+
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("nav"+n).classList.add("active");
+}
+
+function updateNav() {
+  nav2.classList.toggle("disabled", !patientSelected);
+  nav3.classList.toggle("disabled", !identityValidated);
+}
+
+nav1.onclick = () => openTab(1);
+nav2.onclick = () => { if (!patientSelected) return; openTab(2); };
+nav3.onclick = () => { if (!identityValidated) return; openTab(3); };
+nav4.onclick = () => { if (!identityValidated) return; openTab(4); };
+
+function updateNav() {
+  nav2.classList.toggle("disabled", !patientSelected);
+  nav3.classList.toggle("disabled", !identityValidated);
+  nav4.classList.toggle("disabled", !identityValidated);
+}
+
+
+/* ---------- RECHERCHE ---------- */
+search.oninput = async () => {
+  results.innerHTML = "";
+  const val = search.value.toLowerCase().trim();
+  if (val.length < 2) return;
+
+  const snap = await db.collection("patients").get();
+
+  snap.forEach(doc => {
+    const p = doc.data();
+    if (
+      p.nom?.toLowerCase().includes(val) ||
+      p.prenom?.toLowerCase().includes(val)
+    ) {
+      const div = document.createElement("div");
+      div.className = "result";
+      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"})`;
+
+    div.onclick = async () => {
+  // 🔒 Patient déjà hospitalisé → BLOQUÉ
+  if (p.hospitalisationActiveId) {
+    showInfoModal("⛔ Ce patient est déjà hospitalisé", true);
+    return;
+  }
+
+  // Champs identité
+  nom.value = p.nom;
+  prenom.value = p.prenom;
+  sexe.value = p.sexe || "";
+  naissance.value = p.dateNaissance || "";
+  nom.dataset.id = doc.id;
+  adresse.value = p.adresse || "";
+  telephone.value = p.telephone || "";
+  email.value = p.email || "";
+  idPatient.value = doc.id;
+
+  // 🔹 Pré-remplissage données médicales depuis Firestore
+  const patientRef = db.collection("patients").doc(doc.id);
+  const patientSnap = await patientRef.get();
+  const patientData = patientSnap.data();
+
+  document.getElementById("medtraitant").value = patientData.medtraitant || "";
+  document.getElementById("vigilances").value = patientData.vigilances || "aucune";
+  document.getElementById("allergies").value = patientData.allergies || "aucun";
+
+  patientSelected = true;
+  updateNav();
+  openTab(2); // on reste sur identité pour continuer
+};
+
+
+
+
+      results.appendChild(div);
+    }
+  });
+};
+// 🌟 Stockage temporaire pour les nouveaux patients
+let patientMedicalData = { medtraitant: "", vigilances: "", allergies: "" };
+
+document.getElementById("saveMedicalData").onclick = () => {
+  const medtraitantVal = document.getElementById("medtraitant").value.trim();
+  const vigilancesVal = document.getElementById("vigilances").value.trim();
+  const allergiesVal = document.getElementById("allergies").value.trim();
+
+  const patientId = nom.dataset.id;
+
+  if (patientId) {
+    // 🔹 Patient existant → sauvegarde Firestore
+    db.collection("patients").doc(patientId).update({
+      medtraitant: medtraitantVal,
+      vigilances: vigilancesVal,
+      allergies: allergiesVal
+    })
+    .then(() => {
+      openTab(4); // passer à hospitalisation
+    })
+    .catch(err => {
+      console.error(err);
+      showInfoModal("❌ Erreur lors de la sauvegarde", false);
+    });
+  } else {
+    // 🔹 Nouveau patient → sauvegarde locale temporaire
+    patientMedicalData = { medtraitant: medtraitantVal, vigilances: vigilancesVal, allergies: allergiesVal };
+    openTab(4); // passer à hospitalisation
+  }
+};
+
+
+
+
+/* ---------- CRÉATION ---------- */
+createPatient.onclick = () => {
+  nom.value = prenom.value = naissance.value = "";
+  sexe.value = "";
+  adresse.value = "";
+  telephone.value = "";
+  email.value = "";
+  delete nom.dataset.id; // 🔒 IMPORTANT
+  idPatient.value = "";
+  patientSelected = true;
+  identityValidated = false;
+  updateNav();
+  openTab(2);
+};
+
+
+
+/* ---------- VALIDATION IDENTITÉ ---------- */
+validateIdentity.onclick = () => {
+ if (!nom.value || !prenom.value || !naissance.value) {
+  showInfoModal("⚠️ Identité incomplète", false);
+  return;
+}
+
+  identityValidated = true;
+  updateNav();
+  openTab(3);
+};
+
+validateAll.onclick = async () => {
+  const circuitVal = document.getElementById("circuit").value;
+  const serviceVal = document.getElementById("service").value;
+
+  const adresseVal = adresse.value.trim();
+  const telephoneVal = telephone.value.trim();
+  const emailVal = email.value.trim();
+
+  const nomVal = nom.value.trim();
+  const prenomVal = prenom.value.trim();
+  const sexeVal = sexe.value;
+  const naissanceVal = naissance.value;
+  const graviteVal = gravite.value;
+  const moyenVal = moyen.value;
+  const motifVal = motif.value;
+  const now = new Date().toLocaleString();
+
+  if (!nomVal || !prenomVal || !naissanceVal) {
+    showInfoModal("⚠️ Identité incomplète", false);
+    return;
+  }
+
+  const patientId = nom.dataset.id || null; // 🔒 ID patient
+
+  try {
+    if (patientId) {
+      // 🔹 Patient existant
+      const patientRef = db.collection("patients").doc(patientId);
+      const patientSnap = await patientRef.get();
+      if (!patientSnap.exists) {
+        showInfoModal("❌ Patient introuvable !", true);
+        return;
+      }
+
+      const patientData = patientSnap.data();
+      const hospitalisationsIds = Array.isArray(patientData.hospitalisations)
+        ? [...patientData.hospitalisations]
+        : [];
+
+      // 🔹 Créer une nouvelle hospitalisation
+      const hospiRef = await db.collection("hospitalisations").add({
+        patientId: patientId,
+        dateDebut: now,
+        gravite: graviteVal,
+        motif: motifVal,
+        moyen: moyenVal,
+        circuit: circuitVal || "",
+        service: serviceVal || "",
+        historique: [],
+        evolutionTexte: {},
+        constantes: {},
+        antecedents: {},
+        traitements: {},
+        histoire: {},
+        auscultation: {},
+        examens: [],
+        cloturee: false
+      });
+
+      hospitalisationsIds.push(hospiRef.id);
+
+      await patientRef.update({
+        nom: nomVal,
+        prenom: prenomVal,
+        sexe: sexeVal,
+        dateNaissance: naissanceVal,
+        adresse: adresseVal,
+        telephone: telephoneVal,
+        email: emailVal,
+        hospitalisations: hospitalisationsIds,
+        hospitalisationActiveId: hospiRef.id,
+        position: "salle-attente"
+      });
+
+      showInfoModal("✅ Nouvelle hospitalisation créée !", true);
+
+    } else {
+      // 🔹 Nouveau patient
+      const newPatientRef = await db.collection("patients").add({
+        nom: nomVal,
+        prenom: prenomVal,
+        sexe: sexeVal,
+        dateNaissance: naissanceVal,
+        adresse: adresseVal,
+        telephone: telephoneVal,
+        email: emailVal,
+        hospitalisations: [],
+        hospitalisationActiveId: null,
+        position: "salle-attente",
+		...patientMedicalData
+      });
+
+      // 🔹 Créer la première hospitalisation
+      const hospiRef = await db.collection("hospitalisations").add({
+        patientId: newPatientRef.id,
+        dateDebut: now,
+        gravite: graviteVal,
+        motif: motifVal,
+        moyen: moyenVal,
+        circuit: circuitVal || "",
+        service: serviceVal || "",
+        historique: [],
+        evolutionTexte: {},
+        constantes: {},
+        antecedents: {},
+        traitements: {},
+        histoire: {},
+        auscultation: {},
+        examens: [],
+        cloturee: false
+      });
+
+      // 🔹 Mettre à jour le patient avec tableau d’IDs + hospitalisationActiveId
+      await newPatientRef.update({
+        hospitalisations: [hospiRef.id],
+        hospitalisationActiveId: hospiRef.id
+      });
+
+      nom.dataset.id = newPatientRef.id; // 🔒 Stockage ID pour futur usage
+      showInfoModal("✅ Nouveau patient créé !", true);
+    }
+  } catch (err) {
+    console.error(err);
+    showInfoModal("❌ Erreur lors de l'hospitalisation", false);
+  }
+};
+
+
+
+</script>
+
+</body>
+</html>

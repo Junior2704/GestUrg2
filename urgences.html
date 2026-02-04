@@ -534,6 +534,22 @@ footer {
 .suggestion-item:hover {
   background: #f0f8ff;
 }
+#resultatsRecherchePrincipale {
+  position: absolute;
+  top: 100%; /* juste en dessous de l’input */
+  left: 0;
+  width: 100%;
+  max-height: 200px; /* hauteur max pour éviter scroll page */
+  overflow-y: auto;  /* scroll interne seulement */
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  z-index: 1001;
+  margin-top: 4px;
+}
+#resultatsRecherchePrincipale {
+  box-sizing: border-box;
+}
 
 
   </style>
@@ -547,8 +563,10 @@ footer {
  
 <button id="btnAddPatient" class="icon-btn" title="Ajouter un patient">➕ Ajouter un patient</button>
 
+  <div class="search-wrapper" style="position: relative; display: inline-block;">
   <input type="text" id="recherchePatient" placeholder="Recherche patient…">
   <div id="resultatsRecherchePrincipale" class="search-results hidden"></div>
+</div>
 
 
 
@@ -594,52 +612,6 @@ footer {
   <div class="salle" id="sortie" aria-label="Sortie"><h3>🚪Sortie</h3></div>
 </div>
 
-<div id="modalAddPatient" style="z-index : 9999"role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal-content">
-    <h3 id="modalTitle">👤Hospitaliser un patient</h3>
-    <div class="autocomplete-container">
-      <label for="searchInModal">Rechercher un patient existant</label>
-      <input type="text" id="searchInModal" placeholder="Nom ou prénom..." autocomplete="off" />
-      <div id="resultatsRecherche"></div>
-    </div>
-<br><br>
-    <label for="idPatient">ID patient</label>
-    <input type="text" id="idPatient" disabled />
-
-    <label for="nomPatient">Nom</label>
-    <input type="text" id="nomPatient" autocomplete="off" required />
-
-    <label for="prenomPatient">Prénom</label>
-    <input type="text" id="prenomPatient" autocomplete="off" required />
-	<label for="sexePatient">Sexe</label>
-<select id="sexePatient" required>
-
-</select>
-
-
-    <label for="dateNaissancePatient">Date de naissance</label>
-    <input type="date" id="dateNaissancePatient" required />
-
-    <label for="motifPatient">Motif d'entrée</label>
-    <input type="text" id="motifPatient" autocomplete="off" />
-	<label for="gravitePatient">Gravité</label>
-<select id="gravitePatient">
-  <option value="P0">P0</option>
-  <option value="P1">P1</option>
-  <option value="P2">P2</option>
-  <option value="P3">P3</option>
-  <option value="Urgences_Vitales">Urgences vitales</option>
-  <option value="Administratif">Administratif</option>
-</select>
-<label for="moyenPatient">Moyen d'entrée</label>
-<input type="text" id="moyenPatient" autocomplete="off" />
-<div id="suggestionsMoyenPatient" class="suggestions-box"></div>
-
-<div id="modalAddPatientButtons" style="display: flex; gap: 30px;">
-<button id="readVitaleBtn" style="background-color: #28a745; color: white;">🆔 Lecture Carte Vitale</button>
-  <button id="btnSavePatient">✅ Valider</button>
-  <button id="btnCloseModal" class="close-btn">❌ Annuler</button>
-</div>
 
 
 	<br><br>
@@ -804,7 +776,6 @@ function remplirFormulaireDepuisPatient(id, data) {
   const plan = document.getElementById("plan");
   const salles = document.querySelectorAll(".salle");
   const btnAddPatient = document.getElementById("btnAddPatient");
-  const modalAddPatient = document.getElementById("modalAddPatient");
   const btnCloseModal = document.getElementById("btnCloseModal");
   const btnSavePatient = document.getElementById("btnSavePatient");
 
@@ -821,187 +792,7 @@ function remplirFormulaireDepuisPatient(id, data) {
       );
   });
 
-  // Ferme la modal
-  btnCloseModal.addEventListener("click", () => {
-    modalAddPatient.classList.remove("active");
-    resetForm();
-  });
-const inputPatient = document.getElementById("moyenPatient");
-const boxPatient = document.getElementById("suggestionsMoyenPatient");
-
-let moyensListe = [];
-
-// Charger la liste depuis Firestore (réutilise le même document)
-db.collection("référentiels").doc("moyens").get().then(snap => {
-  if (snap.exists && Array.isArray(snap.data().liste)) {
-    moyensListe = snap.data().liste;
-    console.log("Moyens chargés:", moyensListe);
-  } else {
-    console.log("Aucun moyen trouvé ou liste manquante");
-  }
-});
-
-// Affichage des suggestions
-inputPatient.addEventListener("input", () => {
-  const valeur = inputPatient.value.toLowerCase().trim();
-  boxPatient.innerHTML = "";
-
-  if (!valeur) { boxPatient.style.display = "none"; return; }
-
-  const filtres = moyensListe.filter(m => m.toLowerCase().includes(valeur));
-
-  filtres.forEach(moyen => {
-    const div = document.createElement("div");
-    div.className = "suggestion-item";
-    div.textContent = moyen;
-    div.addEventListener("mousedown", () => {
-      inputPatient.value = moyen;
-      boxPatient.style.display = "none";
-    });
-    boxPatient.appendChild(div);
-  });
-
-  boxPatient.style.display = filtres.length ? "block" : "none";
-});
-
-// Fermer la liste si clic en dehors
-document.addEventListener("click", e => {
-  if (!e.target.closest("#moyenPatient")) boxPatient.style.display = "none";
-});
-
- btnSavePatient.addEventListener("click", async () => {
-  const nom = inputNom.value.trim();
-  const prenom = inputPrenom.value.trim();
-  const dateNaiss = inputDateNaiss.value;
-  const motif = inputMotif.value.trim();
-  const sexe = document.getElementById("sexePatient").value;
-  const gravite = document.getElementById("gravitePatient").value || "P0";
-  const moyen = document.getElementById("moyenPatient").value;
-  const pdcStatut = "";
-
-  if (!nom || !prenom || !dateNaiss) {
-    afficherBulle("Veuillez remplir les champs obligatoires", "warning");
-    return;
-  }
-
-  const now = new Date().toLocaleString();
-
-  try {
-    const id = inputId.value;
-
-    if (id) {
-      // 🔹 Patient existant
-      const patientRef = db.collection("patients").doc(id);
-      const patientSnap = await patientRef.get();
-      if (!patientSnap.exists) {
-        afficherBulle("Patient introuvable !", "error");
-        return;
-      }
-
-      const patientData = patientSnap.data();
-      const hospitalisationsIds = Array.isArray(patientData.hospitalisations) ? [...patientData.hospitalisations] : [];
-
-      // 🔹 Créer une nouvelle hospitalisation
-      const hospiRef = await db.collection("hospitalisations").add({
-        patientId: id,
-        dateDebut: now,
-        gravite,
-        motif,
-        moyen,
-        circuit: "",
-        historique: [],
-        evolutionTexte: {},
-        constantes: {},
-        antecedents: {},
-        traitements: {},
-        histoire: {},
-        auscultation: {},
-        examens: [],
-        cloturee: false
-      });
-
-      hospitalisationsIds.push(hospiRef.id);
-
-      await patientRef.update({
-        nom,
-        prenom,
-        sexe,
-        dateNaissance: dateNaiss,
-        hospitalisations: hospitalisationsIds,
-        hospitalisationActiveId: hospiRef.id,
-        pdcStatut,
-        position: "salle-attente"
-      });
-
-      modalAddPatient.classList.remove("active");
-      resetForm();
-      afficherBulle("Nouvelle hospitalisation créée !", "success");
-
-    } else {
-      // 🔹 Nouveau patient
-      const newPatientRef = await db.collection("patients").add({
-        nom,
-        prenom,
-        sexe,
-        dateNaissance: dateNaiss,
-        pdcStatut,
-        hospitalisations: [], // temporaire
-        hospitalisationActiveId: null,
-        position: "salle-attente"
-      });
-
-      // 🔹 Créer la première hospitalisation
-      const hospiRef = await db.collection("hospitalisations").add({
-        patientId: newPatientRef.id,
-        dateDebut: now,
-        gravite,
-        motif,
-        moyen,
-        circuit: "",
-        historique: [],
-        evolutionTexte: {},
-        constantes: {},
-        antecedents: {},
-        traitements: {},
-        histoire: {},
-        auscultation: {},
-        examens: [],
-        cloturee: false
-      });
-
-      // 🔹 Mettre à jour le patient avec tableau d’IDs + hospitalisationActiveId
-      await newPatientRef.update({
-        hospitalisations: [hospiRef.id],
-        hospitalisationActiveId: hospiRef.id
-      });
-
-      inputId.value = newPatientRef.id;
-      modalAddPatient.classList.remove("active");
-      setTimeout(() => {
-        afficherBulle("Nouveau patient créé !", "success");
-      }, 100);
-    }
-
-    resetForm();
-    rechargerPlan();
-
-  } catch (err) {
-    console.error(err);
-    afficherBulle("Erreur", "error");
-  }
-});
-
-
-  // Reset formulaire
-  function resetForm() {
-    inputId.value = "";
-    inputNom.value = "";
-    inputPrenom.value = "";
-	document.getElementById("sexePatient").value = "";
-    inputDateNaiss.value = "";
-    inputMotif.value = "";
-  }
-
+  
   // Charge les patients Firestore
  async function chargerPatients() {
   afficherLoader()

@@ -1126,11 +1126,13 @@ function ajusterTailleSalles() {
   Object.keys(sallesConfig).forEach(id => {
     const salle = document.getElementById(id);
     if (!salle) return;
-    const capacite = sallesConfig[id].capacite;
-    // Taille proportionnelle (exemple : 50px par place, min 100px)
-    const taille = Math.max(100, capacite * 50);
-    salle.style.width = `${taille}px`;
-    // hauteur fixe déjà définie
+    const config = sallesConfig[id];
+    const capacite = config.capacite || 3;
+    // Taille proportionnelle (50px par patient visible, min 100px)
+    const largeur = Math.max(100, capacite * 50);
+    salle.style.width = `${largeur}px`;
+    // hauteur flexible ou fixe selon besoin
+    salle.style.minHeight = `${Math.max(100, capacite * 40)}px`;
   });
 }
 

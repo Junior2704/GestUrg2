@@ -722,49 +722,12 @@ function afficherBulle(msg, type = 'info') {
     el.addEventListener('transitionend', () => el.remove());
   }, 3000);
 }
-inputSearchInModal.addEventListener("input", async (e) => {
-const val = sansAccents(e.target.value.trim());
-  resultatsRecherche.innerHTML = "";
 
-  if (val.length < 2) return;
-
-  const snapshot = await db.collection("patients").get();
-  let foundAny = false;
-
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const match =
-  (data.nom?.toLowerCase() || "").includes(val) ||
-  (data.prenom?.toLowerCase() || "").includes(val);
-
-    if (match) {
-      foundAny = true;
-      const item = document.createElement("div");
-      item.className = "resultat-item";
-item.textContent = `${data.nom} ${data.prenom} (${data.dateNaissance || "?"}) - ${doc.id}`;
-      item.addEventListener("click", () => {
-        remplirFormulaireDepuisPatient(doc.id, data);
-        resultatsRecherche.innerHTML = "";
-      });
-      resultatsRecherche.appendChild(item);
-    }
-  });
-
-  if (!foundAny) {
-    const noResult = document.createElement("div");
-    noResult.className = "resultat-item";
-    noResult.textContent = "Aucun patient trouvé.";
-    resultatsRecherche.appendChild(noResult);
-  }
-});
 function sansAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-  const inputNom = document.getElementById("nomPatient");
-  const inputPrenom = document.getElementById("prenomPatient");
-  const inputDateNaiss = document.getElementById("dateNaissancePatient");
-  const inputMotif = document.getElementById("motifPatient");
+ 
 function remplirFormulaireDepuisPatient(id, data) {
   document.getElementById("idPatient").value = id;
   document.getElementById("sexePatient").value = data.sexe || "";
@@ -776,8 +739,7 @@ function remplirFormulaireDepuisPatient(id, data) {
   const plan = document.getElementById("plan");
   const salles = document.querySelectorAll(".salle");
   const btnAddPatient = document.getElementById("btnAddPatient");
-  const btnCloseModal = document.getElementById("btnCloseModal");
-  const btnSavePatient = document.getElementById("btnSavePatient");
+  
 
         
   let patients = {};

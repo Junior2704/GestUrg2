@@ -632,66 +632,74 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
       });
     }
 
-   
-    function showDetails(patient) {
-    
-      const examensNonRealisesHTML = (patient.examensNonRealises || []).map(e => `
-        <div class="examen-encart">
-          <p><b>☢️ Type :</b> ${e.type || "N/A"}</p>
-          <p><b>💬 Commentaire :</b> ${e.commentaire || ""}</p>
-          <p><b>📅 Date demande :</b> ${e.dateDemande || "N/A"}</p>
-<button onclick="
-  window.openEditModal(
-    '${patient.patientId}',
-    '${patient.hospitalisationId}',
-    ${e.examIndex}
-  )
-">
-  Réaliser l'examen
-</button>
-        </div>
-      `).join("");
+async function showDetails(patient) {
+  const hospRef = doc(db, "hospitalisations", patient.hospitalisationId);
+  const hospSnap = await getDoc(hospRef);
 
-      const examensRealises = (patient.fullData.hospitalisations?.[patient.hospIndex]?.examens || [])
-        .filter(ex => ex.realise)
-        .map(ex => `
-          <div class="examen-encart realise">
-            <p><b>☢️ Type :</b> ${ex.type || "N/A"}</p>
-            <p><b>💬 Commentaire :</b> ${ex.commentaire || ""}</p>
-            <p><b>📄 Compte rendu :</b> ${ex.compteRendu || ""}</p>
-            <p><b>📅 Date demande :</b> ${formatDateHeure(ex.dateDemande)}</p>
-            <p><b>✅ Réalisé le :</b> ${formatDateHeure(ex.dateRealisation)}</p>
-          </div>
-        `).join("");
+  if (!hospSnap.exists()) {
+    alert("Hospitalisation introuvable");
+    return;
+  }
 
-      detailContent.innerHTML = `
-        <h2>👤 ${patient.prenom} ${patient.nom}</h2>
-        <p><b>Sexe :</b> ${patient.fullData.sexe || "Non renseigné"}</p>
-        <p><b>Date de naissance :</b> ${formaterDate(patient.dateNaissance)} (${calculerAge(patient.dateNaissance)} ans)</p>
-        <p><b>Position :</b> ${patient.fullData.position || "N/A"}</p>
+  const hospData = hospSnap.data();
+  const examens = hospData.examens || [];
 
-        <button onclick="window.open('scanner.html?id=${encodeURIComponent(patient.id)}', '_blank')" 
-                style="background:#e67e22;color:white;padding:10px 16px;border:none;border-radius:8px;margin-bottom:10px;cursor:pointer;">
-          🩻 Gestion scanner
+  // 🔴 Examens NON réalisés
+  const examensNonRealisesHTML = examens
+    .map((e, i) => ({ ...e, examIndex: i }))
+    .filter(e => !e.realise)
+    .map(e => `
+      <div class="examen-encart">
+        <p><b>☢️ Type :</b> ${e.type || "N/A"}</p>
+        <p><b>💬 Commentaire :</b> ${e.commentaire || ""}</p>
+        <p><b>📅 Date demande :</b> ${formatDateHeure(e.dateDemande)}</p>
+        <button onclick="
+          window.openEditModal(
+            '${patient.patientId}',
+            '${patient.hospitalisationId}',
+            ${e.examIndex}
+          )
+        ">
+          Réaliser l'examen
         </button>
-<button onclick="window.open('irm.html?id=${encodeURIComponent(patient.id)}', '_blank')" 
-                style="background:#e67e22;color:white;padding:10px 16px;border:none;border-radius:8px;margin-bottom:10px;cursor:pointer;">
-          🩻 Gestion IRM
-        </button>
-        <h3>☢️ Examens non réalisés :</h3>
-        ${examensNonRealisesHTML || "<p>Aucun examen en attente.</p>"}
+      </div>
+    `)
+    .join("") || "<p>Aucun examen en attente.</p>";
 
-        <h3>🗂️ Historique des examens réalisés :</h3>
-        ${examensRealises || "<p>Aucun examen réalisé.</p>"}
+  // 🟢 Examens DÉJÀ réalisés
+  const examensRealisesHTML = examens
+    .filter(e => e.realise)
+    .map(e => `
+      <div class="examen-encart realise">
+        <p><b>☢️ Type :</b> ${e.type || "N/A"}</p>
+        <p><b>📄 Compte rendu :</b> ${e.compteRendu || ""}</p>
+        <p><b>📅 Demandé :</b> ${formatDateHeure(e.dateDemande)}</p>
+        <p><b>✅ Réalisé le :</b> ${formatDateHeure(e.dateRealisation)}</p>
+      </div>
+    `)
+    .join("") || "<p>Aucun examen réalisé.</p>";
 
-       <h2>📊 Hospitalisations du patient</h2>
-      <div id="hospitalisationsContent"></div>
-      `;
+  detailContent.innerHTML = `
+    <h2>👤 ${patient.prenom} ${patient.nom}</h2>
+    <p><b>Date de naissance :</b> ${formaterDate(patient.dateNaissance)}</p>
+    <p><b>Position :</b> ${patient.position || "N/A"}</p>
 
+    <h3>☢️ Examens en attente</h3>
+    ${examensNonRealisesHTML}
 
-chargerHistoriqueComplet(patient.id);
-      detailPanel.style.display = "flex";
-    }
+    <h3>🗂️ Historique des examens réalisés</h3>
+    ${examensRealisesHTML}
+
+    <h2>📊 Hospitalisations du patient</h2>
+    <div id="hospitalisationsContent"></div>
+  `;
+
+  // 🔵 Historique des anciennes hospitalisations
+  chargerHistoriqueComplet(patient.patientId);
+
+  detailPanel.style.display = "flex";
+}
+
 
     validerBtn.onclick = async () => {
   if (!window.currentEdit) return;

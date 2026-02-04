@@ -583,6 +583,21 @@ body, #mainContent {
   gap: 8px;
   min-height: 140px;
 }
+#plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, max-content));
+  gap: 24px;
+  align-items: start;
+}
+.salle {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+}
 
   </style>
 </head>
@@ -1128,15 +1143,36 @@ function createPopover(content, x, y) {
   return div;
 }
 function ajusterTailleSalles() {
+  const CASE = 56;   // taille d'une bulle
+  const GAP  = 10;   // espace entre bulles
+  const PADDING = 24; // padding salle
+
   Object.entries(sallesConfig).forEach(([id, config]) => {
     const salle = document.getElementById(id);
     if (!salle) return;
 
-    const colonnes = Math.min(4, config.capacite);
-    const lignes = Math.ceil(config.capacite / colonnes);
+    const capacite = config.capacite;
 
-    salle.style.gridTemplateColumns = `repeat(${colonnes}, 36px)`;
-    salle.style.minHeight = `${lignes * 36 + (lignes - 1) * 8 + 50}px`;
+    const colonnes = Math.ceil(Math.sqrt(capacite));
+    const lignes = Math.ceil(capacite / colonnes);
+
+    const largeur =
+      colonnes * CASE +
+      (colonnes - 1) * GAP +
+      PADDING * 2;
+
+    const hauteur =
+      lignes * CASE +
+      (lignes - 1) * GAP +
+      PADDING * 2 +
+      28; // place pour le titre
+
+    salle.style.width = largeur + "px";
+    salle.style.minHeight = hauteur + "px";
+
+    salle.style.gridTemplateColumns = `repeat(${colonnes}, ${CASE}px)`;
+    salle.style.gridAutoRows = `${CASE}px`;
+    salle.style.gap = `${GAP}px`;
   });
 }
 

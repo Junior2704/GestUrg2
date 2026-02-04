@@ -435,10 +435,37 @@ body {
       transform: scale(1.05);
     }
 
+.spinner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #e0e0e0;
+  border-top: 5px solid #0078d4;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
   </style>
 </head>
 <body>
+  <div id="globalSpinner" class="spinner-overlay" style="display:none;">
+  <div class="spinner"></div>
+</div>
+
 <div id="mainContent">
 
 
@@ -559,6 +586,16 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
       alert("Erreur de connexion.");
     }
   });
+function showSpinner() {
+  document.getElementById("globalSpinner").style.display = "flex";
+  document.body.style.pointerEvents = "none";
+}
+
+function hideSpinner() {
+  document.getElementById("globalSpinner").style.display = "none";
+  document.body.style.pointerEvents = "auto";
+}
+
 
   // --- 📋 Chargement patients ---
   document.addEventListener("DOMContentLoaded", async () => {
@@ -652,6 +689,10 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
     }
 
 async function showDetails(patient) {
+  detailPanel.style.display = "flex";
+showSpinner();
+
+
   const hospRef = doc(db, "hospitalisations", patient.hospitalisationId);
   const hospSnap = await getDoc(hospRef);
 
@@ -713,14 +754,14 @@ async function showDetails(patient) {
     <div id="hospitalisationsContent"></div>
   `;
 
-  // 🔵 Historique des anciennes hospitalisations
-  chargerHistoriqueComplet(patient.patientId);
+chargerHistoriqueComplet(patient.patientId).finally(hideSpinner);
 
   detailPanel.style.display = "flex";
 }
 
 
     validerBtn.onclick = async () => {
+      showSpinner();
   if (!window.currentEdit) return;
   if (!window.currentEdit?.hospitalisationId) {
   console.error("❌ hospitalisationId manquant", window.currentEdit);
@@ -760,13 +801,14 @@ examen.dateRealisation = formatDate(new Date().toISOString());
   await updateDoc(hospRef, {
     examens: hospData.examens
   });
-
+ hideSpinner();
   afficherBulle("✔️ Examen enregistré", "administratif");
   editModal.style.display = "none";
   detailPanel.style.display = "none";
 
   const patients = await loadPatients();
   renderTable(patients);
+ 
 };
 const patients = await loadPatients();
 renderTable(patients);
@@ -951,9 +993,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 document.getElementById("refreshPatientsBtn").onclick = async () => {
-  afficherBulle("🔄 Actualisation des patients...", "administratif");
-  const patients = await loadPatients();
-  renderTable(patients);
+  showSpinner();
+  try {
+    const patients = await loadPatients();
+    renderTable(patients);
+  } finally {
+    hideSpinner();
+  }
 };
 
 </script>

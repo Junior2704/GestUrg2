@@ -1108,7 +1108,22 @@ if (!config.flexible && nbPatients >= config.capacite) {
     div.addEventListener("dragstart", e => {
       e.dataTransfer.setData("id", id);
     });
+let pop;
+  div.addEventListener("mouseenter", (e) => {
+    const content = `
+      <strong>${nom} ${prenom}</strong><br/>
+      Naissance : ${patients[id].dateNaissance || 'N/A'}<br/>
+      Motif : ${hosp.motif || 'N/A'}<br/>
+      Gravité : ${gravite || 'N/A'}<br/>
+	    Service : ${hosp.service || 'Aucun'}<br/>
+      Circuit : ${hosp.circuit || 'Aucun'}<br/>
+    `;
+    pop = createPopover(content, e.clientX + 10, e.clientY + 10);
+  });
 
+  div.addEventListener("mouseleave", () => {
+    if (pop) pop.remove();
+  });
     // --- Ajouter visuellement dans la salle ---
 salle.querySelector(".salle-patients").appendChild(div);
 

@@ -1116,9 +1116,8 @@ const patients = Array.from(
   salle.querySelector(".salle-patients").querySelectorAll(".patient")
 );
 
-patients.forEach((p, i) => {
-  p.style.display = i < config.capacite ? "flex" : "none";
-});
+mettreAJourSalle(salleId);
+
 
 
     masquerLoader();
@@ -1127,12 +1126,14 @@ patients.forEach((p, i) => {
   }
 }
 
-// Recharger plan complet
 async function rechargerPlan() {
   document.querySelectorAll(".patient").forEach(p => p.remove());
   ajusterTailleSalles();
   await chargerPatients();
+
+  Object.keys(sallesConfig).forEach(mettreAJourSalle);
 }
+
 
 // Initialisation
 document.addEventListener("DOMContentLoaded", () => {

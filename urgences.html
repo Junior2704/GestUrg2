@@ -896,11 +896,9 @@ const patients = Array.from(
       salle.appendChild(plus);
 
       plus.addEventListener("click", () => {
-        const patientsList = Array.from(salle.querySelectorAll(".patient"))
-          .map(p => p.textContent)
-          .join("\n");
-        alert(`Patients dans ${salleId} :\n${patientsList}`);
-      });
+  afficherModalListePatients(salleId);
+});
+
     }
   }
 }
@@ -1067,17 +1065,7 @@ document.addEventListener("DOMContentLoaded", () => {
   rechargerPlan();
   setInterval(rechargerPlan, 30000); // rafraîchissement toutes les 30s
 });
-function appliquerTailleSalle(salleId) {
-  const salle = document.getElementById(salleId);
-  if (!salle) return;
 
-  const config = sallesConfig[salleId];
-  if (!config) return;
-
-  // Base : 80px par patient visible, avec un minimum de 100px et max 400px
-  const tailleMax = Math.min(80 * config.capacite, 400);
-  salle.style.height = tailleMax + "px";
-}
 function afficherModalListePatients(salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
@@ -1348,19 +1336,30 @@ document.querySelectorAll(".salle").forEach(salle => {
     salle.classList.remove("dragover");
   });
 
-  salle.addEventListener("drop", async e => {
-    e.preventDefault();
-    salle.classList.remove("dragover");
+salle.addEventListener("drop", async e => {
+  e.preventDefault();
+  salle.classList.remove("dragover");
 
-    const patientId = e.dataTransfer.getData("id");
-    if (!patientId) return;
+  const patientId = e.dataTransfer.getData("id");
+  if (!patientId) return;
 
-    await db.collection("patients").doc(patientId).update({
-      position: salle.id
-    });
+  const config = sallesConfig[salle.id];
+  const zone = salle.querySelector(".salle-patients");
+  const nbPatients = zone.querySelectorAll(".patient").length;
 
-    rechargerPlan();
+  // salle pleine NON flexible → refus
+  if (!config.flexible && nbPatients >= config.capacite) {
+    afficherBulle("Salle pleine", "error");
+    return; // ⛔ le patient reste là où il était
+  }
+
+  await db.collection("patients").doc(patientId).update({
+    position: salle.id
   });
+
+  rechargerPlan();
+});
+
 });
 
 

@@ -653,9 +653,37 @@ body, #mainContent {
   justify-content: start;
   align-content: start;
 }
-.plus-indicateur {
-  pointer-events: auto;
-  z-index: 20000;
+.salle {
+  position: relative; /* indispensable */
+}
+
+.btn-plus {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #0078d4;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  user-select: none;
+}
+
+.btn-plus:hover {
+  background: #005ea2;
+  transform: scale(1.08);
+}
+
+.btn-plus:active {
+  transform: scale(0.95);
 }
 
 
@@ -928,42 +956,40 @@ function sansAccents(str) {
 function mettreAJourSalle(salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
-  const config = sallesConfig[salleId] || { capacite: 3, flexible: true };
 
-const patients = Array.from(
-  salle.querySelector(".salle-patients").querySelectorAll(".patient")
-);
-  let plus = salle.querySelector(".plus-indicateur");
+  const config = sallesConfig[salleId];
+  const zone = salle.querySelector(".salle-patients");
+  const patients = Array.from(zone.querySelectorAll(".patient"));
 
-  if (patients.length <= config.capacite || !config.flexible) {
-    // Tout visible si sous la capacite max ou salle non flexible
-    patients.forEach(p => p.style.display = "flex");
-    if (plus) plus.remove();
-  } else {
-    // Flexible et nombre > capacite => n’affiche que "capacite" bulles + ⋯
-    patients.forEach((p, index) => {
-      p.style.display = index < config.capacite ? "flex" : "none";
-    });
+  // afficher / cacher les patients selon capacité
+  patients.forEach((p, i) => {
+    p.style.display =
+      config.flexible && patients.length > config.capacite && i >= config.capacite
+        ? "none"
+        : "flex";
+  });
 
-    if (!plus) {
-      plus = document.createElement("div");
-      plus.className = "plus-indicateur";
-      plus.textContent = "⋯";
-      plus.style.cursor = "pointer";
-      plus.style.position = "absolute";
-      plus.style.bottom = "5px";
-      plus.style.right = "5px";
-      plus.style.fontSize = "18px";
-      plus.style.color = "#0078d4";
-      salle.appendChild(plus);
+  // bouton ...
+  let btn = salle.querySelector(".btn-plus");
 
-  plus.addEventListener("click", () => {
-  ouvrirSalleEnGrand(salleId);
-});
+  if (config.flexible && patients.length > config.capacite) {
+    if (!btn) {
+      btn = document.createElement("div");
+      btn.className = "btn-plus";
+      btn.textContent = "…";
 
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        ouvrirSalleEnGrand(salleId);
+      });
+
+      salle.appendChild(btn);
     }
+  } else if (btn) {
+    btn.remove();
   }
 }
+
 
 function remplirFormulaireDepuisPatient(id, data) {
   document.getElementById("idPatient").value = id;

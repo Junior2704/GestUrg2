@@ -1470,69 +1470,57 @@ function ouvrirSalleEnGrand(salleId) {
   const config = sallesConfig[salleId];
   const capacite = config.capacite;
 
-  // grille adaptée à TOUT afficher
+  // grille adaptée pour tout afficher
   const colonnes = Math.max(3, Math.ceil(Math.sqrt(capacite)));
   zone.style.gridTemplateColumns = `repeat(${colonnes}, 42px)`;
- 
-salle.querySelectorAll(".patient").forEach(p => {
-  const clone = p.cloneNode(true);
-  clone.draggable = false;
 
-  const patientId = p.dataset.id;
-  const patient = patients[patientId];
-  if (!patient) return;
+  salle.querySelectorAll(".patient").forEach(p => {
+    const clone = p.cloneNode(true);
+    clone.draggable = false;
 
-  const nom = patient.nom || "";
-  const prenom = patient.prenom || "";
-  const gravite = patient.gravite || "";
+    const patientId = p.dataset.id;
+    const patient = patients[patientId];
+    if (!patient) return;
 
-  let popover;
+    const nom = patient.nom || "";
+    const prenom = patient.prenom || "";
+    const gravite = patient.gravite || "";
 
-  clone.addEventListener("mouseenter", e => {
-    const contenu = `
-      <strong>${nom} ${prenom}</strong><br>
-      Né(e) le : ${patient.dateNaissance || ""}<br>
-      Gravité : ${gravite}
-    `;
-    popover = createPopover(contenu, e.clientX + 10, e.clientY + 10);
+    let popover;
+
+    clone.addEventListener("mouseenter", e => {
+      const contenu = `
+        <strong>${nom} ${prenom}</strong><br>
+        Né(e) le : ${patient.dateNaissance || ""}<br>
+        Gravité : ${gravite}
+      `;
+      popover = createPopover(contenu, e.clientX + 10, e.clientY + 10);
+    });
+
+    clone.addEventListener("mousemove", e => {
+      if (popover) {
+        popover.style.left = e.clientX + 10 + "px";
+        popover.style.top = e.clientY + 10 + "px";
+      }
+    });
+
+    clone.addEventListener("mouseleave", () => {
+      if (popover) {
+        popover.remove();
+        popover = null;
+      }
+    });
+
+    // double-clic conservé
+    clone.ondblclick = p.ondblclick;
+
+    zone.appendChild(clone);
   });
 
-  clone.addEventListener("mousemove", e => {
-    if (popover) {
-      popover.style.left = e.clientX + 10 + "px";
-      popover.style.top = e.clientY + 10 + "px";
-    }
-  });
-
-  clone.addEventListener("mouseleave", () => {
-    if (popover) {
-      popover.remove();
-      popover = null;
-    }
-  });
-
-  // double-clic conservé
-  clone.ondblclick = p.ondblclick;
+  // afficher le modal
+  modal.style.display = "block";
 }
-)};
-document.addEventListener("DOMContentLoaded", () => {
-  const closeBtn = document.getElementById("closeModalSalle");
-  const backdrop = document.querySelector(".modal-salle-backdrop");
-  const modal = document.getElementById("modalSalle");
 
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      modal.style.display = "none";
-    };
-  }
-
-  if (backdrop) {
-    backdrop.onclick = () => {
-      modal.style.display = "none";
-    };
-  }
-   modal.style.display = "block";
-});
 
 
 

@@ -596,6 +596,63 @@ body, #mainContent {
   align-content: start;
   min-height: 40px;
 }
+#modalSalle {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+}
+
+.modal-salle-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+}
+
+.modal-salle-content {
+  position: relative;
+  margin: auto;
+  margin-top: 5vh;
+  background: white;
+  width: 90vw;
+  max-width: 900px;
+  height: 85vh;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-salle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-salle-header h2 {
+  margin: 0;
+  color: #005ea2;
+}
+
+#closeModalSalle {
+  background: #f44336;
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#modalSalleZone {
+  flex: 1;
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+  justify-content: start;
+  align-content: start;
+}
 
   </style>
 </head>
@@ -895,8 +952,8 @@ const patients = Array.from(
       plus.style.color = "#0078d4";
       salle.appendChild(plus);
 
-      plus.addEventListener("click", () => {
-  afficherModalListePatients(salleId);
+  plus.addEventListener("click", () => {
+  ouvrirSalleEnGrand(salleId);
 });
 
     }
@@ -1362,6 +1419,48 @@ salle.addEventListener("drop", async e => {
 
 });
 
+function ouvrirSalleEnGrand(salleId) {
+  const salle = document.getElementById(salleId);
+  if (!salle) return;
+
+  const modal = document.getElementById("modalSalle");
+  const titre = document.getElementById("modalSalleTitre");
+  const zone = document.getElementById("modalSalleZone");
+
+  // titre
+  titre.textContent = salle.querySelector("h3").textContent;
+
+  // vider ancienne salle
+  zone.innerHTML = "";
+
+  // récupérer config
+  const config = sallesConfig[salleId];
+  const capacite = config.capacite;
+
+  // grille adaptée à TOUT afficher
+  const colonnes = Math.max(3, Math.ceil(Math.sqrt(capacite)));
+  zone.style.gridTemplateColumns = `repeat(${colonnes}, 42px)`;
+
+  // cloner les patients
+  salle.querySelectorAll(".patient").forEach(p => {
+    const clone = p.cloneNode(true);
+
+    // IMPORTANT : remettre les interactions
+    clone.ondblclick = p.ondblclick;
+    clone.draggable = false; // pas de drag depuis la modale
+
+    zone.appendChild(clone);
+  });
+
+  modal.style.display = "block";
+}
+document.getElementById("closeModalSalle").onclick = () => {
+  document.getElementById("modalSalle").style.display = "none";
+};
+
+document.querySelector(".modal-salle-backdrop").onclick = () => {
+  document.getElementById("modalSalle").style.display = "none";
+};
 
 
      nettoyerPDFs();
@@ -1397,6 +1496,18 @@ window.addEventListener("message", (event) => {
 
   
 </script>
+<div id="modalSalle" style="display:none;">
+  <div class="modal-salle-backdrop"></div>
+
+  <div class="modal-salle-content">
+    <div class="modal-salle-header">
+      <h2 id="modalSalleTitre"></h2>
+      <button id="closeModalSalle">✖</button>
+    </div>
+
+    <div id="modalSalleZone" class="salle-patients"></div>
+  </div>
+</div>
 
 
 

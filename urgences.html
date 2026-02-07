@@ -685,6 +685,35 @@ body, #mainContent {
 .btn-plus:active {
   transform: scale(0.95);
 }
+.patient-card {
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 220px;
+  max-width: 260px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  border-left: 8px solid #4CAF50;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.patient-card strong {
+  font-size: 14px;
+}
+
+.patient-card .ligne {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+}
 
 
   </style>
@@ -1486,6 +1515,9 @@ async function ouvrirSalleEnGrand(salleId) {
   modal.style.display = "block";
   titre.textContent = document.querySelector(`#${salleId} h3`).textContent;
   zone.innerHTML = "";
+zone.style.display = "grid";
+zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
+zone.style.gap = "14px";
 
   const snapshot = await db
     .collection("patients")
@@ -1496,82 +1528,45 @@ async function ouvrirSalleEnGrand(salleId) {
   for (const doc of snapshot.docs) {
     const data = doc.data();
 
-    const div = document.createElement("div");
-    div.className = "patient";
-    div.dataset.id = doc.id;
-    div.textContent = data.nom[0].toUpperCase() + data.prenom[0].toUpperCase();
+    const card = document.createElement("div");
+card.className = "patient-card";
+card.dataset.id = doc.id;
 
-    // --- hospitalisation ---
-    let gravite = "P0";
-    let motif = "N/A";
-    let service = "N/A";
-    let circuit = "N/A";
+// couleur gravité
+const couleurs = {
+  P0: "#4CAF50",
+  P1: "#FFFF00",
+  P2: "#FF9800",
+  P3: "#F44336",
+  Urgences_Vitales: "#000000",
+  Administratif: "#4169E1"
+};
+card.style.borderLeftColor = couleurs[gravite] || "#999";
 
-    if (data.hospitalisationActiveId) {
-      const hosp = await db
-        .collection("hospitalisations")
-        .doc(data.hospitalisationActiveId)
-        .get();
+card.innerHTML = `
+  <strong>${data.nom} ${data.prenom}</strong>
+  <div class="ligne">🎂 ${data.dateNaissance || "?"}</div>
+  <div class="ligne">⚠️ Gravité : ${gravite}</div>
+  <div class="ligne">🩺 Motif : ${motif}</div>
+  <div class="ligne">🏥 Service : ${service}</div>
+  <div class="ligne">🔁 Circuit : ${circuit}</div>
+`;
 
-      if (hosp.exists) {
-        const h = hosp.data();
-        gravite = h.gravite || gravite;
-        motif = h.motif || motif;
-        service = h.service || service;
-        circuit = h.circuit || circuit;
-      }
-    }
+// double clic fiche patient
+card.ondblclick = () => {
+  window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: `Fiche Urgences ${data.nom} ${data.prenom}`,
+      url: `fiche.html?id=${doc.id}&from=urgences`
+    },
+    "*"
+  );
+};
 
-    const couleurs = {
-      P0: "#4CAF50",
-      P1: "#FFFF00",
-      P2: "#FF9800",
-      P3: "#F44336",
-      Urgences_Vitales: "#000000",
-      Administratif: "#4169E1"
-    };
-    div.style.backgroundColor = couleurs[gravite] || "gray";
+zone.appendChild(card);
 
-    div.ondblclick = () => {
-      window.parent.postMessage(
-        {
-          type: "OPEN_TAB",
-          title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-          url: `fiche.html?id=${doc.id}&from=urgences`
-        },
-        "*"
-      );
-    };
 
-    let popover;
-
-    div.addEventListener("mouseenter", e => {
-      const contenu = `
-        <strong>${data.nom} ${data.prenom}</strong><br>
-        Né(e) le : ${data.dateNaissance || "?"}<br>
-        Gravité : ${gravite}<br>
-        Motif : ${motif}<br>
-        Service : ${service}<br>
-        Circuit : ${circuit}
-      `;
-      popover = createPopover(contenu, e.clientX + 10, e.clientY + 10);
-    });
-
-    div.addEventListener("mousemove", e => {
-      if (popover) {
-        popover.style.left = e.clientX + 10 + "px";
-        popover.style.top = e.clientY + 10 + "px";
-      }
-    });
-
-    div.addEventListener("mouseleave", () => {
-      if (popover) {
-        popover.remove();
-        popover = null;
-      }
-    });
-
-    zone.appendChild(div);
   }
 }
 

@@ -689,6 +689,47 @@ body, #mainContent {
   width: 96px;
   height: 96px;
 }
+.patient-card {
+  width: 96px;
+  height: 96px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 6px 6px 6px 10px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+
+  font-size: 11px;
+  line-height: 1.1;
+
+  border-left: 6px solid #4CAF50;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+
+  cursor: grab;
+  user-select: none;
+}
+
+.patient-card.dragging {
+  opacity: 0.5;
+}
+
+.patient-nom {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-info {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
 
 
   </style>
@@ -1064,13 +1105,16 @@ function remplirFormulaireDepuisPatient(id, data) {
 async function ajouterPatientVisuel(id, nom, prenom, salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
-if (salle.querySelector(`.patient[data-id="${id}"]`)) return;
+
+  // éviter doublon
+  if (salle.querySelector(`.patient[data-id="${id}"]`)) return;
+
   try {
     const patientDoc = await db.collection("patients").doc(id).get();
     if (!patientDoc.exists) return;
     const patient = patientDoc.data();
 
-    // Hospitalisation active
+    /* -------- hospitalisation -------- */
     let hosp = {};
     if (patient.hospitalisationActiveId) {
       const hospiDoc = await db
@@ -1082,57 +1126,54 @@ if (salle.querySelector(`.patient[data-id="${id}"]`)) return;
 
     const gravite = hosp.gravite || "P0";
     const motif = hosp.motif || "Non renseigné";
-        const circuit = hosp.circuit || "Non renseigné";
+    const circuit = hosp.circuit || "Non renseigné";
 
+    /* -------- capacité / flexible -------- */
+    const config = sallesConfig[salleId];
+    if (!config) return;
 
-    // --- Gestion flexible/non flexible ---
-const config = sallesConfig[salleId];
-if (!config) return;
+    const zone = salle.querySelector(".salle-patients");
+    const nbPatients = zone.querySelectorAll(".patient").length;
 
-const zone = salle.querySelector(".salle-patients");
-const nbPatients = zone.querySelectorAll(".patient").length;
+    if (!config.flexible && nbPatients >= config.capacite) {
+      afficherBulle(`Salle ${salleId} pleine`, "error");
+      return;
+    }
 
-if (!config.flexible && nbPatients >= config.capacite) {
-  afficherBulle(`Salle ${salleId} pleine`, "error");
-  return;
-}
+    /* -------- carte patient -------- */
+    const card = document.createElement("div");
+    card.className = "patient-card patient";
+    card.dataset.id = id;
+    card.draggable = true;
 
-const card = document.createElement("div");
-card.className = "patient-card compact patient";
-card.dataset.id = id;
-card.draggable = true;
+    const couleurs = {
+      P0: "#4CAF50",
+      P1: "#FFFF00",
+      P2: "#FF9800",
+      P3: "#F44336",
+      Urgences_Vitales: "#000000",
+      Administratif: "#4169E1"
+    };
+    card.style.borderLeftColor = couleurs[gravite] || "#999";
 
-// couleur gravité (identique vue grand)
-const couleurs = {
-  P0: "#4CAF50",
-  P1: "#FFFF00",
-  P2: "#FF9800",
-  P3: "#F44336",
-  Urgences_Vitales: "#000000",
-  Administratif: "#4169E1"
-};
-card.style.borderLeftColor = couleurs[gravite] || "#999";
+    card.innerHTML = `
+      <div class="patient-nom">${nom} ${prenom}</div>
+      <div class="patient-info">${gravite}</div>
+      <div class="patient-info">${motif}</div>
+      <div class="patient-info">${circuit}</div>
+    `;
 
-card.innerHTML = `
-  <strong>${nom} ${prenom}</strong>
-  <div class="ligne">⚠️ ${gravite}</div>
-  <div class="ligne">🩺 ${motif}</div>
-  <div class="ligne">🔁 ${circuit}</div>
-`;
+    /* -------- drag -------- */
+    card.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("id", id);
+      setTimeout(() => card.classList.add("dragging"), 0);
+    });
 
-card.addEventListener("dragstart", e => {
-  e.dataTransfer.setData("id", id);
-  setTimeout(() => card.classList.add("dragging"), 0);
-});
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+    });
 
-card.addEventListener("dragend", () => {
-  card.classList.remove("dragging");
-});
-
-
-
-
-    // Double-clic pour ouvrir la fiche patient
+    /* -------- double clic -------- */
     card.ondblclick = () => {
       window.parent.postMessage(
         {
@@ -1144,19 +1185,11 @@ card.addEventListener("dragend", () => {
       );
     };
 
-   
-    // --- Ajouter visuellement dans la salle ---
-salle.querySelector(".salle-patients").appendChild(card);
-
-const patients = Array.from(
-  salle.querySelector(".salle-patients").querySelectorAll(".patient")
-);
-
-mettreAJourSalle(salleId);
-
-
-
+    /* -------- insertion -------- */
+    zone.appendChild(card);
+    mettreAJourSalle(salleId);
     masquerLoader();
+
   } catch (err) {
     console.error("Erreur ajout patient visuel :", err);
   }

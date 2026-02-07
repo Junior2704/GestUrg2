@@ -798,6 +798,28 @@ body, #mainContent {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 🔹 Version compacte pour la vue globale */
+.patient-card.compact {
+  padding: 6px 8px;
+  min-width: unset;
+  max-width: unset;
+  font-size: 11px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+
+.patient-card.compact:active {
+  cursor: grabbing;
+}
+
+.patient-card.compact strong {
+  font-size: 12px;
+}
+
+.patient-card.compact .ligne {
+  font-size: 10px;
+  opacity: 0.85;
+}
 
   </style>
 </head>
@@ -1205,12 +1227,12 @@ if (!config.flexible && nbPatients >= config.capacite) {
   return;
 }
 
- const card = document.createElement("div");
-card.className = "patient";
+const card = document.createElement("div");
+card.className = "patient-card compact patient";
 card.dataset.id = id;
 card.draggable = true;
 
-// couleur gravité
+// couleur gravité (identique vue grand)
 const couleurs = {
   P0: "#4CAF50",
   P1: "#FFFF00",
@@ -1227,6 +1249,7 @@ card.innerHTML = `
   <div class="ligne">🩺 ${motif}</div>
   <div class="ligne">🔁 ${circuit}</div>
 `;
+
 card.addEventListener("dragstart", e => {
   e.dataTransfer.setData("id", id);
   setTimeout(() => card.classList.add("dragging"), 0);
@@ -1235,6 +1258,7 @@ card.addEventListener("dragstart", e => {
 card.addEventListener("dragend", () => {
   card.classList.remove("dragging");
 });
+
 
 
 

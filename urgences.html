@@ -1478,75 +1478,66 @@ salle.addEventListener("drop", async e => {
 
 });
 
-function ouvrirSalleEnGrand(salleId) {
-  const salle = document.getElementById(salleId);
-  if (!salle) return;
-
+async function ouvrirSalleEnGrand(salleId) {
   const modal = document.getElementById("modalSalle");
   const titre = document.getElementById("modalSalleTitre");
   const zone = document.getElementById("modalSalleZone");
 
-  // titre
-  titre.textContent = salle.querySelector("h3").textContent;
-
-  // vider ancienne salle
+  modal.style.display = "block";
+  titre.textContent = document.querySelector(`#${salleId} h3`).textContent;
   zone.innerHTML = "";
 
-  // récupérer config
-  const config = sallesConfig[salleId];
-  const capacite = config.capacite;
+  // 🔥 récupérer TOUS les patients de cette salle
+  const snapshot = await db
+    .collection("patients")
+    .where("position", "==", salleId)
+    .where("hospitalisationActiveId", "!=", "")
+    .get();
 
-  // grille adaptée pour tout afficher
-  const colonnes = Math.max(3, Math.ceil(Math.sqrt(capacite)));
-  zone.style.gridTemplateColumns = `repeat(${colonnes}, 42px)`;
+  snapshot.forEach(async doc => {
+    const data = doc.data();
 
-  salle.querySelectorAll(".patient").forEach(p => {
-    const clone = p.cloneNode(true);
-    clone.draggable = false;
+    const div = document.createElement("div");
+    div.className = "patient";
+    div.dataset.id = doc.id;
+    div.textContent = data.nom[0].toUpperCase() + data.prenom[0].toUpperCase();
 
-    const patientId = p.dataset.id;
-    const patient = patients[patientId];
-    if (!patient) return;
+    // couleur gravité
+    let gravite = "P0";
+    if (data.hospitalisationActiveId) {
+      const hosp = await db
+        .collection("hospitalisations")
+        .doc(data.hospitalisationActiveId)
+        .get();
+      if (hosp.exists) gravite = hosp.data().gravite || "P0";
+    }
 
-    const nom = patient.nom || "";
-    const prenom = patient.prenom || "";
-    const gravite = patient.gravite || "";
+    const couleurs = {
+      P0: "#4CAF50",
+      P1: "#FFFF00",
+      P2: "#FF9800",
+      P3: "#F44336",
+      Urgences_Vitales: "#000000",
+      Administratif: "#4169E1"
+    };
+    div.style.backgroundColor = couleurs[gravite] || "gray";
 
-    let popover;
+    // double clic fiche patient
+    div.ondblclick = () => {
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${data.nom} ${data.prenom}`,
+          url: `fiche.html?id=${doc.id}&from=urgences`
+        },
+        "*"
+      );
+    };
 
-    
-clone.addEventListener("mouseenter", e => {
-  const contenu = `
-    <strong>${nom} ${prenom}</strong><br>
-    Né(e) le : ${patient.dateNaissance || ""}<br>
-    Gravité : ${gravite}
-  `;
-  popover = createPopover(contenu, e.clientX + 10, e.clientY + 10);
-});
-
-clone.addEventListener("mousemove", e => {
-  if (popover) {
-    popover.style.left = e.clientX + 10 + "px";
-    popover.style.top = e.clientY + 10 + "px";
-  }
-});
-
-clone.addEventListener("mouseleave", () => {
-  if (popover) {
-    popover.remove();
-    popover = null;
-  }
-});
-
-    // double-clic conservé
-    clone.ondblclick = p.ondblclick;
-
-    zone.appendChild(clone);
+    zone.appendChild(div);
   });
-
-  // afficher le modal
-  modal.style.display = "block";
 }
+
 
 
 

@@ -1531,6 +1531,26 @@ zone.style.gap = "14px";
     const card = document.createElement("div");
 card.className = "patient-card";
 card.dataset.id = doc.id;
+// --- hospitalisation ---
+let gravite = "P0";
+let motif = "N/A";
+let service = "N/A";
+let circuit = "N/A";
+
+if (data.hospitalisationActiveId) {
+  const hosp = await db
+    .collection("hospitalisations")
+    .doc(data.hospitalisationActiveId)
+    .get();
+
+  if (hosp.exists) {
+    const h = hosp.data();
+    gravite = h.gravite || gravite;
+    motif = h.motif || motif;
+    service = h.service || service;
+    circuit = h.circuit || circuit;
+  }
+}
 
 // couleur gravité
 const couleurs = {

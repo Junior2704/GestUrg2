@@ -1487,14 +1487,13 @@ async function ouvrirSalleEnGrand(salleId) {
   titre.textContent = document.querySelector(`#${salleId} h3`).textContent;
   zone.innerHTML = "";
 
-  // 🔥 récupérer TOUS les patients de cette salle
   const snapshot = await db
     .collection("patients")
     .where("position", "==", salleId)
     .where("hospitalisationActiveId", "!=", "")
     .get();
 
-  snapshot.forEach(async doc => {
+  for (const doc of snapshot.docs) {
     const data = doc.data();
 
     const div = document.createElement("div");
@@ -1502,14 +1501,25 @@ async function ouvrirSalleEnGrand(salleId) {
     div.dataset.id = doc.id;
     div.textContent = data.nom[0].toUpperCase() + data.prenom[0].toUpperCase();
 
-    // couleur gravité
+    // --- hospitalisation ---
     let gravite = "P0";
+    let motif = "N/A";
+    let service = "N/A";
+    let circuit = "N/A";
+
     if (data.hospitalisationActiveId) {
       const hosp = await db
         .collection("hospitalisations")
         .doc(data.hospitalisationActiveId)
         .get();
-      if (hosp.exists) gravite = hosp.data().gravite || "P0";
+
+      if (hosp.exists) {
+        const h = hosp.data();
+        gravite = h.gravite || gravite;
+        motif = h.motif || motif;
+        service = h.service || service;
+        circuit = h.circuit || circuit;
+      }
     }
 
     const couleurs = {
@@ -1522,7 +1532,6 @@ async function ouvrirSalleEnGrand(salleId) {
     };
     div.style.backgroundColor = couleurs[gravite] || "gray";
 
-    // double clic fiche patient
     div.ondblclick = () => {
       window.parent.postMessage(
         {
@@ -1534,9 +1543,38 @@ async function ouvrirSalleEnGrand(salleId) {
       );
     };
 
+    let popover;
+
+    div.addEventListener("mouseenter", e => {
+      const contenu = `
+        <strong>${data.nom} ${data.prenom}</strong><br>
+        Né(e) le : ${data.dateNaissance || "?"}<br>
+        Gravité : ${gravite}<br>
+        Motif : ${motif}<br>
+        Service : ${service}<br>
+        Circuit : ${circuit}
+      `;
+      popover = createPopover(contenu, e.clientX + 10, e.clientY + 10);
+    });
+
+    div.addEventListener("mousemove", e => {
+      if (popover) {
+        popover.style.left = e.clientX + 10 + "px";
+        popover.style.top = e.clientY + 10 + "px";
+      }
+    });
+
+    div.addEventListener("mouseleave", () => {
+      if (popover) {
+        popover.remove();
+        popover = null;
+      }
+    });
+
     zone.appendChild(div);
-  });
+  }
 }
+
 
 
 

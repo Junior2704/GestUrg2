@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Documents d'hospitalisation</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --secondary-color: #f0f4f8;
+      --text-color: #1f2933;
+      --muted-color: #6b7280;
+      --hover-color: #e6f0ff;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--secondary-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px 24px 80px;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted-color);
+      margin-bottom: 25px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    .btn.secondary {
+      background: #e2e8f0;
+      color: #1f2933;
+    }
+
+    .btn:hover {
+      background: #0056b3;
+    }
+
+    .btn.secondary:hover {
+      background: #cbd5e1;
+    }
+
+    #documentList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+
+    .doc-item {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .doc-item:hover {
+      background: var(--hover-color);
+    }
+
+    .doc-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .doc-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--primary-color);
+    }
+
+    .doc-meta {
+      font-size: 0.88rem;
+      color: var(--muted-color);
+    }
+
+    .doc-extra {
+      font-size: 0.85rem;
+      color: #4b5563;
+      font-style: italic;
+    }
+
+    .doc-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .doc-check input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .doc-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-preview {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #4b5563;
+    }
+
+    .btn-preview:hover {
+      color: var(--primary-color);
+    }
+
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      color: #fff;
+    }
+
+    .spinner {
+      border: 6px solid rgba(255,255,255,0.3);
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted-color);
+      margin-top: 40px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      width: min(920px, 90vw);
+      height: min(700px, 85vh);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-content iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    .modal-close {
+      align-self: flex-end;
+      border: none;
+      background: #dc2626;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="loadingScreen">
+    <div class="spinner"></div>
+    <h2>Préparation des documents…</h2>
+    <p>Merci de patienter</p>
+  </div>
+
+  <h1>Documents d'hospitalisation</h1>
+  <p class="subtitle" id="periode"></p>
+
+  <div class="toolbar">
+    <button class="btn" id="btnGenerer">Créer le PDF imprimable</button>
+    <button class="btn secondary" id="btnTout">Tout sélectionner</button>
+    <button class="btn secondary" id="btnAucun">Tout désélectionner</button>
+  </div>
+
+  <ul id="documentList"></ul>
+  <p class="empty" id="emptyState" style="display:none;">Aucun document trouvé pour l'hospitalisation en cours.</p>
+
+  <div class="modal" id="previewModal">
+    <div class="modal-content">
+      <button class="modal-close" type="button" id="closePreview">Fermer</button>
+      <iframe id="previewFrame" title="Aperçu du document"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+      authDomain: "urgences-a8ed4.firebaseapp.com",
+      projectId: "urgences-a8ed4",
+      storageBucket: "urgences-a8ed4.appspot.com",
+      messagingSenderId: "392921498200",
+      appId: "1:392921498200:web:7ccce767332c67c697c02d",
+      measurementId: "G-C74MK2KYDL"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientId = urlParams.get("id");
+    const documentList = document.getElementById("documentList");
+    const emptyState = document.getElementById("emptyState");
+    const periodeEl = document.getElementById("periode");
+    const previewModal = document.getElementById("previewModal");
+    const previewFrame = document.getElementById("previewFrame");
+    const closePreview = document.getElementById("closePreview");
+
+    let documents = [];
+    let hospitalisation = null;
+    let patient = null;
+    let currentPreviewUrl = "";
+
+    function afficherLoader() {
+      document.getElementById("loadingScreen").style.display = "flex";
+    }
+
+    function masquerLoader() {
+      document.getElementById("loadingScreen").style.display = "none";
+    }
+
+    function parseDateFRFlexible(dateStr) {
+      if (!dateStr) return new Date(0);
+      const cleaned = dateStr
+        .replace(/à/g, " ")
+        .replace(/,/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const [datePart, timePart] = cleaned.split(" ");
+      if (!datePart) return new Date(0);
+      const [day, month, year] = datePart.split("/").map(Number);
+      if (!day || !month || !year) return new Date(0);
+      let hours = 0;
+      let minutes = 0;
+      let seconds = 0;
+      if (timePart) {
+        [hours, minutes, seconds] = timePart.split(":").map(Number);
+      }
+      return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+    }
+
+    function formatPeriode(dateDebut, dateFin) {
+      if (!dateDebut) return "";
+      const fin = dateFin || "en cours";
+      return `Hospitalisation du ${dateDebut} au ${fin}`;
+    }
+
+    function base64ToUint8(base64) {
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function resumeeRapport(rapport) {
+      if (!rapport) return "";
+      if (typeof rapport === "string") {
+        return rapport.slice(0, 90) + (rapport.length > 90 ? "…" : "");
+      }
+      const keys = [
+        "hospitalisation",
+        "medical",
+        "evolution",
+        "constantes",
+        "examens",
+        "actes",
+        "medicaments",
+        "sortie"
+      ];
+      const contenu = keys
+        .map(key => rapport[key])
+        .filter(Boolean)
+        .join(" ");
+      if (!contenu) return "Rapport d'hospitalisation";
+      return contenu.slice(0, 90) + (contenu.length > 90 ? "…" : "");
+    }
+
+    function creerLigneDocument(doc) {
+      const li = document.createElement("li");
+      li.className = "doc-item";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = true;
+      checkbox.dataset.id = doc.key;
+
+      li.innerHTML = `
+        <div class="doc-details">
+          <div class="doc-title">${doc.label}</div>
+          <div class="doc-meta">${doc.dateLabel || ""}</div>
+          <div class="doc-extra">${doc.resume || ""}</div>
+        </div>
+      `;
+
+      const actions = document.createElement("div");
+      actions.className = "doc-actions";
+
+      const previewBtn = document.createElement("button");
+      previewBtn.type = "button";
+      previewBtn.className = "btn-preview";
+      previewBtn.title = "Aperçu";
+      previewBtn.textContent = "🔎";
+      previewBtn.addEventListener("click", () => ouvrirApercu(doc));
+
+      const checkWrap = document.createElement("label");
+      checkWrap.className = "doc-check";
+      checkWrap.appendChild(checkbox);
+      checkWrap.appendChild(document.createTextNode("Inclure"));
+
+      actions.appendChild(previewBtn);
+      actions.appendChild(checkWrap);
+      li.appendChild(actions);
+
+      documentList.appendChild(li);
+    }
+
+    async function chargerDocuments() {
+      if (!patientId) {
+        emptyState.textContent = "Aucun ID patient fourni.";
+        emptyState.style.display = "block";
+        return;
+      }
+
+      afficherLoader();
+      try {
+        const patientSnap = await db.collection("patients").doc(patientId).get();
+        if (!patientSnap.exists) {
+          emptyState.textContent = "Patient introuvable.";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        patient = patientSnap.data();
+        const hospiId = patient.hospitalisationActiveId;
+        if (!hospiId) {
+          emptyState.textContent = "Aucune hospitalisation en cours pour ce patient.";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        const hospiSnap = await db.collection("hospitalisations").doc(hospiId).get();
+        if (!hospiSnap.exists) {
+          emptyState.textContent = "Hospitalisation introuvable.";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        hospitalisation = { id: hospiId, ...hospiSnap.data() };
+        periodeEl.textContent = formatPeriode(hospitalisation.dateDebut, hospitalisation.dateFin);
+
+        const dateDebut = parseDateFRFlexible(hospitalisation.dateDebut);
+        const dateFin = hospitalisation.dateFin
+          ? parseDateFRFlexible(hospitalisation.dateFin)
+          : new Date();
+
+        const docSnap = await db.collection("documents")
+          .where("patientId", "==", patientId)
+          .get();
+
+        const docsArray = [];
+        docSnap.forEach(doc => {
+          const data = doc.data();
+          const dateDoc = parseDateFRFlexible(data.dateCreation);
+          if (dateDoc >= dateDebut && dateDoc <= dateFin) {
+            docsArray.push({
+              key: doc.id,
+              type: "document",
+              label: data.type || "Document",
+              dateLabel: data.dateCreation || "",
+              resume: data.contenu?.text
+                ? data.contenu.text.slice(0, 90) + "…"
+                : (data.contenu ? String(data.contenu).slice(0, 90) + "…" : ""),
+              pdfBase64: data.pdfBase64 || "",
+              mime: data.mime || "application/pdf",
+              dateCreation: data.dateCreation || ""
+            });
+          }
+        });
+
+        if (hospitalisation.rapport) {
+          docsArray.push({
+            key: "rapport-hospitalisation",
+            type: "rapport",
+            label: "Rapport d'hospitalisation",
+            dateLabel: hospitalisation.dateFin || hospitalisation.dateDebut || "",
+            resume: resumeeRapport(hospitalisation.rapport),
+            rapport: hospitalisation.rapport
+          });
+        }
+
+        docsArray.sort((a, b) => {
+          const dateA = parseDateFRFlexible(a.dateCreation || a.dateLabel);
+          const dateB = parseDateFRFlexible(b.dateCreation || b.dateLabel);
+          return dateA - dateB;
+        });
+
+        documents = docsArray;
+        documentList.innerHTML = "";
+        if (documents.length === 0) {
+          emptyState.style.display = "block";
+          return;
+        }
+
+        documents.forEach(creerLigneDocument);
+      } catch (error) {
+        console.error(error);
+        emptyState.textContent = "Erreur lors du chargement des documents.";
+        emptyState.style.display = "block";
+      } finally {
+        masquerLoader();
+      }
+    }
+
+    function getSelection() {
+      const checked = Array.from(document.querySelectorAll(".doc-check input:checked"))
+        .map(input => input.dataset.id);
+      return documents.filter(doc => checked.includes(doc.key));
+    }
+
+    function ouvrirModal(url) {
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
+      currentPreviewUrl = url;
+      previewFrame.src = url;
+      previewModal.style.display = "flex";
+    }
+
+    function fermerModal() {
+      previewFrame.src = "";
+      previewModal.style.display = "none";
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+        currentPreviewUrl = "";
+      }
+    }
+
+    closePreview.addEventListener("click", fermerModal);
+    previewModal.addEventListener("click", (event) => {
+      if (event.target === previewModal) {
+        fermerModal();
+      }
+    });
+
+    async function creerPdfRapport(rapport) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const marginLeft = 15;
+      let y = 15;
+      const lineHeight = 7;
+      const pageHeight = doc.internal.pageSize.height;
+
+      const logoUrl = "https://junior2704.github.io/GestUrg2/logo.png";
+      const img = new Image();
+      img.src = logoUrl;
+
+      const rapportObj = (rapport && typeof rapport === "object") ? rapport : {};
+      const champs = [
+        { key: "identite", label: "Identité du patient" },
+        { key: "hospitalisation", label: "Hospitalisation" },
+        { key: "medical", label: "Dossier Médical" },
+        { key: "evolution", label: "Évolution aux urgences" },
+        { key: "constantes", label: "Constantes Vitales" },
+        { key: "examens", label: "Examens Complémentaires" },
+        { key: "actes", label: "Actes réalisés" },
+        { key: "medicaments", label: "Médicaments administrés aux urgences" },
+        { key: "sortie", label: "Sortie" }
+      ];
+
+      return new Promise((resolve, reject) => {
+        img.onload = () => {
+          try {
+            doc.addImage(img, "JPEG", marginLeft, y, 40, 40);
+            y += 30;
+
+            doc.setFontSize(18);
+            doc.setTextColor("#1a73e8");
+            doc.text("Compte-rendu de passage aux Urgences", marginLeft + 50, y);
+            y += 15;
+
+            doc.setDrawColor(26, 115, 232);
+            doc.setLineWidth(0.8);
+            doc.line(marginLeft, y, 195, y);
+            y += 10;
+
+            function addBlock(titre, contenu) {
+              doc.setFontSize(14);
+              doc.setTextColor("#1a73e8");
+              doc.text(titre, marginLeft, y);
+              y += lineHeight;
+
+              doc.setFontSize(11);
+              doc.setTextColor("#000000");
+
+              const splitText = doc.splitTextToSize(contenu || "—", 180);
+              for (let i = 0; i < splitText.length; i++) {
+                if (y > pageHeight - 20) {
+                  doc.addPage();
+                  y = 15;
+                }
+                doc.text(splitText[i], marginLeft, y);
+                y += lineHeight;
+              }
+
+              y += lineHeight;
+              doc.setDrawColor(200, 200, 200);
+              doc.setLineWidth(0.6);
+              doc.line(marginLeft, y, 195, y);
+              y += 10;
+            }
+
+            if (typeof rapport === "string") {
+              addBlock("Rapport", rapport);
+            } else {
+              champs.forEach(({ key, label }) => {
+                if (rapportObj[key]) {
+                  addBlock(label, rapportObj[key]);
+                }
+              });
+            }
+
+            const signatureText = `${window.medecinNom || "Dr Non renseigné"}\n${window.medecinSpecialite || ""}`;
+            const pageWidth = doc.internal.pageSize.width;
+            const splitSignature = doc.splitTextToSize(signatureText, 60);
+            doc.text(splitSignature, pageWidth - 75, pageHeight - 30);
+
+            const pdfData = doc.output("datauristring");
+            const base64 = pdfData.split(",")[1];
+            resolve(base64);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        img.onerror = () => reject(new Error("Erreur de chargement du logo."));
+      });
+    }
+
+    async function pdfFromImage(base64, mime) {
+      const { PDFDocument } = window.PDFLib;
+      const pdfDoc = await PDFDocument.create();
+      const bytes = base64ToUint8(base64);
+      let image;
+      if (mime === "image/png") {
+        image = await pdfDoc.embedPng(bytes);
+      } else {
+        image = await pdfDoc.embedJpg(bytes);
+      }
+      const page = pdfDoc.addPage([image.width, image.height]);
+      page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+      return pdfDoc;
+    }
+
+    async function buildPdfDocument(entry) {
+      if (entry.type === "rapport") {
+        const base64 = await creerPdfRapport(entry.rapport);
+        const bytes = base64ToUint8(base64);
+        return window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      }
+      if (!entry.pdfBase64) {
+        throw new Error(`Document sans PDF : ${entry.label}`);
+      }
+      if (entry.mime && entry.mime.startsWith("image/")) {
+        return pdfFromImage(entry.pdfBase64, entry.mime);
+      }
+      const bytes = base64ToUint8(entry.pdfBase64);
+      return window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    }
+
+    async function ouvrirApercu(entry) {
+      afficherLoader();
+      try {
+        const pdfDoc = await buildPdfDocument(entry);
+        const bytes = await pdfDoc.save();
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        ouvrirModal(url);
+      } catch (error) {
+        console.error(error);
+        alert("Impossible d'ouvrir l'aperçu.");
+      } finally {
+        masquerLoader();
+      }
+    }
+
+    async function genererPdf() {
+      const selection = getSelection();
+      if (selection.length === 0) {
+        alert("Veuillez sélectionner au moins un document.");
+        return;
+      }
+
+      afficherLoader();
+      try {
+        const { PDFDocument } = window.PDFLib;
+        const mergedPdf = await PDFDocument.create();
+
+        for (let i = 0; i < selection.length; i++) {
+          const entry = selection[i];
+          const pdfDoc = await buildPdfDocument(entry);
+          const pageIndices = pdfDoc.getPageIndices();
+          const pages = await mergedPdf.copyPages(pdfDoc, pageIndices);
+          pages.forEach(page => mergedPdf.addPage(page));
+
+          const isLast = i === selection.length - 1;
+          if (!isLast && pages.length % 2 === 1) {
+            mergedPdf.addPage([595.28, 841.89]);
+          }
+        }
+
+        const mergedBytes = await mergedPdf.save();
+        const blob = new Blob([mergedBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error(error);
+        alert("Erreur lors de la génération du PDF.");
+      } finally {
+        masquerLoader();
+      }
+    }
+
+    document.getElementById("btnGenerer").addEventListener("click", genererPdf);
+    document.getElementById("btnTout").addEventListener("click", () => {
+      document.querySelectorAll(".doc-check input").forEach(input => input.checked = true);
+    });
+    document.getElementById("btnAucun").addEventListener("click", () => {
+      document.querySelectorAll(".doc-check input").forEach(input => input.checked = false);
+    });
+
+    chargerDocuments();
+  </script>
+</body>
+</html>

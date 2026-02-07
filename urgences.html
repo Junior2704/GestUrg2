@@ -771,6 +771,33 @@ body, #mainContent {
   gap: 8px;
   align-content: start;
 }
+.patient {
+  background: white;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  border-left: 6px solid #4CAF50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: grab;
+  user-select: none;
+}
+
+.patient:active {
+  cursor: grabbing;
+}
+
+.patient strong {
+  font-size: 12px;
+}
+
+.patient .ligne {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
   </style>
 </head>
@@ -1178,10 +1205,10 @@ if (!config.flexible && nbPatients >= config.capacite) {
   return;
 }
 
-    // Créer le div patient
-    const card = document.createElement("div");
-card.className = "patient-card patient-mini";
+ const card = document.createElement("div");
+card.className = "patient";
 card.dataset.id = id;
+card.draggable = true;
 
 // couleur gravité
 const couleurs = {
@@ -1197,9 +1224,18 @@ card.style.borderLeftColor = couleurs[gravite] || "#999";
 card.innerHTML = `
   <strong>${nom} ${prenom}</strong>
   <div class="ligne">⚠️ ${gravite}</div>
-  <div class="ligne">🩺 ${motif || "N/A"}</div>
-  <div class="ligne">🔁 ${circuit || "N/A"}</div>
+  <div class="ligne">🩺 ${motif}</div>
+  <div class="ligne">🔁 ${circuit}</div>
 `;
+card.addEventListener("dragstart", e => {
+  e.dataTransfer.setData("id", id);
+  setTimeout(() => card.classList.add("dragging"), 0);
+});
+
+card.addEventListener("dragend", () => {
+  card.classList.remove("dragging");
+});
+
 
 
     // Double-clic pour ouvrir la fiche patient

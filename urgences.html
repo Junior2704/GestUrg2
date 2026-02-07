@@ -714,6 +714,30 @@ body, #mainContent {
   transform: scale(1.02);
   box-shadow: 0 10px 22px rgba(0,0,0,0.25);
 }
+.patient-mini {
+  background: white;
+  padding: 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  border-left: 5px solid #4CAF50;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: move;
+}
+
+.patient-mini strong {
+  font-size: 12px;
+}
+
+.patient-mini .ligne {
+  font-size: 10px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 
   </style>
@@ -1123,32 +1147,31 @@ if (!config.flexible && nbPatients >= config.capacite) {
 
 
     // Créer le div patient
-    const div = document.createElement("div");
-    div.className = "patient";
-    div.dataset.id = id;
-    div.draggable = true;
-    div.textContent = nom[0].toUpperCase() + prenom[0].toUpperCase();
+    const card = document.createElement("div");
+card.className = "patient-card patient-mini";
+card.dataset.id = patientId;
 
-    const couleurs = {
-      P0: "#4CAF50",
-      P1: "#FFFF00",
-      P2: "#FF9800",
-      P3: "#F44336",
-      Urgences_Vitales: "#000000",
-      Administratif: "#4169E1"
-    };
-    div.style.backgroundColor = couleurs[gravite] || "gray";
+// couleur gravité
+const couleurs = {
+  P0: "#4CAF50",
+  P1: "#FFFF00",
+  P2: "#FF9800",
+  P3: "#F44336",
+  Urgences_Vitales: "#000000",
+  Administratif: "#4169E1"
+};
+card.style.borderLeftColor = couleurs[gravite] || "#999";
 
-    // Étoile rouge si allergies importantes
-    if (patient.importanceAllergies === true) {
-      const star = document.createElement("span");
-      star.className = "allergie-star";
-      star.textContent = "*";
-      div.appendChild(star);
-    }
+card.innerHTML = `
+  <strong>${nom} ${prenom}</strong>
+  <div class="ligne">⚠️ ${gravite}</div>
+  <div class="ligne">🩺 ${motif || "N/A"}</div>
+  <div class="ligne">🔁 ${circuit || "N/A"}</div>
+`;
+
 
     // Double-clic pour ouvrir la fiche patient
-    div.ondblclick = () => {
+    card.ondblclick = () => {
       window.parent.postMessage(
         {
           type: "OPEN_TAB",
@@ -1159,25 +1182,7 @@ if (!config.flexible && nbPatients >= config.capacite) {
       );
     };
 
-    // Drag events
-    div.addEventListener("dragstart", e => {
-      e.dataTransfer.setData("id", id);
-    });
-let pop;
-  div.addEventListener("mouseenter", (e) => {
-    const content = `
-      <strong>${nom} ${prenom}</strong><br/>
-      Motif : ${hosp.motif || 'N/A'}<br/>
-      Gravité : ${gravite || 'N/A'}<br/>
-	    Service : ${hosp.service || 'Aucun'}<br/>
-      Circuit : ${hosp.circuit || 'Aucun'}<br/>
-    `;
-    pop = createPopover(content, e.clientX + 10, e.clientY + 10);
-  });
-
-  div.addEventListener("mouseleave", () => {
-    if (pop) pop.remove();
-  });
+   
     // --- Ajouter visuellement dans la salle ---
 salle.querySelector(".salle-patients").appendChild(div);
 

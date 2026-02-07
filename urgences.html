@@ -730,6 +730,40 @@ body, #mainContent {
   text-overflow: ellipsis;
   opacity: 0.85;
 }
+.patient-card {
+  width: 96px;
+  height: 96px;
+
+  background: white;
+  border-radius: 12px;
+  padding: 8px 8px 8px 12px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+
+  font-size: 11px;
+  line-height: 1.15;
+
+  border-left: 6px solid #4CAF50;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+
+  cursor: grab;
+}
+
+.patient-card strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.patient-card .ligne {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+}
 
 
   </style>
@@ -1142,26 +1176,27 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
 
     /* -------- carte patient -------- */
     const card = document.createElement("div");
-    card.className = "patient-card patient";
-    card.dataset.id = id;
-    card.draggable = true;
+card.className = "patient-card patient";
+card.dataset.id = id;
+card.draggable = true;
 
-    const couleurs = {
-      P0: "#4CAF50",
-      P1: "#FFFF00",
-      P2: "#FF9800",
-      P3: "#F44336",
-      Urgences_Vitales: "#000000",
-      Administratif: "#4169E1"
-    };
-    card.style.borderLeftColor = couleurs[gravite] || "#999";
+const couleurs = {
+  P0: "#4CAF50",
+  P1: "#FFFF00",
+  P2: "#FF9800",
+  P3: "#F44336",
+  Urgences_Vitales: "#000000",
+  Administratif: "#4169E1"
+};
+card.style.borderLeftColor = couleurs[gravite] || "#999";
 
-    card.innerHTML = `
-      <div class="patient-nom">${nom} ${prenom}</div>
-      <div class="patient-info">${gravite}</div>
-      <div class="patient-info">${motif}</div>
-      <div class="patient-info">${circuit}</div>
-    `;
+/* ⚠️ EXACTEMENT le même innerHTML que la vue grand */
+card.innerHTML = `
+  <strong>${nom} ${prenom}</strong>
+  <div class="ligne">⚠️ ${gravite}</div>
+  <div class="ligne">🩺 ${motif}</div>
+  <div class="ligne">🔁 ${circuit}</div>
+`;
 
     /* -------- drag -------- */
     card.addEventListener("dragstart", e => {

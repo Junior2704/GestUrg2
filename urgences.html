@@ -722,6 +722,17 @@ body, #mainContent {
   gap: 24px;
   align-items: flex-start;
 }
+.patient-card {
+  width: 140px;
+  height: 140px;
+  overflow: hidden;
+}
+
+.patient-card .ligne {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 
   </style>
@@ -989,6 +1000,11 @@ function sansAccents(str) {
   "psy": { capacite: 4, flexible: false },
   "sortie": { capacite: 5, flexible: true } // salle infinie
 };
+function tronque(txt, max = 18) {
+  if (!txt) return "N/A";
+  return txt.length > max ? txt.slice(0, max) + "…" : txt;
+}
+
 function mettreAJourSalle(salleId) {
   const salle = document.getElementById(salleId);
   if (!salle) return;
@@ -1153,10 +1169,10 @@ async function ajouterPatientVisuel(id, data, salleId) {
 
  card.innerHTML = `
   <strong>${data.nom} ${data.prenom}</strong>
-  <div class="ligne">⚠️ Gravité : ${gravite}</div>
-  <div class="ligne">🩺 Motif : ${motif}</div>
-  <div class="ligne">🏥 Service : ${service}</div>
-  <div class="ligne">🔁 Circuit : ${circuit}</div>
+  <div class="ligne">⚠️|${tronque(gravite)}</div>
+  <div class="ligne">🩺|${tronque(motif)}</div>
+  <div class="ligne">🏥|${tronque(service)}</div>
+  <div class="ligne">🔁|${tronque(circuit)}</div>
 `;
 
   // drag

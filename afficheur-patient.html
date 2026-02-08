@@ -669,6 +669,7 @@
   };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+let unsubscribeHospitalisations = null;
 
     // --- HORLOGE ---
     function updateClock() {
@@ -693,76 +694,95 @@
 
     // --- FIRESTORE : COMPTES PATIENTS ---
 // --- FIRESTORE : COMPTES PATIENTS ---
-async function updateCounts() {
+let hospitalisationIdsActives = [];
+function listenPatientsPresents() {
+  db.collection("patients")
+    .where("hospitalisationActiveId", ">", "")
+    .onSnapshot(snapshot => {
+
+      console.log("📦 Patients reçus :", snapshot.size);
+
+      hospitalisationIdsActives = snapshot.docs.map(d => ({
+        patientId: d.id,
+        hospId: d.data().hospitalisationActiveId
+      }));
+
+      console.log("🏥 Hospitalisations actives :", hospitalisationIdsActives);
+    });
+}
+
+async function majCompteursDepuisHospitalisations() {
   try {
-    const snapshot = await db.collection("patients")
-      .where("hospitalisationActive", "==", true)
+    // 1️⃣ Patients présents
+    const patientsSnap = await db.collection("patients")
+      .where("hospitalisationActiveId", "!=", null)
+      .orderBy("hospitalisationActiveId")
       .get();
 
-    const counts = { total: 0, attente: 0, couche: 0, critique: 0, admin: 0 };
-    const circuits = { general: 0, pediatrie: 0, traumato: 0, ophtalmo: 0, gyn: 0, psy: 0 };
+    const counts = {
+      total: 0,
+      attente: 0,
+      couche: 0,
+      critique: 0,
+      admin: 0
+    };
 
-    for (const doc of snapshot.docs) {
-      const data = doc.data() || {};
+    const circuits = {
+      general: 0,
+      pediatrie: 0,
+      traumato: 0,
+      ophtalmo: 0,
+      gyn: 0,
+      psy: 0
+    };
+
+    // 2️⃣ Pour chaque patient → lire patient + hospitalisation
+    for (const patientDoc of patientsSnap.docs) {
+      const patient = patientDoc.data();
+      const hospId = patient.hospitalisationActiveId;
+      if (!hospId) continue;
+
       counts.total++;
 
-      // 🔹 Position (reste côté patient)
-      const pos = (data.position || "").toLowerCase();
-
-      // 🔹 Chargement hospitalisation active
-      let gravite = "";
-      let circuit = "";
-
-      if (data.hospitalisationActiveId) {
-        const hospSnap = await db
-          .collection("hospitalisations")
-          .doc(data.hospitalisationActiveId)
-          .get();
-
-        if (hospSnap.exists) {
-          const hosp = hospSnap.data() || {};
-          gravite = (hosp.gravite || "").toLowerCase();
-          circuit = (hosp.circuit || "").toLowerCase();
-        }
-      }
-
-      // =====================
-      // Comptages principaux
-      // =====================
-
-      if (
-        pos.includes("attente") ||
-        pos.includes("sortie") ||
-        pos.includes("nv-couche")
-      ) {
+      // 📍 POSITION = PATIENT
+      const position = (patient.position || "").toLowerCase();
+      if (position.includes("attente") || position.includes("nv")) {
         counts.attente++;
       }
 
-      if (gravite.includes("admin")) counts.admin++;
+      // 🔗 HOSPITALISATION
+      const hospSnap = await db
+        .collection("hospitalisations")
+        .doc(String(hospId))
+        .get();
 
-      if (
-        gravite.includes("p0") ||
-        gravite.includes("p1") ||
-        gravite.includes("p2")
-      ) {
+      if (!hospSnap.exists) continue;
+
+      const h = hospSnap.data() || {};
+      const gravite = (h.gravite || "").toLowerCase();
+      const circuit = (h.circuit || "").toLowerCase();
+
+      // === ADMIN ===
+      if (gravite.includes("admin")) {
+        counts.admin++;
+      }
+
+      // === URGENCES RELATIVES ===
+      if (["p0", "p1", "p2"].some(p => gravite.includes(p))) {
         counts.couche++;
       }
 
-      // ✅ urgences vitales étendues
+      // === URGENCES VITALES ===
       if (
         gravite.includes("vital") ||
-        gravite.includes("urgences_vitales") ||
-        gravite.includes("urgence vitale") ||
-        gravite.includes("p3")
+        gravite.includes("p3") ||
+        gravite.includes("p4")
       ) {
         counts.critique++;
       }
 
-      // =====================
-      // Comptage circuits
-      // =====================
-
-      if (circuit.includes("péd") || circuit.includes("ped")) circuits.pediatrie++;
+      // === CIRCUITS ===
+      if (circuit.includes("ped")) circuits.pediatrie++;
       else if (circuit.includes("trauma")) circuits.traumato++;
       else if (circuit.includes("opht")) circuits.ophtalmo++;
       else if (circuit.includes("gyn")) circuits.gyn++;
@@ -772,10 +792,7 @@ async function updateCounts() {
 
     const pec = Math.max(counts.total - counts.attente, 0);
 
-    // =====================
-    // Mise à jour visuelle
-    // =====================
-
+    // 3️⃣ UI
     animateUpdate(document.getElementById("total"), counts.total);
     animateUpdate(document.getElementById("attente"), counts.attente);
     animateUpdate(document.getElementById("pec"), pec);
@@ -790,14 +807,16 @@ async function updateCounts() {
     animateUpdate(document.getElementById("circuit-gyn"), circuits.gyn);
     animateUpdate(document.getElementById("circuit-psy"), circuits.psy);
 
-  } catch (err) {
-    console.error("Erreur Firestore:", err);
+    console.log("✅ Compteurs mis à jour");
+
+  } catch (e) {
+    console.error("❌ Erreur mise à jour compteurs :", e);
   }
 }
 
 
-    updateCounts();
-    setInterval(updateCounts, 5000);
+
+
 
     // --- ANIMATION DES ÉTAPES ---
     const steps = document.querySelectorAll(".step-anim");
@@ -988,6 +1007,8 @@ function updateHorlogeGauche() {
 updateHorlogeGauche();
 setInterval(updateHorlogeGauche, 1000);
 
+majCompteursDepuisHospitalisations();          // au chargement
+setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
 
 </script>
 <script>

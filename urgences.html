@@ -1161,234 +1161,108 @@ function remplirFormulaireDepuisPatient(id, data) {
 
   
   // Charge les patients Firestore
- async function chargerPatients() {
-  afficherLoader()
- patients = {}; 
-  const snapshot = await db.collection("patients").where("hospitalisationActiveId", "!=", "").get();
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    patients[doc.id] = data;
-    ajouterPatientVisuel(doc.id, data.nom, data.prenom, data.position || "salle-attente", data.gravite);
+async function chargerPatients() {
+  afficherLoader();
+
+  try {
+    const snapshot = await db
+      .collection("patients")
+      .where("hospitalisationActiveId", "!=", "")
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const salleId = data.position || "salle-attente";
+      await ajouterPatientVisuel(doc.id, data, salleId);
+    }
+  } catch (e) {
+    console.error("Erreur chargement patients", e);
+  } finally {
+    masquerLoader();
+  }
+}
+
+
+
+async function ajouterPatientVisuel(id, data, salleId) {
+  const salle = document.getElementById(salleId);
+  if (!salle) return;
+
+  const zone = salle.querySelector(".salle-patients");
+  if (!zone) return;
+
+  // anti doublon
+  if (zone.querySelector(`.patient-card[data-id="${id}"]`)) return;
+
+  /* ---- hospitalisation ---- */
+  let gravite = "P0";
+  let motif = "N/A";
+  let service = "N/A";
+  let circuit = "N/A";
+
+  if (data.hospitalisationActiveId) {
+    const hospDoc = await db
+      .collection("hospitalisations")
+      .doc(data.hospitalisationActiveId)
+      .get();
+
+    if (hospDoc.exists) {
+      const h = hospDoc.data();
+      gravite = h.gravite || gravite;
+      motif = h.motif || motif;
+      service = h.service || service;
+      circuit = h.circuit || circuit;
+    }
+  }
+
+  const couleurs = {
+    P0: "#4CAF50",
+    P1: "#FFFF00",
+    P2: "#FF9800",
+    P3: "#F44336",
+    Urgences_Vitales: "#000",
+    Administratif: "#4169E1"
+  };
+
+  const card = document.createElement("div");
+  card.className = "patient-card";
+  card.dataset.id = id;
+  card.draggable = true;
+  card.style.borderLeft = `6px solid ${couleurs[gravite] || "#999"}`;
+
+  card.innerHTML = `
+    <strong>${data.nom}</strong>
+    <div class="ligne">${data.prenom}</div>
+    <div class="ligne">⚠️ ${gravite}</div>
+    <div class="ligne">🩺 ${motif}</div>
+  `;
+
+  // drag
+  card.addEventListener("dragstart", e => {
+    e.dataTransfer.setData("id", id);
+    setTimeout(() => card.classList.add("dragging"), 0);
   });
+
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+  });
+
+  // double clic
+  card.ondblclick = () => {
+    window.parent.postMessage(
+      {
+        type: "OPEN_TAB",
+        title: `Fiche Urgences ${data.nom} ${data.prenom}`,
+        url: `fiche.html?id=${id}&from=urgences`
+      },
+      "*"
+    );
+  };
+
+  zone.appendChild(card);
+  mettreAJourSalle(salleId);
 }
 
-
-async function ajouterPatientVisuel(salleId) {
-  const salle = document.getElementById(salleId);
-  if (!salle) return;
-
-  const config = sallesConfig[salleId];
-  if (!config) return;
-
-  const zone = salle.querySelector(".salle-patients");
-  if (!zone) return;
-
-  zone.style.display = "grid";
-  zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
-  zone.style.gap = "14px";
-
-  try {
-    const snapshot = await db
-      .collection("patients")
-      .where("position", "==", salleId)
-      .where("hospitalisationActiveId", "!=", "")
-      .get();
-
-    for (const doc of snapshot.docs) {
-      if (zone.querySelector(`.patient-card[data-id="${doc.id}"]`)) continue;
-
-      if (!config.flexible && zone.children.length >= config.capacite) {
-        afficherBulle(`Salle ${salleId} pleine`, "error");
-        break;
-      }
-
-      const data = doc.data();
-
-      /* ---- hospitalisation ---- */
-      let gravite = "P0";
-      let motif = "N/A";
-      let service = "N/A";
-      let circuit = "N/A";
-
-      if (data.hospitalisationActiveId) {
-        const hospDoc = await db
-          .collection("hospitalisations")
-          .doc(data.hospitalisationActiveId)
-          .get();
-
-        if (hospDoc.exists) {
-          const h = hospDoc.data();
-          gravite = h.gravite || gravite;
-          motif = h.motif || motif;
-          service = h.service || service;
-          circuit = h.circuit || circuit;
-        }
-      }
-
-      const couleurs = {
-        P0: "#4CAF50",
-        P1: "#FFFF00",
-        P2: "#FF9800",
-        P3: "#F44336",
-        Urgences_Vitales: "#000",
-        Administratif: "#4169E1"
-      };
-
-      const card = document.createElement("div");
-      card.className = "patient-card";
-      card.dataset.id = doc.id;
-      card.draggable = true;
-      card.style.borderLeft = `6px solid ${couleurs[gravite] || "#999"}`;
-
-      card.innerHTML = `
-        <strong>${data.nom} ${data.prenom}</strong>
-        <div class="ligne">🎂 ${data.dateNaissance || "?"}</div>
-        <div class="ligne">⚠️ Gravité : ${gravite}</div>
-        <div class="ligne">🩺 Motif : ${motif}</div>
-        <div class="ligne">🏥 Service : ${service}</div>
-        <div class="ligne">🔁 Circuit : ${circuit}</div>
-      `;
-
-      /* ---- drag ---- */
-      card.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("id", doc.id);
-        setTimeout(() => card.classList.add("dragging"), 0);
-      });
-
-      card.addEventListener("dragend", () => {
-        card.classList.remove("dragging");
-      });
-
-      /* ---- double clic ---- */
-      card.ondblclick = () => {
-        window.parent.postMessage(
-          {
-            type: "OPEN_TAB",
-            title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-            url: `fiche.html?id=${doc.id}&from=urgences`
-          },
-          "*"
-        );
-      };
-
-      zone.appendChild(card);
-    }
-
-    mettreAJourSalle(salleId);
-  } catch (e) {
-    console.error("Erreur ajout patient visuel :", e);
-  } finally {
-    masquerLoader();
-  }
-}
-async function ajouterPatientVisuel(salleId) {
-  const salle = document.getElementById(salleId);
-  if (!salle) return;
-
-  const config = sallesConfig[salleId];
-  if (!config) return;
-
-  const zone = salle.querySelector(".salle-patients");
-  if (!zone) return;
-
-  zone.style.display = "grid";
-  zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
-  zone.style.gap = "14px";
-
-  try {
-    const snapshot = await db
-      .collection("patients")
-      .where("position", "==", salleId)
-      .where("hospitalisationActiveId", "!=", "")
-      .get();
-
-    for (const doc of snapshot.docs) {
-      if (zone.querySelector(`.patient-card[data-id="${doc.id}"]`)) continue;
-
-      if (!config.flexible && zone.children.length >= config.capacite) {
-        afficherBulle(`Salle ${salleId} pleine`, "error");
-        break;
-      }
-
-      const data = doc.data();
-
-      /* ---- hospitalisation ---- */
-      let gravite = "P0";
-      let motif = "N/A";
-      let service = "N/A";
-      let circuit = "N/A";
-
-      if (data.hospitalisationActiveId) {
-        const hospDoc = await db
-          .collection("hospitalisations")
-          .doc(data.hospitalisationActiveId)
-          .get();
-
-        if (hospDoc.exists) {
-          const h = hospDoc.data();
-          gravite = h.gravite || gravite;
-          motif = h.motif || motif;
-          service = h.service || service;
-          circuit = h.circuit || circuit;
-        }
-      }
-
-      const couleurs = {
-        P0: "#4CAF50",
-        P1: "#FFFF00",
-        P2: "#FF9800",
-        P3: "#F44336",
-        Urgences_Vitales: "#000",
-        Administratif: "#4169E1"
-      };
-
-      const card = document.createElement("div");
-      card.className = "patient-card";
-      card.dataset.id = doc.id;
-      card.draggable = true;
-      card.style.borderLeft = `6px solid ${couleurs[gravite] || "#999"}`;
-
-      card.innerHTML = `
-        <strong>${data.nom} ${data.prenom}</strong>
-        <div class="ligne">🎂 ${data.dateNaissance || "?"}</div>
-        <div class="ligne">⚠️ Gravité : ${gravite}</div>
-        <div class="ligne">🩺 Motif : ${motif}</div>
-        <div class="ligne">🏥 Service : ${service}</div>
-        <div class="ligne">🔁 Circuit : ${circuit}</div>
-      `;
-
-      /* ---- drag ---- */
-      card.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("id", doc.id);
-        setTimeout(() => card.classList.add("dragging"), 0);
-      });
-
-      card.addEventListener("dragend", () => {
-        card.classList.remove("dragging");
-      });
-
-      /* ---- double clic ---- */
-      card.ondblclick = () => {
-        window.parent.postMessage(
-          {
-            type: "OPEN_TAB",
-            title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-            url: `fiche.html?id=${doc.id}&from=urgences`
-          },
-          "*"
-        );
-      };
-
-      zone.appendChild(card);
-    }
-
-    mettreAJourSalle(salleId);
-  } catch (e) {
-    console.error("Erreur ajout patient visuel :", e);
-  } finally {
-    masquerLoader();
-  }
-}
 
 
 async function rechargerPlan() {

@@ -1158,9 +1158,7 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
       if (hospiDoc.exists) hosp = hospiDoc.data();
     }
 
-    const gravite = hosp.gravite || "P0";
-    const motif = hosp.motif || "Non renseigné";
-    const circuit = hosp.circuit || "Non renseigné";
+   
 
     /* -------- capacité / flexible -------- */
     const config = sallesConfig[salleId];
@@ -1175,11 +1173,44 @@ async function ajouterPatientVisuel(id, nom, prenom, salleId) {
     }
 
     /* -------- carte patient -------- */
-    const card = document.createElement("div");
-card.className = "patient-card patient";
-card.dataset.id = id;
-card.draggable = true;
+    zone.style.display = "grid";
+zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
+zone.style.gap = "14px";
 
+  const snapshot = await db
+    .collection("patients")
+    .where("position", "==", salleId)
+    .where("hospitalisationActiveId", "!=", "")
+    .get();
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+
+    const card = document.createElement("div");
+card.className = "patient-card";
+card.dataset.id = doc.id;
+// --- hospitalisation ---
+let gravite = "P0";
+let motif = "N/A";
+let service = "N/A";
+let circuit = "N/A";
+
+if (data.hospitalisationActiveId) {
+  const hosp = await db
+    .collection("hospitalisations")
+    .doc(data.hospitalisationActiveId)
+    .get();
+
+  if (hosp.exists) {
+    const h = hosp.data();
+    gravite = h.gravite || gravite;
+    motif = h.motif || motif;
+    service = h.service || service;
+    circuit = h.circuit || circuit;
+  }
+}
+
+// couleur gravité
 const couleurs = {
   P0: "#4CAF50",
   P1: "#FFFF00",
@@ -1190,12 +1221,13 @@ const couleurs = {
 };
 card.style.borderLeftColor = couleurs[gravite] || "#999";
 
-/* ⚠️ EXACTEMENT le même innerHTML que la vue grand */
 card.innerHTML = `
-  <strong>${nom} ${prenom}</strong>
-  <div class="ligne">⚠️ ${gravite}</div>
-  <div class="ligne">🩺 ${motif}</div>
-  <div class="ligne">🔁 ${circuit}</div>
+  <strong>${data.nom} ${data.prenom}</strong>
+  <div class="ligne">🎂 ${data.dateNaissance || "?"}</div>
+  <div class="ligne">⚠️ Gravité : ${gravite}</div>
+  <div class="ligne">🩺 Motif : ${motif}</div>
+  <div class="ligne">🏥 Service : ${service}</div>
+  <div class="ligne">🔁 Circuit : ${circuit}</div>
 `;
 
     /* -------- drag -------- */

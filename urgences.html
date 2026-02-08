@@ -1161,12 +1161,13 @@ async function ajouterPatientVisuel(id, data, salleId) {
   card.draggable = true;
   card.style.borderLeft = `6px solid ${couleurs[gravite] || "#999"}`;
 
-  card.innerHTML = `
-    <strong>${data.nom}</strong>
-    <div class="ligne">${data.prenom}</div>
-    <div class="ligne">⚠️ ${gravite}</div>
-    <div class="ligne">🩺 ${motif}</div>
-  `;
+ card.innerHTML = `
+  <strong>${data.nom} ${data.prenom}</strong>
+  <div class="ligne">⚠️ Gravité : ${gravite}</div>
+  <div class="ligne">🩺 Motif : ${motif}</div>
+  <div class="ligne">🏥 Service : ${service}</div>
+  <div class="ligne">🔁 Circuit : ${circuit}</div>
+`;
 
   // drag
   card.addEventListener("dragstart", e => {
@@ -1177,6 +1178,10 @@ async function ajouterPatientVisuel(id, data, salleId) {
   card.addEventListener("dragend", () => {
     card.classList.remove("dragging");
   });
+const ancienneCarte = document.querySelector(
+  `.patient-card[data-id="${patientId}"]`
+);
+if (ancienneCarte) ancienneCarte.remove();
 
   // double clic
   card.ondblclick = () => {

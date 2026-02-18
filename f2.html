@@ -1037,73 +1037,47 @@ button.danger,
 </section>
 
 <section id="panel-documents" class="panel" style="display:none;">
+ 
   <h3>📑 Documents</h3>
 
-
-  <!-- Liste mobile -->
-  <ul class="docs-list">
-    <li data-file="docs.html">📄 Documents du patient</li>
-    <li data-file="Ordonnancierf.html">💊 Ordonnancier</li>
-    <li data-file="Certificatmedicalf.html">📝 Certificats</li>
-    <li data-file="prescriptionexamensf.html">🔬 Examens</li>
-    <li data-file="rapporthospitalisation.html">📑 Rapport d'hospitalisation</li>
-    <li data-file="fichesconseilf.html">📚 Fiches Conseils</li>
-    <li data-file="uploadpdff.html">📄 PDF patient</li>
-    <li data-file="etiquettesf.html">🏷️ Étiquettes</li>
-    <li data-file="mailtof.html">✉️ Mails</li>
-  </ul>
+  <!-- Menu déroulant mobile -->
+  <select id="docsSelect" style="width:100%; padding:10px; font-size:16px; margin-bottom:10px;">
+    <option value="docs.html">📄 Documents du patient</option>
+    <option value="Ordonnancierf.html">💊 Ordonnancier</option>
+    <option value="Certificatmedicalf.html">📝 Certificats</option>
+    <option value="prescriptionexamensf.html">🔬 Examens</option>
+    <option value="rapporthospitalisation.html">📑 Rapport d'hospitalisation</option>
+    <option value="fichesconseilf.html">📚 Fiches Conseils</option>
+    <option value="uploadpdff.html">📄 PDF patient</option>
+    <option value="etiquettesf.html">🏷️ Étiquettes</option>
+    <option value="mailtof.html">✉️ Mails</option>
+  </select>
 
   <!-- Iframe -->
   <iframe id="docsFrame" scrolling="auto" style="width:100%; height:500px; border:none;"></iframe>
 </section>
 
-<style>
-  .docs-list {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 10px;
-  }
-
-  .docs-list li {
-    padding: 12px;
-    margin-bottom: 6px;
-    background: #f0f0f0;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-  }
-
-  .docs-list li:hover,
-  .docs-list li.active {
-    background: #4285f4;
-    color: white;
-  }
-</style>
-
 <script>
+  // Remplacer par le vrai ID patient
+  let patientId = "12345";
 
-
-  // Fonction pour ouvrir le document dans l'iframe
-  function openDoc(file, liElement) {
+  function openDoc(file) {
     const url = file + "?id=" + patientId;
     document.getElementById("docsFrame").src = url;
-
-    // Gestion du style actif
-    document.querySelectorAll(".docs-list li").forEach(li => li.classList.remove("active"));
-    if(liElement) liElement.classList.add("active");
   }
 
-  // Ajouter le clic sur chaque élément
-  document.querySelectorAll(".docs-list li").forEach(li => {
-    li.addEventListener("click", () => openDoc(li.dataset.file, li));
+  // Événement sur le menu déroulant
+  const select = document.getElementById("docsSelect");
+  select.addEventListener("change", () => {
+    openDoc(select.value);
   });
 
   // Charger par défaut le premier élément
   window.addEventListener("DOMContentLoaded", () => {
-    const firstLi = document.querySelector(".docs-list li");
-    if(firstLi) openDoc(firstLi.dataset.file, firstLi);
+    openDoc(select.value);
   });
 </script>
+
 </section>
 
 

@@ -1039,79 +1039,72 @@ button.danger,
 <section id="panel-documents" class="panel" style="display:none;">
   <h3>📑 Documents</h3>
 
-  <!-- Liste pour mobile -->
-  <ul class="mobile-only docs-list">
-    <li onclick="openDocsTab('tab-docs','docs.html')">📄 Documents du patient</li>
-    <li onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">💊 Ordonnancier</li>
-    <li onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">📝 Certificats</li>
-    <li onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">🔬 Examens</li>
-    <li onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">📑 Rapport d'hospitalisation</li>
-    <li onclick="openDocsTab('tab-fiches','fichesconseilf.html')">📚 Fiches Conseils</li>
-    <li onclick="openDocsTab('tab-pdf','uploadpdff.html')">📄 PDF patient</li>
-    <li onclick="openDocsTab('tab-etiq','etiquettesf.html')">🏷️ Étiquettes</li>
-    <li onclick="openDocsTab('tab-mail','mailtof.html')">✉️ Mails</li>
+
+  <!-- Liste mobile -->
+  <ul class="docs-list">
+    <li data-file="docs.html">📄 Documents du patient</li>
+    <li data-file="Ordonnancierf.html">💊 Ordonnancier</li>
+    <li data-file="Certificatmedicalf.html">📝 Certificats</li>
+    <li data-file="prescriptionexamensf.html">🔬 Examens</li>
+    <li data-file="rapporthospitalisation.html">📑 Rapport d'hospitalisation</li>
+    <li data-file="fichesconseilf.html">📚 Fiches Conseils</li>
+    <li data-file="uploadpdff.html">📄 PDF patient</li>
+    <li data-file="etiquettesf.html">🏷️ Étiquettes</li>
+    <li data-file="mailtof.html">✉️ Mails</li>
   </ul>
 
   <!-- Iframe -->
-  <iframe id="docsFrame" scrolling="auto" style="width:100%; height:500px;"></iframe>
+  <iframe id="docsFrame" scrolling="auto" style="width:100%; height:500px; border:none;"></iframe>
 </section>
 
 <style>
-  /* Desktop / mobile */
-  .desktop-only { display: flex; flex-wrap: wrap; gap:5px; }
-  .mobile-only { display: none; margin-bottom: 10px; padding:0; list-style:none; }
-
-  @media (max-width: 768px) {
-    .desktop-only { display: none; }
-    .mobile-only { display: block; }
+  .docs-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 10px;
   }
 
-  /* Onglets desktop */
-  .docs-tab {
-    padding: 5px 10px;
-    cursor: pointer;
-    background: #eee;
-    border-radius: 5px;
-  }
-  .docs-tab.active {
-    background: #4285f4;
-    color: white;
-  }
-
-  /* Liste mobile */
   .docs-list li {
-    padding: 10px;
-    margin-bottom: 5px;
+    padding: 12px;
+    margin-bottom: 6px;
     background: #f0f0f0;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background 0.2s, color 0.2s;
   }
-  .docs-list li:hover {
+
+  .docs-list li:hover,
+  .docs-list li.active {
     background: #4285f4;
     color: white;
   }
 </style>
 
 <script>
-  // PatientId dynamique
 
-  function openDocsTab(tabId, file) {
-      const url = file + "?id=" + patientId;
 
-      // Onglets desktop
-      document.querySelectorAll(".docs-tab").forEach(t => t.classList.remove("active"));
-      const tab = document.getElementById(tabId);
-      if(tab) tab.classList.add("active");
+  // Fonction pour ouvrir le document dans l'iframe
+  function openDoc(file, liElement) {
+    const url = file + "?id=" + patientId;
+    document.getElementById("docsFrame").src = url;
 
-      // Charge iframe
-      document.getElementById("docsFrame").src = url;
+    // Gestion du style actif
+    document.querySelectorAll(".docs-list li").forEach(li => li.classList.remove("active"));
+    if(liElement) liElement.classList.add("active");
   }
 
-  // Charge la première page au chargement
+  // Ajouter le clic sur chaque élément
+  document.querySelectorAll(".docs-list li").forEach(li => {
+    li.addEventListener("click", () => openDoc(li.dataset.file, li));
+  });
+
+  // Charger par défaut le premier élément
   window.addEventListener("DOMContentLoaded", () => {
-    openDocsTab('tab-docs','docs.html');
+    const firstLi = document.querySelector(".docs-list li");
+    if(firstLi) openDoc(firstLi.dataset.file, firstLi);
   });
 </script>
+</section>
 
 
 

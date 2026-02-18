@@ -1039,35 +1039,81 @@ button.danger,
 <section id="panel-documents" class="panel" style="display:none;">
   <h3>📑 Documents</h3>
 
- <select id="docsSelect" onchange="openDocsFromSelect(this.value)">
-  <option value="tab-docs|docs.html">Documents du patient</option>
-  <option value="tab-ordo|Ordonnancierf.html">Ordonnancier</option>
-  <option value="tab-cert|Certificatmedicalf.html">Certificats</option>
-  <option value="tab-exams|prescriptionexamensf.html">Examens</option>
-  <option value="tab-rapport|rapporthospitalisation.html">Rapport d'hospitalisation</option>
-  <option value="tab-fiches|fichesconseilf.html">Fiches Conseils</option>
-  <option value="tab-pdf|uploadpdff.html">PDF patient</option>
-  <option value="tab-etiq|etiquettesf.html">Étiquettes</option>
-  <option value="tab-mail|mailtof.html">Mails</option>
-</select>
+  <!-- Liste pour mobile -->
+  <ul class="mobile-only docs-list">
+    <li onclick="openDocsTab('tab-docs','docs.html')">📄 Documents du patient</li>
+    <li onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">💊 Ordonnancier</li>
+    <li onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">📝 Certificats</li>
+    <li onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">🔬 Examens</li>
+    <li onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">📑 Rapport d'hospitalisation</li>
+    <li onclick="openDocsTab('tab-fiches','fichesconseilf.html')">📚 Fiches Conseils</li>
+    <li onclick="openDocsTab('tab-pdf','uploadpdff.html')">📄 PDF patient</li>
+    <li onclick="openDocsTab('tab-etiq','etiquettesf.html')">🏷️ Étiquettes</li>
+    <li onclick="openDocsTab('tab-mail','mailtof.html')">✉️ Mails</li>
+  </ul>
 
-<script>
-  function openDocsFromSelect(value) {
-    // value = "tabId|file"
-    const [tabId, file] = value.split('|');
+  <!-- Iframe -->
+  <iframe id="docsFrame" scrolling="auto" style="width:100%; height:500px;"></iframe>
+</section>
 
-    // appelle ta fonction existante
-    openDocsTab(tabId, file);
+<style>
+  /* Desktop / mobile */
+  .desktop-only { display: flex; flex-wrap: wrap; gap:5px; }
+  .mobile-only { display: none; margin-bottom: 10px; padding:0; list-style:none; }
+
+  @media (max-width: 768px) {
+    .desktop-only { display: none; }
+    .mobile-only { display: block; }
   }
 
-  // charge la première page par défaut
-  const first = document.getElementById('docsSelect').value;
-  openDocsFromSelect(first);
+  /* Onglets desktop */
+  .docs-tab {
+    padding: 5px 10px;
+    cursor: pointer;
+    background: #eee;
+    border-radius: 5px;
+  }
+  .docs-tab.active {
+    background: #4285f4;
+    color: white;
+  }
+
+  /* Liste mobile */
+  .docs-list li {
+    padding: 10px;
+    margin-bottom: 5px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .docs-list li:hover {
+    background: #4285f4;
+    color: white;
+  }
+</style>
+
+<script>
+  // PatientId dynamique
+  let patientId = "12345"; // remplacer par le vrai ID
+
+  function openDocsTab(tabId, file) {
+      const url = file + "?id=" + patientId;
+
+      // Onglets desktop
+      document.querySelectorAll(".docs-tab").forEach(t => t.classList.remove("active"));
+      const tab = document.getElementById(tabId);
+      if(tab) tab.classList.add("active");
+
+      // Charge iframe
+      document.getElementById("docsFrame").src = url;
+  }
+
+  // Charge la première page au chargement
+  window.addEventListener("DOMContentLoaded", () => {
+    openDocsTab('tab-docs','docs.html');
+  });
 </script>
 
-<iframe id="docsFrame" scrolling="auto"></iframe>
-
-</section>
 
 
 

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Historique des documents</title>
+
+<style>
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #f0f4f8;
+    --text-color: #333;
+    --hover-color: #e6f0ff;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 12px;
+}
+
+/* ===== TITRE ===== */
+h1 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* ===== LISTE ===== */
+#documentList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    background-color: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+li:hover {
+    background-color: var(--hover-color);
+}
+
+.doc-type {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.doc-date {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.doc-contenu {
+    font-size: 0.85rem;
+    color: #555;
+    font-style: italic;
+    white-space: normal;
+    overflow: visible;
+    max-width: 100%;
+}
+
+/* ===== BOUTONS ===== */
+.btn-loupe,
+.btn-delete {
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    padding: 8px;
+}
+
+.btn-loupe { color: #444; }
+.btn-delete { color: #c62828; }
+
+.btn-loupe:active { color: var(--primary-color); }
+.btn-delete:active { color: #dc3545; }
+
+/* ===== MODALES ===== */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background-color: rgba(0,0,0,0.6);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 0;
+    padding: 16px;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+}
+
+.close {
+    background: red;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    align-self: flex-end;
+}
+
+/* ===== MODALE CONFIRMATION ===== */
+#confirmDeleteModal .modal-content {
+    width: 90%;
+    max-width: 380px;
+    height: auto;
+    border-radius: 16px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* ===== LOADER ===== */
+.spinner {
+    width: 60px;
+    height: 60px;
+}
+
+/* ===== BOUTON FLOTTANT ===== */
+#btnAddDoc {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    z-index: 10000;
+}
+
+/* ===== VERSION TABLETTE / DESKTOP ===== */
+@media (min-width: 768px) {
+
+    body {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    li {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .doc-contenu {
+        max-width: 40%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .modal-content {
+        width: 80%;
+        height: 80%;
+        margin: 40px auto;
+        border-radius: 12px;
+    }
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<!-- Écran de chargement -->
+<div id="loadingScreen">
+  <div class="loader-content">
+    <div class="spinner"></div>
+    <h2>Chargement des documents...</h2>
+    <p>Merci de patienter quelques instants</p>
+  </div>
+</div>
+    <h1>Historique des documents</h1>
+    <ul id="documentList"></ul>
+<button id="btnAddDoc">＋</button>
+
+    <!-- ===== MODALE POUR AFFICHER LE PDF ===== -->
+    <div id="pdfModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="fermerModal()">Fermer</button>
+            <iframe id="pdfViewer"></iframe>
+        </div>
+    </div>
+<div id="confirmDeleteModal">
+    <div class="modal-content">
+        <h3>Supprimer ce document ?</h3>
+        <p>Cette action est irréversible.</p>
+
+        <div class="confirm-buttons">
+            <button id="btnConfirmDelete">Oui, supprimer</button>
+            <button id="btnCancelDelete">Annuler</button>
+        </div>
+    </div>
+</div>
+<div id="addDocModal" class="modal">
+  <div class="modal-content" style="max-width:500px;height:auto;">
+    <h3>Ajouter un document</h3>
+
+    <input id="docName" type="text"
+      placeholder="Nom du document"
+      style="width:100%;margin-bottom:10px">
+
+    <!-- PDF ou photo (scan caméra) -->
+    <input id="fileInput"
+      type="file"
+      accept="application/pdf,image/*"
+      capture="environment">
+
+    <div style="margin-top:15px;display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="fermerAddDoc()">Annuler</button>
+      <button onclick="enregistrerDocBase64()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+  </div>
+</div>
+
+<script>
+// Conteneur global pour les bulles
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
+
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
+const addDocModal = document.getElementById("addDocModal");
+
+document.getElementById("btnAddDoc").onclick = () => {
+  addDocModal.style.display = "block";
+};
+
+function fermerAddDoc() {
+  addDocModal.style.display = "none";
+  docName.value = "";
+  fileInput.value = "";
+}
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function enregistrerDocBase64() {
+  const nom = docName.value.trim();
+  const file = fileInput.files[0];
+
+  if (!nom || !file) {
+    afficherBulle("Nom et fichier requis", "warning");
+    return;
+  }
+
+  try {
+    afficherLoader();
+
+    const base64 = await fileToBase64(file);
+
+    const now = new Date();
+    const dateCreation =
+      now.toLocaleDateString("fr-FR") + " " +
+      now.toLocaleTimeString("fr-FR");
+
+    // 🔥 ENREGISTREMENT COMPATIBLE viewer.html
+    await db.collection("documents").add({
+      patientId: idPatient,
+      type: nom,
+      dateCreation,
+      pdfBase64: base64,       // <-- clé directe attendue par viewer.html
+      mime: file.type,         // type MIME pour référence
+      creePar: window.medecinNom || ""
+    });
+
+    fermerAddDoc();
+    afficherDocuments();
+    afficherBulle("Document enregistré", "success");
+
+  } catch (e) {
+    console.error(e);
+    afficherBulle("Erreur d'enregistrement", "error");
+  } finally {
+    masquerLoader();
+  }
+}
+
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+
+/* --- Initialisation compat Firebase (inchangée) --- */
+const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4",
+    storageBucket: "urgences-a8ed4.appspot.com",
+    messagingSenderId: "392921498200",
+    appId: "1:392921498200:web:7ccce767332c67c697c02d",
+    measurementId: "G-C74MK2KYDL"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const urlParams = new URLSearchParams(window.location.search);
+const idPatient = urlParams.get('id');
+if (!idPatient) {
+    afficherBulle("Aucun ID patient trouvé !", "warning");
+    throw new Error("Aucun ID patient");
+}
+
+const documentList = document.getElementById('documentList');
+const modal = document.getElementById('pdfModal');
+const pdfViewer = document.getElementById('pdfViewer');
+
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
+
+function ouvrirModal(blob) {
+    const url = URL.createObjectURL(blob);
+    pdfViewer.src = url;
+    modal.style.display = "block";
+}
+
+function fermerModal() {
+    modal.style.display = "none";
+    pdfViewer.src = "";
+}
+
+function afficherDocuments() {
+    afficherLoader();
+
+    db.collection('documents')
+      .where('patientId', '==', idPatient)
+      .get()
+      .then(querySnapshot => {
+
+          if (querySnapshot.empty) {
+              documentList.innerHTML = "<li>Aucun document trouvé.</li>";
+              return;
+          }
+
+          const docsArray = [];
+          querySnapshot.forEach(doc => {
+              docsArray.push({
+                  id: doc.id,
+                  ...doc.data()
+              });
+          });
+
+          docsArray.sort((a, b) => {
+              const dateA = parseDateFR(a.dateCreation);
+              const dateB = parseDateFR(b.dateCreation);
+              return dateB - dateA;
+          });
+
+          documentList.innerHTML = "";
+
+          docsArray.forEach(data => {
+              let extrait = "(pas de contenu)";
+
+              if (typeof data.contenu === "string") {
+                  extrait = data.contenu.substring(0, 50) + "…";
+              } else if (data.contenu?.text) {
+                  extrait = data.contenu.text.substring(0, 50) + "…";
+              }
+
+              const li = document.createElement('li');
+
+              let boutonsHTML = `<button class="btn-loupe" type="button">🔎</button>`;
+              if (window.peutSupprimer) {
+                  boutonsHTML += `<button class="btn-delete" type="button" data-doc-id="${data.id}">🗑️</button>`;
+              }
+
+              li.innerHTML = `
+                  <div style="display:flex; align-items:center; gap:12px;">
+                      <span class="doc-type">${data.type || ""}</span>
+                      <span class="doc-date">${data.dateCreation || ""}</span>
+                      <span class="doc-contenu">${extrait}</span>
+                  </div>
+                  <div style="display:flex; gap:10px;">
+                      ${boutonsHTML}
+                  </div>
+              `;
+
+li.querySelector('.btn-loupe')?.addEventListener('click', () => {
+    const id = data.id;
+
+
+    window.parent.postMessage(
+        {
+            type: "OPEN_TAB",
+            title: data.type || "Document",
+            url: `viewer.html?docId=${id}`
+        },
+        "*"
+    );
+});
+
+
+         
+
+              li.querySelector('.btn-delete')?.addEventListener('click', e => {
+                  ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);
+              });
+
+              documentList.appendChild(li);
+          });
+      })
+      .catch(err => {
+          console.error(err);
+          documentList.innerHTML = "<li>Erreur lors du chargement.</li>";
+      })
+      .finally(() => {
+          masquerLoader(); // ✅ toujours exécuté
+      });
+}
+
+
+/* --- Suppression — modales et boutons --- */
+let documentToDelete = null;
+
+function ouvrirConfirmDeleteModal(docId) {
+    documentToDelete = docId;
+    document.getElementById("confirmDeleteModal").style.display = "flex";
+}
+
+function fermerConfirmDeleteModal() {
+    document.getElementById("confirmDeleteModal").style.display = "none";
+    documentToDelete = null;
+}
+
+document.getElementById("btnCancelDelete").onclick = fermerConfirmDeleteModal;
+
+document.getElementById("btnConfirmDelete").onclick = async function() {
+    if (!documentToDelete) return;
+
+    try {
+        await db.collection("documents").doc(documentToDelete).delete();
+        fermerConfirmDeleteModal();
+        afficherDocuments(); // recharge la liste
+        afficherBulle("Document supprimé !", "success");
+    } catch (err) {
+        console.error(err);
+        afficherBulle("Erreur lors de la suppression.", "error");
+    }
+};
+function parseDateFR(dateStr) {
+    if (!dateStr) return new Date(0); // valeur par défaut
+    const [datePart, timePart] = dateStr.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const [hours, minutes, seconds] = timePart.split(":").map(Number);
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+}
+window.afficherLoader = function() {
+    const loader = document.getElementById("loadingScreen");
+    if (!loader) return;
+    loader.style.display = "flex"; // force l'affichage
+};
+
+window.masquerLoader = function() {
+    const loader = document.getElementById("loadingScreen");
+    if (!loader) return;
+    loader.style.display = "none";  // masquage direct
+};
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("confirmDeleteModal").style.display = "none";
+});
+</script>
+
+<script type="module">
+  /* --- Module Firebase (modulaire) : on l'utilise seulement pour l'auth et la récupération du doc "medecins" --- */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfigMod = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfigMod);
+  const auth = getAuth(app);
+  const fdb = getFirestore(app);
+
+  // IMPORTANT : ne pas déclarer `let peutSupprimer` dans la portée du module.
+  // On définit la variable globale window.peutSupprimer pour que le script non-modulaire l'utilise.
+  window.peutSupprimer = false;
+onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+          //window.location.href = "index.html";
+          //return;
+      }
+
+      try {
+          const docRef = doc(fdb, "medecins", user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+              const data = docSnap.data();
+
+              // Définit la variable globale (accessible depuis le script non-module)
+              window.peutSupprimer = !!(data.pages?.suprdocs);
+
+              // infos médecin (stockées globalement si besoin)
+              window.medecinNom = data.nom || "";
+              window.medecinSpecialite = data.specialite || "";
+              window.medecinLieu = data.lieu || "";
+
+              // Vérification d'accès à la page
+              const pages = data.pages || {};
+              const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
+              if (!pages[currentPage]) {
+                  const modal = document.getElementById("modal-no-access");
+                  if (modal) modal.style.display = "flex";
+                  console.warn("Accès refusé à", currentPage);
+                  return;
+              }
+
+              // Appelle l'affichage après avoir défini window.peutSupprimer
+              afficherDocuments();
+
+          } else {
+              const modal = document.getElementById("modal-no-access");
+              if (modal) modal.style.display = "flex";
+              console.warn("Médecin non trouvé");
+              return;
+          }
+
+      }   catch (error) {
+          console.error("Erreur lors de la récupération du médecin :", error);
+          const modal = document.getElementById("modal-no-access");
+          if (modal) modal.style.display = "flex";
+      }
+
+  });
+  
+</script>
+
+
+</body>
+</html>

@@ -395,6 +395,85 @@ button.danger,
   .tab { flex: 0 0 auto; }
   nav { width: 320px; }
 }
+/* HEADER */
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #0f172a;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.mobile-header button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* OVERLAY */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+  z-index: 998;
+}
+
+.menu-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* MENU */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: #1e293b;
+  padding-top: 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 999;
+}
+
+.mobile-menu button {
+  background: none;
+  border: none;
+  color: white;
+  text-align: left;
+  padding: 14px 20px;
+  font-size: 15px;
+  border-left: 4px solid transparent;
+  transition: 0.2s;
+}
+
+.mobile-menu button:hover {
+  background: #334155;
+  border-left: 4px solid #3b82f6;
+}
+
+.mobile-menu.active {
+  transform: translateX(0);
+}
+
+.hidden {
+  display: block; /* important pour animation */
+}
+
 
 </style>
 
@@ -422,23 +501,21 @@ button.danger,
   <button onclick="location.reload()">🔄</button>
 </header>
 
-
 <main class="mobile-content">
 
-    <div id="mobileMenu" class="mobile-menu hidden">
-  <button data-panel="patient">👤 Identité</button>
-  <button data-panel="equipe">🥼 Équipe</button>
-  <button data-panel="admission">🗂️ Admission</button>
-  <button data-panel="dossier">📋 Dossier</button>
-  <button data-panel="constantes">🩺 Constantes</button>
-  <button data-panel="medsurgences">💊 Médicaments</button>
-  <button data-panel="examens">🩻 Examens</button>
-  <button data-panel="actes">💉 Actes</button>
-  <button data-panel="documents">📑 Documents</button>
-  <button data-panel="sortie">🚪 Sortie</button>
-  <button data-panel="historique">📜 Historique</button>
-</div>
-
+  <div id="mobileMenu" class="mobile-menu hidden">
+    <button data-panel="patient">👤 Identité</button>
+    <button data-panel="equipe">🥼 Équipe</button>
+    <button data-panel="admission">🗂️ Admission</button>
+    <button data-panel="dossier">📋 Dossier</button>
+    <button data-panel="constantes">🩺 Constantes</button>
+    <button data-panel="medsurgences">💊 Médicaments</button>
+    <button data-panel="examens">🩻 Examens</button>
+    <button data-panel="actes">💉 Actes</button>
+    <button data-panel="documents">📑 Documents</button>
+    <button data-panel="sortie">🚪 Sortie</button>
+    <button data-panel="historique">📜 Historique</button>
+  </div>
 
 
 <div class="content">	
@@ -3917,6 +3994,48 @@ window.addEventListener("message", (event) => {
 });
 
 
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnMenu = document.getElementById("btnMenu");
+  const mobileMenu = document.getElementById("mobileMenu");
+
+  // Création overlay dynamique
+  const overlay = document.createElement("div");
+  overlay.classList.add("menu-overlay");
+  document.body.appendChild(overlay);
+
+  function openMenu() {
+    mobileMenu.classList.add("active");
+    overlay.classList.add("active");
+    btnMenu.textContent = "✖";
+  }
+
+  function closeMenu() {
+    mobileMenu.classList.remove("active");
+    overlay.classList.remove("active");
+    btnMenu.textContent = "☰";
+  }
+
+  btnMenu.addEventListener("click", () => {
+    if (mobileMenu.classList.contains("active")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  overlay.addEventListener("click", closeMenu);
+
+  // Fermeture auto après sélection
+  mobileMenu.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      closeMenu();
+    });
+  });
+
+});
 </script>
 
 </body>

@@ -1,0 +1,3923 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+
+<link rel="icon" type="image/jpeg" href="logo.png">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fiche Patient </title>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+   <style>
+
+:root {
+  --brand: #0078d4;
+  --brand-dark: #005ea2;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  padding: 10px;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.left-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--brand);
+  line-height: 1.2;
+}
+
+.right-header {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.app {
+  display: block;
+  height: auto;
+  overflow: visible;
+}
+
+.menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+nav {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(85vw, 320px);
+  height: 100dvh;
+  background: #fff;
+  border-radius: 0 20px 20px 0;
+  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.2);
+  padding: 14px;
+  overflow-y: auto;
+  transform: translateX(-105%);
+  transition: transform 0.25s ease;
+  z-index: 2500;
+}
+
+nav.open {
+  transform: translateX(0);
+}
+
+.nav-title {
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.94rem;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.nav-item span {
+  opacity: 1;
+}
+
+.nav-item.active {
+  background: #eaf4ff;
+  border-left: 4px solid var(--brand);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.content {
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+section.panel,
+.panel {
+  display: none;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+  margin-bottom: 12px;
+  overflow: visible;
+}
+
+section.panel.active,
+.panel.active {
+  display: block;
+}
+
+.card,
+#hospitalisationsContent .card,
+#tab-dossier .card {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid var(--brand);
+  background: #fff;
+}
+
+#hospitalisationsContent {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h1, h2, h3 {
+  word-break: break-word;
+}
+
+p,
+div,
+label,
+span {
+  overflow-wrap: anywhere;
+}
+
+label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 10px;
+  font-size: 16px;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  background: #fff;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+#questionnaire,
+#antecedents,
+#traitements,
+#histoire,
+#auscultation,
+#evolutionTexte {
+  height: auto;
+  min-height: 120px;
+}
+
+.inline-fields,
+.button-group,
+.modal-buttons,
+.topbar,
+.topbar-left,
+.topbar-right,
+.docs-tabs,
+.tabs,
+.vidal-search,
+.equipe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline-fields > div,
+.field-group,
+.equipe-grid > * {
+  min-width: 100%;
+  width: 100%;
+}
+
+button,
+.tablink,
+.docs-tab,
+.dropbtn,
+.icon-btn,
+.icon-button,
+.exam-button,
+#btnValiderCode,
+#btnAnnulerCode {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+button.secondary { background: #6c757d; }
+button.success { background: #28a745; }
+button.danger,
+.btn-delete,
+.bouton-supprimer { background: #dc3545; color: #fff; }
+
+.tablink.active,
+.docs-tab.active,
+.tab.active {
+  background: var(--brand-dark);
+  color: #fff;
+}
+
+.tablink,
+.docs-tab,
+.tab {
+  flex: 1 1 calc(50% - 6px);
+}
+
+.top-menu {
+  position: static;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+}
+
+.dropdown,
+.menu-wrapper,
+.search-wrapper {
+  width: 100%;
+}
+
+.dropdown-content,
+.menu-panel,
+.hover-panel,
+.search-results,
+.suggestions,
+.suggestions-box {
+  position: static;
+  width: 100%;
+  margin-top: 6px;
+  border-radius: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.modal-overlay,
+#modalAdmin.modal-overlay,
+#modalActe.modal-overlay,
+#modalCodeCloture.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 3000;
+}
+
+.modal,
+#modalAdmin .modal,
+#modalActe .modal,
+#modalCodeCloture .modal {
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+}
+
+#modalActe .modal {
+  height: auto;
+}
+
+.topbar {
+  position: sticky;
+  top: 66px;
+  z-index: 1000;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+}
+
+#bubble-container {
+  position: fixed;
+  top: auto;
+  right: 10px;
+  bottom: 10px;
+  z-index: 4000;
+}
+
+#docsFrame {
+  width: 100%;
+  min-height: 60dvh;
+  border: none;
+}
+
+@media (min-width: 768px) {
+  body { padding: 14px; }
+  header h2 { font-size: 1.2rem; }
+  .tablink,
+  .docs-tab,
+  .tab { flex: 0 0 auto; }
+  nav { width: 320px; }
+}
+
+</style>
+
+
+
+</head>
+<body>
+
+
+
+<!-- Écran de chargement -->
+<div id="loadingScreen">
+  <div class="loader-content">
+    <div class="spinner"></div>
+    <h2>Chargement des données...</h2>
+    <p>Merci de patienter quelques instants</p>
+  </div>
+</div>
+
+
+
+<header class="mobile-header">
+  <button id="btnMenu">☰</button>
+  <h2 id="patientName">Fiche Urgences</h2>
+  <button onclick="location.reload()">🔄</button>
+</header>
+
+
+<main class="mobile-content">
+
+    <div id="mobileMenu" class="mobile-menu hidden">
+  <button data-panel="patient">👤 Identité</button>
+  <button data-panel="equipe">🥼 Équipe</button>
+  <button data-panel="admission">🗂️ Admission</button>
+  <button data-panel="dossier">📋 Dossier</button>
+  <button data-panel="constantes">🩺 Constantes</button>
+  <button data-panel="medsurgences">💊 Médicaments</button>
+  <button data-panel="examens">🩻 Examens</button>
+  <button data-panel="actes">💉 Actes</button>
+  <button data-panel="documents">📑 Documents</button>
+  <button data-panel="sortie">🚪 Sortie</button>
+  <button data-panel="historique">📜 Historique</button>
+</div>
+
+
+
+<div class="content">	
+<section id="panel-patient" class="panel" style="display:none;">
+ 
+    <h3>👤 Identité patient</h3>
+    
+ 
+  <div>
+  <label>CIP (Code d'Identification Patient)</label>
+  <span id="idPatient"></span>
+</div>
+
+  <div>
+    <label>Nom</label>
+    <span id="nom"></span>
+  </div>
+  <div>
+    <label>Prénom</label>
+    <span id="prenom"></span>
+  </div>
+  <div>
+    <label>Sexe</label>
+    <span id="sexe"></span>
+  </div>
+  <div>
+    <label>Âge</label>
+    <span id="age"></span>
+  </div>
+  <div>
+    <label>Médecin(s) traitant(s)</label>
+    <textarea id="medtraitant"></textarea>
+  </div>
+   <div>
+    <label>Vigilance(s)</label>
+  <input type="text" id="vigilances" class="text2" />
+  </div>
+<div>
+  <label>Allergies</label>
+  <input type="text" id="allergies" placeholder="Ex : Pénicilline, arachides..." class="text2" />
+
+
+<div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+  <label style="margin:0;">Allergie(s) importantes</label>
+  <label class="switch" style="margin:0;">
+    <input type="checkbox" id="importanceAllergies">
+    <span class="slider"></span>
+  </label>
+</div>
+
+
+  <br><br>
+  <button id="btnAdmin" class="btn-admin">🛠 Gestion Administrative</button>
+
+	<button id="btnmailto">📧 Mailto - patient</button>
+  <button id="btnVersPdf">📄 Création d'accès PDF patient</button>
+</div>
+</section>
+
+<section id="panel-medsurgences" class="panel" style="display:none;">
+    <h3>💊 Gestion des médicaments aux Urgences</h3>
+
+  <iframe
+  id="medsurgencesFrame"
+  style="width:100%; height:calc(100vh - 60px); border:none; border-radius:10px; overflow:hidden;">
+</iframe>
+
+</section>
+
+
+<section id="panel-constantes" class="panel" style="display:none;">
+  
+    <h3>🩺 Constantes</h3>
+ 
+
+
+<h4>Scope</h4>
+
+<label class="switch">
+  <input type="checkbox" id="patientScopeCheckbox">
+  <span class="slider"></span>
+</label>
+<span style="margin-left:10px; vertical-align:middle;">🔌 Patient scopé</span>
+
+
+
+<div id="scopeFields" style="display:none; margin-top:10px;">
+  <label for="scopeNum">Numéro de scope</label>
+  <input type="text" id="scopeNum" class="text1" />
+  <button id="btnConnectScope">🔌 Connecter</button>
+  <span id="scopeLoading" style="display:none; margin-left:10px;">⏳ Connexion...</span>
+</div>
+
+<div id="scopeSuccess" style="display:none; margin-top:10px;">
+  <button id="btnOpenScope">🖥️ Ouvrir VisionScope</button>
+</div>
+
+
+ <hr>
+    <label for="temperature">🌡 Température (°C)</label>
+    <input type="number" id="temperature" step="0.1" class="text1"/>
+    <label for="fc">❤️ Fréquence cardiaque (bpm)</label>
+    <input type="number" id="fc"class="text1" />
+    <label for="ta">💓 Tension artérielle</label>
+    <input type="text" id="ta" class="text1" />
+    <label for="saturation">💨 Saturation (%)</label>
+    <input type="number" id="saturation" min="0" max="100" step="1" class="text1"/>
+    <label for="fr">😮💨 FR</label>
+    <input type="number" id="fr" min="0" max="50" step="1" class="text1"/>
+    <label for="douleur">😖 Douleur /10</label>
+    <input type="number" id="douleur" min="0" max="10" step="1" class = "text1"/>
+	<br>
+    <button id="btnGlasgow" style="margin-top:10px; background-color:#9b59b6;">🧠 Score de Glasgow</button>
+    <br><br>
+    <button id="btnSaveConst">💾 Enregistrer constantes</button>
+ 
+  	<br>
+  <hr>
+	<br>
+    <h4>Poids / Taille / IMC</h4>
+    <div class="inline-fields">
+      <div class="field-group">
+        <label for="poids">Poids (kg)</label>
+        <input type="number" id="poids" step="0.1" class="text1"/>
+     
+      <div class="field-group">
+        <label for="taille">Taille (cm) </label>
+        <input type="number" id="taille" step="1" class="text1"/>
+      </div>
+      <div class="field-group">
+        <label>IMC</label>
+        <span id="imc"></span>
+      </div>
+    </div>
+		</div>
+		<br>
+    <button id="btnSavePoids">💾 Enregistrer poids/taille/IMC</button>
+  
+</section>
+
+
+<section id="panel-historique" class="panel" style="display:none;">
+
+  <h3>📜 Historique</h3>
+
+  <!-- 🔍 Recherche dans l’historique -->
+  <input
+    type="text"
+    id="rechercheHistorique"
+    placeholder="🔍 Rechercher (motif, service, date, texte...)"
+    style="
+      width:100%;
+      padding:10px;
+      margin-bottom:15px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    "
+  />
+
+  <div id="hospitalisationsContent"></div>
+</section>
+
+
+
+<section id="panel-admission" class="panel" style="display:none;">
+  
+  <h3> 🗂️ Admission et orientation</h3>
+   <label for="motif">🤕 Motif d'entrée</label>
+  <input type="text" id="motif" placeholder="Motif d'entrée" class="text2" />
+
+ <label for="moyen">🚑 Moyen d'entrée</label>
+
+<div style="position: relative;">
+  <input
+    type="text"
+    id="moyen"
+    placeholder="Moyen d'entrée"
+    class="text2"
+    autocomplete="off"
+  />
+  <div id="suggestionsMoyen" class="suggestions-box"></div>
+</div>
+
+  <label for="gravite" >🚨 Gravité</label>
+  <select id="gravite"class="text2" >
+    <option value="P0">P0</option>
+    <option value="P1">P1</option>
+    <option value="P2">P2</option>
+    <option value="P3">P3</option>
+    <option value="Urgences_Vitales">Urgences Vitales</option>
+    <option value="Administratif">Administratif</option>
+  </select>
+
+<label for="pdcStatut">🧾 Statut PEC</label>
+
+<div style="width:100%; position:relative;">
+  <input 
+      type="text" 
+      id="pdcStatut" 
+      class="text2" 
+      placeholder="Rechercher un statut PEC..."
+      style="width:100%;"
+  />
+
+  <ul id="pdcSuggestions"
+      style="
+          position:absolute;
+          width:100%;
+          background:white;
+          border:1px solid #ccc;
+          list-style:none;
+          padding:5px;
+          margin-top:2px;
+          border-radius:6px;
+          display:none;
+          max-height:150px;
+          overflow-y:auto;
+          z-index:999;
+      ">
+  </ul>
+</div>
+
+
+  <label for="service" >🏥 Service idéal</label>
+  <select id="service" class="text2"><option value="">Chargement...</option></select>
+<label for="circuit">🧭 Circuit particulier</label>
+<select id="circuit" class="text2">
+  <option value=""></option>
+  <option value="Pédiatrie">Pédiatrie</option>
+  <option value="Traumatologie">Traumatologie</option>
+  <option value="Gynécologie">Gynécologie</option>
+  <option value="Psychiatrie">Psychiatrie</option>
+  <option value="Ophtalmologie">Ophtalomologie</option>
+
+</select>
+ 
+    </section>
+
+
+<section id="panel-equipe" class="panel" style="display:none;">
+
+<h3>👥 Équipe référente</h3>
+
+<div class="equipe-grid">
+
+  <div class="field-group field-with-clear">
+    <label>👨‍⚕️ Médecin référent</label>
+    <div class="input-wrapper">
+      <input type="text" id="medecinReferent" placeholder="Rechercher un médecin..." autocomplete="off">
+      <button type="button" class="clear-btn" id="clearMedecin">✖</button>
+    </div>
+    <ul id="medecinSuggestions" class="suggestions"></ul>
+    <div id="alerteMedecin" class="alerte-orange"></div>
+  </div>
+
+  <div class="field-group field-with-clear">
+    <label>👩‍⚕️ Infirmier référent</label>
+    <div class="input-wrapper">
+      <input type="text" id="infirmierReferent" placeholder="Rechercher un infirmier..." autocomplete="off">
+      <button type="button" class="clear-btn" id="clearInfirmier">✖</button>
+    </div>
+    <ul id="infirmierSuggestions" class="suggestions"></ul>
+    <div id="alerteInfirmier" class="alerte-orange"></div>
+  </div>
+
+  <div class="field-group field-with-clear">
+    <label>🧑‍⚕️ Interne</label>
+    <div class="input-wrapper">
+      <input type="text" id="interneReferent" placeholder="Rechercher un interne..." autocomplete="off">
+      <button type="button" class="clear-btn" id="clearInterne">✖</button>
+    </div>
+    <ul id="interneSuggestions" class="suggestions"></ul>
+    <div id="alerteInterne" class="alerte-orange"></div>
+  </div>
+
+  <div class="field-group field-with-clear">
+    <label>🎓 Externe</label>
+    <div class="input-wrapper">
+      <input type="text" id="externeReferent" placeholder="Rechercher un externe..." autocomplete="off">
+      <button type="button" class="clear-btn" id="clearExterne">✖</button>
+    </div>
+    <ul id="externeSuggestions" class="suggestions"></ul>
+    <div id="alerteExterne" class="alerte-orange"></div>
+  </div>
+
+</div>
+
+</section>
+
+<section id="panel-dossier" class="panel" style="display:none;">
+
+    <h3>📋 Dossier Médical</h3>
+
+      <label>Questionnaire IAO <button class="bouton-horloge" onclick="ajouterHorodatageDans('questionnaire')">⏰</button></label>
+      <textarea id="questionnaire"></textarea>
+      <label>Antécédents <button class="bouton-horloge" onclick="ajouterHorodatageDans('antecedents')">⏰</button>
+	  <button class="bouton-ancienne" onclick="remplirDepuisAncienneHospi('antecedents')">📂</button>
+</label>
+      <textarea id="antecedents" ></textarea>
+      <label>Traitements en cours <button class="bouton-horloge" onclick="ajouterHorodatageDans('traitements')">⏰</button>
+	  <button class="bouton-ancienne" onclick="remplirDepuisAncienneHospi('traitements')">📂</button>
+</label>
+      <textarea id="traitements" ></textarea>
+	  
+      <label>Histoire de la maladie <button class="bouton-horloge" onclick="ajouterHorodatageDans('histoire')">⏰</button></label>
+      <textarea id="histoire" ></textarea>
+	  
+      <label>CR Auscultation Init.<button class="bouton-horloge" onclick="ajouterHorodatageDans('auscultation')">⏰</button></label>
+      <textarea id="auscultation"></textarea>
+	<br>
+      <button onclick="enregistrerDossierMedical()">💾 Enregistrer</button>
+     
+    	<br>
+  <hr>
+
+  
+    <h3>📈 Évolution aux urgences <button class="bouton-horloge" onclick="ajouterHorodatageDans('evolutionTexte')">⏰</button></h3>
+    <textarea id="evolutionTexte"></textarea>
+    <br>
+    <button onclick="enregistrerEvolution()">💾 Enregistrer</button>
+ 
+</section>
+
+
+<section id="panel-actes" class="panel" style="display:none;">
+
+    <h3>💉 Actes</h3>
+
+  <label>Type d’acte</label>
+  <input type="text" id="rechercherActe" placeholder="Rechercher un acte..." autocomplete="off" />
+  <ul id="suggestionsActes"></ul>
+  <label>👨‍⚕️ Réalisé par</label>
+  <select id="selectRealisateur"><option>⏳Chargement...</option></select>
+  <label>💬 Remarques</label>
+  <textarea type="text" id="remarqueActe"></textarea>
+  <h4>Actes réalisés :</h4>
+  
+  <div id="actesListe"></div>
+  <div class="modal-buttons">
+    <button id="btnFermerActe">❌ Annuler</button>
+    <button id="btnEnregistrerActe" class="success">✔️ Enregistrer</button>
+  </div>
+</section>
+<section id="panel-examens" class="panel" style="display:none;">
+
+    <h3>☢️ Examens</h3>
+   
+ 
+  
+	<label>Examens demandés / réalisés</label>
+<div id="examensListe" class="mt-2 p-2 border rounded bg-gray-50">Aucun examen enregistré</div>
+  <button id="btnOuvrirModaleDemande" style="margin-top:10px;">➕ Nouvelle demande d’examen</button>
+ 
+  
+</section>
+
+
+<div class="modal-overlay" id="modalExamen" style="display:none;">
+  <div class="modal">
+    <h3>Demande d’examen</h3>
+    <button class="exam-button" onclick="toggleSublist('prise-sang-list')">🩸 Prise de sang</button>
+  <div class="sub-list" id="prise-sang-list">
+    <label><input type="checkbox" onchange="toggleExam(this)" value="NFS (Numération Formule Sanguine)"> NFS</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="CRP"> CRP</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Ionogramme"> Ionogramme</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Calcémie"> Calcémie</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan hépatique"> Bilan hépatique</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan rénal"> Bilan rénal</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="TSH, T3, T4"> TSH, T3, T4</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Hémoglobine glyquée (HbA1c)"> HbA1c</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan lipidique"> Bilan lipidique</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Troponine"> Troponine</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Groupage sanguin"> Groupage</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Sérologies virales (VIH, VHB, VHC)"> Sérologies VIH, VHB, VHC</label>
+    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan coagulation (TP, TCA)"> Coagulation (TP, TCA)</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="Recherche Alcoolémie"> Alcoolémie</label>
+	  <label><input type="checkbox" onchange="toggleExam(this)" value="Prise de sang autre"> Autre</label>
+  </div>
+<button class="exam-button" onclick="toggleSublist('urine-list')">🧪 Examens urinaires</button>
+<div class="sub-list" id="urine-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="ECBU (Examen cytobactériologique des urines)"> ECBU</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Protéinurie des 24h"> Protéinurie 24h</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Bandelette urinaire"> Bandelette urinaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Recherche de sang dans les urines"> Sang dans les urines</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Recherche de drogues urinaires"> Recherche de drogues</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Test de grossesse urinaire"> Test de grossesse</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Dosage créatinine urinaire"> Créatinine urinaire</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="autre">Examens Urinaires Autre</label>
+</div>
+  <button class="exam-button" onclick="toggleSublist('radio-list')">📸 Radiologie</button>
+<div class="sub-list" id="radio-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du crâne"> Crâne</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du thorax"> Thorax</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie de l'abdomen"> Abdomen</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du bassin"> Bassin</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis cervical"> Rachis cervical</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis dorsal"> Rachis dorsal</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis lombaire"> Rachis lombaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du genou"> Genou</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie de la cheville"> Cheville</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du poignet"> Poignet</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du coude"> Coude</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie des mains"> Mains</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie des pieds"> Pieds</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie Autre"> autre</label>
+
+</div>
+
+<button class="exam-button" onclick="toggleSublist('irm-list')">🧲 IRM</button>
+<div class="sub-list" id="irm-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM cérébrale"> Cérébrale</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM hypophysaire"> Hypophysaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis cervical"> Rachis cervical</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis dorsal"> Rachis dorsal</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis lombaire"> Rachis lombaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM abdominale"> Abdominale</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM pelvienne"> Pelvienne</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM genou"> Genou</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM épaule"> Épaule</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="IRM avec injection"> Avec injection</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="IRM autre"> autre</label>
+</div>
+<button class="exam-button" onclick="toggleSublist('scanner-list')">🖥️ Scanner</button>
+<div class="sub-list" id="scanner-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner cérébral"> Cérébral</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner thoracique"> Thorax</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner abdomino-pelvien"> Abdomino-pelvien</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner rachis cervical"> Rachis cervical</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner rachis lombaire"> Rachis lombaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner des sinus"> Sinus</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner genou"> Genou</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner cérébral"> Angioscanner cérébral</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner thoracique"> Angioscanner thoracique</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner abdominal"> Angioscanner abdominal</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="Scanner autre"> autre</label>
+</div>
+<button class="exam-button" onclick="toggleSublist('echo-list')">🧭 Échographie</button>
+<div class="sub-list" id="echo-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie abdominale"> Abdominale</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie pelvienne"> Pelvienne</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie rénale"> Rénale</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie hépatique"> Hépatique</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie thyroïdienne"> Thyroïdienne</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie mammaire"> Mammaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie testiculaire"> Testiculaire</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie cardiaque (ETT)"> Cardiaque (ETT)</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Doppler veineux des membres inférieurs"> Doppler veineux MI</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="Doppler artériel des membres inférieurs"> Doppler artériel MI</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value=" Échographieautre"> autre</label>
+</div>
+<button class="exam-button" onclick="toggleSublist('eos-list')">🦴 EOS</button>
+<div class="sub-list" id="eos-list">
+  <label><input type="checkbox" onchange="toggleExam(this)" value="EOS rachis complet"> Rachis complet</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="EOS membres inférieurs"> Membres inférieurs</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="EOS membres supérieurs"> Membres supérieurs</label>
+  <label><input type="checkbox" onchange="toggleExam(this)" value="EOS posture globale"> Posture globale</label>
+	<label><input type="checkbox" onchange="toggleExam(this)" value="EOS autre"> autre</label>
+</div>
+<h4>Examens sélectionnés :</h4>
+<div id="examensSelectionnes" style="margin-bottom: 10px;"></div>
+
+    <label for="commentaireExamen">💬 Commentaire</label>
+    <textarea id="commentaireExamen" placeholder="Détails supplémentaires..."></textarea>
+     <button id="btnCancelExamen" class="secondary">❌ Fermer</button>
+      <button id="btnSaveExamen">✅ Valider</button>
+    </div>
+</div>
+<section id="panel-sortie" class="panel" style="display:none;">
+  
+    <h3>🚪 Sortie</h3>
+
+
+<h3>Type de sortie</h3>
+    <label><input type="radio" name="typeSortie" value="Retour à domicile" /> 🏡 Domicile</label><br/>
+    <label><input type="radio" name="typeSortie" value="Hospitalisation" /> 🏥 Hospitalisation</label><br/>
+    <label><input type="radio" name="typeSortie" value="Transfert" /> ↔️ Transfert</label><br/>
+	    <label><input type="radio" name="typeSortie" value="Décès" />⚰️ Décès</label><br/>
+    <label>
+      <input type="radio" name="typeSortie" value="autre" /> 🔤 Autre
+      <input type="text" id="champAutreSortie" placeholder="Précisez..." style="margin-top: 8px; display:none;" />
+    </label>
+
+  
+
+    <h3>Options supplémentaires</h3>
+    <label><input type="checkbox" name="optionsSortie" value="Suivi a domicile" /> 📋 Suivi à domicile</label><br/>
+    <label><input type="checkbox" name="optionsSortie" value="Avis specialiste" /> 👩‍⚕️ Avis spécialiste</label><br/>
+    <label><input type="checkbox" name="optionsSortie" value="Transport  en ambulance" /> 🚑 Transport ambulance</label><br/>
+    <label>
+      <input type="checkbox" name="optionsSortie" value="autreOption" /> 🔤 Autre option
+      <input type="text" id="champAutreOption" placeholder="Précisez..." style="margin-top: 8px; display:none;" />
+    </label>
+
+<h3>💊 Traitement de sortie</h3>
+<textarea id="champTraitementSortie"	 rows="3" style="width:100%; margin-bottom: 10px;"></textarea>
+
+  
+    <div id="sortieListe"></div> 
+    <div class="modal-buttons">
+      <button id="btnAnnulerSortie">❌ Annuler</button>
+      <button id="btnValiderSortie">✅ Valider</button>
+    </div>
+
+  
+</section>
+
+<section id="panel-documents" class="panel" style="display:none;">
+  <h3>📑 Documents</h3>
+
+  <div class="docs-tabs">
+        <div id="tab-docs" class="docs-tab active" onclick="openDocsTab('tab-docs','docs.html')">Documents du patient</div>
+
+    <div id="tab-ordo" class="docs-tab active" onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">Ordonnancier</div>
+    <div id="tab-cert" class="docs-tab" onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">Certificats</div>
+    <div id="tab-exams" class="docs-tab" onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">Examens</div>
+        <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>
+    <div id="tab-fiches" class="docs-tab" onclick="openDocsTab('tab-fiches','fichesconseilf.html')">Fiches Conseils</div>
+    <div id="tab-pdf" class="docs-tab" onclick="openDocsTab('tab-pdf','uploadpdff.html')">PDF patient</div>
+    <div id="tab-etiq" class="docs-tab" onclick="openDocsTab('tab-etiq','etiquettesf.html')">Étiquettes</div>
+        <div id="tab-mail" class="docs-tab" onclick="openDocsTab('tab-mail','mailtof.html')">Mails</div>
+
+  </div>
+
+<iframe id="docsFrame" scrolling="auto"></iframe>
+
+</section>
+
+
+
+
+
+<!-- Modal Clôture -->
+<div class="modal-overlay" id="modalCloture">
+  <div class="modal" style="text-align: center;">
+    <h3>⏳Clôture en cours...</h3>
+    <div style="background:#eee; border-radius: 10px; overflow:hidden; margin-top: 15px;">
+      <div id="clotureBar" style="height: 12px; background-color: #0078d4; width: 0%; transition: width 0.3s;"></div>
+    </div>
+    <p style="margin-top:10px; color:#666;">Merci de patienter</p>
+  </div>
+</div>
+
+
+<!-- Modal Gestion Administrative -->
+<div class="modal-overlay" id="modalAdmin">
+
+  <div class="modal">
+    <h3>🛠 Gestion Administrative</h3>
+    
+    <label for="adminId">ID Patient</label>
+    <input type="text" id="adminId" disabled />
+	
+	<label for="adminNom">Nom</label>
+    <input type="text" id="adminNom" />
+	<label for="adminPrenom">Prénom</label>
+<input type="text" id="adminPrenom" />
+
+	
+	
+	<label for="adminSexe">Sexe</label>
+	<select id="adminSexe" >
+  <option value="">-- Sélectionnez --</option>
+  <option value="M">M</option>
+  <option value="Mme">Mme</option>
+  <option value="L'enfant">L'enfant</option>
+</select>
+
+	<label for="adminNaissance">Date de naissance</label>
+<input type="date" id="adminNaissance"  />
+
+	
+    <label for="adminAdresse">Adresse</label>
+    <input type="text" id="adminAdresse" />
+
+    <label for="adminTelephone">Téléphone</label>
+    <input type="text" id="adminTelephone" />
+
+    <label for="adminEmail">Email</label>
+    <input type="text" id="adminEmail" />
+
+    <div class="modal-buttons">
+	    <button type="button" id="readVitaleBtn" class="button" style="background-color: #28a745; color: white;">🆔 Lecture Carte Vitale</button>
+      <button id="btnFacturer" class="success">💶 Facturer</button>
+	    <button id="btnCloturer" style="flex:1; background-color:#d9534f;">✅ Clôturer hospitalisation</button>
+            <br><br>
+			<button id="btnFermerAdmin" class="danger">❌Fermer</button>
+	  <button id="btnEnregistrerAdmin" class="primary">💾Enregistrer</button>
+
+    </div>
+  </div>
+</div>
+ 
+<!-- 🏁 Modale de saisie du code de clôture -->
+<div class="modal-overlay" id="modalCodeCloture" style="display:none;">
+  <div class="modal">
+    <h3>🔒 Clôture de l’hospitalisation</h3>
+    <label for="codeClotureInput">Entrez le CCH (Code de Clôture d'Hospitalisation) :</label>
+    <input type="password" id="codeClotureInput" placeholder="CCH.....">
+    <div class="modal-buttons">
+      <button id="btnAnnulerCode" class="secondary">❌ Annuler</button>
+      <button id="btnValiderCode" class="success">✅ Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="vitaleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+  <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+    <div class="spinner" style="margin-bottom:15px;"></div>
+    <div style="font-size:18px; font-weight:600;">⏳Lecture Carte Vitale en cours...</div>
+  </div>
+</div>
+
+<style>
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+<div id="facturationModale" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
+  <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+    <div class="spinner" style="margin-bottom:15px;"></div>
+    <div style="font-size:18px; font-weight:600;">⏳Chargement des informations...</div>
+  </div>
+</div>
+
+<style>
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+<div class="modal-overlay" id="modalGlasgow">
+  <div class="modal">
+    <h3>🧠 Score de Glasgow</h3>
+    <img src="glasgow.jpg" alt="Échelle de Glasgow" style="width:100%; margin-bottom:15px; border-radius:8px;" />
+    
+    <label>👁 Ouverture des yeux (max 4)</label>
+    <input type="number" id="glasgowYeux" min="1" max="4" />
+
+    <label>🗣 Réponse verbale (max 5)</label>
+    <input type="number" id="glasgowVerbal" min="1" max="5" />
+
+    <label>💪 Réponse motrice (max 6)</label>
+    <input type="number" id="glasgowMoteur" min="1" max="6" />
+
+    <label>🎯 Score total</label>
+    <input type="number" id="glasgowTotal" disabled />
+
+<div id="glasgowPronostic" style="margin: 10px 0; font-style: italic;"></div>
+<div id="glasgowPronostic2" style="margin: 10px 0; font-style: italic;"></div>
+    <div class="modal-buttons">
+      <button id="btnFermerGlasgow" class="secondary">❌ Fermer</button>
+      <button id="btnEnregistrerGlasgow" class="success">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+
+ </div>
+</main>
+<script>
+   const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4",
+    storageBucket: "urgences-a8ed4.appspot.com",  
+    messagingSenderId: "392921498200",
+    appId: "1:392921498200:web:7ccce767332c67c697c02d",
+    measurementId: "G-C74MK2KYDL"
+  };
+	 firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+	// Récupérer l'ID du patient depuis l'URL
+const urlParams = new URLSearchParams(window.location.search);
+ const patientId = new URLSearchParams(window.location.search).get("id");
+// Créer la référence au document patient
+const patientRef = db.collection("patients").doc(patientId);
+
+ // Conteneur global pour les bulles
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
+
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
+const listePDC = [
+  "Attente enregistrement",
+  "Déchocage",
+  "Accès Direct IAO",
+  "UV - Accès direct couchés",
+  "Attente dossier administratif",
+  "IAO - Médecin généraliste",
+  "IAO - cricuit court",
+  "Attente examen",
+  "Attente résultats examen",
+  "Attente 1ere consult med",
+  "UHCD",
+  "Attente 1ere consult int",
+  "Attente 1ere consult ext",
+  "Attente soins",
+  "Attente transfert",
+  "Attente consultation externe",
+  "Attente décision externe",
+  "Circuit long"
+];
+// --- Barre recherche Statut PDC ---
+const pdcInput = document.getElementById("pdcStatut");
+const pdcSugg = document.getElementById("pdcSuggestions");
+
+pdcInput.addEventListener("input", () => {
+    const txt = pdcInput.value.toLowerCase();
+    pdcSugg.innerHTML = "";
+
+    if (txt.length === 0) {
+        pdcSugg.style.display = "none";
+        return;
+    }
+
+    const matches = listePDC.filter(s => s.toLowerCase().includes(txt));
+
+    matches.forEach(m => {
+        const li = document.createElement("li");
+        li.textContent = m;
+        li.style.padding = "6px";
+        li.style.cursor = "pointer";
+        li.onclick = () => {
+            pdcInput.value = m;
+            pdcSugg.style.display = "none";
+            sauvegarderAdmissionPDC();  
+        };
+        pdcSugg.appendChild(li);
+    });
+
+    pdcSugg.style.display = matches.length > 0 ? "block" : "none";
+});
+
+document.addEventListener("click", (e) => {
+    if (!pdcSugg.contains(e.target) && e.target !== pdcInput) {
+        pdcSugg.style.display = "none";
+    }
+});
+function sauvegarderAdmissionPDC() {
+    if (!patientId) return;
+
+
+    const pdcValue = document.getElementById("pdcStatut").value || "";
+
+    // 1️⃣ Lire le patient (LECTURE SEULE)
+    db.collection("patients")
+      .doc(patientId)
+      .get()
+      .then((doc) => {
+          if (!doc.exists) {
+              console.error("Patient introuvable");
+              return;
+          }
+
+          const data = doc.data();
+
+          // 2️⃣ Déterminer l'ID d'hospitalisation cible
+          let hospitalisationId = null;
+
+          if (data.hospitalisationActiveId) {
+              hospitalisationId = data.hospitalisationActiveId;
+          } else if (
+              Array.isArray(data.hospitalisations) &&
+              data.hospitalisations.length > 0
+          ) {
+              hospitalisationId =
+                  data.hospitalisations[data.hospitalisations.length - 1];
+          } else {
+              return;
+          }
+
+          // 3️⃣ Mise à jour UNIQUEMENT dans la collection hospitalisations
+          return db
+            .collection("hospitalisations")
+            .doc(hospitalisationId)
+            .update({
+                pdcStatut: pdcValue
+            });
+      })
+      .then(() => {
+      })
+      .catch((err) => {
+          console.error("Erreur enregistrement PDC :", err);
+      });
+}
+
+
+document.getElementById("pdcStatut").addEventListener("change", sauvegarderAdmissionPDC);
+
+document.getElementById("pdcStatut").addEventListener("change", () => {
+    console.log("Changement détecté, lancement sauvegarde");
+    sauvegarderAdmissionPDC();
+});
+function ajouterBoutonEffacer(idChamp) {
+    const champ = document.getElementById(idChamp);
+    if (!champ) return;
+
+    // Crée le bouton croix
+    const btn = document.createElement("button");
+    btn.textContent = "❌";
+    btn.style.position = "absolute";
+    btn.style.right = "8px";
+    btn.style.top = "50%";
+    btn.style.transform = "translateY(-50%)";
+    btn.style.border = "none";
+    btn.style.background = "transparent";
+    btn.style.cursor = "pointer";
+    btn.style.fontSize = "14px";
+    btn.style.opacity = "0.6";
+
+    // Efface le champ au clic
+    btn.addEventListener("click", () => {
+        champ.value = "";
+        champ.dispatchEvent(new Event("change")); // déclenche la sauvegarde si tu l’utilises
+    });
+
+    // Conteneur (nécessaire pour que la croix se positionne correctement)
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "relative";
+    wrapper.style.display = "inline-block";
+    wrapper.style.width = "100%";
+
+    // On place le champ et le bouton dedans
+    champ.parentNode.insertBefore(wrapper, champ);
+    wrapper.appendChild(champ);
+    wrapper.appendChild(btn);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnExamens = document.querySelector('[data-module="examens"]');
+
+  if (!btnExamens) {
+    console.warn("Bouton examens introuvable");
+    return;
+  }
+
+  btnExamens.addEventListener('click', async () => {
+    try {
+
+      const patientDoc = await db
+        .collection("patients")
+        .doc(patientId)
+        .get();
+
+      if (!patientDoc.exists) {
+        window.location.href = "aucun-patients.html";
+        console.warn("Patient introuvable");
+        return;
+      }
+
+      const patientData = patientDoc.data();
+
+      let hospitalisationId = null;
+
+      if (patientData.hospitalisationActiveId) {
+        hospitalisationId = patientData.hospitalisationActiveId;
+      } else if (
+        Array.isArray(patientData.hospitalisations) &&
+        patientData.hospitalisations.length > 0
+      ) {
+        hospitalisationId =
+          patientData.hospitalisations[patientData.hospitalisations.length - 1];
+      } else {
+        console.warn("Aucune hospitalisation trouvée");
+        return;
+      }
+
+      const hospiDoc = await db
+        .collection("hospitalisations")
+        .doc(hospitalisationId)
+        .get();
+
+      if (!hospiDoc.exists) {
+        console.warn("Document hospitalisation introuvable :", hospitalisationId);
+        return;
+      }
+
+      const hospitalisation = {
+        id: hospiDoc.id,
+        ...hospiDoc.data()
+      };
+
+      await chargerExamens(patientId, hospitalisation);
+
+    } catch (e) {
+      console.error("Erreur chargement examens :", e);
+    }
+  });
+
+});
+
+// Affichage du module Ordonnancier
+
+
+	
+  function calculerAge(dateNaissance) {
+    const birth = new Date(dateNaissance);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    if (
+      now.getMonth() < birth.getMonth() ||
+      (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  }
+// --- Références aux éléments ---
+const sortieListe = document.getElementById("sortieListe");
+const champAutreSortie = document.getElementById("champAutreSortie");
+const champAutreOption = document.getElementById("champAutreOption");
+const champTraitementSortie = document.getElementById("champTraitementSortie");
+document.getElementById("btnValiderSortie").addEventListener("click", async () => {
+  const type = document.querySelector('input[name="typeSortie"]:checked')?.value || "";
+  const options = Array.from(document.querySelectorAll('input[name="optionsSortie"]:checked')).map(cb => cb.value);
+
+  const sortie = {
+    type,
+    options,
+    autreSortieTexte: type === "autre" ? champAutreSortie.value.trim() : "",
+    autreOptionTexte: options.includes("autreOption") ? champAutreOption.value.trim() : "",
+    destinationTransfert: document.getElementById("champDestinationTransfert")?.value || "",
+    serviceHospitalisation: document.getElementById("champServiceHospitalisation")?.value || "",
+    avisSpecialiste: document.getElementById("champAvisSpecialiste")?.value || "",
+    traitementSortie: champTraitementSortie.value.trim()
+  };
+
+  try {
+    await updateHospitalisationField("sortie", sortie);
+    afficherSortieListe(sortie);
+    afficherBulle("✔️ Sortie enregistrée", "success");
+  } catch (err) {
+    console.error("Erreur enregistrement sortie :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement de la sortie", "error");
+  }
+});
+
+document.getElementById("btnAnnulerSortie").addEventListener("click", () => {
+  champAutreSortie.value = "";
+  champAutreOption.value = "";
+  champTraitementSortie.value = "";
+  sortieListe.innerHTML = "<p>Aucune sortie enregistrée.</p>";
+});
+
+// Container dynamique pour les champs spécifiques
+let containerDynamique = document.getElementById("optionsSpecifiques");
+if (!containerDynamique) {
+  containerDynamique = document.createElement("div");
+  containerDynamique.id = "optionsSpecifiques";
+
+  // On récupère la référence de l'élément #sortieListe dans le panel Sortie
+  const sortieListe = document.getElementById("sortieListe");
+
+  if (sortieListe) {
+    // On insère containerDynamique avant sortieListe
+    sortieListe.parentNode.insertBefore(containerDynamique, sortieListe);
+  } else {
+    // Fallback : si #sortieListe n'existe pas, on ajoute à la fin du panel
+    const panelSortie = document.getElementById("panel-sortie");
+    if (panelSortie) {
+      panelSortie.appendChild(containerDynamique);
+    }
+  }
+}
+
+async function chargerPatient(patientId) {
+  afficherLoader();
+
+  try {
+    // ===============================
+    // 1️⃣ LECTURE PATIENT (IDENTITÉ)
+    // ===============================
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+
+    if (!patientDoc.exists) {
+      window.location.href = "aucun-patients.html";
+      return;
+    }
+
+    const patient = patientDoc.data();
+
+    // --- Infos patient ---
+    document.getElementById("idPatient").textContent = patientId || "Non défini";
+    document.getElementById("nom").textContent = patient.nom || "";
+    document.getElementById("prenom").textContent = patient.prenom || "";
+    document.getElementById("sexe").textContent = patient.sexe || "";
+    document.getElementById("poids").value = patient.poids || "";
+    document.getElementById("taille").value = patient.taille || "";
+
+    document.getElementById("allergies").value = patient.allergies || "aucun";
+    document.getElementById("vigilances").value = patient.vigilances || "aucune";
+    document.getElementById("medtraitant").value = patient.medtraitant || "";
+    document.getElementById("importanceAllergies").checked = patient.importanceAllergies === true;
+
+    const patientNameSpan = document.getElementById("patientName");
+    patientNameSpan.textContent = `Fiche Urgences - ${patient.nom || ""} ${patient.prenom || ""}`;
+
+    // Bouton fermeture
+    const closeBtn = document.createElement("span");
+    closeBtn.className = "close-tab";
+    closeBtn.id = "closeBtn";
+    closeBtn.textContent = "❌";
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      window.location.href = from ? `${from}.html` : "index.html";
+    };
+
+    // IMC
+    const poids = parseFloat(patient.poids);
+    const taille = parseFloat(patient.taille);
+    const elImc = document.getElementById("imc");
+    if (!isNaN(poids) && !isNaN(taille) && taille > 0) {
+      elImc.textContent = (poids / ((taille / 100) ** 2)).toFixed(1);
+    } else {
+      elImc.textContent = "–";
+    }
+
+    // Âge
+    if (patient.dateNaissance) {
+      const age = calculerAge(patient.dateNaissance);
+      document.getElementById("age").textContent =
+        !isNaN(age) ? `${age} ans` : "Inconnu";
+    }
+
+    // =========================================
+    // 2️⃣ DÉTERMINER L’HOSPITALISATION ACTIVE
+    // =========================================
+    let hospitalisationId = null;
+
+    if (patient.hospitalisationActiveId) {
+      hospitalisationId = patient.hospitalisationActiveId;
+    } else if (Array.isArray(patient.hospitalisations) && patient.hospitalisations.length > 0) {
+      hospitalisationId = patient.hospitalisations[patient.hospitalisations.length - 1];
+    }
+
+    if (!hospitalisationId) {
+      console.warn("Aucune hospitalisation active");
+      masquerLoader();
+      return;
+    }
+
+    // ==================================
+    // 3️⃣ CHARGER L’HOSPITALISATION
+    // ==================================
+    const hospiDoc = await db
+      .collection("hospitalisations")
+      .doc(hospitalisationId)
+      .get();
+
+    if (!hospiDoc.exists) {
+      console.warn("Hospitalisation introuvable :", hospitalisationId);
+      masquerLoader();
+      return;
+    }
+
+    const hospi = hospiDoc.data();
+
+    // 🔹 Informations d’hospitalisation
+    document.getElementById("gravite").value = hospi.gravite || "";
+    document.getElementById("motif").value = hospi.motif || "";
+    document.getElementById("moyen").value = hospi.moyen || "";
+    document.getElementById("circuit").value = hospi.circuit || "";
+    document.getElementById("pdcStatut").value = hospi.pdcStatut || "";
+
+    // 🔹 Constantes vitales
+    document.getElementById("temperature").value = hospi.constantes?.temperature || "";
+    document.getElementById("fc").value = hospi.constantes?.fc || "";
+    document.getElementById("ta").value = hospi.constantes?.ta || "";
+    document.getElementById("saturation").value = hospi.constantes?.saturation || "";
+    document.getElementById("fr").value = hospi.constantes?.fr || "";
+    document.getElementById("douleur").value = hospi.constantes?.douleur || "";
+
+    // 🔹 Dossier médical
+    const dm = hospi.dossierMedical || {};
+    document.getElementById("questionnaire").value = dm.questionnaire || "";
+    document.getElementById("antecedents").value = dm.antecedents || "";
+    document.getElementById("traitements").value = dm.traitements || "";
+    document.getElementById("histoire").value = dm.histoire || "";
+    document.getElementById("auscultation").value = dm.auscultation || "";
+
+    // 🔹 Évolution aux urgences
+    document.getElementById("evolutionTexte").value = hospi.evolution || "";
+
+    if (hospi.sortie) {
+      afficherSortieListe(hospi.sortie);
+    }
+
+    // ==================================
+    // 4️⃣ ACTES & EXAMENS
+    // ==================================
+    await chargerActes(hospitalisationId);
+    await chargerExamens(patientId, {
+      id: hospitalisationId,
+      ...hospi
+    });
+
+    // Services / équipes
+    chargerServices();
+    chargerRealisateurs();
+    await chargerEquipeReferente();
+
+  } catch (err) {
+    console.error("Erreur chargement patient :", err);
+    afficherBulle("❌ Erreur de chargement", "error");
+  }
+
+  masquerLoader();
+}
+
+// Champ allergies
+document.getElementById("allergies").addEventListener("change", async () => {
+  const value = document.getElementById("allergies").value.trim() || "aucun";
+  await patientRef.update({ allergies: value });
+  afficherBulle("💾 Allergies enregistrées", "success");
+});
+document.getElementById("vigilances").addEventListener("change", async () => {
+  const value = document.getElementById("vigilances").value.trim() || "aucun";
+  await patientRef.update({ vigilances: value });
+  afficherBulle("💾 Vigilances enregistrées", "success");
+});
+document.getElementById("medtraitant").addEventListener("change", async () => {
+  const value = document.getElementById("medtraitant").value.trim() || "";
+  await patientRef.update({ medtraitant: value });
+  afficherBulle("💾 Medecin(s) traitant(s) enregistré(s)", "success");
+});
+
+// Switch allergie(s) importantes
+document.getElementById("importanceAllergies").addEventListener("change", async () => {
+  const isImportant = document.getElementById("importanceAllergies").checked;
+  await patientRef.update({ importanceAllergies: isImportant });
+  afficherBulle(isImportant ? "⚠️ Allergie(s) importantes activée(s)" : "✅ Pas d’allergie majeure", "default");
+});
+
+async function updateHospitalisationField(field, value) {
+  try {
+    if (!patientId) return;
+
+    // 1️⃣ Lecture patient (LECTURE SEULE)
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) return;
+
+    const patient = patientDoc.data();
+
+    // 2️⃣ Déterminer l'hospitalisation cible
+    let hospitalisationId = null;
+
+    if (patient.hospitalisationActiveId) {
+      hospitalisationId = patient.hospitalisationActiveId;
+    } else if (
+      Array.isArray(patient.hospitalisations) &&
+      patient.hospitalisations.length > 0
+    ) {
+      hospitalisationId =
+        patient.hospitalisations[patient.hospitalisations.length - 1];
+    } else {
+      console.warn("Aucune hospitalisation trouvée");
+      return;
+    }
+
+    // 3️⃣ Mise à jour DU CHAMP dans hospitalisations
+    await db
+      .collection("hospitalisations")
+      .doc(hospitalisationId)
+      .update({
+        [field]: value
+      });
+
+    ajouterEntreeHistorique(`Modification de ${field} : ${value}`);
+
+  } catch (err) {
+    console.error(`Erreur mise à jour ${field} :`, err);
+    afficherBulle("❌ Erreur d’enregistrement", "error");
+  }
+}
+
+
+
+	document.getElementById("btnOuvrirModaleDemande").addEventListener("click", () => {
+  document.getElementById("modalExamen").style.display = "block";
+});
+
+// --- barre de recherche moyens ---
+const inputMoyen = document.getElementById("moyen");
+const boxMoyen = document.getElementById("suggestionsMoyen");
+
+let moyensListe = [];
+
+// 🔹 Chargement Firestore (API globale)
+async function chargerMoyens() {
+  const snap = await db
+    .collection("référentiels")
+    .doc("moyens")
+    .get();
+
+  if (snap.exists && Array.isArray(snap.data().liste)) {
+    moyensListe = snap.data().liste;
+  }
+}
+chargerMoyens();
+
+// 🔹 Autocomplétion
+inputMoyen.addEventListener("input", () => {
+  const valeur = inputMoyen.value.toLowerCase().trim();
+  boxMoyen.innerHTML = "";
+
+  if (!valeur) {
+    boxMoyen.style.display = "none";
+    return;
+  }
+
+  const filtres = moyensListe.filter(m =>
+    m.toLowerCase().includes(valeur)
+  );
+
+  if (filtres.length === 0) {
+    boxMoyen.style.display = "none";
+    return;
+  }
+
+  filtres.forEach(moyen => {
+    const div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.textContent = moyen;
+
+    div.addEventListener("mousedown", () => {
+      inputMoyen.value = moyen;
+      boxMoyen.style.display = "none";
+    });
+
+    boxMoyen.appendChild(div);
+  });
+
+  boxMoyen.style.display = "block";
+});
+
+// 🔹 Fermer si clic ailleurs
+document.addEventListener("click", e => {
+  if (!e.target.closest("#moyen")) {
+    boxMoyen.style.display = "none";
+  }
+});
+
+// --- Rafraîchissement des champs dynamiques ---
+function rafraichirChampsSortie() {
+  const typeSortie = document.querySelector('input[name="typeSortie"]:checked')?.value;
+  const optionsSortie = Array.from(document.querySelectorAll('input[name="optionsSortie"]:checked')).map(cb => cb.value);
+
+  containerDynamique.innerHTML = "";
+
+  if (typeSortie === "Transfert") {
+    const label = document.createElement("label");
+    label.textContent = "Destination du transfert";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "champDestinationTransfert";
+    input.placeholder = "Ex: CHU Lyon";
+    containerDynamique.appendChild(label);
+    containerDynamique.appendChild(input);
+  }
+
+  if (typeSortie === "Hospitalisation") {
+    const label = document.createElement("label");
+    label.textContent = "Service hospitalisation";
+    const select = document.createElement("select");
+    select.id = "champServiceHospitalisation";
+
+    // Récupération dynamique depuis Firestore
+    db.collection("référentiels").doc("spécialités").get().then(doc => {
+      const data = doc.data();
+      (data?.spécialités || []).forEach(service => {
+        const option = document.createElement("option");
+        option.value = service;
+        option.textContent = service;
+        select.appendChild(option);
+      });
+    });
+
+    containerDynamique.appendChild(label);
+    containerDynamique.appendChild(select);
+  }
+
+  if (optionsSortie.includes("Avis specialiste")) {
+    const label = document.createElement("label");
+    label.textContent = "Spécialiste consulté";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "champAvisSpecialiste";
+    input.placeholder = "Ex: Dr Dupont (Cardio)";
+    containerDynamique.appendChild(label);
+    containerDynamique.appendChild(input);
+  }
+
+  // Affichage du champ "autre option"
+  champAutreOption.style.display = optionsSortie.includes("autreOption") ? "block" : "none";
+}
+const params = new URLSearchParams(window.location.search);
+const from = params.get('from'); // récupère "urgences" ou autre
+
+
+
+// --- Gestion champ "autre sortie" ---
+document.querySelectorAll('input[name="typeSortie"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    champAutreSortie.style.display = document.querySelector('input[name="typeSortie"][value="autre"]')?.checked ? "block" : "none";
+    rafraichirChampsSortie();
+  });
+});
+
+document.querySelectorAll('input[name="optionsSortie"]').forEach(cb => {
+  cb.addEventListener("change", rafraichirChampsSortie);
+});
+
+// --- Affichage sortie ---
+function afficherSortieListe(sortie) {
+  if (!sortie || !sortie.type) {
+    sortieListe.innerHTML = "<p>Aucune sortie enregistrée.</p>";
+    return;
+  }
+
+  let html = `
+    <p><strong>Type de sortie :</strong> ${sortie.type}</p>
+    <p><strong>Options :</strong> ${sortie.options?.join(", ") || "Aucune"}</p>
+  `;
+
+  if (sortie.destinationTransfert)
+    html += `<p><strong>↔️ Destination :</strong> ${sortie.destinationTransfert}</p>`;
+  if (sortie.serviceHospitalisation)
+    html += `<p><strong>🏥 Service :</strong> ${sortie.serviceHospitalisation}</p>`;
+  if (sortie.avisSpecialiste)
+    html += `<p><strong>👨‍⚕️ Spécialiste :</strong> ${sortie.avisSpecialiste}</p>`;
+  if (sortie.autreOptionTexte)
+    html += `<p><strong>🔤 Autre option :</strong> ${sortie.autreOptionTexte}</p>`;
+  if (sortie.traitementSortie)
+    html += `<p><strong>💊 Traitement de sortie :</strong> ${sortie.traitementSortie}</p>`;
+
+  html += `
+    <button id="btnSupprimerSortie" class="danger" style="margin-top:10px;">
+      🗑 Supprimer
+    </button>
+  `;
+
+  sortieListe.innerHTML = html;
+
+  document
+    .getElementById("btnSupprimerSortie")
+    .addEventListener("click", async () => {
+      try {
+        if (!patientId) return;
+
+        // 1️⃣ Lecture patient (LECTURE SEULE)
+        const patientDoc = await db.collection("patients").doc(patientId).get();
+        if (!patientDoc.exists) return;
+
+        const patient = patientDoc.data();
+
+        // 2️⃣ Déterminer l'hospitalisation cible
+        let hospitalisationId = null;
+
+        if (patient.hospitalisationActiveId) {
+          hospitalisationId = patient.hospitalisationActiveId;
+        } else if (
+          Array.isArray(patient.hospitalisations) &&
+          patient.hospitalisations.length > 0
+        ) {
+          hospitalisationId =
+            patient.hospitalisations[patient.hospitalisations.length - 1];
+        } else {
+          console.warn("Aucune hospitalisation trouvée");
+          return;
+        }
+
+        // 3️⃣ Suppression de la sortie dans hospitalisations
+        await db
+          .collection("hospitalisations")
+          .doc(hospitalisationId)
+          .update({
+            sortie: firebase.firestore.FieldValue.delete(),
+            traitementSortie: ""
+          });
+
+        sortieListe.innerHTML = "<p>Sortie supprimée.</p>";
+        afficherBulle("🗑️ Sortie supprimée", "success");
+
+      } catch (err) {
+        console.error("Erreur suppression sortie :", err);
+        afficherBulle("❌ Erreur suppression sortie", "error");
+      }
+    });
+}
+
+
+
+function formaterDate(dateStr) {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);
+  if (match) {
+    const [_, jj, mm, aaaa] = match;
+    return `${aaaa}-${mm}-${jj}`;
+  }
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateStr;
+  }
+  return "";
+}
+    
+// --- Recherche et suggestions d'actes ---
+const inputActe = document.getElementById("rechercherActe");
+const suggestionsActes = document.getElementById("suggestionsActes");
+
+inputActe.addEventListener("input", async (e) => {
+  const recherche = e.target.value.trim().toLowerCase();
+  suggestionsActes.innerHTML = "";
+
+  // attendre au moins 2 caractères
+  if (recherche.length < 2) return;
+
+  try {
+    // 🔹 Récupère la liste des actes depuis Firestore
+    const doc = await db.collection("référentiels").doc("actes").get();
+    const data = doc.data();
+    const actes = data?.liste || [];
+
+    // 🔹 Filtrage des résultats
+    const filtres = actes.filter(a => a.toLowerCase().includes(recherche));
+
+    if (filtres.length === 0) {
+      suggestionsActes.innerHTML = "<li style='color:#999;'>Aucun résultat</li>";
+      return;
+    }
+
+    // 🔹 Affichage des suggestions
+    filtres.forEach(acte => {
+      const li = document.createElement("li");
+      li.textContent = acte;
+      li.style.cursor = "pointer";
+      li.style.padding = "5px";
+      li.addEventListener("mouseover", () => li.style.background = "#eee");
+      li.addEventListener("mouseout", () => li.style.background = "transparent");
+      li.addEventListener("click", () => {
+        inputActe.value = acte;      // remplir la barre avec l’acte choisi
+        suggestionsActes.innerHTML = ""; // vider les suggestions
+      });
+      suggestionsActes.appendChild(li);
+    });
+  } catch (err) {
+    console.error("Erreur recherche actes :", err);
+    suggestionsActes.innerHTML = "<li style='color:red;'>⚠️ Erreur de chargement</li>";
+  }
+});
+
+
+document.getElementById("gravite").addEventListener("change", e => {
+  updateHospitalisationField("gravite", e.target.value);
+});
+document.getElementById("circuit").addEventListener("change", async (e) => {
+   updateHospitalisationField("circuit", e.target.value);
+});
+
+document.getElementById("motif").addEventListener("blur", e => {
+  updateHospitalisationField("motif", e.target.value.trim());
+});
+document.getElementById("moyen").addEventListener("blur", e => {
+  updateHospitalisationField("moyen", e.target.value.trim());
+});
+
+async function ajouterEntreeHistorique(texte) {
+  const date = new Date().toLocaleString();
+  const entree = { date, texte };
+
+  try {
+   
+
+  } catch (error) {
+    console.error("Erreur ajout historique :", error);
+  }
+}
+
+
+
+
+  document.getElementById("btnSavePoids").addEventListener("click", async () => {
+  const poids = parseFloat(document.getElementById("poids").value);
+  const taille = parseFloat(document.getElementById("taille").value);
+
+  if (!poids || !taille) {
+    afficherBulle("❌ Veuillez entrer un poids et une taille valides", "warning");
+    return;
+  }
+
+  try {
+    await patientRef.update({ poids, taille });
+    ajouterEntreeHistorique(`Poids/Taille/IMC enregistrés: ${poids}kg / ${taille}cm`);
+    afficherBulle("✔️ Poids et taille enregistrés", "success");
+    chargerPatient(patientId); // 🔄 recalcul IMC
+  } catch (err) {
+    console.error("Erreur enregistrement poids/taille :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement du poids/taille", "error");
+  }
+});
+
+
+
+
+
+document.getElementById("btnSaveConst").addEventListener("click", async () => {
+  const constantes = {
+    temperature: document.getElementById("temperature").value.trim() || "",
+    fc: document.getElementById("fc").value.trim() || "",
+    ta: document.getElementById("ta").value.trim() || "",
+    saturation: document.getElementById("saturation").value.trim() || "",
+    fr: document.getElementById("fr").value.trim() || "",
+    douleur: document.getElementById("douleur").value.trim() || ""
+  };
+
+  try {
+    await updateHospitalisationField("constantes", constantes);
+    afficherBulle("✔️ Constantes enregistrées", "success");
+  } catch (err) {
+    console.error("Erreur enregistrement constantes :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement des constantes", "error");
+  }
+});
+
+
+  async function initialiserScope(patientId) {
+  const doc = await patientRef.get();
+  if (!doc.exists) return;
+
+  const data = doc.data();
+  const index = data.hospitalisationIndex ?? 0;
+  const hospi = data.hospitalisations?.[index] || {};
+
+  const checkbox = document.getElementById("patientScopeCheckbox");
+  const fields = document.getElementById("scopeFields");
+  const successDiv = document.getElementById("scopeSuccess");
+  const numInput = document.getElementById("scopeNum");
+
+  // 🔹 Lecture depuis Firestore
+  if (hospi.scope) {
+    checkbox.checked = hospi.scope.scopeActive || false;
+    if (hospi.scope.scopeActive) {
+      fields.style.display = "block";
+      numInput.value = hospi.scope.numero || "";
+      successDiv.style.display = "block";
+    }
+  }
+
+  // 🔹 Changement de statut du scope
+  checkbox.addEventListener("change", async () => {
+    const actif = checkbox.checked;
+    if (!actif) {
+      fields.style.display = "none";
+      successDiv.style.display = "none";
+      await updateHospitalisationField("scope", { scopeActive: false, numero: "" });
+      afficherBulle("✔️ Scope désactivé", "success");
+      return;
+    }
+    fields.style.display = "block";
+    await updateHospitalisationField("scope", { scopeActive: true, numero: "" });
+  });
+
+  // 🔹 Simulation de connexion au scope
+  document.getElementById("btnConnectScope").addEventListener("click", async () => {
+    const numero = numInput.value.trim();
+    if (!numero) {
+      afficherBulle("❌Veuillez entrer un numéro de scope", "warning");
+      return;
+    }
+    document.getElementById("scopeLoading").style.display = "inline";
+    setTimeout(async () => {
+      document.getElementById("scopeLoading").style.display = "none";
+      successDiv.style.display = "block";
+      await updateHospitalisationField("scope", { scopeActive: true, numero });
+      afficherBulle(`✔️ Scope ${numero} connecté`, "success");
+    }, 1500);
+  });
+
+  // 🔹 Ouverture du scope.html
+  document.getElementById("btnOpenScope").addEventListener("click", () => {
+    const numero = numInput.value.trim();
+    if (!numero) {
+      afficherBulle("❌Numéro de scope manquant", "warning");
+      return;
+    }
+    window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `VisionScope ${nomfacture} ${prenomfacture}`,
+          url: `scope.html?id=${encodeURIComponent(patientId)}`
+        },
+        "*"
+      );
+  });
+}
+
+// 🧠 Intégration dans le chargement patient
+document.addEventListener("DOMContentLoaded", async () => {
+  if (patientId) {
+    await chargerPatient(patientId);
+    await initialiserScope(patientId);
+  }
+});
+
+  const historiqueContainer = document.getElementById("historique");
+
+// Fonction pour charger tout l'historique de l'hospitalisation en cours
+
+// Fonction d'affichage d'une seule entrée dans le DOM
+
+  const btnDemandeExamen = document.getElementById("btnDemandeExamen");
+const fenetreExamens = document.getElementById("fenetreExamens");
+const listeExamens = document.getElementById("listeExamens");
+const btnOuvrirModaleDemande = document.getElementById("btnOuvrirModaleDemande");
+
+
+const modalExamen = document.getElementById("modalExamen");
+const typeExamen = document.getElementById("typeExamen");
+const commentaireExamen = document.getElementById("commentaireExamen");
+const btnSaveExamen = document.getElementById("btnSaveExamen");
+
+
+
+
+
+btnOuvrirModaleDemande.addEventListener("click", () => {
+  
+  commentaireExamen.value = "";
+  modalExamen.style.display = "flex";
+});
+
+// Modale annulation
+btnCancelExamen.addEventListener("click", () => {
+  modalExamen.style.display = "none";
+});
+
+document.getElementById("btnSaveExamen").addEventListener("click", async () => {
+  const commentaire = document.getElementById("commentaireExamen").value.trim();
+
+  // Récupérer tous les examens cochés
+  const checkboxes = document.querySelectorAll("#modalExamen input[type='checkbox']:checked");
+  const examens = Array.from(checkboxes).map(cb => cb.value);
+
+  if (examens.length === 0) {
+    afficherBulle("❌ Veuillez sélectionner au moins un examen", "warning");
+    return;
+  }
+
+  const date = new Date().toLocaleString();
+
+  try {
+    // 1️⃣ Charger le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    const patientData = patientDoc.data();
+
+    if (!patientData) throw new Error("Patient introuvable");
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    let hospitalisationId = patientData.hospitalisationActiveId 
+                            || (patientData.hospitalisations?.slice(-1)[0]);
+
+    if (!hospitalisationId) {
+      afficherBulle("❌ Aucune hospitalisation active pour ce patient", "warning");
+      return;
+    }
+
+    // 3️⃣ Charger le document hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+    const hospiDoc = await hospiRef.get();
+    if (!hospiDoc.exists) throw new Error("Hospitalisation introuvable");
+
+    const hospiData = hospiDoc.data();
+    const examensHospitalisation = hospiData.examens || [];
+
+    // 4️⃣ Ajouter les examens
+    examens.forEach(type => {
+      examensHospitalisation.push({
+        type,
+        commentaire,
+        dateDemande: date,
+        realise: false
+      });
+    });
+
+    // 5️⃣ Mettre à jour la collection hospitalisations
+    await hospiRef.update({ examens: examensHospitalisation });
+
+    // 6️⃣ UI feedback
+    modalExamen.style.display = "none";
+    afficherBulle("✔️ Examens enregistrés", "success");
+    reinitialiserFormulaireExamen();
+    chargerExamens(); // Recharge les examens depuis Firestore
+
+  } catch (err) {
+    console.error("Erreur enregistrement examens :", err);
+    afficherBulle("❌ Erreur enregistrement", "error");
+  }
+});
+
+	function reinitialiserFormulaireExamen() {
+  // Décoche tous les checkboxes dans le modal
+  const checkboxes = document.querySelectorAll("#modalExamen input[type='checkbox']");
+  checkboxes.forEach(cb => cb.checked = false);
+
+  // Vide le commentaire
+  document.getElementById("commentaireExamen").value = "";
+}
+
+  // --- Gestion modale de saisie du code ---
+const modalCode = document.getElementById("modalCodeCloture");
+const inputCode = document.getElementById("codeClotureInput");
+const btnAnnulerCode = document.getElementById("btnAnnulerCode");
+const btnValiderCode = document.getElementById("btnValiderCode");
+
+// 🔹 Ouvrir la modale quand on clique sur "Clôturer"
+document.getElementById("btnCloturer").addEventListener("click", () => {
+  inputCode.value = "";
+  modalCode.style.display = "flex";
+  inputCode.focus();
+});
+
+// 🔹 Annuler → fermer la modale
+btnAnnulerCode.addEventListener("click", () => {
+  modalCode.style.display = "none";
+});
+
+// 🔹 Valider le code et exécuter la clôture
+btnValiderCode.addEventListener("click", async () => {
+  const code = inputCode.value.trim();
+  if (!code) {
+    afficherBulle("⚠️ Veuillez entrer un code", "warning");
+    return;
+  }
+
+  try {
+    // ✅ Vérification du code (ici conservé pour le patient "QhwMJ0mjmUnS8MTNBCFU")
+    const codeDoc = await db.collection("patients").doc("QhwMJ0mjmUnS8MTNBCFU").get();
+    const codeAttendu = codeDoc.data().CCH;
+
+    if (code !== codeAttendu) {
+      afficherBulle("❌ Code incorrect", "warning");
+      return;
+    }
+
+    // ✅ Code correct → démarrer la clôture
+    modalCode.style.display = "none";
+    document.getElementById("modalCloture").style.display = "flex";
+
+    const bar = document.getElementById("clotureBar");
+    bar.style.width = "0%";
+    let progress = 0;
+
+    const interval = setInterval(() => {
+      progress += 1;
+      bar.style.width = `${progress}%`;
+      if (progress >= 100) clearInterval(interval);
+    }, 30);
+
+    // 🕓 Simulation du traitement de clôture
+    setTimeout(async () => {
+      try {
+        // 1️⃣ Récupérer le patient
+        const patientDoc = await db.collection("patients").doc(patientId).get();
+        const patientData = patientDoc.data();
+
+        if (!patientData) throw new Error("Patient introuvable");
+
+        // 2️⃣ Déterminer l'hospitalisation active
+        const hospitalisationId = patientData.hospitalisationActiveId
+                                  || (patientData.hospitalisations?.slice(-1)[0]);
+
+        if (!hospitalisationId) {
+          afficherBulle("⚠️ Aucune hospitalisation active", "warning");
+          return;
+        }
+
+        // 3️⃣ Récupérer le document hospitalisation
+        const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+        const hospiDoc = await hospiRef.get();
+
+        if (!hospiDoc.exists) throw new Error("Hospitalisation introuvable");
+
+        const hospiData = hospiDoc.data();
+        const now = new Date().toLocaleString();
+
+        // 4️⃣ Mettre à jour l'hospitalisation
+        const historique = hospiData.historique || [];
+        historique.push({ date: now, texte: "Hospitalisation clôturée" });
+        await hospiRef.update({
+          dateFin: now,
+          historique,
+          rapport: `Rapport d'hospitalisation pour ${patientData.nom} ${patientData.prenom} clôturé le ${now}.`
+        });
+
+        // 🔄 Mise à jour automatique du statut PDC sur le patient
+        await db.collection("patients").doc(patientId).update({
+          pdcStatut: "Attente enregistrement",
+          hospitalisationActiveId: "" // plus d'hospitalisation active
+        });
+
+        // ✅ Feedback UI
+        afficherBulle("✅ Hospitalisation clôturée", "success");
+
+        const params = new URLSearchParams(window.location.search);
+        const from = params.get('from');
+        window.location.href = from ? `${from}.html` : 'index.html';
+
+      } catch (error) {
+        console.error("Erreur clôture hospitalisation :", error);
+        afficherBulle("⚠️ Erreur de clôture", "error");
+      } finally {
+        document.getElementById("modalCloture").style.display = "none";
+      }
+    }, 3200);
+
+  } catch (err) {
+    console.error("Erreur lors de la vérification du code :", err);
+    afficherBulle("Erreur de vérification du code", "error");
+  }
+});
+
+
+  
+
+document.getElementById("btnAdmin").addEventListener("click", () => {
+   modalAdmin.classList.add("show");
+});
+
+
+ 
+document.getElementById("btnVersPdf").addEventListener("click", () => {
+    window.location.href =`uploadpdf.html?id=${patientId}`;
+  });
+
+document.getElementById("btnmailto").addEventListener("click", () => {
+    window.location.href =`mailto.html?id=${patientId}`;
+  });
+;
+
+// Gestion Administrative
+const modalAdmin = document.getElementById("modalAdmin");
+const btnAdmin = document.getElementById("btnAdmin");
+const btnFermerAdmin = document.getElementById("btnFermerAdmin");
+const btnEnregistrerAdmin = document.getElementById("btnEnregistrerAdmin");
+const btnFacturer = document.getElementById("btnFacturer");
+
+btnAdmin.addEventListener("click", async () => {
+  try {
+    const doc = await patientRef.get();
+    const data = doc.data();
+    document.getElementById("adminId").value = patientId;
+	document.getElementById("adminNom").value = data.nom || "";
+    document.getElementById("adminPrenom").value = data.prenom || "";
+    document.getElementById("adminSexe").value = data.sexe || "";
+document.getElementById("adminNaissance").value = data.dateNaissance || "";
+    document.getElementById("adminAdresse").value = data.adresse || "";
+    document.getElementById("adminTelephone").value = data.telephone || "";
+    document.getElementById("adminEmail").value = data.email || "";
+ modalAdmin.classList.add("show");
+  } catch (e) {
+    console.error("Erreur ouverture admin :", e);
+    afficherBulle("❌Erreur chargement gestion dministrative", "error");
+  }
+});
+
+btnFermerAdmin.addEventListener("click", () => {
+  modalAdmin.classList.remove("show");
+});
+
+btnEnregistrerAdmin.addEventListener("click", async () => {
+  const adresse = document.getElementById("adminAdresse").value.trim();
+  const telephone = document.getElementById("adminTelephone").value.trim();
+  const email = document.getElementById("adminEmail").value.trim();
+  const sexe = document.getElementById("adminSexe").value;
+const dateNaissance = document.getElementById("adminNaissance").value.trim();
+
+
+
+
+  try {
+    await patientRef.update({ adresse, telephone, email, sexe, dateNaissance });
+    afficherBulle("✔️ Coordonnées mises à jour", "success");
+    modalAdmin.style.display = "none";
+  } catch (e) {
+    console.error("Erreur maj admin :", e);
+    afficherBulle("❌Erreur enregistrement données administratives", "error");
+  }
+});
+const nomfacture = document.getElementById("nom")
+const prenomfacture = document.getElementById("prenom")
+
+btnFacturer.addEventListener("click", () => {
+  window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Facturation ${nomfacture} ${prenomfacture}`,
+          url: `Facturation.html?id=${patientId}`
+        },
+        "*"
+      );
+});
+
+let tousLesActesRealises = [];
+
+
+const btnFermerActe = document.getElementById("btnFermerActe");
+const btnEnregistrerActe = document.getElementById("btnEnregistrerActe");
+const selectActe = document.getElementById("selectActe");
+const champAutreActe = document.createElement("input");
+champAutreActe.type = "text";
+champAutreActe.id = "champAutreActe";
+champAutreActe.placeholder = "Préciser le type d’acte";
+champAutreActe.style.display = "none";
+champAutreActe.style.marginTop = "8px";
+
+document.getElementById("btnFermerActe").addEventListener("click", () => {
+  afficherBulle("ℹ️ Fermeture sans enregistrement", "default");
+});
+
+
+
+let tousLesActesDispos = [];
+
+async function chargerEtInitialiserRechercheActe() {
+  try {
+    const doc = await db.collection("référentiels").doc("actes").get();
+    const data = doc.data();
+    tousLesActesDispos = Array.isArray(data?.liste) ? data.liste : [];
+  } catch (e) {
+    console.error("Erreur chargement actes :", e);
+    tousLesActesDispos = [];
+  }
+
+  const champ = document.getElementById("rechercherActe");
+  const suggestions = document.getElementById("suggestionsActes");
+
+  champ.addEventListener("input", () => {
+    const texte = champ.value.toLowerCase().trim();
+    suggestions.innerHTML = "";
+
+    if (!texte) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    const filtres = tousLesActesDispos.filter(nom =>
+      nom.toLowerCase().includes(texte)
+    );
+
+    filtres.forEach(nom => {
+      const li = document.createElement("li");
+      li.textContent = nom;
+      li.style.padding = "6px 10px";
+      li.style.cursor = "pointer";
+      li.addEventListener("click", () => {
+        champ.value = nom;
+        suggestions.style.display = "none";
+      });
+      suggestions.appendChild(li);
+    });
+
+    suggestions.style.display = filtres.length ? "block" : "none";
+  });
+
+  document.addEventListener("click", e => {
+    if (!champ.contains(e.target) && !suggestions.contains(e.target)) {
+      suggestions.style.display = "none";
+    }
+  });
+}
+
+
+function mettreAJourListeActes(filtre) {
+  const selectActe = document.getElementById("selectActe");
+  selectActe.innerHTML = "";
+
+  const actesFiltres = tousLesActesDispos.filter(acte =>
+    acte.toLowerCase().includes(filtre)
+  );
+
+  actesFiltres.forEach(nom => {
+    const opt = document.createElement("option");
+    opt.value = nom;
+    opt.textContent = nom;
+    selectActe.appendChild(opt);
+  });
+
+  const optAutre = document.createElement("option");
+  optAutre.value = "autre";
+  optAutre.textContent = "🔤 Autre (à préciser)";
+  selectActe.appendChild(optAutre);
+}
+
+async function chargerRealisateurs() {
+  const select = document.getElementById("selectRealisateur");
+  const doc = await db.collection("référentiels").doc("personnel").get();
+  const data = doc.data();
+
+  select.innerHTML = "";
+
+  if (data && Array.isArray(data.liste)) {
+    data.liste.forEach(nom => {
+      const opt = document.createElement("option");
+      opt.value = nom;
+      opt.textContent = nom;
+      select.appendChild(opt);
+    });
+  }
+}
+
+
+
+function ajouterFiltreTypeActe() {
+  const select = document.createElement("select");
+  select.id = "filtreTypeActe";
+  select.innerHTML = `<option value="tous">Tous les types</option>`;
+  document.getElementById("actesListe").before(select);
+
+  const typesUniques = [...new Set(tousLesActesRealises.map(a => a.type))];
+  typesUniques.forEach(type => {
+    const opt = document.createElement("option");
+    opt.value = type;
+    opt.textContent = type;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", (e) => {
+    chargerActes();
+  });
+}
+
+async function supprimerActeRealise(index) {
+  if (!confirm("Supprimer cet acte ?")) return;
+
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    const patientData = patientDoc.data();
+    if (!patientData) throw new Error("Patient introuvable");
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      afficherBulle("⚠️ Aucune hospitalisation active", "warning");
+      return;
+    }
+
+    // 3️⃣ Récupérer la hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+    const hospiDoc = await hospiRef.get();
+    if (!hospiDoc.exists) throw new Error("Hospitalisation introuvable");
+
+    const hospiData = hospiDoc.data();
+    const actes = [...(hospiData.actes_realises || [])];
+    const acteSupprime = actes[index];
+
+    // 4️⃣ Supprimer l'acte
+    actes.splice(index, 1);
+    await hospiRef.update({ actes_realises: actes });
+
+    // 5️⃣ Feedback UI
+    ajouterEntreeHistorique(`❌ Acte supprimé : ${acteSupprime.type} (par ${acteSupprime.realisateur})`);
+    afficherActesRealises(document.getElementById("filtreTypeActe")?.value || "tous");
+    afficherBulle("🗑️ Acte supprimé", "success");
+
+  } catch (err) {
+    console.error("Erreur suppression acte :", err);
+    afficherBulle("❌ Erreur suppression acte", "error");
+  }
+}
+document.getElementById("btnEnregistrerActe").addEventListener("click", async () => {
+  const type = document.getElementById("rechercherActe").value.trim();
+  const realisateur = document.getElementById("selectRealisateur").value;
+  const remarque = document.getElementById("remarqueActe").value.trim();
+
+  if (!type) {
+    afficherBulle("❌ Veuillez saisir un type d’acte", "warning");
+    return;
+  }
+
+  const acte = {
+    type,
+    realisateur,
+    remarque,
+    date: new Date().toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    })
+  };
+
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    const patientData = patientDoc.data();
+    if (!patientData) throw new Error("Patient introuvable");
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      afficherBulle("⚠️ Aucune hospitalisation active", "warning");
+      return;
+    }
+
+    // 3️⃣ Récupérer la hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+    const hospiDoc = await hospiRef.get();
+    if (!hospiDoc.exists) throw new Error("Hospitalisation introuvable");
+
+    const hospiData = hospiDoc.data();
+    const actes = hospiData.actes || [];
+
+    // 4️⃣ Ajouter le nouvel acte
+    actes.push(acte);
+    await hospiRef.update({ actes });
+
+    // 5️⃣ Feedback UI
+    afficherBulle("✔️ Acte enregistré", "success");
+    document.getElementById("rechercherActe").value = "";
+    document.getElementById("remarqueActe").value = "";
+	chargerActes();
+
+  } catch (err) {
+    console.error("Erreur enregistrement acte :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement de l’acte", "error");
+  }
+});
+
+
+async function chargerServices() {
+  try {
+    // 🔹 Charger les services depuis le référentiel
+    const doc = await db.collection("référentiels").doc("spécialités").get();
+    const data = doc.data();
+    const services = data?.spécialités || [];
+
+    const select = document.getElementById("service");
+    select.innerHTML = ""; // vide les anciennes options
+
+    services.forEach(service => {
+      const option = document.createElement("option");
+      option.value = service;
+      option.textContent = service;
+      select.appendChild(option);
+    });
+
+    // 🔹 Récupérer l'hospitalisation active
+	 const patientId = new URLSearchParams(window.location.search).get("id");
+    const hospiId = await getHospitalisationEnCours(patientId);
+    if (!hospiId) return;
+
+    const hospiDoc = await db
+      .collection("patients")
+      .doc(patientId)
+      .collection("hospitalisations")
+      .doc(hospiId)
+      .get();
+
+    const hospiData = hospiDoc.data();
+    if (hospiData?.service) select.value = hospiData.service;
+
+  } catch (e) {
+    console.error("Erreur chargement services :", e);
+  }
+}
+
+
+// Écouteur de modification
+document.getElementById("service").addEventListener("change", async (e) => {
+  const service = e.target.value;
+
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    const patientData = patientDoc.data();
+    if (!patientData) throw new Error("Patient introuvable");
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      afficherBulle("⚠️ Aucune hospitalisation active", "warning");
+      return;
+    }
+
+    // 3️⃣ Mettre à jour le champ service dans l'hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+    await hospiRef.update({ service });
+
+    // 4️⃣ Historique et feedback
+    ajouterEntreeHistorique(`Changement de service : ${service}`);
+    afficherBulle(`✔️ Service mis à jour : ${service}`, "success");
+
+  } catch (err) {
+    console.error("Erreur mise à jour service :", err);
+    afficherBulle("❌ Erreur mise à jour service", "error");
+  }
+});
+
+	
+function reinitialiserFormulaireActe() {
+  document.getElementById("selectActe").value = "";
+  document.getElementById("selectRealisateur").value = "";
+  document.getElementById("remarqueActe").value = "";
+  champAutreActe.value = "";
+  champAutreActe.style.display = "none";
+}
+
+function formatDateHeure(dateString) {
+  const date = new Date(dateString);
+  const pad = (n) => n.toString().padStart(2, '0');
+  const jour = pad(date.getDate());
+  const mois = pad(date.getMonth() + 1);
+  const annee = date.getFullYear();
+  const heures = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const secondes = pad(date.getSeconds());
+  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+}
+
+document.getElementById('readVitaleBtn').addEventListener('click', () => {
+  const modal = document.getElementById('vitaleModal');
+  modal.style.display = 'flex';
+
+  const duration = 3000 + Math.random() * 7000; // entre 3 et 10 secondes
+
+  setTimeout(() => {
+    modal.style.display = 'none';
+
+    const isSuccess = Math.random() < 0.8; // 80% ok-20%erreur
+
+    if (isSuccess) {
+      afficherBulle("✅ Lecture Carte Vitale terminée !", "success");
+    } else {
+      afficherBulle("❌ Erreur lecture Carte Vitale - Veuillez ressayer", "warning");
+    }
+  }, duration);
+});
+
+document.getElementById("btnGlasgow").addEventListener("click", () => {
+  document.getElementById("modalGlasgow").style.display = "flex";
+});
+
+document.getElementById("btnFermerGlasgow").addEventListener("click", () => {
+  document.getElementById("modalGlasgow").style.display = "none";
+});
+
+["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    const yeux = parseInt(document.getElementById("glasgowYeux").value) || 0;
+    const verbal = parseInt(document.getElementById("glasgowVerbal").value) || 0;
+    const moteur = parseInt(document.getElementById("glasgowMoteur").value) || 0;
+    const total = yeux + verbal + moteur;
+    document.getElementById("glasgowTotal").value = total;
+
+    const pronostic = document.getElementById("glasgowPronostic");
+    if (total <= 4) pronostic.innerText = " 7 % de bonne récupération et 87 % de mortalité.";
+    else if (total <= 7) pronostic.innerText = "34 % de bonne récupération et 53 % de mortalité.";
+    else if (total <= 10) pronostic.innerText = " 68 % de bonne récupération et 27 % de mortalité.";
+    else pronostic.innerText = " 82 % de bonne récupération et 12 % de mortalité.";
+  
+  const pronostic2 = document.getElementById("glasgowPronostic2");
+    if (total <= 6) pronostic.innerText = "Coma Profond";
+    else if (total <= 9) pronostic.innerText = "Coma Lourd";
+    else if (total <= 14) pronostic.innerText = "Somnoloence / Coma Léger";
+    else pronostic.innerText = "Conscience Normale";
+});
+});
+function toggleSublist(id) {
+    const list = document.getElementById(id);
+    list.style.display = list.style.display === "block" ? "none" : "block";
+  }
+
+	
+document.getElementById("btnEnregistrerGlasgow").addEventListener("click", async () => {
+  const yeux = parseInt(document.getElementById("glasgowYeux").value) || 0;
+  const verbal = parseInt(document.getElementById("glasgowVerbal").value) || 0;
+  const moteur = parseInt(document.getElementById("glasgowMoteur").value) || 0;
+  const total = yeux + verbal + moteur;
+  const texte = `Score de Glasgow enregistré : ${total} (Yeux ${yeux}, Verbal ${verbal}, Moteur ${moteur})`;
+
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    const patientData = patientDoc.data();
+    if (!patientData) throw new Error("Patient introuvable");
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      afficherBulle("⚠️ Aucune hospitalisation active", "warning");
+      return;
+    }
+
+    // 3️⃣ Récupérer la hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+
+    // 4️⃣ Mettre à jour le score de Glasgow
+    await hospiRef.update({
+      glasgow: {
+        yeux,
+        verbal,
+        moteur,
+        total,
+        date: new Date().toISOString()
+      }
+    });
+
+    // 5️⃣ Historique et feedback
+    await ajouterEntreeHistorique(texte);
+    afficherBulle("✔️ Score de Glasgow enregistré", "success");
+    document.getElementById("modalGlasgow").style.display = "none";
+
+  } catch (e) {
+    console.error("Erreur enregistrement Glasgow :", e);
+    afficherBulle("❌ Erreur enregistrement", "error");
+  }
+});
+
+function ajouterHorodatage() {
+  const textarea = document.getElementById("texteRemarque");
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR');
+  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const horodatage = `${dateStr} ${timeStr} - ${medecinNom} : `;
+
+  textarea.value += textarea.value && !textarea.value.endsWith('\n') ? '\n' + horodatage : horodatage;
+  textarea.focus();
+}
+
+function ajouterHorodatageDans(id) {
+  const textarea = document.getElementById(id);
+  if (!textarea) return;
+
+  const horodatage = new Date().toLocaleString("fr-FR");
+const insertion = `${horodatage} - ${window.medecinNom}\n`;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+
+  const texteAvant = textarea.value.substring(0, start);
+  const texteApres = textarea.value.substring(end);
+
+  textarea.value = texteAvant + insertion + texteApres;
+
+  const nouvellePosition = start + insertion.length;
+  textarea.selectionStart = textarea.selectionEnd = nouvellePosition;
+  textarea.focus();
+}
+
+
+async function enregistrerDossierMedical() {
+  const dossierMedical = {
+    questionnaire: document.getElementById("questionnaire").value.trim(),
+    antecedents: document.getElementById("antecedents").value.trim(),
+    traitements: document.getElementById("traitements").value.trim(),
+    histoire: document.getElementById("histoire").value.trim(),
+    auscultation: document.getElementById("auscultation").value.trim()
+  };
+
+  try {
+    await updateHospitalisationField("dossierMedical", dossierMedical);
+    afficherBulle("✔️ Dossier médical enregistré", "success");
+  } catch (err) {
+    console.error("Erreur enregistrement dossier médical :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement du dossier médical", "error");
+  }
+}
+
+
+
+async function enregistrerEvolution() {
+  const evolution = document.getElementById("evolutionTexte").value.trim();
+
+  try {
+    await updateHospitalisationField("evolution", evolution);
+    afficherBulle("✔️ Évolution enregistrée", "success");
+  } catch (err) {
+    console.error("Erreur enregistrement évolution :", err);
+    afficherBulle("❌ Erreur lors de l’enregistrement de l’évolution", "error");
+  }
+}
+
+async function chargerRealisateurs() {
+  const select = document.getElementById("selectRealisateur");
+  select.innerHTML = "<option>⏳Chargement...</option>";
+  try {
+    const snapshot = await db.collection("référentiels").doc("réalisateurs").get();
+    const data = snapshot.data();
+    select.innerHTML = "";
+    (data?.liste || []).forEach(realisateur => {
+      const option = document.createElement("option");
+      option.value = realisateur;
+      option.textContent = realisateur;
+      select.appendChild(option);
+    });
+  } catch (e) {
+    console.error("Erreur chargement réalisateurs :", e);
+    select.innerHTML = "<option>⚠️ Erreur chargement</option>";
+  }
+}
+
+async function chargerHistoriqueComplet() {
+  const contenu = document.getElementById("hospitalisationsContent");
+  if (!contenu) {
+    console.error("Element #hospitalisationsContent introuvable");
+    return;
+  }
+  contenu.innerHTML = "<p>⏳ Chargement...</p>";
+
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) {
+      contenu.innerHTML = "<p>❌ Patient introuvable</p>";
+      window.location.href = "aucun-patients.html";
+      return;
+    }
+
+    const patientData = patientDoc.data();
+    let hospitalisationIds = Array.isArray(patientData.hospitalisations) ? [...patientData.hospitalisations] : [];
+
+    // on enlève la dernière hospitalisation (courante)
+    if (hospitalisationIds.length > 1) {
+      hospitalisationIds = hospitalisationIds.slice(0, -1);
+    } else {
+      hospitalisationIds = [];
+    }
+
+    if (hospitalisationIds.length === 0) {
+      contenu.innerHTML = "<p>Aucune hospitalisation antérieure.</p>";
+      return;
+    }
+
+    contenu.innerHTML = "";
+
+    // 2️⃣ Charger chaque document hospitalisation et afficher
+    // affichage du plus récent au plus ancien
+    for (let i = hospitalisationIds.length - 1; i >= 0; i--) {
+      const hospiId = hospitalisationIds[i];
+      const hospiDoc = await db.collection("hospitalisations").doc(hospiId).get();
+      if (!hospiDoc.exists) continue;
+
+      const hospi = hospiDoc.data();
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const numero = hospitalisationIds.length - i;
+      const titre = document.createElement("h2");
+      titre.textContent = `🏥 Hospitalisation n°${numero}`;
+      titre.style.color = "#0078d4";
+      titre.style.borderBottom = "3px solid #0078d4";
+      titre.style.paddingBottom = "5px";
+      titre.style.marginTop = "0";
+      titre.style.marginBottom = "15px";
+
+      // --- Données hospitalisation ---
+      const date = hospi.dateDebut || "Date inconnue";
+      const datef = hospi.dateFin || "Date inconnue";
+      const motif = hospi.motif || "—";
+      const gravite = hospi.gravite || "—";
+      const evolution = hospi.evolution || "Aucune évolution enregistrée.";
+      const dossier = hospi.dossierMedical || {};
+      const sortie = hospi.sortie || null;
+      const rapport = hospi.rapport || "Pas de rapport d'hospitalisation validé";
+
+      const parts = [];
+      parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${date}</div>`);
+      parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${datef}</div>`);
+      parts.push(`<div class="entry"><strong>Motif :</strong> ${motif}</div>`);
+      parts.push(`<div class="entry"><strong>Gravité :</strong> ${gravite}</div>`);
+      parts.push(`<hr>`);
+      parts.push(`<h3>📋 Dossier médical</h3>`);
+      parts.push(`<p><strong>Questionnaire IAO :</strong><br>${dossier.questionnaire || "—"}</p>`);
+      parts.push(`<p><strong>Antécédents :</strong><br>${dossier.antecedents || "—"}</p>`);
+      parts.push(`<p><strong>Traitements :</strong><br>${dossier.traitements || "—"}</p>`);
+      parts.push(`<p><strong>Histoire de la maladie :</strong><br>${dossier.histoire || "—"}</p>`);
+      parts.push(`<p><strong>CR Auscultation :</strong><br>${dossier.auscultation || "—"}</p>`);
+      parts.push(`<hr>`);
+      parts.push(`<h3>📈 Évolution aux urgences</h3>`);
+      parts.push(`<p style="white-space:pre-wrap">${evolution}</p>`);
+
+      // --- Sortie ---
+      if (sortie) {
+        parts.push(`<hr>`);
+        parts.push(`<h3>🚪 Sortie</h3>`);
+        parts.push(`<p><strong>Type :</strong> ${sortie.type || "—"}</p>`);
+        if (sortie.serviceHospitalisation)
+          parts.push(`<p><strong>🏥 Service hospitalisation :</strong> ${sortie.serviceHospitalisation}</p>`);
+        if (sortie.destinationTransfert)
+          parts.push(`<p><strong>↔️ Destination transfert :</strong> ${sortie.destinationTransfert}</p>`);
+        if (sortie.avisSpecialiste)
+          parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${sortie.avisSpecialiste}</p>`);
+        if (Array.isArray(sortie.options) && sortie.options.length > 0)
+          parts.push(`<p><strong>📋 Options :</strong> ${sortie.options.join(", ")}</p>`);
+        if (sortie.traitementSortie)
+          parts.push(`<p><strong>💊 Traitement de sortie :</strong><br>${sortie.traitementSortie}</p>`);
+        if (sortie.autreSortieTexte)
+          parts.push(`<p><strong>🔤 Autre :</strong> ${sortie.autreSortieTexte}</p>`);
+        if (sortie.autreOptionTexte)
+          parts.push(`<p><strong>🔤 Autre option :</strong> ${sortie.autreOptionTexte}</p>`);
+      }
+
+      parts.push(`<p><strong></strong> ${rapport}</p>`);
+
+      card.innerHTML = parts.join("\n");
+      card.prepend(titre);
+      contenu.appendChild(card);
+      card.style.display = "";
+    }
+
+  } catch (err) {
+    console.error("Erreur chargement historique :", err);
+    contenu.innerHTML = "<p>❌ Erreur lors du chargement de l'historique.</p>";
+  }
+}
+
+async function chargerExamens() {
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) return;
+
+    const patientData = patientDoc.data();
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
+      return;
+    }
+
+    // 3️⃣ Charger l'hospitalisation
+    const hospiDoc = await db.collection("hospitalisations").doc(hospitalisationId).get();
+    if (!hospiDoc.exists) {
+      document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
+      return;
+    }
+
+    const hosp = hospiDoc.data();
+    if (!hosp.examens || hosp.examens.length === 0) {
+      document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
+      return;
+    }
+
+    // 4️⃣ Construire la liste HTML
+    const liste = hosp.examens.map(ex => `
+      <div class="examen-encart" style="margin-bottom:8px; padding:10px; border-radius:8px; background:${ex.realise ? '#eaf9ea' : '#f5faff'};">
+        <p><b>☢️ Type :</b> ${ex.type || "N/A"}</p>
+        <p><b>💬 Commentaire :</b> ${ex.commentaire || ""}</p>
+        <p><b>📅 Date demande :</b> ${ex.dateDemande || "?"}</p>
+        ${ex.realise 
+          ? `<p><b>✅ Réalisé le :</b> ${ex.dateRealisation || "?"}</p>
+             <p><b>📄 Compte rendu :</b> ${ex.compteRendu || ""}</p>`
+          : ""}
+      </div>
+    `).join("");
+
+    document.getElementById("examensListe").innerHTML = liste || "<i>Aucun examen enregistré.</i>";
+
+  } catch (e) {
+    console.error("Erreur lors du chargement des examens :", e);
+    document.getElementById("examensListe").innerHTML = "<i>Erreur de chargement.</i>";
+  }
+}
+
+
+
+const originalOpenTab = window.openTab;
+window.openTab = function(tabName, evt) {
+  originalOpenTab(tabName, evt);
+  if (tabName === "tab-exam-actes") {
+    chargerExamens();
+  }
+};
+// 🔹 Charger les actes
+async function chargerActes() {
+  try {
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) return;
+
+    const patientData = patientDoc.data();
+
+    // 2️⃣ Déterminer l'hospitalisation active
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
+      return;
+    }
+
+    // 3️⃣ Charger l'hospitalisation
+    const hospiDoc = await db.collection("hospitalisations").doc(hospitalisationId).get();
+    if (!hospiDoc.exists) {
+      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
+      return;
+    }
+
+    const hosp = hospiDoc.data();
+
+    if (!hosp.actes || hosp.actes.length === 0) {
+      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
+      return;
+    }
+
+    // 4️⃣ Construire l'affichage HTML
+    const liste = hosp.actes.map((acte, i) => `
+      <div class="prescription-item" style="margin-bottom:8px; padding:10px; border-radius:8px; background:#f5faff;">
+        <p><b>💉 Type :</b> ${acte.type || "N/A"}</p>
+        <p><b>👨‍⚕️ Réalisé par :</b> ${acte.realisateur || "?"}</p>
+        <p><b>📅 Date :</b> ${acte.date || "?"}</p>
+        ${acte.remarque 
+          ? `<p><b>💬 Remarque :</b> ${acte.remarque}</p>` 
+          : ""}
+        <button class="btn-delete" onclick="supprimerActe(${i})">🗑</button>
+      </div>
+    `).join("");
+
+    document.getElementById("actesListe").innerHTML = liste || "<i>Aucun acte enregistré.</i>";
+
+  } catch (e) {
+    console.error("Erreur lors du chargement des actes :", e);
+    document.getElementById("actesListe").innerHTML = "<i>Erreur de chargement.</i>";
+  }
+}
+
+
+// 🔹 Supprimer un acte
+async function supprimerActe(indexActe) {
+  try {
+    if (!confirm("Supprimer cet acte ?")) return;
+
+    // 1️⃣ Récupérer le patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) {
+      afficherBulle("❌ Patient introuvable", "error");
+      window.location.href = "aucun-patients.html";
+      return;
+    }
+
+    const patientData = patientDoc.data();
+    const hospitalisationId = patientData.hospitalisationActiveId
+                              || (patientData.hospitalisations?.slice(-1)[0]);
+    if (!hospitalisationId) {
+      afficherBulle("❌ Aucune hospitalisation active", "warning");
+      return;
+    }
+
+    // 2️⃣ Récupérer l'hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+    const hospiDoc = await hospiRef.get();
+    if (!hospiDoc.exists) {
+      afficherBulle("❌ Hospitalisation introuvable", "error");
+      return;
+    }
+
+    const hosp = hospiDoc.data();
+    if (!hosp.actes || hosp.actes.length <= indexActe) {
+      afficherBulle("❌ Aucun acte à supprimer", "warning");
+      return;
+    }
+
+    // 3️⃣ Supprimer l'acte
+    const acteSupprime = hosp.actes.splice(indexActe, 1);
+
+    // 4️⃣ Mettre à jour Firestore
+    await hospiRef.update({ actes: hosp.actes });
+
+    afficherBulle("🗑️ Acte supprimé", "success");
+    await chargerActes(); // 🔄 Rafraîchir la liste
+
+  } catch (err) {
+    console.error("Erreur suppression acte :", err);
+    afficherBulle("❌ Erreur lors de la suppression", "error");
+  }
+}
+
+async function chargerRealisateurs() {
+  const select = document.getElementById("selectRealisateur");
+  select.innerHTML = "<option>⏳ Chargement...</option>";
+
+  try {
+    // On suppose que tu stockes les réalisateurs dans "référentiels/realisateurs"
+    const doc = await db.collection("référentiels").doc("personnel").get();
+    const data = doc.data();
+    const liste = data?.liste || [];
+
+    if (liste.length === 0) {
+      select.innerHTML = "<option>Aucun disponible</option>";
+      return;
+    }
+
+    select.innerHTML = "";
+    liste.forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("Erreur chargement réalisateurs :", err);
+    select.innerHTML = "<option>⚠️ Erreur de chargement</option>";
+  }
+}
+// --- Fonction pour charger et afficher les examens ---
+
+async function remplirDepuisAncienneHospi(champ) {
+  try {
+    const patientId = new URLSearchParams(window.location.search).get("id");
+    const patientRef = db.collection("patients").doc(patientId);
+    const patientSnap = await patientRef.get();
+
+    if (!patientSnap.exists) {
+      alert("Patient introuvable");
+      return;
+    }
+
+    const patientData = patientSnap.data();
+
+    // 🔹 Tableau des IDs d'hospitalisations
+    const hospitalisations = Array.isArray(patientData.hospitalisations) ? [...patientData.hospitalisations] : [];
+
+    // 🔹 Hospitalisation en cours (à exclure)
+    const hospiEnCours = patientData.hospitalisationActiveId;
+
+    // 🔹 On prend la dernière hospitalisation avant celle en cours
+    const anciennes = hospitalisations.filter(id => id !== hospiEnCours);
+
+    if (anciennes.length === 0) {
+      alert("Aucune hospitalisation antérieure");
+      return;
+    }
+
+    const derniereHospiId = anciennes[anciennes.length - 1];
+
+    // 🔥 Récupération du document hospitalisation
+    const hospiDoc = await db.collection("hospitalisations").doc(derniereHospiId).get();
+    if (!hospiDoc.exists) {
+      alert("Hospitalisation introuvable");
+      return;
+    }
+
+    const hospiData = hospiDoc.data();
+const ancienne = hospiData.dossierMedical
+    if (!ancienne || !ancienne[champ]) {
+      afficherBulle(`❌ Pas d'ancien contenu pour ${champ}`, "warning");
+      return;
+    }
+
+    const contenu = ancienne[champ].trim();
+    const textarea = document.getElementById(champ);
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    const avant = textarea.value.substring(0, start);
+    const apres = textarea.value.substring(end);
+    const insertion = contenu + "\n";
+
+    textarea.value = avant + insertion + apres;
+
+    const nouvellePosition = start + insertion.length;
+    textarea.selectionStart = textarea.selectionEnd = nouvellePosition;
+    textarea.focus();
+
+    afficherBulle(`📁 Ancien ${champ} inséré`, "default");
+
+  } catch (err) {
+    console.error("Erreur récupération données précédentes :", err);
+    afficherBulle("❌ Erreur de récupération", "error");
+  }
+}
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  rafraichirChampsSortie();
+  champAutreSortie.style.display = document.querySelector('input[name="typeSortie"][value="autre"]')?.checked ? "block" : "none";
+
+  if (patientId) {
+    chargerPatient(patientId);   // ✅ passer l’ID
+    chargerActes();
+  } else {
+    afficherBulle("❌ Aucun patientId fourni dans l’URL", "warning");
+  }
+});
+
+
+	// --- Affiche l’écran de chargement ---
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  if (!loader) {
+    loader = document.createElement("div");
+    loader.id = "loadingScreen";
+    loader.innerHTML = `
+      <div class="loader-content">
+        <div class="spinner"></div>
+        <h2>Chargement...</h2>
+      </div>
+    `;
+    document.body.appendChild(loader);
+  }
+  loader.style.display = "flex";
+  loader.classList.remove("hidden");
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.classList.add("hidden");
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 500); // délai pour l’animation
+  }
+};
+
+function openDocsTab(tabId, file) {
+    // récupère l’ID du patient
+    const url = file + "?id=" + patientId;
+
+    // active l’onglet
+    document.querySelectorAll(".docs-tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(tabId).classList.add("active");
+
+    // charge l’URL avec ?id=
+    document.getElementById("docsFrame").src = url;
+}
+function openSection(panelId) {
+    // Masquer toutes les sections
+    document.querySelectorAll(".panel").forEach(panel => {
+        panel.classList.remove("active");
+        panel.style.display = "none";
+    });
+
+    // Activer la section demandée
+    const panel = document.getElementById(panelId);
+    if (panel) {
+        panel.style.display = "block";
+        panel.classList.add("active");
+    }
+
+    // Mettre à jour la barre latérale si elle existe
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.classList.remove("active");
+        if (item.dataset.module === panelId.replace("panel-", "")) {
+            item.classList.add("active");
+        }
+        if (panelId === "panel-medsurgences") {
+    const url = "medsurgences.html?id=" + patientId;
+    document.getElementById("medsurgencesFrame").src = url;
+}
+
+    });
+}
+window.openDocumentFromMenu = function(tabId, file) {
+    // 1️⃣ Ouvrir la section Documents
+    openSection('panel-documents');
+
+    // 2️⃣ Activer l'onglet désiré
+    document.querySelectorAll(".docs-tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(tabId).classList.add("active");
+
+    // 3️⃣ Construire l'URL avec le patientId
+    const url = file + "?id=" + patientId;
+
+    // 4️⃣ Charger dans l’iframe
+    document.getElementById("docsFrame").src = url;
+};
+
+
+
+// ===============================
+// 👥 ÉQUIPE RÉFÉRENTE — VERSION GESTURG2
+// ===============================
+
+const patientIdEquipe = new URLSearchParams(window.location.search).get("id");
+const patientRefEquipe = db.collection("patients").doc(patientIdEquipe);
+
+// 🔎 Déterminer hospitalisation active
+async function getHospActive() {
+  const snap = await patientRefEquipe.get();
+  if (!snap.exists) throw "Patient introuvable";
+
+  const data = snap.data();
+  const hospitalisationId = data.hospitalisationActiveId
+    || (Array.isArray(data.hospitalisations) ? data.hospitalisations.slice(-1)[0] : null);
+
+  if (!hospitalisationId) throw "Aucune hospitalisation active";
+
+  const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
+  const hospiSnap = await hospiRef.get();
+  if (!hospiSnap.exists) throw "Hospitalisation introuvable";
+
+  return { hospiRef, hospiData: hospiSnap.data() };
+}
+
+// 💾 SAUVEGARDE ÉQUIPE (TRANSACTION SAFE)
+async function saveEquipe(roleKey, equipeData) {
+  const { hospiRef, hospiData } = await getHospActive();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(hospiRef);
+    if (!snap.exists) throw "Hospitalisation introuvable";
+
+    const data = snap.data();
+    const hospitalisationUpdate = {
+      ...data,
+      equipe: {
+        ...(data.equipe || {}),
+        [roleKey]: equipeData
+      }
+    };
+    tx.update(hospiRef, hospitalisationUpdate);
+  });
+}
+
+// ❌ SUPPRESSION ÉQUIPE
+async function removeEquipe(roleKey) {
+  const { hospiRef, hospiData } = await getHospActive();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(hospiRef);
+    if (!snap.exists) return;
+
+    const data = snap.data();
+    if (data.equipe) {
+      delete data.equipe[roleKey];
+      tx.update(hospiRef, { equipe: data.equipe });
+    }
+  });
+}
+
+// 👥 CHARGEMENT ÉQUIPE
+async function chargerEquipeReferente() {
+  try {
+    const { hospiData } = await getHospActive();
+    const equipe = hospiData.equipe || {};
+
+    setEquipeInput("medecinReferent", equipe.medecinReferent, "doc", "alerteMedecin");
+    setEquipeInput("infirmierReferent", equipe.infirmierReferent, "infirmier", "alerteInfirmier");
+    setEquipeInput("interneReferent", equipe.interneReferent, "Int", "alerteInterne");
+    setEquipeInput("externeReferent", equipe.externeReferent, "Ext", "alerteExterne");
+  } catch (err) {
+    console.error("Erreur chargement équipe :", err);
+  }
+}
+
+// 🔎 Recherche utilisateur
+function setupUserSearchEquipe(inputId, listId, expectedType, alertId, roleKey) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  const alertBox = document.getElementById(alertId);
+
+  input.addEventListener("input", async () => {
+    const q = input.value.toLowerCase();
+    list.innerHTML = "";
+    list.style.display = "none";
+    if (alertBox) alertBox.style.display = "none";
+    if (q.length < 2) return;
+
+    const snap = await db.collection("medecins").get();
+    snap.forEach(d => {
+      const u = d.data();
+      if (!u.nom.toLowerCase().includes(q)) return;
+
+      const li = document.createElement("li");
+      li.textContent = `${u.nom} (${u.type})`;
+
+      li.onclick = async () => {
+        const equipeData = { id: d.id, nom: u.nom, type: u.type };
+        await saveEquipe(roleKey, equipeData);
+
+        input.value = u.nom;
+        list.style.display = "none";
+        afficherBulle("✅ Équipe enregistrée", "success");
+
+        if (expectedType && u.type !== expectedType && alertBox) {
+          alertBox.textContent = `⚠️ ${u.type} au lieu de ${expectedType}`;
+          alertBox.style.display = "block";
+        }
+
+        chargerEquipeReferente();
+      };
+
+      list.appendChild(li);
+      list.style.display = "block";
+    });
+  });
+}
+
+// ❌ Boutons croix
+function setupClearButton(inputId, clearBtnId, roleKey) {
+  document.getElementById(clearBtnId).onclick = async () => {
+    await removeEquipe(roleKey);
+    document.getElementById(inputId).value = "";
+    afficherBulle("✅ Membre supprimé", "success");
+    chargerEquipeReferente();
+  };
+}
+
+// 🔔 UI
+function setEquipeInput(inputId, data, expectedType, alertId) {
+  const input = document.getElementById(inputId);
+  const alertBox = document.getElementById(alertId);
+
+  if (!data) {
+    input.value = "";
+    if (alertBox) alertBox.style.display = "none";
+    return;
+  }
+
+  input.value = data.nom;
+  if (expectedType && data.type !== expectedType && alertBox) {
+    alertBox.textContent = `⚠️ ${data.type} au lieu de ${expectedType}`;
+    alertBox.style.display = "block";
+  } else if (alertBox) {
+    alertBox.style.display = "none";
+  }
+}
+
+// 🚀 INIT
+setupUserSearchEquipe("medecinReferent", "medecinSuggestions", "doc", "alerteMedecin", "medecinReferent");
+setupUserSearchEquipe("infirmierReferent", "infirmierSuggestions", "infirmier", "alerteInfirmier", "infirmierReferent");
+setupUserSearchEquipe("interneReferent", "interneSuggestions", "Int", "alerteInterne", "interneReferent");
+setupUserSearchEquipe("externeReferent", "externeSuggestions", "Ext", "alerteExterne", "externeReferent");
+
+setupClearButton("medecinReferent", "clearMedecin", "medecinReferent");
+setupClearButton("infirmierReferent", "clearInfirmier", "infirmierReferent");
+setupClearButton("interneReferent", "clearInterne", "interneReferent");
+setupClearButton("externeReferent", "clearExterne", "externeReferent");
+
+chargerEquipeReferente();
+
+async function getHospitalisationEnCours(patientId) {
+  if (!patientId) throw "Patient ID non fourni";
+
+  try {
+    // 🔹 Récupérer le document patient
+    const patientDoc = await db.collection("patients").doc(patientId).get();
+    if (!patientDoc.exists) {
+      console.warn("Patient introuvable :", patientId);
+      return null;
+    }
+
+    const patientData = patientDoc.data();
+    const hospiActiveId = patientData.hospitalisationActiveId;
+
+    if (!hospiActiveId) {
+      console.log("Aucun hospitalisationActiveId défini pour ce patient");
+      return null;
+    }
+
+    // 🔹 Vérifier que le document hospitalisation existe
+    const hospiDoc = await db
+      .collection("patients")
+      .doc(patientId)
+      .collection("hospitalisations")
+      .doc(hospiActiveId)
+      .get();
+
+    if (!hospiDoc.exists) {
+      console.warn("Hospitalisation référencée par hospitalisationActiveId introuvable :", hospiActiveId);
+      return null;
+    }
+
+    console.log("Hospitalisation active trouvée :", hospiDoc.id);
+    return hospiDoc.id;
+
+  } catch (err) {
+    console.error("Erreur récupération hospitalisation en cours :", err);
+    return null;
+  }
+}
+
+
+
+const input = document.getElementById("rechercheHistorique");
+
+// 🔥 on supprime toute logique parasite
+input.replaceWith(input.cloneNode(true));
+const cleanInput = document.getElementById("rechercheHistorique");
+
+cleanInput.addEventListener("input", function () {
+  const recherche = this.value.toLowerCase().trim();
+
+  document.querySelectorAll("#hospitalisationsContent .card")
+    .forEach(card => {
+      const texte = card.textContent.toLowerCase();
+      card.style.display = texte.includes(recherche) ? "" : "none";
+    });
+});
+
+
+
+
+document.getElementById("rechercheHistorique").addEventListener("keydown", function(e){
+  if (e.key === "Escape") {
+    this.value = "";
+    this.dispatchEvent(new Event("input"));
+  }
+});
+
+
+// Ligne de test de fin
+console.log("Script terminé correctement ✅");
+const btnMenu = document.getElementById("btnMenu");
+const mobileMenu = document.getElementById("mobileMenu");
+
+btnMenu.onclick = () => {
+  mobileMenu.classList.toggle("hidden");
+};
+
+mobileMenu.querySelectorAll("button").forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.panel;
+
+    document.querySelectorAll(".panel").forEach(p => {
+      p.classList.remove("active");
+    });
+
+    document.getElementById("panel-" + target).classList.add("active");
+    mobileMenu.classList.add("hidden");
+  };
+});
+
+</script>
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    //window.location.href = "index.html";
+  } else {
+    try {
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+      }
+    } catch (error) {
+      console.error("Erreur chargement médecin :", error);
+      alert("Une erreur est survenue, veuillez réessayer plus tard.");
+    }
+  }
+});
+function initNavigation() {
+  const items = document.querySelectorAll('.nav-item');
+
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      // Gestion active sur les boutons
+      items.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+
+      // Masquer tous les panels proprement (via classes)
+      document.querySelectorAll('section[id^="panel-"]').forEach(sec => {
+        sec.classList.remove('active');
+      });
+
+      // Afficher le panel correspondant en ajoutant la classe active
+      const module = item.getAttribute('data-module');
+      const panel = document.getElementById('panel-' + module);
+      if (panel) panel.classList.add('active');
+
+      // Charger l’historique si nécessaire
+      if (module === 'historique') {
+        if (typeof chargerHistoriqueComplet === 'function') chargerHistoriqueComplet();
+      }
+
+      // Gestion spécifique : mode Documents -> scroll interne iframe
+      if (module === 'documents') {
+        document.body.classList.add('no-scroll-docs'); // voir CSS que tu as ajouté avant
+      } else {
+        document.body.classList.remove('no-scroll-docs');
+      }
+    });
+  });
+  // Gestion spéciale de l'ouverture de la section Documents
+document.querySelector('[data-module="documents"]').addEventListener('click', () => {
+
+    const last = localStorage.getItem("lastDocsTab");
+
+    if (last) {
+        // 🔁 Revenir sur le dernier onglet visité
+        const { tabId, url } = JSON.parse(last);
+        openDocsTab(tabId, url);
+    } else {
+        // 🆕 1er lancement : ouvrir l’onglet par défaut
+        openDocsTab('tab-docs', 'docs.html');   // mets ici ton onglet par défaut
+    }
+});
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // 1) Supprimer tout 'style.display' inline anciennement laissé dans le HTML (si présent)
+  document.querySelectorAll('section[id^="panel-"]').forEach(sec => {
+    sec.style.display = ''; // vide l'inline-style pour que notre CSS s'applique
+    sec.classList.remove('active');
+  });
+
+  // 2) Activer l’onglet par défaut (celui qui a .nav-item.active)
+  const ongletActif = document.querySelector('.nav-item.active') || document.querySelector('.nav-item');
+  if (ongletActif) {
+    const module = ongletActif.getAttribute('data-module');
+    const panel = document.getElementById('panel-' + module);
+    if (panel) panel.classList.add('active');
+
+    // Appliquer la classe no-scroll-docs si nécessaire
+    if (module === 'documents') {
+      document.body.classList.add('no-scroll-docs');
+    } else {
+      document.body.classList.remove('no-scroll-docs');
+    }
+  }
+
+  // Initialiser la navigation
+  initNavigation();
+});
+
+
+
+// --- Gestion des menus déroulants supérieurs ---
+document.querySelectorAll('.dropbtn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const parent = btn.parentElement;
+    const isOpen = parent.classList.contains('show');
+
+    // Fermer tous les autres menus
+    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+
+    // Ouvrir/fermer celui cliqué
+    if (!isOpen) parent.classList.add('show');
+  });
+});
+
+// Fermer les menus si on clique ailleurs
+document.addEventListener('click', () => {
+  document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+});
+  function LogOut () {
+    signOut(auth)
+      .then(() => {
+        window.location.href = "index.html";
+      })
+      .catch((error) => {
+        afficherBulle("Erreur de déconnexion" ,"error");
+      });
+  }
+document.addEventListener("DOMContentLoaded", () => {
+
+    const btnOrdo = document.querySelector('[data-module="medsurgences"]');
+
+    btnOrdo.addEventListener("click", () => {
+        // Charger l’ordonnancier avec l’ID patient
+        const iframe = document.getElementById("medsurgencesFrame");
+        iframe.src = "medsurgences.html?id=" + patientId;
+    });
+        const btncompte = document.querySelector('[data-module="compte"]');
+
+btncompte.addEventListener("click", () => {
+        const iframe = document.getElementById("compteFrame");
+        iframe.src = "viewacountf.html";
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const panelDocs = document.getElementById("panel-documents");
+
+  const observer = new MutationObserver(() => {
+    if (panelDocs.style.display !== "none") {
+
+      // attendre que patientId soit disponible
+      const waitForPatientId = setInterval(() => {
+        if (typeof patientId !== "undefined" && patientId !== null && patientId !== "") {
+
+          clearInterval(waitForPatientId);
+
+          // ouvrir l’onglet correctement AVEC l'id
+          openDocsTab("tab-docs", "docs.html");
+
+          observer.disconnect();
+        }
+      }, 50); // vérifie toutes les 50 ms
+    }
+  });
+
+  observer.observe(panelDocs, { attributes: true, attributeFilter: ["style"] });
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Parcourir toutes les sections avec onglets internes ---
+  document.querySelectorAll('section[id^="panel-"]').forEach(section => {
+    // Si la section est active au démarrage
+    if (section.classList.contains('active')) {
+      ouvrirPremierOnglet(section);
+    }
+
+    // Observer les changements de classe "active" pour ouvrir le premier onglet si nécessaire
+    const observer = new MutationObserver(() => {
+      if (section.classList.contains('active')) {
+        ouvrirPremierOnglet(section);
+      }
+    });
+    observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  // Fonction qui ouvre le premier onglet d'une section
+  function ouvrirPremierOnglet(section) {
+    const subTabs = section.querySelectorAll('.sub-tab'); // tes sous-onglets
+    const subContents = section.querySelectorAll('.sub-tab-content'); // contenu associé
+    if (subTabs.length === 0) return;
+
+    // Retirer active de tous les onglets et contenus
+    subTabs.forEach(tab => tab.classList.remove('active'));
+    subContents.forEach(content => content.classList.remove('active'));
+
+    // Activer le premier
+    subTabs[0].classList.add('active');
+    if (subContents[0]) subContents[0].classList.add('active');
+
+    // Si c'est la section Documents, charger le contenu
+    if (section.id === 'panel-documents' && typeof openDocsTab === 'function') {
+      const defaultTabId = subTabs[0].id;
+      const defaultUrl = subTabs[0].getAttribute('data-url');
+      openDocsTab(defaultTabId, defaultUrl);
+    }
+  }
+});
+// Quand on ouvre l'onglet Documents, on charge automatiquement l'historique
+document.querySelector('[data-module="documents"]').addEventListener('click', () => {
+    // sélectionne automatiquement le bon onglet
+    openDocsTab('tab-docs', 'docs.html');
+});
+
+window.addEventListener("message", (event) => {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(
+      event.data,      // on transmet exactement le même message
+      "*"              // ⚠️ à remplacer par l'origine du parent si connue
+    );
+  }
+});
+
+
+</script>
+
+</body>
+</html>

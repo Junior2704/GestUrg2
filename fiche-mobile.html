@@ -7,7 +7,7 @@
 <link rel="icon" type="image/jpeg" href="logo.png">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <style>
   :root{
     --brand:#0078d4;
@@ -955,7 +955,9 @@ input:focus {
 <div id="menuAppels" class="sidebar-item" onclick="goAppels()">
   📞 Appels
 </div>
-
+<div class="sidebar-item" onclick="openQRLogin()">
+  🔳 Connexion par QR code
+</div>
   <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
 </div>
 
@@ -991,7 +993,19 @@ input:focus {
   <div id="list" class="list" aria-live="polite"></div>
 
 </div>
+<!-- MODALE QR LOGIN -->
+<div id="qrModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Connexion par QR code</h3>
+      <button onclick="closeQRLogin()" style="background:none;border:0;font-size:20px;cursor:pointer">✖️</button>
+    </div>
 
+    <div id="qr-reader" style="width:100%;margin-top:15px"></div>
+
+    <div id="qrStatus" style="margin-top:10px;font-weight:600;text-align:center"></div>
+  </div>
+</div>
 <div id="pageAppels" class="page">
   <h2>📞 Gestion des appels</h2>
 
@@ -2233,6 +2247,77 @@ document.addEventListener("touchmove", (e) => {
 function openSidebar() {
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("show");
+}
+
+let html5QrCode;
+
+function openQRLogin(){
+  document.getElementById("qrModal").style.display = "flex";
+  document.getElementById("qrStatus").innerText = "📷 Initialisation caméra...";
+
+  html5QrCode = new Html5Qrcode("qr-reader");
+
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      html5QrCode.start(
+        devices[0].id,
+        { fps: 10, qrbox: 250 },
+        onQRSuccess
+      );
+    }
+  }).catch(err => {
+    document.getElementById("qrStatus").innerText = "❌ Caméra non disponible";
+  });
+}
+
+function closeQRLogin(){
+  if(html5QrCode){
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+    }).catch(()=>{});
+  }
+  document.getElementById("qrModal").style.display = "none";
+}
+
+async function onQRSuccess(decodedText){
+  document.getElementById("qrStatus").innerText = "🔎 Vérification du QR...";
+
+  try{
+    const docRef = db.collection("qrconnexion").doc(decodedText);
+    const snap = await docRef.get();
+
+    if(!snap.exists){
+      document.getElementById("qrStatus").innerText = "❌ QR non reconnu";
+      return;
+    }
+
+    // 👇 récup utilisateur connecté
+    const userId = localStorage.getItem("userId");
+    const userMdp = localStorage.getItem("userMdp");
+
+    if(!userId || !userMdp){
+      document.getElementById("qrStatus").innerText = "⚠️ Utilisateur non connecté";
+      return;
+    }
+
+    await docRef.update({
+      connexionavec: {
+        id: userId,
+        mdp: userMdp,
+        date: new Date()
+      }
+    });
+
+    document.getElementById("qrStatus").innerText = "✅ Connexion validée";
+
+    setTimeout(()=>{
+      closeQRLogin();
+    },1500);
+
+  }catch(e){
+    console.error(e);
+    document.getElementById("qrStatus").innerText = "❌ Erreur Firestore";
+  }
 }
 </script>
 

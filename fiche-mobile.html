@@ -2257,15 +2257,13 @@ function openQRLogin(){
 
   html5QrCode = new Html5Qrcode("qr-reader");
 
-  Html5Qrcode.getCameras().then(devices => {
-    if (devices && devices.length) {
-      html5QrCode.start(
-  { facingMode: "environment" }, // caméra arrière
-  { fps: 10, qrbox: 250 },
-  onQRSuccess
-);
-    }
-  }).catch(err => {
+  // 🔹 On force la caméra arrière
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    onQRSuccess
+  ).catch(err => {
+    console.error(err);
     document.getElementById("qrStatus").innerText = "❌ Caméra non disponible";
   });
 }
@@ -2280,32 +2278,36 @@ function closeQRLogin(){
 }
 
 async function onQRSuccess(decodedText){
+
   document.getElementById("qrStatus").innerText = "🔎 Vérification du QR...";
 
   try{
-    const docRef = db.collection("qrconnexion").doc(decodedText);
-    const snap = await docRef.get();
 
-    if(!snap.exists){
+    // 🔹 Vérifie que le QR existe
+    const docRef = doc(db, "qrconnexion", decodedText);
+    const snap = await getDoc(docRef);
+
+    if(!snap.exists()){
       document.getElementById("qrStatus").innerText = "❌ QR non reconnu";
       return;
     }
 
-    // 👇 récup utilisateur connecté
-    const userId = localStorage.getItem("userId");
-    const userMdp = localStorage.getItem("userMdp");
+    // 🔹 Récupère l'utilisateur connecté sur le mobile
+    const currentUser = auth.currentUser;
 
-    if(!userId || !userMdp){
-      document.getElementById("qrStatus").innerText = "⚠️ Utilisateur non connecté";
+    if(!currentUser){
+      document.getElementById("qrStatus").innerText = "⚠️ Connectez-vous d'abord sur l'application mobile";
       return;
     }
 
-    await docRef.update({
-      connexionavec: {
-        id: userId,
-        mdp: userMdp,
+    // 🔹 Enregistre les infos de l'utilisateur mobile dans le document QR
+    await updateDoc(docRef, {
+      scannePar: {
+        uid: currentUser.uid,
+        email: currentUser.email,
         date: new Date()
-      }
+      },
+      statut: "validé"
     });
 
     document.getElementById("qrStatus").innerText = "✅ Connexion validée";

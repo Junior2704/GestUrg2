@@ -361,12 +361,19 @@ window.generateQRLogin = async function(){
       }
     });
 
-    // Génère le QR code dans le modal
-    document.getElementById("qrCodeContainer").innerHTML = "";
-    QRCode.toCanvas(document.getElementById("qrCodeContainer"), qrId, { width: 250 }, function (error) {
-      if(error) console.error(error);
-      else document.getElementById("qrStatus").innerText = "🔎 Scannez ce QR avec votre téléphone";
-    });
+    const container = document.getElementById("qrCodeContainer");
+container.innerHTML = ""; // vide le container
+
+QRCode.toDataURL(qrId, { width: 250 }, function(err, url) {
+  if(err) console.error(err);
+  else {
+    const img = document.createElement("img");
+    img.src = url;
+    img.width = 250;
+    container.appendChild(img);
+    document.getElementById("qrStatus").innerText = "🔎 Scannez ce QR avec votre téléphone";
+  }
+});
 
     document.getElementById("qrModal").style.display = "flex";
 

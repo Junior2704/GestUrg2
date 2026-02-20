@@ -2257,7 +2257,6 @@ function openQRLogin(){
 
   html5QrCode = new Html5Qrcode("qr-reader");
 
-  // 🔹 On force la caméra arrière
   html5QrCode.start(
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
@@ -2278,12 +2277,9 @@ function closeQRLogin(){
 }
 
 async function onQRSuccess(decodedText){
-
   document.getElementById("qrStatus").innerText = "🔎 Vérification du QR...";
 
   try{
-
-    // 🔹 Vérifie que le QR existe
     const docRef = doc(db, "qrconnexion", decodedText);
     const snap = await getDoc(docRef);
 
@@ -2292,7 +2288,7 @@ async function onQRSuccess(decodedText){
       return;
     }
 
-    // 🔹 Récupère l'utilisateur connecté sur le mobile
+    // Récupère l'utilisateur connecté sur le mobile
     const currentUser = auth.currentUser;
 
     if(!currentUser){
@@ -2300,11 +2296,15 @@ async function onQRSuccess(decodedText){
       return;
     }
 
+    // 🔹 Génère un token temporaire Firebase
+    const token = await currentUser.getIdToken(/* forceRefresh */ true);
+
     // 🔹 Enregistre les infos de l'utilisateur mobile dans le document QR
     await updateDoc(docRef, {
       scannePar: {
         uid: currentUser.uid,
         email: currentUser.email,
+        token: token,   // <-- token temporaire pour connexion automatique côté PC
         date: new Date()
       },
       statut: "validé"

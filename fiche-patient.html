@@ -2628,7 +2628,32 @@ document.querySelector('[data-module="documents"]').addEventListener('click', ()
 });
 
 
+let appLocked = false;
 
+window.addEventListener("message", (event) => {
+
+  if (!event.data) return;
+
+  if (event.data.type === "APP_LOCK") {
+    appLocked = true;
+
+    // Stopper timers éventuels si besoin
+    document.body.style.filter = "grayscale(0.8)";
+  }
+
+  if (event.data.type === "APP_UNLOCK") {
+    appLocked = false;
+    document.body.style.filter = "none";
+  }
+});
+
+// Exemple protection bouton
+document.addEventListener("click", function(e){
+  if(appLocked){
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}, true);
 
 </script>
 

@@ -482,7 +482,85 @@ iframe {
 iframe {
   pointer-events: auto;
 }
+/* ===== MODE VEILLE ===== */
+.locked #shell-topbar,
+.locked #content {
+  filter: blur(6px) grayscale(0.6);
+  pointer-events: none;
+  user-select: none;
+}
 
+.lock-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 30000;
+}
+
+.lock-overlay.active {
+  display: flex;
+}
+
+.lock-modal {
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(0,0,0,.35);
+}
+
+.lock-modal h2 {
+  margin-top: 0;
+}
+
+.lock-modal input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+.lock-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lock-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  background: #0078d4;
+  color: white;
+}
+
+.lock-actions button:hover {
+  background: #005fa3;
+}
+
+.logout-btn {
+  background: #e74c3c !important;
+}
+
+.logout-btn:hover {
+  background: #c0392b !important;
+}
+
+.lock-error {
+  color: #e74c3c;
+  margin-top: 10px;
+  font-size: 14px;
+}
 
 </style>
 </head>
@@ -655,7 +733,22 @@ iframe {
 </style>
 </div>
 
+<!-- ===== VEILLE AUTO ===== -->
+<div id="lockOverlay" class="lock-overlay">
+  <div class="lock-modal">
+    <h2>🔒 GestUrg2 s'est mis en veille</h2>
+    <p>Veuillez saisir votre mot de passe pour vous reconnecter.</p>
 
+    <input type="password" id="unlockPassword" placeholder="Mot de passe" />
+
+    <div id="lockError" class="lock-error"></div>
+
+    <div class="lock-actions">
+      <button onclick="unlockSession()">Se reconnecter</button>
+      <button class="logout-btn" onclick="forceLogout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>
 <script>
 let tabs = [];
 let activeTab = null;
@@ -970,7 +1063,111 @@ updateDateTime();
     console.error("Erreur chargement messages accueil :", err);
   }
 }
+import { EmailAuthProvider, reauthenticateWithCredential } 
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+let inactivityTimer;
+let lockAttempts = 0;
+let currentUserEmail = null;
+let isLocked = false;
+
+// ===== DETECTION UTILISATEUR =====
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUserEmail = user.email;
+    startInactivityTimer();
+  }
+});
+
+// ===== TIMER 5 MINUTES =====
+function startInactivityTimer() {
+  resetInactivityTimer();
+
+  ["mousemove","keydown","click","scroll"].forEach(event => {
+    document.addEventListener(event, resetInactivityTimer);
+  });
+}
+
+function resetInactivityTimer() {
+  if (isLocked) return;
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(lockSession, 5 * 60 * 1000);
+}
+
+// ===== LOCK =====
+function lockSession() {
+  isLocked = true;
+
+  document.body.classList.add("locked");
+  document.getElementById("lockOverlay").classList.add("active");
+  document.getElementById("unlockPassword").value = "";
+  document.getElementById("lockError").textContent = "";
+
+  // 🔒 VERROUILLAGE DES IFRAMES
+  document.querySelectorAll("iframe").forEach(iframe => {
+
+    // 1️⃣ Envoie message aux pages enfants
+    iframe.contentWindow.postMessage({ type: "APP_LOCK" }, "*");
+
+    // 2️⃣ Désactive interaction
+    iframe.style.pointerEvents = "none";
+
+    // 3️⃣ Retire focus actif
+    iframe.blur();
+  });
+}
+
+// ===== UNLOCK =====
+window.unlockSession = async function() {
+  const password = document.getElementById("unlockPassword").value;
+  const errorDiv = document.getElementById("lockError");
+
+  if (!password) {
+    errorDiv.textContent = "Veuillez saisir votre mot de passe.";
+    return;
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(
+      currentUserEmail,
+      password
+    );
+
+    await reauthenticateWithCredential(auth.currentUser, credential);
+
+  // Succès
+isLocked = false;
+lockAttempts = 0;
+
+document.body.classList.remove("locked");
+document.getElementById("lockOverlay").classList.remove("active");
+
+// 🔓 REACTIVATION DES IFRAMES
+document.querySelectorAll("iframe").forEach(iframe => {
+
+  iframe.style.pointerEvents = "auto";
+
+  iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
+});
+
+startInactivityTimer();
+
+  } catch (error) {
+    lockAttempts++;
+    errorDiv.textContent = `Mot de passe incorrect (${lockAttempts}/3)`;
+
+    if (lockAttempts >= 3) {
+      await signOut(auth);
+      window.location.href = "index.html";
+    }
+  }
+};
+
+// ===== BOUTON DECONNEXION =====
+window.forceLogout = async function() {
+  await signOut(auth);
+  window.location.href = "index.html";
+};
 function adjustContentTop() {
   const topbar = document.getElementById("shell-topbar");
   const content = document.getElementById("content");

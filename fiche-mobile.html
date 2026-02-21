@@ -955,7 +955,9 @@ input:focus {
 <div id="menuAppels" class="sidebar-item" onclick="goAppels()">
   📞 Appels
 </div>
-
+<div class="sidebar-item" onclick="goScan()">
+  📷 Scan patient
+</div>
   <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
 </div>
 
@@ -1053,7 +1055,18 @@ input:focus {
 </div>
   </div>
 </div>
+<div id="pageScan" class="page">
+  <h2>📷 Scan patient</h2>
 
+  <div class="card">
+    <div id="reader" style="width:100%; margin-top:10px;"></div>
+    <div id="scanStatus" style="margin-top:12px; font-weight:600; text-align:center;"></div>
+
+    <button class="btn btn-grey" style="margin-top:12px;" onclick="stopScan()">
+      ❌ Fermer la caméra
+    </button>
+  </div>
+</div>
 
 </div>
 
@@ -2126,7 +2139,88 @@ const menuAppels = document.getElementById("menuAppels");
   }
 });
 
+let html5QrScanner = null;
 
+function goScan(){
+  showPage("pageScan");
+  startScan();
+}async function startScan() {
+
+  const status = document.getElementById("scanStatus");
+  status.textContent = "Activation caméra...";
+
+  html5QrScanner = new Html5Qrcode("reader");
+
+  try {
+    const cameras = await Html5Qrcode.getCameras();
+    if (!cameras || cameras.length === 0) {
+      status.textContent = "Aucune caméra détectée";
+      return;
+    }
+
+    // 🔥 Caméra arrière si dispo
+    const backCam = cameras.find(c =>
+      c.label.toLowerCase().includes("back") ||
+      c.label.toLowerCase().includes("rear")
+    );
+
+    const cameraId = backCam ? backCam.id : cameras[0].id;
+
+    await html5QrScanner.start(
+      cameraId,
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 150 }
+      },
+      onScanSuccess
+    );
+
+    status.textContent = "Présentez le code-barres du patient";
+
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Erreur accès caméra";
+  }
+}async function onScanSuccess(decodedText) {
+
+  const status = document.getElementById("scanStatus");
+  status.textContent = "Code détecté : " + decodedText;
+
+  await stopScan();
+
+  // 🔎 decodedText = ID patient
+  const patientId = decodedText.trim();
+
+  const snap = await db.collection("patients").doc(patientId).get();
+
+  if (!snap.exists) {
+    alert("Patient introuvable");
+    return;
+  }
+
+  // Ouvre ta modale existante
+  openModalFor(patientId);
+}
+async function onScanSuccess(decodedText) {
+
+  const status = document.getElementById("scanStatus");
+  status.textContent = "Code détecté : " + decodedText;
+
+  await stopScan();
+
+  // 🔎 decodedText = ID patient
+  const patientId = decodedText.trim();
+
+  const snap = await db.collection("patients").doc(patientId).get();
+
+  if (!snap.exists) {
+    alert("Patient introuvable");
+    return;
+  }
+
+  // Ouvre ta modale existante
+  openModalFor(patientId);
+}
 </script>
 <script>
 const sb = document.getElementById("sidebar");

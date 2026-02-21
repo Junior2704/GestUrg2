@@ -1062,9 +1062,7 @@ input:focus {
     <div id="reader" style="width:100%; margin-top:10px;"></div>
     <div id="scanStatus" style="margin-top:12px; font-weight:600; text-align:center;"></div>
 
-    <button class="btn btn-grey" style="margin-top:12px;" onclick="stopScan()">
-      ❌ Fermer la caméra
-    </button>
+    
   </div>
 </div>
 
@@ -1920,15 +1918,23 @@ db.collection("référentiels").doc("bureau")
     }
   });
   function showPage(pageId) {
-  // cacher toutes les pages
+
+  // 🔴 Si on quitte Scan → stop caméra
+  if (!document.getElementById("pageScan").classList.contains("active")) {
+    stopScan();
+  }
+
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');
   });
 
-  // afficher la bonne
   document.getElementById(pageId).classList.add('active');
 
-  // fermer le menu
+  // 🟢 Si on arrive sur Scan → start caméra
+  if (pageId === "pageScan") {
+    startScan();
+  }
+
   closeSidebar();
 }
 function goHome() {
@@ -1950,30 +1956,21 @@ function goScan(){
   showPage("pageScan");
   startScan();
 }
+
+let scanLock = false;
+
 async function startScan() {
 
   const status = document.getElementById("scanStatus");
   status.textContent = "Activation caméra...";
 
+  scanLock = false;
+
   html5QrScanner = new Html5Qrcode("reader");
 
   try {
-    const cameras = await Html5Qrcode.getCameras();
-    if (!cameras || cameras.length === 0) {
-      status.textContent = "Aucune caméra détectée";
-      return;
-    }
-
-    // 🔥 Caméra arrière si dispo
-    const backCam = cameras.find(c =>
-      c.label.toLowerCase().includes("back") ||
-      c.label.toLowerCase().includes("rear")
-    );
-
-    const cameraId = backCam ? backCam.id : cameras[0].id;
-
     await html5QrScanner.start(
-      cameraId,
+      { facingMode: { exact: "environment" } }, // 🔥 FORCE caméra arrière
       {
         fps: 10,
         qrbox: { width: 250, height: 150 }
@@ -1985,33 +1982,52 @@ async function startScan() {
 
   } catch (err) {
     console.error(err);
-    status.textContent = "Erreur accès caméra";
+
+    // fallback si exact échoue (iOS ancien)
+    try {
+      await html5QrScanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 150 }
+        },
+        onScanSuccess
+      );
+
+      status.textContent = "Présentez le code-barres du patient";
+
+    } catch (e) {
+      status.textContent = "Impossible d'accéder à la caméra arrière";
+    }
   }
 }
 async function onScanSuccess(decodedText) {
+
+  if (scanLock) return;
+  scanLock = true;
 
   const status = document.getElementById("scanStatus");
   status.textContent = "Code détecté : " + decodedText;
 
   await stopScan();
 
-  // 🔎 decodedText = ID patient
   const patientId = decodedText.trim();
-
   const snap = await db.collection("patients").doc(patientId).get();
 
   if (!snap.exists) {
     alert("Patient introuvable");
+    scanLock = false;
     return;
   }
 
-  // Ouvre ta modale existante
   openModalFor(patientId);
 }
 async function stopScan(){
   if (html5QrScanner) {
-    await html5QrScanner.stop();
-    await html5QrScanner.clear();
+    try {
+      await html5QrScanner.stop();
+      await html5QrScanner.clear();
+    } catch(e){}
     html5QrScanner = null;
   }
 }

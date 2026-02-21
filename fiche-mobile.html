@@ -938,21 +938,18 @@ input:focus {
 
 #reader {
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   margin: auto;
-  position: relative;
-  aspect-ratio: 3 / 4;   /* parfait en portrait */
+  aspect-ratio: 16 / 9; /* 🔥 meilleur pour code-barres */
   background: black;
   overflow: hidden;
   border-radius: 16px;
 }
 
-/* Empêche débordement */
 #reader video {
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;  /* garde le bon cadrage */
-  border-radius: 16px;
+  object-fit: cover !important;
 }
 
 /* Cache les éléments inutiles html5-qrcode */
@@ -1982,6 +1979,7 @@ function goScan(){
   startScan();
 }
 
+
 let scanLock = false;
 
 async function startScan() {
@@ -1995,38 +1993,27 @@ async function startScan() {
 
   try {
     await html5QrScanner.start(
-  {
-    facingMode: { exact: "environment" }
-  },
-  {
-    fps: 10,
-    qrbox: { width: 250, height: 150 },
-    aspectRatio: 0.75   // 🔥 IMPORTANT pour orientation portrait
-  },
-  onScanSuccess
-);
+      {
+        facingMode: { exact: "environment" }
+      },
+      {
+        fps: 15, // plus rapide pour code-barres
+        qrbox: { width: 300, height: 120 }, // rectangle horizontal
+        aspectRatio: 1.777, // 🔥 important pour code-barres (16:9)
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13
+        ]
+      },
+      onScanSuccess
+    );
 
-    status.textContent = "Présentez le code-barres du patient";
+    status.textContent = "Scannez le code-barres patient";
 
   } catch (err) {
     console.error(err);
-
-    // fallback si exact échoue (iOS ancien)
-    try {
-      await html5QrScanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 150 }
-        },
-        onScanSuccess
-      );
-
-      status.textContent = "Présentez le code-barres du patient";
-
-    } catch (e) {
-      status.textContent = "Impossible d'accéder à la caméra arrière";
-    }
+    status.textContent = "Erreur caméra";
   }
 }
 async function onScanSuccess(decodedText) {

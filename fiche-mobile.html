@@ -2144,7 +2144,8 @@ let html5QrScanner = null;
 function goScan(){
   showPage("pageScan");
   startScan();
-}async function startScan() {
+}
+async function startScan() {
 
   const status = document.getElementById("scanStatus");
   status.textContent = "Activation caméra...";
@@ -2181,25 +2182,6 @@ function goScan(){
     console.error(err);
     status.textContent = "Erreur accès caméra";
   }
-}async function onScanSuccess(decodedText) {
-
-  const status = document.getElementById("scanStatus");
-  status.textContent = "Code détecté : " + decodedText;
-
-  await stopScan();
-
-  // 🔎 decodedText = ID patient
-  const patientId = decodedText.trim();
-
-  const snap = await db.collection("patients").doc(patientId).get();
-
-  if (!snap.exists) {
-    alert("Patient introuvable");
-    return;
-  }
-
-  // Ouvre ta modale existante
-  openModalFor(patientId);
 }
 async function onScanSuccess(decodedText) {
 
@@ -2221,6 +2203,7 @@ async function onScanSuccess(decodedText) {
   // Ouvre ta modale existante
   openModalFor(patientId);
 }
+
 </script>
 <script>
 const sb = document.getElementById("sidebar");

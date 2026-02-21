@@ -263,12 +263,7 @@ if (isMobileDevice()) {
                  border-radius:8px;cursor:pointer;width:90%;font-size:16px;">
     👤 Se connecter
   </button>
-  <!-- 🔗 Bouton QR login -->
-<button onclick="generateQRLogin()" 
-        style="background:#28a745;color:white;border:none;padding:10px 20px;margin-top:10px;
-               border-radius:8px;cursor:pointer;width:90%;font-size:16px;">
-  📱 Se connecter avec un téléphone
-</button>
+
 
   <!-- ⚙️ Bouton secondaire (admin) -->
   <button onclick="allerAdmin()" 
@@ -334,143 +329,7 @@ function electronClose() {
   window.electronAPI.close();
 }
 </script>
-<script type="module">
 
-import { 
-  getAuth,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import { 
-  getFirestore,
-  doc,
-  onSnapshot,
-  deleteDoc,
-  setDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const auth = getAuth();
-const db = getFirestore();
-
-
-// ===============================
-// GÉNÉRATION QR
-// ===============================
-
-window.generateQRLogin = async function(){
-
-  const sessionId = "pc_" + crypto.randomUUID();
-
-  try {
-
-    // 🔹 Création session Firestore
-    await setDoc(doc(db, "pcSessions", sessionId), {
-      statut: "en_attente",
-      createdAt: serverTimestamp()
-    });
-
-    // 🔹 Génération QR
-    const container = document.getElementById("qrCodeContainer");
-    container.innerHTML = "";
-
-    QRCode.toDataURL(sessionId, { width: 250 }, function(err, url){
-      if(err) console.error(err);
-      else {
-        const img = document.createElement("img");
-        img.src = url;
-        img.width = 250;
-        container.appendChild(img);
-        document.getElementById("qrStatus").innerText =
-          "📱 Scannez ce QR avec votre téléphone";
-      }
-    });
-
-    document.getElementById("qrModal").style.display = "flex";
-
-    // 🔥 Écoute validation mobile
-    const docRef = doc(db, "pcSessions", sessionId);
-
-    const unsubscribe = onSnapshot(docRef, async (snapshot)=>{
-
-      if(!snapshot.exists()) return;
-
-      const data = snapshot.data();
-
-      if(data.statut === "validé" && data.validatedBy?.email){
-
-        unsubscribe();
-
-        document.getElementById("qrStatus").innerText =
-          "✅ Téléphone validé, connexion en cours...";
-
-        const email = data.validatedBy.email;
-
-        // 🔥 Envoi lien magique
-        const actionCodeSettings = {
-url: window.location.href,
-          handleCodeInApp: true
-        };
-
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-
-        localStorage.setItem("emailForSignIn", email);
-
-        alert("Un lien de connexion a été généré. Vérification en cours...");
-
-        await deleteDoc(docRef);
-      }
-
-    });
-
-  } catch(e){
-
-    console.error(e);
-    document.getElementById("qrStatus").innerText =
-      "❌ Impossible de générer le QR";
-  }
-}
-
-
-// ===============================
-// FINALISATION EMAIL LINK
-// ===============================
-
-if (isSignInWithEmailLink(auth, window.location.href)) {
-
-  let email = localStorage.getItem("emailForSignIn");
-
-  if (!email) {
-    email = prompt("Confirmez votre email");
-  }
-
-  signInWithEmailLink(auth, email, window.location.href)
-    .then((result)=>{
-
-      localStorage.removeItem("emailForSignIn");
-
-      console.log("Connexion réussie :", result.user.uid);
-
-      window.location.href = "shell.html";
-
-    })
-    .catch((error)=>{
-      console.error("Erreur finalisation :", error);
-    });
-}
-
-
-// ===============================
-// FERMETURE MODAL
-// ===============================
-
-window.closeQRLogin = function(){
-  document.getElementById("qrModal").style.display = "none";
-}
-
-</script>
 
 </body>
 </html>

@@ -955,9 +955,7 @@ input:focus {
 <div id="menuAppels" class="sidebar-item" onclick="goAppels()">
   📞 Appels
 </div>
-<div class="sidebar-item" onclick="openQRLogin()">
-  🔳 Connexion par QR code
-</div>
+
   <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
 </div>
 
@@ -2127,129 +2125,6 @@ const menuAppels = document.getElementById("menuAppels");
     }
   }
 });
-let html5QrCode;
-let isProcessing = false;
-
-/* ============================= */
-/* OUVERTURE MODAL QR            */
-/* ============================= */
-
-window.openQRLogin = async function(){
-  if(!auth.currentUser){
-    document.getElementById("qrStatus").innerText =
-      "⚠️ Vous devez être connecté sur l'application mobile";
-    return;
-  }
-
-  document.getElementById("qrModal").style.display = "flex";
-  document.getElementById("qrStatus").innerText =
-    "📷 Initialisation caméra...";
-
-  html5QrCode = new Html5Qrcode("qr-reader");
-
-  try{
-    await html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onQRSuccess
-    );
-  }catch(err){
-    console.error("Erreur caméra :", err);
-    document.getElementById("qrStatus").innerText =
-      "❌ Caméra non disponible";
-  }
-}
-
-
-/* ============================= */
-/* FERMETURE MODAL               */
-/* ============================= */
-
-window.closeQRLogin = async function(){
-  if(html5QrCode){
-    try{
-      await html5QrCode.stop();
-      await html5QrCode.clear();
-    }catch(e){}
-  }
-
-  document.getElementById("qrModal").style.display = "none";
-  isProcessing = false;
-}
-
-
-/* ============================= */
-/* SUCCÈS SCAN QR                */
-/* ============================= */
-
-async function onQRSuccess(decodedText){
-
-  if(isProcessing) return;
-  isProcessing = true;
-
-  document.getElementById("qrStatus").innerText =
-    "🔎 Vérification du QR...";
-
-  try{
-
-    const sessionId = decodedText.trim();
-    console.log("Session scannée :", sessionId);
-
-    const sessionRef = doc(db, "pcSessions", sessionId);
-    const snap = await getDoc(sessionRef);
-
-    if(!snap.exists()){
-      document.getElementById("qrStatus").innerText =
-        "❌ QR non reconnu";
-      isProcessing = false;
-      return;
-    }
-
-    const data = snap.data();
-
-    if(data.statut === "validé"){
-      document.getElementById("qrStatus").innerText =
-        "⚠️ QR déjà utilisé";
-      isProcessing = false;
-      return;
-    }
-
-    const currentUser = auth.currentUser;
-
-    if(!currentUser){
-      document.getElementById("qrStatus").innerText =
-        "⚠️ Session expirée, reconnectez-vous";
-      isProcessing = false;
-      return;
-    }
-
-    // 🔥 On valide la session côté PC
-    await updateDoc(sessionRef, {
-      statut: "validé",
-      validatedBy: {
-        uid: currentUser.uid,
-        email: currentUser.email || null
-      },
-      validatedAt: serverTimestamp()
-    });
-
-    document.getElementById("qrStatus").innerText =
-      "✅ Connexion PC validée";
-
-    setTimeout(() => {
-      closeQRLogin();
-    }, 1200);
-
-  } catch(e){
-
-    console.error("Erreur détaillée :", e);
-
-    document.getElementById("qrStatus").innerText =
-      "❌ Erreur : " + (e.code || e.message);
-
-    isProcessing = false;
-  }
-}
 
 
 </script>

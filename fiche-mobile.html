@@ -934,7 +934,32 @@ input:focus {
   border-radius: 50%;
   animation: spinAround 0.9s linear infinite;
 }
+/* === SCAN CAMERA FIX === */
 
+#reader {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  position: relative;
+  aspect-ratio: 3 / 4;   /* parfait en portrait */
+  background: black;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+/* Empêche débordement */
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;  /* garde le bon cadrage */
+  border-radius: 16px;
+}
+
+/* Cache les éléments inutiles html5-qrcode */
+#reader__dashboard_section,
+#reader__status_span {
+  display: none !important;
+}
 </style>
 </head>
 <body>
@@ -1970,13 +1995,16 @@ async function startScan() {
 
   try {
     await html5QrScanner.start(
-      { facingMode: { exact: "environment" } }, // 🔥 FORCE caméra arrière
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 150 }
-      },
-      onScanSuccess
-    );
+  {
+    facingMode: { exact: "environment" }
+  },
+  {
+    fps: 10,
+    qrbox: { width: 250, height: 150 },
+    aspectRatio: 0.75   // 🔥 IMPORTANT pour orientation portrait
+  },
+  onScanSuccess
+);
 
     status.textContent = "Présentez le code-barres du patient";
 

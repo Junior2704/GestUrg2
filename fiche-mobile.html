@@ -2195,59 +2195,6 @@ function logout(){
     });
   }
 }
-
-</script>
-<script>
-/* ===============================
-   SWIPE MENU — BLOQUE BACK SYSTEM
-================================ */
-
-const sidebar = document.getElementById("sidebar");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
-
-let startX = 0;
-let startY = 0;
-let tracking = false;
-
-document.addEventListener("touchstart", (e) => {
-  // ne rien faire si menu ouvert ou modale ouverte
-  if (sidebar.classList.contains("open")) return;
-  if (document.querySelector(".modal-overlay[style*='flex']")) return;
-
-  const t = e.touches[0];
-  startX = t.clientX;
-  startY = t.clientY;
-
-  // 🔒 ZONE ULTRA SÉCURISÉE (évite le back Android)
-// ⚠️ NE JAMAIS utiliser x <= 24
-tracking = startX > 24 && startX < 80;
-}, { passive: false });
-
-document.addEventListener("touchmove", (e) => {
-  if (!tracking) return;
-
-  const t = e.touches[0];
-  const dx = t.clientX - startX;
-  const dy = Math.abs(t.clientY - startY);
-
-  // laisser passer le scroll vertical
-  if (dy > 20) {
-    tracking = false;
-    return;
-  }
-
-  // swipe horizontal suffisant
-  if (dx > 50) {
-    e.preventDefault(); // 🔥 BLOQUE LE RETOUR ANDROID
-    openSidebar();
-    tracking = false;
-  }
-}, { passive: false });
-
-function openSidebar() {
-  sidebar.classList.add("open");
-  sidebarOverlay.classList.add("show");
-}
 let html5QrCode;
 let isProcessing = false;
 
@@ -2372,6 +2319,59 @@ async function onQRSuccess(decodedText){
     isProcessing = false;
   }
 }
+</script>
+<script>
+/* ===============================
+   SWIPE MENU — BLOQUE BACK SYSTEM
+================================ */
+
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+let startX = 0;
+let startY = 0;
+let tracking = false;
+
+document.addEventListener("touchstart", (e) => {
+  // ne rien faire si menu ouvert ou modale ouverte
+  if (sidebar.classList.contains("open")) return;
+  if (document.querySelector(".modal-overlay[style*='flex']")) return;
+
+  const t = e.touches[0];
+  startX = t.clientX;
+  startY = t.clientY;
+
+  // 🔒 ZONE ULTRA SÉCURISÉE (évite le back Android)
+// ⚠️ NE JAMAIS utiliser x <= 24
+tracking = startX > 24 && startX < 80;
+}, { passive: false });
+
+document.addEventListener("touchmove", (e) => {
+  if (!tracking) return;
+
+  const t = e.touches[0];
+  const dx = t.clientX - startX;
+  const dy = Math.abs(t.clientY - startY);
+
+  // laisser passer le scroll vertical
+  if (dy > 20) {
+    tracking = false;
+    return;
+  }
+
+  // swipe horizontal suffisant
+  if (dx > 50) {
+    e.preventDefault(); // 🔥 BLOQUE LE RETOUR ANDROID
+    openSidebar();
+    tracking = false;
+  }
+}, { passive: false });
+
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("show");
+}
+
 </script>
 
 

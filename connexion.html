@@ -335,82 +335,141 @@ function electronClose() {
 }
 </script>
 <script type="module">
-import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, onSnapshot, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { 
+  getAuth,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import { 
+  getFirestore,
+  doc,
+  onSnapshot,
+  deleteDoc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const auth = getAuth();
 const db = getFirestore();
 
+
+// ===============================
+// GÉNÉRATION QR
+// ===============================
+
 window.generateQRLogin = async function(){
-  const qrId = "qr_" + Date.now() + "_" + Math.floor(Math.random()*10000);
+
+  const sessionId = "pc_" + crypto.randomUUID();
 
   try {
-    // 🔹 Création du document QR dans Firestore
-    await setDoc(doc(db, "qrconnexion", qrId), {
+
+    // 🔹 Création session Firestore
+    await setDoc(doc(db, "pcSessions", sessionId), {
       statut: "en_attente",
-      date: new Date()
+      createdAt: serverTimestamp()
     });
 
-    // 🔹 Génération du QR
+    // 🔹 Génération QR
     const container = document.getElementById("qrCodeContainer");
     container.innerHTML = "";
-    QRCode.toDataURL(qrId, { width: 250 }, function(err, url){
+
+    QRCode.toDataURL(sessionId, { width: 250 }, function(err, url){
       if(err) console.error(err);
       else {
         const img = document.createElement("img");
         img.src = url;
         img.width = 250;
         container.appendChild(img);
-        document.getElementById("qrStatus").innerText = "📱 Scannez ce QR avec votre téléphone";
+        document.getElementById("qrStatus").innerText =
+          "📱 Scannez ce QR avec votre téléphone";
       }
     });
 
     document.getElementById("qrModal").style.display = "flex";
 
-    // 🔹 Écoute Firestore pour récupérer le token envoyé par le mobile
-    const docRef = doc(db, "qrconnexion", qrId);
+    // 🔥 Écoute validation mobile
+    const docRef = doc(db, "pcSessions", sessionId);
+
     const unsubscribe = onSnapshot(docRef, async (snapshot)=>{
+
       if(!snapshot.exists()) return;
+
       const data = snapshot.data();
 
-      if(data.statut === "validé" && data.scannePar && data.scannePar.token){
-        document.getElementById("qrStatus").innerText = "✅ Téléphone connecté, connexion en cours...";
+      if(data.statut === "validé" && data.validatedBy?.email){
 
-        try {
-          // 🔹 Connexion automatique avec le token temporaire
-          const userCredential = await signInWithCustomToken(auth, data.scannePar.token);
-          const user = userCredential.user;
-          console.log("Connecté automatiquement :", user.uid);
-
-          // 🔹 Redirection selon device
-          const isMobileDevice = /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone|Mobile/i.test(navigator.userAgent)
-                                || (window.innerWidth < 850);
-          if(isMobileDevice){
-            window.location.href = `fiche-mobile.html?uid=${user.uid}`;
-          } else {
-            window.location.href = `shell.html`;
-          }
-
-        } catch(error){
-          console.error("Erreur connexion automatique :", error);
-          document.getElementById("qrStatus").innerText = "❌ Échec connexion automatique";
-        }
-
-        // 🔹 Supprime le QR pour éviter réutilisation et stop l'écoute
-        await deleteDoc(docRef);
         unsubscribe();
+
+        document.getElementById("qrStatus").innerText =
+          "✅ Téléphone validé, connexion en cours...";
+
+        const email = data.validatedBy.email;
+
+        // 🔥 Envoi lien magique
+        const actionCodeSettings = {
+          url: window.location.origin + "/connexion.html",
+          handleCodeInApp: true
+        };
+
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+
+        localStorage.setItem("emailForSignIn", email);
+
+        alert("Un lien de connexion a été généré. Vérification en cours...");
+
+        await deleteDoc(docRef);
       }
+
     });
 
   } catch(e){
+
     console.error(e);
-    document.getElementById("qrStatus").innerText = "❌ Impossible de générer le QR";
+    document.getElementById("qrStatus").innerText =
+      "❌ Impossible de générer le QR";
   }
 }
+
+
+// ===============================
+// FINALISATION EMAIL LINK
+// ===============================
+
+if (isSignInWithEmailLink(auth, window.location.href)) {
+
+  let email = localStorage.getItem("emailForSignIn");
+
+  if (!email) {
+    email = prompt("Confirmez votre email");
+  }
+
+  signInWithEmailLink(auth, email, window.location.href)
+    .then((result)=>{
+
+      localStorage.removeItem("emailForSignIn");
+
+      console.log("Connexion réussie :", result.user.uid);
+
+      window.location.href = "shell.html";
+
+    })
+    .catch((error)=>{
+      console.error("Erreur finalisation :", error);
+    });
+}
+
+
+// ===============================
+// FERMETURE MODAL
+// ===============================
 
 window.closeQRLogin = function(){
   document.getElementById("qrModal").style.display = "none";
 }
+
 </script>
 
 </body>

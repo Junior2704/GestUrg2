@@ -2248,77 +2248,132 @@ function openSidebar() {
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("show");
 }
-
 let html5QrCode;
+let isProcessing = false;
 
-function openQRLogin(){
+const auth = getAuth();
+const db = getFirestore();
+
+/* ============================= */
+/* OUVERTURE MODAL QR            */
+/* ============================= */
+
+async function openQRLogin(){
+
+  if(!auth.currentUser){
+    document.getElementById("qrStatus").innerText =
+      "⚠️ Vous devez être connecté sur l'application mobile";
+    return;
+  }
+
   document.getElementById("qrModal").style.display = "flex";
-  document.getElementById("qrStatus").innerText = "📷 Initialisation caméra...";
+  document.getElementById("qrStatus").innerText =
+    "📷 Initialisation caméra...";
 
   html5QrCode = new Html5Qrcode("qr-reader");
 
-  html5QrCode.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    onQRSuccess
-  ).catch(err => {
-    console.error(err);
-    document.getElementById("qrStatus").innerText = "❌ Caméra non disponible";
-  });
+  try{
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onQRSuccess
+    );
+  }catch(err){
+    console.error("Erreur caméra :", err);
+    document.getElementById("qrStatus").innerText =
+      "❌ Caméra non disponible";
+  }
 }
 
-function closeQRLogin(){
+
+/* ============================= */
+/* FERMETURE MODAL               */
+/* ============================= */
+
+async function closeQRLogin(){
+
   if(html5QrCode){
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-    }).catch(()=>{});
+    try{
+      await html5QrCode.stop();
+      await html5QrCode.clear();
+    }catch(e){}
   }
+
   document.getElementById("qrModal").style.display = "none";
+  isProcessing = false;
 }
+
+
+/* ============================= */
+/* SUCCÈS SCAN QR                */
+/* ============================= */
 
 async function onQRSuccess(decodedText){
-  document.getElementById("qrStatus").innerText = "🔎 Vérification du QR...";
+
+  if(isProcessing) return;
+  isProcessing = true;
+
+  document.getElementById("qrStatus").innerText =
+    "🔎 Vérification du QR...";
 
   try{
-    const docRef = doc(db, "qrconnexion", decodedText);
-    const snap = await getDoc(docRef);
+
+    const sessionId = decodedText.trim();
+    console.log("Session scannée :", sessionId);
+
+    const sessionRef = doc(db, "pcSessions", sessionId);
+    const snap = await getDoc(sessionRef);
 
     if(!snap.exists()){
-      document.getElementById("qrStatus").innerText = "❌ QR non reconnu";
+      document.getElementById("qrStatus").innerText =
+        "❌ QR non reconnu";
+      isProcessing = false;
       return;
     }
 
-    // Récupère l'utilisateur connecté sur le mobile
+    const data = snap.data();
+
+    if(data.statut === "validé"){
+      document.getElementById("qrStatus").innerText =
+        "⚠️ QR déjà utilisé";
+      isProcessing = false;
+      return;
+    }
+
     const currentUser = auth.currentUser;
 
     if(!currentUser){
-      document.getElementById("qrStatus").innerText = "⚠️ Connectez-vous d'abord sur l'application mobile";
+      document.getElementById("qrStatus").innerText =
+        "⚠️ Session expirée, reconnectez-vous";
+      isProcessing = false;
       return;
     }
 
-    // 🔹 Génère un token temporaire Firebase
-    const token = await currentUser.getIdToken(/* forceRefresh */ true);
-
-    // 🔹 Enregistre les infos de l'utilisateur mobile dans le document QR
-    await updateDoc(docRef, {
-      scannePar: {
+    // 🔥 On valide la session côté PC
+    await updateDoc(sessionRef, {
+      statut: "validé",
+      validatedBy: {
         uid: currentUser.uid,
-        email: currentUser.email,
-        token: token,   // <-- token temporaire pour connexion automatique côté PC
-        date: new Date()
+        email: currentUser.email || null
       },
-      statut: "validé"
+      validatedAt: serverTimestamp()
     });
 
-    document.getElementById("qrStatus").innerText = "✅ Connexion validée";
+    document.getElementById("qrStatus").innerText =
+      "✅ Connexion PC validée";
 
-    setTimeout(()=>{
+    setTimeout(() => {
       closeQRLogin();
-    },1500);
+    }, 1200);
 
-  }catch(e){
-    console.error(e);
-    document.getElementById("qrStatus").innerText = "❌ Erreur Firestore";
+  } catch(e){
+
+    console.error("Erreur détaillée :", e);
+
+    document.getElementById("qrStatus").innerText =
+      "❌ Erreur : " + (e.code || e.message);
+
+    isProcessing = false;
   }
 }
 </script>

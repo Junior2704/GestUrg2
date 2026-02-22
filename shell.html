@@ -970,7 +970,7 @@ iframe {
   <div class="lock-modal">
     <h2>🔒 GestUrg2 s'est mis en veille</h2>
     <p>Veuillez saisir votre mot de passe pour vous reconnecter.</p>
-
+<strong id="lockUserName"></strong>
     <input type="password" id="unlockPassword" placeholder="Mot de passe" />
 
     <div id="lockError" class="lock-error"></div>
@@ -1297,21 +1297,38 @@ updateDateTime();
 }
 import { EmailAuthProvider, reauthenticateWithCredential } 
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
 let inactivityTimer;
 let lockAttempts = 0;
 let currentUserEmail = null;
 let isLocked = false;
 
+const INACTIVITY_DURATION = 5 * 60 * 1000; 
+
 // ===== DETECTION UTILISATEUR =====
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
+
     currentUserEmail = user.email;
-    startInactivityTimer();
+
+    // 🔹 Récupération nom / prénom
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      document.getElementById("lockUserName").textContent =
+        `Connecté en tant que ${data.prenom} ${data.nom}`;
+    }
+
+    // 🔒 Vérifie si verrouillé avant refresh
+    if (sessionStorage.getItem("appLocked") === "true") {
+      lockSession();
+    } else {
+      startInactivityTimer();
+    }
   }
 });
 
-// ===== TIMER 5 MINUTES =====
+
+// ===== TIMER =====
 function startInactivityTimer() {
   resetInactivityTimer();
 
@@ -1319,38 +1336,46 @@ function startInactivityTimer() {
     document.addEventListener(event, resetInactivityTimer);
   });
 }
-const INACTIVITY_DURATION = 5 * 60 * 1000; 
+
 function resetInactivityTimer() {
   if (isLocked) return;
   clearTimeout(inactivityTimer);
-inactivityTimer = setTimeout(lockSession, INACTIVITY_DURATION);
+  inactivityTimer = setTimeout(lockSession, INACTIVITY_DURATION);
 }
+
+
+// ===== PREVENT DEVTOOLS =====
+function preventDevTools(e) {
+  if (isLocked && (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I"))) {
+    e.preventDefault();
+  }
+}
+
 
 // ===== LOCK =====
 function lockSession() {
+
   isLocked = true;
+  sessionStorage.setItem("appLocked", "true");
 
   document.body.classList.add("locked");
   document.getElementById("lockOverlay").classList.add("active");
   document.getElementById("unlockPassword").value = "";
   document.getElementById("lockError").textContent = "";
 
-  // 🔒 VERROUILLAGE DES IFRAMES
+  document.addEventListener("keydown", preventDevTools);
+
   document.querySelectorAll("iframe").forEach(iframe => {
-
-    // 1️⃣ Envoie message aux pages enfants
     iframe.contentWindow.postMessage({ type: "APP_LOCK" }, "*");
-
-    // 2️⃣ Désactive interaction
     iframe.style.pointerEvents = "none";
-
-    // 3️⃣ Retire focus actif
     iframe.blur();
   });
 }
 
+
 // ===== UNLOCK =====
 window.unlockSession = async function() {
+
   const password = document.getElementById("unlockPassword").value;
   const errorDiv = document.getElementById("lockError");
 
@@ -1360,6 +1385,7 @@ window.unlockSession = async function() {
   }
 
   try {
+
     const credential = EmailAuthProvider.credential(
       currentUserEmail,
       password
@@ -1367,24 +1393,26 @@ window.unlockSession = async function() {
 
     await reauthenticateWithCredential(auth.currentUser, credential);
 
-  // Succès
-isLocked = false;
-lockAttempts = 0;
+    // ✅ Succès
+    isLocked = false;
+    lockAttempts = 0;
 
-document.body.classList.remove("locked");
-document.getElementById("lockOverlay").classList.remove("active");
+    sessionStorage.removeItem("appLocked");
 
-// 🔓 REACTIVATION DES IFRAMES
-document.querySelectorAll("iframe").forEach(iframe => {
+    document.body.classList.remove("locked");
+    document.getElementById("lockOverlay").classList.remove("active");
 
-  iframe.style.pointerEvents = "auto";
+    document.removeEventListener("keydown", preventDevTools);
 
-  iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
-});
+    document.querySelectorAll("iframe").forEach(iframe => {
+      iframe.style.pointerEvents = "auto";
+      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
+    });
 
-startInactivityTimer();
+    startInactivityTimer();
 
   } catch (error) {
+
     lockAttempts++;
     errorDiv.textContent = `Mot de passe incorrect (${lockAttempts}/3)`;
 
@@ -1394,7 +1422,6 @@ startInactivityTimer();
     }
   }
 };
-
 // ===== BOUTON DECONNEXION =====
 window.forceLogout = async function() {
   await signOut(auth);

@@ -644,65 +644,68 @@ previewBtn.addEventListener("click", () => {
       return window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
     }
 
-    async function ouvrirApercu(entry) {
-      afficherLoader();
-      try {
-        const pdfDoc = await buildPdfDocument(entry);
-        const bytes = await pdfDoc.save();
-        const blob = new Blob([bytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        ouvrirModal(url);
-      } catch (error) {
-        console.error(error);
-        alert("Impossible d'ouvrir l'aperçu.");
-      } finally {
-        masquerLoader();
-      }
+  function ouvrirApercu(entry) {
+  afficherLoader();
+  (async () => {
+    try {
+      const pdfDoc = await buildPdfDocument(entry);
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      // Ouvre le PDF dans un nouvel onglet interne
+      window.parent.postMessage({
+        type: "OPEN_TAB",
+        title: entry.label || "Document",
+        url: url
+      }, "*");
+
+    } catch (error) {
+      console.error(error);
+      alert("Impossible d'ouvrir le document.");
+    } finally {
+      masquerLoader();
+    }
+  })();
+}
+
+ async function genererPdf() {
+  const selection = getSelection();
+  if (selection.length === 0) {
+    alert("Veuillez sélectionner au moins un document.");
+    return;
+  }
+
+  afficherLoader();
+  try {
+    const { PDFDocument } = window.PDFLib;
+    const mergedPdf = await PDFDocument.create();
+
+    for (let i = 0; i < selection.length; i++) {
+      const entry = selection[i];
+      const pdfDoc = await buildPdfDocument(entry);
+      const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+      pages.forEach(page => mergedPdf.addPage(page));
     }
 
-    async function genererPdf() {
-      const selection = getSelection();
-      if (selection.length === 0) {
-        alert("Veuillez sélectionner au moins un document.");
-        return;
-      }
+    const mergedBytes = await mergedPdf.save();
+    const blob = new Blob([mergedBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
 
-      afficherLoader();
-      try {
-        const { PDFDocument } = window.PDFLib;
-        const mergedPdf = await PDFDocument.create();
-
-        for (let i = 0; i < selection.length; i++) {
-          const entry = selection[i];
-          const pdfDoc = await buildPdfDocument(entry);
-          const pageIndices = pdfDoc.getPageIndices();
-          const pages = await mergedPdf.copyPages(pdfDoc, pageIndices);
-          pages.forEach(page => mergedPdf.addPage(page));
-
-          const isLast = i === selection.length - 1;
-          if (!isLast && pages.length % 2 === 1) {
-            mergedPdf.addPage([595.28, 841.89]);
-          }
-        }
-
-        const mergedBytes = await mergedPdf.save();
-        const blob = new Blob([mergedBytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        window.parent.postMessage(
-    {
+    // Ouvre le PDF fusionné dans un nouvel onglet interne
+    window.parent.postMessage({
       type: "OPEN_TAB",
-      title: doc.label || "Document",
-      url: `url`
-    },
-    "*"
-  );
-      } catch (error) {
-        console.error(error);
-        alert("Erreur lors de la génération du PDF.");
-      } finally {
-        masquerLoader();
-      }
-    }
+      title: "PDF final hospitalisation",
+      url: url
+    }, "*");
+
+  } catch (error) {
+    console.error(error);
+    alert("Erreur lors de la génération du PDF.");
+  } finally {
+    masquerLoader();
+  }
+}
 
     document.getElementById("btnGenerer").addEventListener("click", genererPdf);
     document.getElementById("btnTout").addEventListener("click", () => {

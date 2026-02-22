@@ -1306,27 +1306,29 @@ const INACTIVITY_DURATION = 1 * 60 * 1000;
 
 // ===== DETECTION UTILISATEUR =====
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
+  if (!user) return;
 
-    currentUserEmail = user.email;
+  currentUserEmail = user.email;
 
-    // 🔹 Récupération nom / prénom
-    const userDoc = await getDoc(doc(db, "users", user.uid));
+  // 🔹 Démarre immédiatement le système
+  if (sessionStorage.getItem("appLocked") === "true") {
+    lockSession();
+  } else {
+    startInactivityTimer();
+  }
+
+  // 🔹 Ensuite seulement on récupère le nom
+  try {
+    const userDoc = await getDoc(doc(db, "medecins", user.uid));
     if (userDoc.exists()) {
       const data = userDoc.data();
       document.getElementById("lockUserName").textContent =
-        `Connecté en tant que ${data.prenom} ${data.nom}`;
+        `Connecté en tant que ${data.nom}`;
     }
-
-    // 🔒 Vérifie si verrouillé avant refresh
-    if (sessionStorage.getItem("appLocked") === "true") {
-      lockSession();
-    } else {
-      startInactivityTimer();
-    }
+  } catch (e) {
+    console.warn("Impossible de charger le nom utilisateur");
   }
 });
-
 
 // ===== TIMER =====
 function startInactivityTimer() {

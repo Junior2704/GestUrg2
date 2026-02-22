@@ -561,7 +561,93 @@ iframe {
   margin-top: 10px;
   font-size: 14px;
 }
+#home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(to bottom, #f0f4f8, #e0e7ef);
+  font-family: Inter, Arial, sans-serif;
+  overflow: hidden;
+  position: relative;
+}
 
+#home-welcome {
+  font-size: 28px;
+  font-weight: 700;
+  color: #374151;
+  margin: 20px 0 8px;
+  opacity: 0;
+  animation: fadeIn 1s forwards 0.5s;
+}
+
+#home-instructions {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 30px;
+  opacity: 0;
+  animation: fadeIn 1s forwards 1s;
+}
+
+#home-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 20px;
+  justify-items: center;
+  align-items: center;
+}
+
+.home-module {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  border-radius: 16px;
+  padding: 15px;
+  width: 80px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s, opacity 0.5s;
+  opacity: 0;
+  animation: popIn 0.5s forwards;
+}
+
+.home-module:nth-child(1) { animation-delay: 1.2s; }
+.home-module:nth-child(2) { animation-delay: 1.4s; }
+.home-module:nth-child(3) { animation-delay: 1.6s; }
+.home-module:nth-child(4) { animation-delay: 1.8s; }
+.home-module:nth-child(5) { animation-delay: 2s; }
+
+.home-module:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.home-module .icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.home-module .label {
+  font-size: 14px;
+  color: #374151;
+  text-align: center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Ambulance et ECG déjà animés */
+#ambulance { animation: drive 3s linear infinite; }
+#ecg { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawECG 2s linear infinite; }
 </style>
 </head>
 <body>
@@ -649,6 +735,40 @@ iframe {
 
 <div id="content">
 <div id="home">
+ 
+  <div id="home-animation">
+    <!-- Ambulance animée -->
+    <svg id="ambulance" width="60" height="40">...</svg>
+    <!-- ECG -->
+    <svg id="ecg" width="300" height="50">...</svg>
+  </div>
+
+  <h2 id="home-welcome">Bienvenue dans GestUrg2</h2>
+  <p id="home-instructions">Sélectionnez un module pour commencer</p>
+
+  <div id="home-module-grid">
+    <div class="home-module" onclick="openTab('Patients','patients.html')">
+      <div class="icon">👥</div>
+      <div class="label">Patients</div>
+    </div>
+    <div class="home-module" onclick="openTab('Facturation','Facturation.html')">
+      <div class="icon">💳</div>
+      <div class="label">Facturation</div>
+    </div>
+    <div class="home-module" onclick="openTab('Ordonnancier','Ordonnancier.html')">
+      <div class="icon">📄</div>
+      <div class="label">Ordonnancier</div>
+    </div>
+    <div class="home-module" onclick="openTab('Certificats','Certificatmedical.html')">
+      <div class="icon">🧾</div>
+      <div class="label">Certificats</div>
+    </div>
+    <div class="home-module" onclick="openTab('Imagerie','gestionnaireradiologie.html')">
+      <div class="icon">🩻</div>
+      <div class="label">Imagerie</div>
+    </div>
+  </div>
+
   <div id="home-messages-container">
   <div id="home-messages-carousel"></div>
   <div id="home-messages-controls">
@@ -659,7 +779,6 @@ iframe {
 </div>
   
   
-  <div id="home-text">Sélectionnez un module pour commencer</div>
 
 
 

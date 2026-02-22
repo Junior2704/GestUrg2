@@ -1521,9 +1521,7 @@ function closeEmailSelectModal() {
 document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
   document.getElementById("otherEmailInput").disabled = !e.target.checked;
 });
-
 document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
-
   // pas de pdfBase64 préexistant dans cette page — on générera le PDF au moment de l'envoi
   const doc = await patientRef.get();
   if (!doc.exists) {
@@ -1535,12 +1533,9 @@ document.getElementById("btnEnvoyerMail").addEventListener("click", async () => 
   console.log("📧 Emails trouvés (dossier) :", emails);
   openEmailSelectModal(emails);
 });
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwcSYtnTMz0cBvVyiD1qWfZg4mh9w6LijQtgKJhGzk0LT__cKsebSny8xOYb0kHAB8c/exec";
-
 document.getElementById("confirmEmails").addEventListener("click", async function () {
-console.log(APPS_SCRIPT_URL)
   try {
-    // Récupère les adresses sélectionnées
+    // Récupère les adresses sélectionnées dans la modale
     const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
     let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
 
@@ -1554,30 +1549,33 @@ console.log(APPS_SCRIPT_URL)
     }
 
     closeEmailSelectModal();
+    showLoadingModal();
 
-    // 1️⃣ Génération PDF
-    const pdfBase64 = await genererOrdo(false);
+    // --- 1) Génération du PDF via ta fonction existante creerPDF()
+    console.log("📄 Génération du PDF via genererordo()...");
+    const pdfBase64 = await genererOrdo(false); // renvoie le base64
+    console.log("✅ PDF généré, taille base64:", pdfBase64.length);
 
-    // 2️⃣ ID unique Firestore
+    // --- 2) Création d'un ID unique pour Firestore
     let idUnique, docSnap;
     do {
       idUnique = Math.random().toString(36).substring(2, 10);
       docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
     } while (docSnap.exists);
 
-    // 3️⃣ Infos patient
-    const docPatient = await patientRef.get();
-    if (!docPatient.exists) {
+    // --- 3) Récupération des infos patient pour nommer le fichier
+    const doc = await patientRef.get();
+    if (!doc.exists) {
+      hideLoadingModal();
       afficherBulle("❌ Patient non trouvé", "alerte");
       return;
     }
-
-    const data = docPatient.data();
+    const data = doc.data();
     const firstName = data.prenom || "";
     const lastName = data.nom || "";
-    const fileName = `Ordonnance - ${firstName} ${lastName}.pdf`;
+    const fileName =  `Ordonnance - ${firstName} ${lastName}.pdf`;
 
-    // 4️⃣ Firestore
+    // --- 4) Enregistrement dans Firestore
     await db.collection("liens_pdfs").doc(idUnique).set({
       base64: pdfBase64,
       nomFichier: fileName,
@@ -1585,8 +1583,9 @@ console.log(APPS_SCRIPT_URL)
     });
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
+    console.log("✅ Lien Firestore :", lienPdf);
 
-    // 5️⃣ HTML mail
+    // --- 5) Prépare le corps du mail (template HTML comme avant)
     const htmlMessage = `
 <!DOCTYPE html>
 <html lang="fr">
@@ -1644,25 +1643,63 @@ console.log(APPS_SCRIPT_URL)
   </table>
 </body>
 </html>`;
-const formData = new FormData();
-formData.append("emails", JSON.stringify(destinataires));
-formData.append("subject", "Votre ordonnance est disponible !");
-formData.append("html", htmlFinal);
 
-fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: formData,
-  mode: "no-cors" // on n'attend pas de réponse
-});
+    // --- 6) Multi-compte EmailJS (fallback)
+    const comptesEmailJS = [
+      { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
+      { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
+      { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
+    ];
 
-// on affiche juste le message côté front
-afficherBulle("📤 Envoi en cours...", "default");
-afficherBulle("📨 Envois terminés !", "success");
+    // --- 7) Envoi pour chaque destinataire (une requête EmailJS par adresse)
+    for (const email of destinataires) {
+      const emailTrim = email.trim();
+      if (!emailTrim || !emailTrim.includes("@")) {
+        afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte");
+        continue;
+      }
 
+      let envoye = false;
+      let derniereErreur = "";
+      for (const compte of comptesEmailJS) {
+        try {
+          console.log(`📨 Envoi à ${emailTrim} via ${compte.serviceID}...`);
+		  // Remplacement manuel des balises {{…}}
+const htmlFinal = htmlMessage
+  .replace(/{{patient_prenom}}/g, firstName)
+  .replace(/{{patient_nom}}/g, lastName)
+  .replace(/{{lien_compte_rendu}}/g, lienPdf);
+
+          await emailjs.send(compte.serviceID, compte.templateID, {
+            to_email: emailTrim,
+            subject: "Votre ordonnance est disponible !",
+            html_message: htmlFinal
+          }, compte.publicKey);
+
+          afficherBulle(`📨 Envoyé : ${emailTrim}`, "administratif");
+          envoye = true;
+          break;
+        } catch (err) {
+          console.warn(`⚠️ Échec ${compte.serviceID} -> ${err && err.text ? err.text : err}`);
+          derniereErreur = err && err.text ? err.text : String(err);
+          // si erreur de quota, on essaye le compte suivant, sinon on sort de la boucle comptes
+          if (derniereErreur.toLowerCase().includes("quota")) continue;
+          else break;
+        }
+      }
+
+      if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
+    }
+
+    hideLoadingModal();
+    afficherBulle("📨 Envois terminés !", "administratif");
+    // recharge la page pour réinitialiser l'UI (optionnel)
+    
 
   } catch (err) {
-    console.error("❌ Erreur globale envoi ordonnance :", err);
-    afficherBulle("❌ Erreur lors de l'envoi", "alerte");
+    hideLoadingModal();
+    console.error("Erreur confirmEmails :", err);
+    alert("Erreur lors de l'envoi : " + (err.message || err));
   }
 });
 

@@ -3181,7 +3181,7 @@ function afficherSortieListe(sortie) {
         afficherBulle("❌ Erreur suppression sortie", "error");
       }
     });
-}
+}             
 
 
 
@@ -3315,15 +3315,67 @@ document.getElementById("btnSaveConst").addEventListener("click", async () => {
     afficherBulle("❌ Erreur lors de l’enregistrement des constantes", "error");
   }
 });
+async function updateScopeForActiveHospitalisation(patientId, scopeActive, numero = "") {
+  try {
+    const db = firebase.firestore();
 
+    // 1️⃣ Récupérer le patient
+    const patientRef = db.collection("patients").doc(patientId);
+    const patientSnap = await patientRef.get();
+
+    if (!patientSnap.exists) {
+      console.error("Patient introuvable");
+      return;
+    }
+
+    const hospitalisationActiveId = patientSnap.data().hospitalisationActiveId;
+
+    if (!hospitalisationActiveId) {
+      console.error("Aucune hospitalisation active trouvée");
+      return;
+    }
+
+    // 2️⃣ Référence hospitalisation
+    const hospiRef = db.collection("hospitalisations").doc(hospitalisationActiveId);
+
+    // 3️⃣ Création de l'objet scope (UNIQUE)
+    const scopeData = {
+      scopeActive: scopeActive,
+      numero: scopeActive ? numero : "",
+      dateConnexion: scopeActive
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : null
+    };
+
+    // 4️⃣ Écriture (remplace complètement le scope existant)
+    await hospiRef.set(
+      {
+        scope: scopeData
+      },
+      { merge: true }
+    );
+
+    console.log("Scope mis à jour avec succès :", scopeData);
+
+  } catch (error) {
+    console.error("Erreur mise à jour scope :", error);
+  }
+}
 
   async function initialiserScope(patientId) {
   const doc = await patientRef.get();
   if (!doc.exists) return;
 
   const data = doc.data();
-  const index = data.hospitalisationIndex ?? 0;
-  const hospi = data.hospitalisations?.[index] || {};
+const hospitalisationActiveId = data.hospitalisationActiveId;
+if (!hospitalisationActiveId) return;
+
+const hospiRef = firebase.firestore()
+  .collection("hospitalisations")
+  .doc(hospitalisationActiveId);
+
+const hospiSnap = await hospiRef.get();
+const hospi = hospiSnap.exists ? hospiSnap.data() : {};
 const nomSafe =
   typeof data.nom === "string"
     ? data.nom
@@ -3350,22 +3402,20 @@ const prenomSafe =
   }
 
   // 🔹 Changement de statut du scope
-  checkbox.addEventListener("change", async () => {
-    const actif = checkbox.checked;
+checkbox.onchange = async () => {
+      const actif = checkbox.checked;
     if (!actif) {
       fields.style.display = "none";
       successDiv.style.display = "none";
-      await updateHospitalisationField("scope", { scopeActive: false, numero: "" });
-      afficherBulle("✔️ Scope désactivé", "success");
+await updateScopeForActiveHospitalisation(patientId, false);      afficherBulle("✔️ Scope désactivé", "success");
       return;
     }
     fields.style.display = "block";
-    await updateHospitalisationField("scope", { scopeActive: true, numero: "" });
-  });
+await updateScopeForActiveHospitalisation(patientId, true, "");  });
 
   // 🔹 Simulation de connexion au scope
-  document.getElementById("btnConnectScope").addEventListener("click", async () => {
-    const numero = numInput.value.trim();
+document.getElementById("btnConnectScope").onclick = async () => {
+      const numero = numInput.value.trim();
     if (!numero) {
       afficherBulle("❌Veuillez entrer un numéro de scope", "warning");
       return;
@@ -3374,14 +3424,14 @@ const prenomSafe =
     setTimeout(async () => {
       document.getElementById("scopeLoading").style.display = "none";
       successDiv.style.display = "block";
-      await updateHospitalisationField("scope", { scopeActive: true, numero });
-      afficherBulle(`✔️ Scope ${numero} connecté`, "success");
+await updateScopeForActiveHospitalisation(patientId, true, numero);     
+ afficherBulle(`✔️ Scope ${numero} connecté`, "success");
     }, 1500);
-  });
+  };
 
   // 🔹 Ouverture du scope.html
-  document.getElementById("btnOpenScope").addEventListener("click", () => {
-    const numero = numInput.value.trim();
+document.getElementById("btnOpenScope").onclick = () => {
+      const numero = numInput.value.trim();
     if (!numero) {
       afficherBulle("❌Numéro de scope manquant", "warning");
       return;
@@ -3394,7 +3444,7 @@ const prenomSafe =
         },
         "*"
       );
-  });
+  };
 }
 
 // 🧠 Intégration dans le chargement patient

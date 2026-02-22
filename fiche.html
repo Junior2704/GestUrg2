@@ -3324,8 +3324,15 @@ document.getElementById("btnSaveConst").addEventListener("click", async () => {
   const data = doc.data();
   const index = data.hospitalisationIndex ?? 0;
   const hospi = data.hospitalisations?.[index] || {};
-const nom = typeof data.nom === "string" ? data.nom : data.nom?.textContent || "";
-const prenom = typeof data.prenom === "string" ? data.prenom : data.prenom?.textContent || "";
+const nomSafe =
+  typeof data.nom === "string"
+    ? data.nom
+    : data.nom?.textContent || "";
+
+const prenomSafe =
+  typeof data.prenom === "string"
+    ? data.prenom
+    : data.prenom?.textContent || "";
 
   const checkbox = document.getElementById("patientScopeCheckbox");
   const fields = document.getElementById("scopeFields");
@@ -3382,7 +3389,7 @@ const prenom = typeof data.prenom === "string" ? data.prenom : data.prenom?.text
     window.parent.postMessage(
         {
           type: "OPEN_TAB",
-          title: `VisionScope ${prenom} ${nom}`,
+          title: `VisionScope ${prenomSafe} ${nomSafe}`,
           url: `scope.html?id=${encodeURIComponent(patientId)}`
         },
         "*"

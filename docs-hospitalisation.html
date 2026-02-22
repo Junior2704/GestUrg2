@@ -688,7 +688,14 @@ previewBtn.addEventListener("click", () => {
         const mergedBytes = await mergedPdf.save();
         const blob = new Blob([mergedBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: doc.label || "Document",
+      url: `url`
+    },
+    "*"
+  );
       } catch (error) {
         console.error(error);
         alert("Erreur lors de la génération du PDF.");

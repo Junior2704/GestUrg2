@@ -802,27 +802,33 @@ async function updateMedicalDashboard() {
       else if (circuitLower.includes('psy')) circuits.psy++;
       else circuits.general++;
 
-      /* ⏱ TEMPS ÉCOULÉ */
+/* ⏱ TEMPS ÉCOULÉ */
 let tempsEcoule = '—';
 let startMs = null;
 
 if (hosp.dateDebut) {
+
   if (hosp.dateDebut.seconds) {
+    // Firestore Timestamp
     startMs = hosp.dateDebut.seconds * 1000;
+
   } else if (typeof hosp.dateDebut === 'number') {
+    // Timestamp déjà en ms
     startMs = hosp.dateDebut;
+
   } else if (typeof hosp.dateDebut === 'string') {
-  // format attendu : "15/12/2025 18:25:51"
-  const parts = hosp.dateDebut.split(' ');
-  if (parts.length === 2) {
-    const [d, m, y] = parts[0].split('/');
-    const [hh, mm, ss] = parts[1].split(':');
-    startMs = new Date(y, m - 1, d, hh, mm, ss).getTime();
+    // format attendu : "15/12/2025 18:25:51"
+    const parts = hosp.dateDebut.split(' ');
+
+    if (parts.length === 2) {
+      const [d, m, y] = parts[0].split('/');
+      const [hh, mm, ss] = parts[1].split(':');
+      startMs = new Date(y, m - 1, d, hh, mm, ss).getTime();
+    }
   }
-
-
 }
 
+// Calcul du temps seulement si startMs existe
 if (startMs) {
   const diffMs = Date.now() - startMs;
   const h = Math.floor(diffMs / 3600000);

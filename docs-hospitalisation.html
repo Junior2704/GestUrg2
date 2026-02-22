@@ -360,12 +360,24 @@
       const actions = document.createElement("div");
       actions.className = "doc-actions";
 
-      const previewBtn = document.createElement("button");
-      previewBtn.type = "button";
-      previewBtn.className = "btn-preview";
-      previewBtn.title = "Aperçu";
-      previewBtn.textContent = "🔎";
-      previewBtn.addEventListener("click", () => ouvrirApercu(doc));
+    const previewBtn = document.createElement("button");
+previewBtn.type = "button";
+previewBtn.className = "btn-preview";
+previewBtn.title = "Aperçu";
+previewBtn.textContent = "🔎";
+
+previewBtn.addEventListener("click", () => {
+
+  window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: doc.label || "Document",
+      url: `viewer.html?docId=${doc.key}`
+    },
+    "*"
+  );
+
+});
 
       const checkWrap = document.createElement("label");
       checkWrap.className = "doc-check";

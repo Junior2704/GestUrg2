@@ -64,9 +64,38 @@
           msg.textContent = "Accès refusé : ce compte n'a pas les droits administrateur.";
         }
 
-      } catch (error) {
-        msg.textContent = "Erreur de connexion : " + error.message;
-      }
+      }  catch (error) {
+  let errorMsg = "❌ Erreur de connexion. Veuillez réessayer.";
+
+  switch (error.message) {
+    case "Firebase: Error (auth/invalid-email).":
+      errorMsg = "⚠️ Email invalide. Vérifiez l'adresse saisie.";
+      break;
+    case "Firebase: Error (auth/user-disabled).":
+      errorMsg = "🚫 Ce compte a été désactivé. Contactez un administrateur.";
+      break;
+    case "Firebase: Error (auth/user-not-found).":
+      errorMsg = "❌ Aucun compte trouvé avec cet email.";
+      break;
+    case "Firebase: Error (auth/invalid-credential).":
+      errorMsg = "🔑 Couple email/mot de passe incorrect.";
+      break;
+    case "Firebase: Error (auth/missing-password).":
+      errorMsg = "⚠️ Merci de saisir un mot de passe.";
+      break;
+    case "Firebase: Error (auth/too-many-requests).":
+      errorMsg = "🚨 Vous avez tenté de vous connecté trop de fois avec un mot de passe éronné. Merci de réessayer plus tard";
+      break;
+    case "Firebase: Error (auth/network-request-failed).":
+      errorMsg = "📶 Problème de connexion réseau. Vérifiez votre connexion Internet.";
+      break;
+    default:
+      errorMsg = "❌ Une erreur est survenue : " + error.message;
+      break;
+  }
+
+  message.textContent = errorMsg;
+}
     };
   </script>
 

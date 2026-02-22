@@ -233,7 +233,13 @@ function genererPDF(nbIdentite, nbAdresse) {
   const total = Math.min(nbIdentite + nbAdresse, maxLabels);
 
   const canvas=document.createElement("canvas");
-  JsBarcode(canvas, patientId,{format:"CODE128",width:1,height:20,displayValue:false});
+JsBarcode(canvas, patientId,{
+  format: "CODE128",
+  width: 2.5,        // 🔥 plus épais
+  height: 50,        // 🔥 plus haut
+  margin: 10,
+  displayValue: false
+});
   const barcodeData=canvas.toDataURL("image/png");
 function formatTel(num) {
   if (!num) return "";
@@ -286,8 +292,24 @@ function formatTel(num) {
     ]);
   }
 
-  doc.output("dataurlnewwindow");
+ 
+   // Générer le PDF en blob
+const pdfBlob = doc.output("blob");
+
+// Créer une URL temporaire
+const pdfUrl = URL.createObjectURL(pdfBlob);
+
+// Envoyer l’URL au parent pour ouverture dans un onglet interne
+window.parent.postMessage(
+  {
+    type: "OPEN_TAB",
+    title: `Etiquettes ${patientData.prenom} ${patientData.nom}`,
+    url: pdfUrl
+  },
+  "*"
+);
 }
+
 
 /* --- BOUTONS --- */
 document.getElementById("btnDefault").onclick=()=>genererPDF(19,5);

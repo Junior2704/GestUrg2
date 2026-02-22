@@ -309,8 +309,23 @@ doc.addImage(barcodeData,"PNG",x+5,y+labelH-18,53,15);    }
     ]);
   }
 
-  doc.output("dataurlnewwindow");
+   // Générer le PDF en blob
+const pdfBlob = doc.output("blob");
+
+// Créer une URL temporaire
+const pdfUrl = URL.createObjectURL(pdfBlob);
+
+// Envoyer l’URL au parent pour ouverture dans un onglet interne
+window.parent.postMessage(
+  {
+    type: "OPEN_TAB",
+    title: `Etiquettes ${patientData.prenom} ${patientData.nom}`,
+    url: pdfUrl
+  },
+  "*"
+);
 }
+
 
 /* --- BOUTONS --- */
 document.getElementById("btnDefault").onclick=()=>genererPDF(19,5);

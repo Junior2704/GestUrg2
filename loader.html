@@ -2,147 +2,137 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Chargement...</title>
+<title>Chargement CHU</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Inter',sans-serif;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at center, #0f2027, #203a43, #2c5364);
-    font-family: 'Inter', sans-serif;
-    overflow: hidden;
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:transparent; /* important iframe */
 }
 
-.loader-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
+/* ===== Carte centrale ===== */
+
+.loader-box{
+    padding:40px 50px;
+    border-radius:16px;
+    background:rgba(255,255,255,0.85);
+    backdrop-filter:blur(10px);
+    box-shadow:0 10px 30px rgba(0,60,100,0.12);
+    text-align:center;
+    min-width:320px;
 }
 
-/* ===== Logo médical animé ===== */
+/* ===== Bandeau CHU ===== */
 
-.heart-container {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    margin-bottom: 15px;
+.chu-badge{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:1px;
+    color:#0f4c75;
+    margin-bottom:6px;
 }
 
-.heart {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: #ff4b5c;
-    transform: rotate(45deg);
-    animation: beat 1s infinite;
-    left: 40px;
-    top: 40px;
+.service{
+    font-size:18px;
+    font-weight:600;
+    color:#1b6ca8;
+    margin-bottom:25px;
 }
 
-.heart::before,
-.heart::after {
-    content: '';
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: #ff4b5c;
-    border-radius: 50%;
+/* ===== Croix médicale animée ===== */
+
+.cross{
+    width:70px;
+    height:70px;
+    margin:0 auto 25px;
+    position:relative;
 }
 
-.heart::before {
-    top: -30px;
-    left: 0;
+.cross div{
+    position:absolute;
+    background:#1b6ca8;
+    border-radius:6px;
 }
 
-.heart::after {
-    left: -30px;
-    top: 0;
+.cross .vertical{
+    width:18px;
+    height:70px;
+    left:26px;
+    animation:pulse 1.6s infinite ease-in-out;
 }
 
-@keyframes beat {
-    0% { transform: scale(1) rotate(45deg); }
-    20% { transform: scale(1.15) rotate(45deg); }
-    40% { transform: scale(1) rotate(45deg); }
-    60% { transform: scale(1.15) rotate(45deg); }
-    80% { transform: scale(1) rotate(45deg); }
-    100% { transform: scale(1) rotate(45deg); }
+.cross .horizontal{
+    width:70px;
+    height:18px;
+    top:26px;
+    animation:pulse 1.6s infinite ease-in-out;
 }
 
-/* ===== ECG ===== */
-
-.ecg {
-    width: 280px;
-    height: 60px;
-    margin-top: 20px;
+@keyframes pulse{
+    0%{transform:scale(1);opacity:1;}
+    50%{transform:scale(1.12);opacity:0.75;}
+    100%{transform:scale(1);opacity:1;}
 }
 
-.ecg path {
-    stroke: #00ffcc;
-    stroke-width: 3;
-    fill: none;
-    stroke-dasharray: 500;
-    stroke-dashoffset: 500;
-    animation: ecgMove 2s linear infinite;
+/* ===== ECG dynamique ===== */
+
+.ecg{
+    width:260px;
+    height:45px;
+    margin:0 auto 20px;
 }
 
-@keyframes ecgMove {
-    to { stroke-dashoffset: 0; }
+.ecg path{
+    stroke:#00a8cc;
+    stroke-width:2.5;
+    fill:none;
+    stroke-dasharray:400;
+    stroke-dashoffset:400;
+    animation:ecgMove 2.2s linear infinite;
 }
 
-/* ===== Personnage médical ===== */
-
-.doctor {
-    font-size: 52px;
-    animation: bounce 1.5s infinite;
-    margin-bottom: 15px;
-}
-
-@keyframes bounce {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+@keyframes ecgMove{
+    to{stroke-dashoffset:0;}
 }
 
 /* ===== Texte ===== */
 
-.title {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    margin-top: 15px;
+.status{
+    font-size:14px;
+    font-weight:500;
+    color:#134e68;
 }
 
-.subtitle {
-    font-size: 14px;
-    opacity: 0.8;
-    margin-top: 5px;
+.substatus{
+    font-size:12px;
+    color:#5c7c8a;
+    margin-top:5px;
 }
 
-/* ===== Spinner ===== */
+/* ===== Points dynamiques ===== */
 
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255,255,255,.2);
-    border-top: 4px solid #00ffcc;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-top: 20px;
+.dots::after{
+    content:"";
+    animation:dots 1.5s infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+@keyframes dots{
+    0%{content:"";}
+    33%{content:".";}
+    66%{content:"..";}
+    100%{content:"...";}
 }
 
 </style>
@@ -150,41 +140,24 @@ html, body {
 
 <body>
 
+<div class="loader-box">
 
-<div class="loader-container">
+    <div class="chu-badge">CENTRE HOSPITALIER UNIVERSITAIRE</div>
+    <div class="service">Service des Urgences</div>
 
-    <div class="doctor">🧑‍⚕️</div>
-
-    <div class="heart-container">
-        <div class="heart"></div>
+    <div class="cross">
+        <div class="vertical"></div>
+        <div class="horizontal"></div>
     </div>
 
-    <svg class="ecg" viewBox="0 0 300 60">
-        <path d="M0 30 L30 30 L45 10 L60 50 L75 30 L120 30 L140 5 L160 55 L180 30 L300 30"/>
+    <svg class="ecg" viewBox="0 0 300 45">
+        <path d="M0 22 L35 22 L50 5 L65 40 L80 22 L120 22 L140 8 L160 36 L180 22 L300 22"/>
     </svg>
 
-    <div class="title">Chargement de GestUrg2...</div>
-    <div class="subtitle" id="msg">Initialisation des modules...</div>
-
-    <div class="spinner"></div>
+    <div class="status">Initialisation du service<span class="dots"></span></div>
+    <div class="substatus">Connexion aux modules médicaux sécurisés</div>
 
 </div>
-
-<script>
-const messages = [
-    "Connexion sécurisée...",
-    "Chargement des patients...",
-    "Synchronisation ...",
-    "Préparation de l'interface...",
-    "Initialisation des données..."
-];
-
-let i = 0;
-setInterval(() => {
-    document.getElementById("msg").innerText = messages[i];
-    i = (i + 1) % messages.length;
-}, 1400);
-</script>
 
 </body>
 </html>

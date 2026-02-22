@@ -605,14 +605,17 @@ iframe {
   align-items: center;
   justify-content: center;
   background: white;
-  border-radius: 24px;
-  padding: 25px 15px;
+  border-radius: 28px;
+  padding: 28px 18px;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+  transform-style: preserve-3d;
+
   opacity: 0;
-  transform: scale(0.6) translateY(40px);
-  animation: moduleEntrance 0.8s cubic-bezier(.2,.8,.2,1) forwards;
+  transform: scale(0.5) rotate(-15deg) translateY(60px);
+  filter: blur(12px);
+
+  animation: moduleEntrance 1s cubic-bezier(.2,.8,.2,1) forwards;
 }
 
 .home-module:nth-child(1) { animation-delay: 1.2s; }
@@ -649,15 +652,17 @@ iframe {
 @keyframes moduleEntrance {
   0% {
     opacity: 0;
-    transform: scale(0.6) translateY(40px) rotate(-8deg);
-    filter: blur(10px);
+    transform: scale(0.5) rotate(-15deg) translateY(60px);
+    filter: blur(12px);
   }
+
   60% {
-    transform: scale(1.05) translateY(-5px) rotate(2deg);
+    transform: scale(1.08) rotate(4deg) translateY(-8px);
   }
+
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0) rotate(0deg);
+    transform: scale(1) rotate(0deg) translateY(0);
     filter: blur(0);
   }
 }
@@ -674,6 +679,46 @@ iframe {
 .home-module:hover {
   transform: translateY(-10px) scale(1.08) rotate(2deg);
   box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+}
+.home-module {
+  animation:
+    moduleEntrance 1s cubic-bezier(.2,.8,.2,1) forwards,
+    floatDance 7s ease-in-out infinite 1.2s,
+    breathing 5s ease-in-out infinite 2s;
+}
+
+@keyframes floatDance {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  25%  { transform: translateY(-8px) rotate(1deg); }
+  50%  { transform: translateY(4px) rotate(-1deg); }
+  75%  { transform: translateY(-6px) rotate(0.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes breathing {
+  0%   { scale: 1; }
+  50%  { scale: 1.03; }
+  100% { scale: 1; }
+}
+@keyframes moduleExit {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) rotate(10deg) translateY(40px);
+    filter: blur(8px);
+  }
+}
+
+.home-module.exit {
+  animation: moduleExit 0.5s ease forwards;
+}
+.home-module:hover {
+  transform: translateY(-15px) scale(1.08) rotate(2deg);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+  transition: all 0.4s cubic-bezier(.2,.8,.2,1);
 }
 #home-messages-container {
   margin-top: 50px;
@@ -947,6 +992,17 @@ let tabs = [];
 let activeTab = null;
 
 function openTab(title, url){
+  document.querySelectorAll(".home-module").forEach((mod, index) => {
+    setTimeout(() => {
+      mod.classList.add("exit");
+    }, index * 50);
+  });
+
+  setTimeout(() => {
+    launchTab(title, url);
+  }, 400);
+}
+function launchTab(title, url){
  let existing = tabs.find(t=>t.url===url);
   if(existing){
     setActive(existing.id);
@@ -1410,7 +1466,7 @@ function electronClose() {
   window.electronAPI.close();
 }
 document.querySelectorAll(".home-module").forEach((el, index) => {
-  el.style.animationDelay = (1 + index * 0.15) + "s";
+  el.style.animationDelay = (1 + index * 0.18) + "s";
 });
 </script>
 

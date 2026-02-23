@@ -1084,20 +1084,18 @@ input:focus {
            style="width:100%; min-height:250px; border-radius:12px; background:#000;"
            autoplay playsinline></video>
 
-    <!-- cadre horizontal pour le code-barres -->
     <div id="barcodeFrame"
-         style="
-           position: absolute;
-           top: 40%;
-           left: 10%;
-           width: 80%;
-           height: 20%;
-           border: 3px solid lime;
-           border-radius: 12px;
-           pointer-events: none;
-           box-sizing: border-box;">
-    </div>
-
+     style="
+       position: absolute;
+       top: 45%;
+       left: 5%;
+       width: 90%;
+       height: 15%;       /* bande horizontale fine pour Code128 */
+       border: 3px solid lime;
+       border-radius: 8px;
+       pointer-events: none;
+       box-sizing: border-box;">
+</div>
     <div id="scanStatus" style="margin-top:12px; font-weight:600; text-align:center;"></div>
   </div>
 </div>
@@ -1986,25 +1984,26 @@ function goAppels() {
   updateAttenteStats();
 
 }
-let codeReader = null;
+
 
 function goScan(){
   showPage("pageScan");
   startScan();
 }
-
+let codeReader = null;
 let scanLock = false;
 
 async function startScan() {
-
   const status = document.getElementById("scanStatus");
   status.textContent = "Activation caméra...";
 
   scanLock = false;
 
-const hints = new Map();
-hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-codeReader = new ZXing.BrowserMultiFormatReader(hints);
+  // 🔹 Limiter au Code128 pour plus de rapidité
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+  codeReader = new ZXing.BrowserMultiFormatReader(hints);
+
   try {
     const videoInputDevices = await codeReader.listVideoInputDevices();
 
@@ -2013,7 +2012,7 @@ codeReader = new ZXing.BrowserMultiFormatReader(hints);
       return;
     }
 
-    // 🔥 prend la caméra arrière si disponible
+    // 🔥 caméra arrière
     const selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
 
     status.textContent = "Scannez le code-barres patient";
@@ -2022,7 +2021,6 @@ codeReader = new ZXing.BrowserMultiFormatReader(hints);
       selectedDeviceId,
       "reader",
       async (result, err) => {
-
         if (result && !scanLock) {
           scanLock = true;
 
@@ -2043,7 +2041,6 @@ codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
           openModalFor(patientId);
         }
-
       }
     );
 
@@ -2053,12 +2050,13 @@ codeReader = new ZXing.BrowserMultiFormatReader(hints);
   }
 }
 
-async function stopScan(){
+async function stopScan() {
   if (codeReader) {
     codeReader.reset();
     codeReader = null;
   }
 }
+
  async function appelerTicketMobile() {
   showLoading();
 

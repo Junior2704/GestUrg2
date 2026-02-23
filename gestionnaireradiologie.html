@@ -1049,41 +1049,25 @@ window.addEventListener("message", (event) => {
     document.body.style.filter = "none";
   }
 });
-document.addEventListener("DOMContentLoaded", async () => {
+function renderTable(patients) {
   const tableBody = document.getElementById("patientsBody");
+  tableBody.innerHTML = "";
+  patients.forEach(p => {
+    const examsList = p.examensNonRealises.map(e => e.type || "Examen").join(", ");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.nom}</td>
+      <td>${p.prenom}</td>
+      <td>${formaterDate(p.dateNaissance)}</td>
+      <td>${examsList}</td>
+      <td>${p.position || "N/A"}</td>`;
+    tr.ondblclick = () => showDetails(p);
+    tableBody.appendChild(tr);
+  });
+}
 
-  function renderTable(patients) {
-    tableBody.innerHTML = "";
-    patients.forEach(p => {
-      const examsList = p.examensNonRealises.map(e => e.type || "Examen").join(", ");
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${p.nom}</td>
-        <td>${p.prenom}</td>
-        <td>${formaterDate(p.dateNaissance)}</td>
-        <td>${examsList}</td>
-        <td>${p.position || "N/A"}</td>`;
-      tr.ondblclick = () => showDetails(p);
-      tableBody.appendChild(tr);
-    });
-  }
-
-  async function loadAndRender() {
-    showSpinner();
-    try {
-      const patients = await loadPatients();
-      renderTable(patients);
-    } finally {
-      hideSpinner();
-    }
-  }
-
-  // Initialisation
-  await loadAndRender();
-
-  // Bouton actualiser
-  document.getElementById("refreshPatientsBtn").onclick = loadAndRender;
-});
+// Rendre accessible globalement
+window.renderTable = renderTable;
 // Exemple protection bouton
 document.addEventListener("click", function(e){
   if(appLocked){

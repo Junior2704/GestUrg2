@@ -1089,7 +1089,15 @@ function handleScroll() {
 }
 
 document.addEventListener("click", handleClickOutside);
-document.addEventListener("scroll", handleScroll, true);
+function handleScroll(e) {
+  // Si le scroll vient du menu lui-même → on ignore
+  if (menu.contains(e.target)) return;
+
+  fermerMenu();
+}
+
+// écoute scroll normal (pas capture)
+window.addEventListener("scroll", handleScroll);
 }
 async function tenterDeplacement(patientId, salleId) {
   const config = sallesConfig[salleId];
@@ -1230,7 +1238,14 @@ async function chargerPatients() {
   }
 }
 
-
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    const modal = document.getElementById("modalSalle");
+    if (modal) {
+      modal.style.display = "none";
+    }
+  }
+});
 
 async function ajouterPatientVisuel(id, data, salleId) {
   const salle = document.getElementById(salleId);

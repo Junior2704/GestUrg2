@@ -1010,6 +1010,65 @@ $('applyPosition').addEventListener('click', ()=> {
   updatePositionLabels();
   updateAll();
   log('IRM sous tension');
+const keysPressed = {};
+const stepPerFrame = 1;
+
+// --- gestion des touches ---
+window.addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    if (!keysPressed[key]) keysPressed[key] = true;
+});
+
+window.addEventListener('keyup', e => {
+    const key = e.key.toLowerCase();
+    keysPressed[key] = false;
+});
+
+// --- boucle mouvement continu ---
+function handleContinuousMovement() {
+    let moved = false;
+
+    // Vertical (Z)
+    if (keysPressed['8']) { 
+        height.value = Math.min(200, parseFloat(height.value) + stepPerFrame);
+        moved = true;
+    }
+    if (keysPressed['2']) { 
+        height.value = Math.max(-200, parseFloat(height.value) - stepPerFrame);
+        moved = true;
+    }
+
+    // Latéral (Y)
+    if (keysPressed['6']) { 
+        lateral.value = Math.min(75, parseFloat(lateral.value) + stepPerFrame);
+        moved = true;
+    }
+    if (keysPressed['4']) { 
+        lateral.value = Math.max(-75, parseFloat(lateral.value) - stepPerFrame);
+        moved = true;
+    }
+
+    // Longitudinal (X)
+    if (keysPressed['*']) { 
+        long.value = Math.min(400, parseFloat(long.value) + stepPerFrame);
+        moved = true;
+    }
+    if (keysPressed['/']) { 
+        long.value = Math.max(0, parseFloat(long.value) - stepPerFrame);
+        moved = true;
+    }
+
+    if (moved) {
+        updateTargetFromUI();   // <-- met à jour le SVG et la table
+        updatePositionLabels(); // <-- met à jour les labels
+    }
+
+    requestAnimationFrame(handleContinuousMovement);
+}
+
+// --- démarrage ---
+requestAnimationFrame(handleContinuousMovement);
+
 </script>
 </body>
 </html>

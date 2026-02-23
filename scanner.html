@@ -1058,8 +1058,38 @@ $('applyPosition').addEventListener('click', ()=> {
 
 updatePositionLabels();
 
+const keysPressed = {};
+const stepPerFrame = 1; // mm par frame, tu peux ajuster
 
+window.addEventListener('keydown', (e) => {
+    keysPressed[e.key.toLowerCase()] = true;
+});
 
+window.addEventListener('keyup', (e) => {
+    keysPressed[e.key.toLowerCase()] = false;
+});
+
+function handleContinuousMovement() {
+    // Vertical
+    if (keysPressed['8']) height.value = Math.min(200, parseFloat(height.value) + stepPerFrame);
+    if (keysPressed['2']) height.value = Math.max(-200, parseFloat(height.value) - stepPerFrame);
+    
+    // Latéral
+    if (keysPressed['6']) lateral.value = Math.min(75, parseFloat(lateral.value) + stepPerFrame);
+    if (keysPressed['4']) lateral.value = Math.max(-75, parseFloat(lateral.value) - stepPerFrame);
+    
+    // Longitudinal
+    if (keysPressed['*']) long.value = Math.min(400, parseFloat(long.value) + stepPerFrame);
+    if (keysPressed['/']) long.value = Math.max(0, parseFloat(long.value) - stepPerFrame);
+
+    // Mise à jour visuelle
+    updateAll();
+    updatePositionLabels();
+
+    requestAnimationFrame(handleContinuousMovement);
+}
+
+requestAnimationFrame(handleContinuousMovement);
 
     // initial UI sync
     updateAll();

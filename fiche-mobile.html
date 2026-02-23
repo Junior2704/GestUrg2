@@ -8,6 +8,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 <style>
   :root{
     --brand:#0078d4;
@@ -1972,13 +1973,12 @@ function goAppels() {
   updateAttenteStats();
 
 }
-let html5QrScanner = null;
+let codeReader = null;
 
 function goScan(){
   showPage("pageScan");
   startScan();
 }
-
 
 let scanLock = false;
 
@@ -1989,59 +1989,61 @@ async function startScan() {
 
   scanLock = false;
 
-  html5QrScanner = new Html5Qrcode("reader");
-
+const hints = new Map();
+hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+codeReader = new ZXing.BrowserMultiFormatReader(hints);
   try {
-    await html5QrScanner.start(
-   { facingMode: "environment" },
-  {
-    fps: 25,
-    qrbox: { width: 320, height: 80 },
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.CODE_128
-    ],
-    experimentalFeatures: {
-      useBarCodeDetectorIfSupported: true
+    const videoInputDevices = await codeReader.listVideoInputDevices();
+
+    if (videoInputDevices.length === 0) {
+      status.textContent = "Aucune caméra détectée";
+      return;
     }
-  },
-      onScanSuccess
-    );
+
+    // 🔥 prend la caméra arrière si disponible
+    const selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
 
     status.textContent = "Scannez le code-barres patient";
 
+    codeReader.decodeFromVideoDevice(
+      selectedDeviceId,
+      "reader",
+      async (result, err) => {
+
+        if (result && !scanLock) {
+          scanLock = true;
+
+          const decodedText = result.getText().trim();
+          status.textContent = "Code détecté : " + decodedText;
+
+          await stopScan();
+
+          const patientId = decodedText;
+          const snap = await db.collection("patients").doc(patientId).get();
+
+          if (!snap.exists) {
+            alert("Patient introuvable");
+            scanLock = false;
+            startScan(); // relance si échec
+            return;
+          }
+
+          openModalFor(patientId);
+        }
+
+      }
+    );
+
   } catch (err) {
     console.error(err);
-    status.textContent = "Erreur caméra";
+    status.textContent = "Erreur caméra : " + err;
   }
 }
-async function onScanSuccess(decodedText) {
 
-  if (scanLock) return;
-  scanLock = true;
-
-  const status = document.getElementById("scanStatus");
-  status.textContent = "Code détecté : " + decodedText;
-
-  await stopScan();
-
-  const patientId = decodedText.trim();
-  const snap = await db.collection("patients").doc(patientId).get();
-
-  if (!snap.exists) {
-    alert("Patient introuvable");
-    scanLock = false;
-    return;
-  }
-
-  openModalFor(patientId);
-}
 async function stopScan(){
-  if (html5QrScanner) {
-    try {
-      await html5QrScanner.stop();
-      await html5QrScanner.clear();
-    } catch(e){}
-    html5QrScanner = null;
+  if (codeReader) {
+    codeReader.reset();
+    codeReader = null;
   }
 }
  async function appelerTicketMobile() {

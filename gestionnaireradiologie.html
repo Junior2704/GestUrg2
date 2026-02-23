@@ -657,11 +657,29 @@ function hideSpinner() {
       return d.toLocaleDateString('fr-FR');
     }
 
-    function formatDateHeure(dateString) {
-      const d = new Date(dateString);
-      if (isNaN(d)) return "?";
-      return d.toLocaleString('fr-FR');
-    }
+    function formatDateHeure(dateStr) {
+  if (!dateStr || dateStr === "?") return "?";
+
+  // dateStr attendu au format "DD/MM/YYYY HH:MM:SS"
+  const [datePart, timePart] = dateStr.split(" ");
+  if (!datePart || !timePart) return "?";
+
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+
+  // Création de la date valide
+  const dateObj = new Date(year, month - 1, day, hour, minute, second);
+  if (isNaN(dateObj)) return "?";
+
+  // Formatage en "DD/MM/YYYY HH:MM"
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const yyyy = dateObj.getFullYear();
+  const hh = String(dateObj.getHours()).padStart(2, "0");
+  const min = String(dateObj.getMinutes()).padStart(2, "0");
+
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
 
     function calculerAge(dateNaissance) {
       const d = new Date(dateNaissance);
@@ -1031,7 +1049,41 @@ window.addEventListener("message", (event) => {
     document.body.style.filter = "none";
   }
 });
+document.addEventListener("DOMContentLoaded", async () => {
+  const tableBody = document.getElementById("patientsBody");
 
+  function renderTable(patients) {
+    tableBody.innerHTML = "";
+    patients.forEach(p => {
+      const examsList = p.examensNonRealises.map(e => e.type || "Examen").join(", ");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.nom}</td>
+        <td>${p.prenom}</td>
+        <td>${formaterDate(p.dateNaissance)}</td>
+        <td>${examsList}</td>
+        <td>${p.position || "N/A"}</td>`;
+      tr.ondblclick = () => showDetails(p);
+      tableBody.appendChild(tr);
+    });
+  }
+
+  async function loadAndRender() {
+    showSpinner();
+    try {
+      const patients = await loadPatients();
+      renderTable(patients);
+    } finally {
+      hideSpinner();
+    }
+  }
+
+  // Initialisation
+  await loadAndRender();
+
+  // Bouton actualiser
+  document.getElementById("refreshPatientsBtn").onclick = loadAndRender;
+});
 // Exemple protection bouton
 document.addEventListener("click", function(e){
   if(appLocked){
@@ -1045,18 +1097,4 @@ document.addEventListener("click", function(e){
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

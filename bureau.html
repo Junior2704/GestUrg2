@@ -9,7 +9,6 @@
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
 <style>
@@ -180,13 +179,16 @@ button{font-weight:600;cursor:pointer}
 
 <body>
 
-<!-- LOGIN -->
+<!-- SELECTION BUREAU -->
 <div class="card active" id="cardLogin">
-  <h1>🔐 Connexion accueil</h1>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Mot de passe">
+  <h1>🧾 Sélection du bureau</h1>
+
   <select id="bureauSelect"></select>
-  <button class="btn-primary" onclick="connexion()">Se connecter</button>
+
+  <button class="btn-primary" onclick="entrerPoste()">
+    Entrer au poste
+  </button>
+
   <div class="status err" id="loginStatus"></div>
 </div>
 
@@ -210,11 +212,10 @@ button{font-weight:600;cursor:pointer}
 
 <button style="margin-top:10px;" onclick="openParams()">⚙️ Paramètres</button>
 
-  <button class="btn-danger" onclick="deconnexion()">Déconnexion</button>
-  <div class="footer">
-    <strong id="bureauLabel"></strong> —
-    <span id="agentEmail"></span>
-  </div>
+
+<div class="footer">
+  <strong id="bureauLabel"></strong>
+</div>
 </div>
 <!-- MODALE PARAMETRES -->
 <div id="modalParams" style="display:none;">
@@ -254,7 +255,7 @@ firebase.initializeApp({
   projectId: "urgences-a8ed4"
 });
 
-const auth = firebase.auth();
+
 const db = firebase.firestore();
 
 let bureauActuel = null;
@@ -286,29 +287,22 @@ function showAccueil(){
   document.getElementById("cardAccueil").classList.add("active");
 }
 
-// ================= CHARGER BUREAUX =================
 function initBureauxListener(){
   db.collection("référentiels")
     .doc("bureau")
     .onSnapshot(docSnap=>{
       bureauSelect.innerHTML = "";
+
       if(!docSnap.exists) return;
 
       const data = docSnap.data();
 
       for(const bureauId in data){
-        const bureau = data[bureauId];
-
-        // ✅ ignorer "general" et tout champ non-bureau
-        if(
-          !bureau ||
-          typeof bureau !== "object" ||
-          bureau.connecte === undefined
-        ) continue;
+        if(typeof data[bureauId] !== "object") continue;
 
         const opt = document.createElement("option");
         opt.value = bureauId;
-        opt.textContent = bureauId + (bureau.connecte ? " 🔒" : "");
+        opt.textContent = bureauId;
         bureauSelect.appendChild(opt);
       }
     });
@@ -354,46 +348,7 @@ db.collection("accueil-1")
   });
 
 
-// ================= CONNEXION =================
-async function connexion(){
-  try{
-    const email = emailInput.value.trim();
-    const pass = passwordInput.value;
-    const bureauId = bureauSelect.value;
 
-    const cred = await auth.signInWithEmailAndPassword(email, pass);
-    const ref = db.collection("référentiels").doc("bureau");
-
-await db.runTransaction(async tx => {
-  const snap = await tx.get(ref);
-  if (!snap.exists) throw "Référentiel bureaux introuvable";
-
-  const data = snap.data();
-  const b = data[bureauId];
-
-  if (!b) throw "Bureau inexistant";
-
-  if (b.connecte && b.agentUid !== cred.user.uid)
-    throw "Bureau déjà occupé";
-
-  tx.update(ref, {
-    [`${bureauId}.connecte`]: true,
-    [`${bureauId}.agentUid`]: cred.user.uid,
-    [`${bureauId}.agentEmail`]: cred.user.email,
-    [`${bureauId}.connexionAt`]: firebase.firestore.FieldValue.serverTimestamp()
-  });
-});
-
-
-    bureauActuel = bureauId;
-    bureauLabel.innerText = bureauId;
-    agentEmail.innerText = email;
-    showAccueil();
-
-  }catch(e){
-    loginStatus.innerText = e;
-  }
-}
 
 // ================= APPEL =================
 async function appelerTicket(){
@@ -412,7 +367,6 @@ async function appelerTicket(){
 
   const anciens = await db.collection("accueil-1")
     .where("statut","==","appele")
-    .where("bureau","==",bureauActuel)
     .get();
 
   anciens.forEach(d=>d.ref.update({statut:"termine"}));
@@ -473,63 +427,7 @@ function afficher(msg,ok){
   appelStatus.className = "status " + (ok?"ok":"err");
 }
 
-// ================= DECONNEXION =================
-async function deconnexion(){
-  if(bureauActuel){
-   const ref = db.collection("référentiels").doc("bureau");
-await ref.update({
-  [`${bureauActuel}.connecte`]: false,
-  [`${bureauActuel}.agentUid`]: null,
-  [`${bureauActuel}.agentEmail`]: null,
-  [`${bureauActuel}.connexionAt`]: null
-});
 
-  }
-  estConnecte = false; 
-  await auth.signOut();
-  
-}
-let estConnecte = false;
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    estConnecte = true;
-  } else {
-    estConnecte = false;
-  }
-});
-window.addEventListener("beforeunload", (e) => {
-  if (estConnecte) {
-    e.preventDefault();
-    e.returnValue = "⚠️ Veuillez vous déconnecter avant de fermer cette fenêtre.";
-    return e.returnValue;
-  }
-});
-
-// ================= SESSION =================
-auth.onAuthStateChanged(user=>{
-  if(!user){
-    showLogin();
-    initBureauxListener();
-    return;
-  }
-
-  db.collection("référentiels").doc("bureau").collection("bureaux")
-    .where("agentUid","==",user.uid)
-    .get()
-    .then(snapshot=>{
-      if(!snapshot.empty){
-        const doc = snapshot.docs[0];
-        bureauActuel = doc.id;
-        bureauLabel.innerText = doc.data().agentEmail ? doc.id : "";
-        agentEmail.innerText = user.email;
-        showAccueil();
-      }else{
-        showLogin();
-        initBureauxListener();
-      }
-    });
-});
 function formatDuree(ms) {
   const min = Math.floor(ms / 60000);
   if (min < 1) return "moins d’1 min";
@@ -604,7 +502,7 @@ async function appelerTicket(){
   // Suite de l'appel du ticket (inchangé)
   const anciens = await db.collection("accueil-1")
     .where("statut","==","appele")
-    .where("bureau","==",bureauActuel)
+    
     .get();
   anciens.forEach(d=>d.ref.update({statut:"termine"}));
 
@@ -638,6 +536,19 @@ async function appelerTicket(){
 
 // ================= INITIALISATION =================
 initBureauxListener();
+function entrerPoste(){
+  const bureauId = bureauSelect.value;
+
+  if(!bureauId){
+    loginStatus.innerText = "Veuillez sélectionner un bureau";
+    return;
+  }
+
+  bureauActuel = bureauId;
+  bureauLabel.innerText = bureauId;
+
+  showAccueil();
+}
 </script>
 
 </body>

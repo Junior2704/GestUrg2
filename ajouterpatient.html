@@ -341,30 +341,43 @@ function updateNav() {
 /* ---------- RECHERCHE ---------- */
 search.oninput = async () => {
   results.innerHTML = "";
-  const val = search.value.toLowerCase().trim();
-  if (val.length < 2) return;
+  const valRaw = search.value.toLowerCase().trim();
+  if (valRaw.length < 2) return;
+
+  // On retire les "/" de la recherche pour comparaison
+  const val = valRaw.replace(/\//g, "");
 
   const snap = await db.collection("patients").get();
 
   snap.forEach(doc => {
     const p = doc.data();
 
-    // On formate la date de naissance pour la comparaison (jj/mm/aaaa ou aaaa-mm-jj)
-    const dateStr = p.dateNaissance ? p.dateNaissance.toLowerCase() : "";
+    // Normalisation de la date de naissance : jj/mm/aaaa
+    let dateFormatee = "";
+    if (p.dateNaissance) {
+      const d = new Date(p.dateNaissance);
+      if (!isNaN(d)) {
+        const jour = String(d.getDate()).padStart(2, "0");
+        const mois = String(d.getMonth() + 1).padStart(2, "0");
+        const annee = d.getFullYear();
+        dateFormatee = `${jour}${mois}${annee}`; // on enlève les "/" pour comparer
+      } else {
+        dateFormatee = p.dateNaissance.replace(/\//g, ""); // si format libre
+      }
+    }
 
     // Vérifie si la recherche correspond à nom, prénom, ID ou date de naissance
     if (
       p.nom?.toLowerCase().includes(val) ||
       p.prenom?.toLowerCase().includes(val) ||
       doc.id.toLowerCase().includes(val) ||
-      dateStr.includes(val)
+      dateFormatee.includes(val)
     ) {
       const div = document.createElement("div");
       div.className = "result";
       div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${doc.id}`;
 
       div.onclick = async () => {
-        // 🔒 Patient déjà hospitalisé → BLOQUÉ
         if (p.hospitalisationActiveId) {
           showInfoModal("⛔ Ce patient est déjà hospitalisé", true);
           return;
@@ -392,7 +405,7 @@ search.oninput = async () => {
 
         patientSelected = true;
         updateNav();
-        openTab(2); // on reste sur identité pour continuer
+        openTab(2);
       };
 
       results.appendChild(div);

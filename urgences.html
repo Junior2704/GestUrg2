@@ -1351,7 +1351,7 @@ async function rechargerPlan() {
 document.addEventListener("DOMContentLoaded", () => {
   ajusterTailleSalles();
   rechargerPlan();
-  setInterval(rechargerPlan, 30000); // rafraîchissement toutes les 30s
+  setInterval(rechargerPlan, 1 * 60 * 1000)
 });
 
 function afficherModalListePatients(salleId) {
@@ -1390,11 +1390,24 @@ function afficherModalListePatients(salleId) {
   const closeBtn = document.createElement("button");
   closeBtn.textContent = "Fermer";
   closeBtn.style.marginTop = "15px";
-  closeBtn.onclick = () => modal.remove();
+  closeBtn.onclick = () => {
+    modal.remove();
+    document.removeEventListener("keydown", escHandler); // supprime l'écouteur quand on ferme
+  };
   content.appendChild(closeBtn);
 
   modal.appendChild(content);
   document.body.appendChild(modal);
+
+  // Écouteur pour la touche Échap
+  function escHandler(e) {
+    if (e.key === "Escape") {
+      modal.remove();
+      document.removeEventListener("keydown", escHandler);
+    }
+  }
+
+  document.addEventListener("keydown", escHandler);
 }
 
 

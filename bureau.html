@@ -179,24 +179,17 @@ button{font-weight:600;cursor:pointer}
 
 <body>
 
-<!-- SELECTION BUREAU -->
-<div class="card active" id="cardLogin">
-  <h1>🧾 Sélection du bureau</h1>
 
-  <select id="bureauSelect"></select>
-
-  <button class="btn-primary" onclick="entrerPoste()">
-    Entrer au poste
-  </button>
-
-  <div class="status err" id="loginStatus"></div>
-</div>
 
 <!-- POSTE -->
-<div class="card" id="cardAccueil">
+<div class="card active" id="cardAccueil">
   <h1>🧾 Poste d’accueil</h1>
   <div class="numero" id="numeroAffiche">—</div>
   
+<div style="margin-top:12px;">
+  <label style="font-weight:600;">🏢 Bureau :</label>
+  <select id="bureauSelect" onchange="changerBureau(this.value)"></select>
+</div>
 
 <div id="infosPatient" style="text-align:center; margin-bottom:14px; display:none">
   <div id="infoMotif"></div>
@@ -287,6 +280,8 @@ function showAccueil(){
   document.getElementById("cardAccueil").classList.add("active");
 }
 
+
+
 function initBureauxListener(){
   db.collection("référentiels")
     .doc("bureau")
@@ -305,7 +300,18 @@ function initBureauxListener(){
         opt.textContent = bureauId;
         bureauSelect.appendChild(opt);
       }
+
+      // Sélection automatique du premier bureau
+      if(!bureauActuel && bureauSelect.options.length > 0){
+        bureauActuel = bureauSelect.options[0].value;
+        bureauLabel.innerText = bureauActuel;
+      }
     });
+}
+
+function changerBureau(val){
+  bureauActuel = val;
+  bureauLabel.innerText = val;
 }
 
 async function updateAttenteStats() {

@@ -144,7 +144,7 @@ button:hover { background: #005ea2; }
 
     <div id="results"></div>
 
-    <button id="createPatient">➕ Créer ce patient</button>
+    <button id="createPatient">➕ Créer un patient</button>
   </div>
 
   <!-- ONGLET 2 -->
@@ -348,48 +348,52 @@ search.oninput = async () => {
 
   snap.forEach(doc => {
     const p = doc.data();
+
+    // On formate la date de naissance pour la comparaison (jj/mm/aaaa ou aaaa-mm-jj)
+    const dateStr = p.dateNaissance ? p.dateNaissance.toLowerCase() : "";
+
+    // Vérifie si la recherche correspond à nom, prénom, ID ou date de naissance
     if (
       p.nom?.toLowerCase().includes(val) ||
-      p.prenom?.toLowerCase().includes(val)
+      p.prenom?.toLowerCase().includes(val) ||
+      doc.id.toLowerCase().includes(val) ||
+      dateStr.includes(val)
     ) {
       const div = document.createElement("div");
       div.className = "result";
-      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"})`;
+      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - ID: ${doc.id}`;
 
-    div.onclick = async () => {
-  // 🔒 Patient déjà hospitalisé → BLOQUÉ
-  if (p.hospitalisationActiveId) {
-    showInfoModal("⛔ Ce patient est déjà hospitalisé", true);
-    return;
-  }
+      div.onclick = async () => {
+        // 🔒 Patient déjà hospitalisé → BLOQUÉ
+        if (p.hospitalisationActiveId) {
+          showInfoModal("⛔ Ce patient est déjà hospitalisé", true);
+          return;
+        }
 
-  // Champs identité
-  nom.value = p.nom;
-  prenom.value = p.prenom;
-  sexe.value = p.sexe || "";
-  naissance.value = p.dateNaissance || "";
-  nom.dataset.id = doc.id;
-  adresse.value = p.adresse || "";
-  telephone.value = p.telephone || "";
-  email.value = p.email || "";
-  idPatient.value = doc.id;
+        // Champs identité
+        nom.value = p.nom;
+        prenom.value = p.prenom;
+        sexe.value = p.sexe || "";
+        naissance.value = p.dateNaissance || "";
+        nom.dataset.id = doc.id;
+        adresse.value = p.adresse || "";
+        telephone.value = p.telephone || "";
+        email.value = p.email || "";
+        idPatient.value = doc.id;
 
-  // 🔹 Pré-remplissage données médicales depuis Firestore
-  const patientRef = db.collection("patients").doc(doc.id);
-  const patientSnap = await patientRef.get();
-  const patientData = patientSnap.data();
+        // 🔹 Pré-remplissage données médicales depuis Firestore
+        const patientRef = db.collection("patients").doc(doc.id);
+        const patientSnap = await patientRef.get();
+        const patientData = patientSnap.data();
 
-  document.getElementById("medtraitant").value = patientData.medtraitant || "";
-  document.getElementById("vigilances").value = patientData.vigilances || "aucune";
-  document.getElementById("allergies").value = patientData.allergies || "aucun";
+        document.getElementById("medtraitant").value = patientData.medtraitant || "";
+        document.getElementById("vigilances").value = patientData.vigilances || "aucune";
+        document.getElementById("allergies").value = patientData.allergies || "aucun";
 
-  patientSelected = true;
-  updateNav();
-  openTab(2); // on reste sur identité pour continuer
-};
-
-
-
+        patientSelected = true;
+        updateNav();
+        openTab(2); // on reste sur identité pour continuer
+      };
 
       results.appendChild(div);
     }

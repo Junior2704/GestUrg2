@@ -1524,7 +1524,8 @@ salle.addEventListener("drop", async e => {
   await db.collection("patients").doc(patientId).update({
     position: salle.id
   });
-
+const modal = document.getElementById("modalSalle");
+if (modal) modal.style.display = "none";
   rechargerPlan();
 });
 
@@ -1552,6 +1553,16 @@ zone.style.gap = "14px";
     const data = doc.data();
 
     const card = document.createElement("div");
+    card.draggable = true;
+
+card.addEventListener("dragstart", e => {
+  e.dataTransfer.setData("id", doc.id);
+  setTimeout(() => card.classList.add("dragging"), 0);
+});
+
+card.addEventListener("dragend", () => {
+  card.classList.remove("dragging");
+});
 card.className = "patient-card";
 card.dataset.id = doc.id;
 // --- hospitalisation ---

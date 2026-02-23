@@ -987,9 +987,7 @@ input:focus {
 <div id="menuAppels" class="sidebar-item" onclick="goAppels()">
   📞 Appels
 </div>
-<div class="sidebar-item" onclick="goScan()">
-  📷 Scan patient
-</div>
+
   <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
 </div>
 
@@ -1076,29 +1074,7 @@ input:focus {
 </div>
   </div>
 </div>
-<div id="pageScan" class="page">
-  <h2>📷 Scan patient</h2>
 
-  <div class="card" style="position: relative;">
-    <video id="reader"
-           style="width:100%; min-height:250px; border-radius:12px; background:#000;"
-           autoplay playsinline></video>
-
-    <div id="barcodeFrame"
-     style="
-       position: absolute;
-       top: 45%;
-       left: 5%;
-       width: 90%;
-       height: 15%;       /* bande horizontale fine pour Code128 */
-       border: 3px solid lime;
-       border-radius: 8px;
-       pointer-events: none;
-       box-sizing: border-box;">
-</div>
-    <div id="scanStatus" style="margin-top:12px; font-weight:600; text-align:center;"></div>
-  </div>
-</div>
 
 </div>
 
@@ -1953,10 +1929,7 @@ db.collection("référentiels").doc("bureau")
   });
   function showPage(pageId) {
 
-  // 🔴 Si on quitte Scan → stop caméra
-  if (!document.getElementById("pageScan").classList.contains("active")) {
-    stopScan();
-  }
+  
 
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');
@@ -1964,10 +1937,7 @@ db.collection("référentiels").doc("bureau")
 
   document.getElementById(pageId).classList.add('active');
 
-  // 🟢 Si on arrive sur Scan → start caméra
-  if (pageId === "pageScan") {
-    startScan();
-  }
+
 
   closeSidebar();
 }
@@ -1986,76 +1956,7 @@ function goAppels() {
 }
 
 
-function goScan(){
-  showPage("pageScan");
-  startScan();
-}
-let codeReader = null;
-let scanLock = false;
 
-async function startScan() {
-  const status = document.getElementById("scanStatus");
-  status.textContent = "Activation caméra...";
-
-  scanLock = false;
-
-  // 🔹 Limiter au Code128 pour plus de rapidité
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-  codeReader = new ZXing.BrowserMultiFormatReader(hints);
-
-  try {
-    const videoInputDevices = await codeReader.listVideoInputDevices();
-
-    if (videoInputDevices.length === 0) {
-      status.textContent = "Aucune caméra détectée";
-      return;
-    }
-
-    // 🔥 caméra arrière
-    const selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
-
-    status.textContent = "Scannez le code-barres patient";
-
-    codeReader.decodeFromVideoDevice(
-      selectedDeviceId,
-      "reader",
-      async (result, err) => {
-        if (result && !scanLock) {
-          scanLock = true;
-
-          const decodedText = result.getText().trim();
-          status.textContent = "Code détecté : " + decodedText;
-
-          await stopScan();
-
-          const patientId = decodedText;
-          const snap = await db.collection("patients").doc(patientId).get();
-
-          if (!snap.exists) {
-            alert("Patient introuvable");
-            scanLock = false;
-            startScan(); // relance si échec
-            return;
-          }
-
-          openModalFor(patientId);
-        }
-      }
-    );
-
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Erreur caméra : " + err;
-  }
-}
-
-async function stopScan() {
-  if (codeReader) {
-    codeReader.reset();
-    codeReader = null;
-  }
-}
 
  async function appelerTicketMobile() {
   showLoading();

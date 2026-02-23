@@ -1090,22 +1090,57 @@ function handleContinuousMovement() {
 }
 
 requestAnimationFrame(handleContinuousMovement);
+function parquerTable() {
+  log('Table parquée');
+  animateTo(height, -200);
+  animateTo(lateral, 0);
+  animateTo(long, 0);
+  if (typeof collimation !== "undefined" && collimation) collimation.value = 0;
+  if (typeof kv !== "undefined" && kv) kv.value = 0;
+  if (typeof ma !== "undefined" && ma) ma.value = 0;
+}
+window.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
 
-    // initial UI sync
-    updateAll();
-    log('Préparation du Scan...');
-	setTimeout(() => {
-  prog.style.width='0%';
-  log('Scan prêt !')
+  // Mouvement continu : on garde le suivi pour les autres touches
+  if (['8','2','6','4','*','/'].includes(key)) {
+    keysPressed[key] = true;
+  }
+
+  // Appui simple pour parquer la table
+  if (key === 'p') {
+    parquerTable();
+  }
+
+  // Appui simple pour arrêter le scan
+  if (key === ' ') {
+    stopScan();
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  const key = e.key.toLowerCase();
+  if (['8','2','6','4','*','/'].includes(key)) {
+    keysPressed[key] = false;
+  }
+});
+
+function stopScan() {
+  if (scanTimer) clearInterval(scanTimer);
+  scanning = false;
+  if (prog) prog.style.width = '0%';
+  log('Scan arrêté manuellement');
+  afficherBulle("Scan interrompu", "alerte");
+}
+
+// Initial UI sync
+updateAll();
+log('Préparation du Scan...');
+setTimeout(() => {
+  if (prog) prog.style.width = '0%';
+  log('Scan prêt !');
 }, 1500);
-  });
+
   </script>
 </body>
 </html>
-
-
-
-
-
-
-

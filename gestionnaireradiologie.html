@@ -948,16 +948,28 @@ window.openEditModal = (patientId, hospitalisationId, examIndex) => {
   editModal.style.display = "flex";
 };
 
-// ✅ Fonction de formatage de date (jj/mm/aaaa - hh:mm:ss)
-function formatDate(isoString) {
-  const date = new Date(isoString);
-  const jour = String(date.getDate()).padStart(2, '0');
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-  const annee = date.getFullYear();
-  const heures = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const secondes = String(date.getSeconds()).padStart(2, '0');
-  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+function formatDateHeure(dateStr) {
+  if (!dateStr || dateStr === "?") return "?";
+
+  // dateStr attendu au format "DD/MM/YYYY HH:MM:SS"
+  const [datePart, timePart] = dateStr.split(" ");
+  if (!datePart || !timePart) return "?";
+
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+
+  // Création de la date valide
+  const dateObj = new Date(year, month - 1, day, hour, minute, second);
+  if (isNaN(dateObj)) return "?";
+
+  // Formatage en "DD/MM/YYYY HH:MM"
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const yyyy = dateObj.getFullYear();
+  const hh = String(dateObj.getHours()).padStart(2, "0");
+  const min = String(dateObj.getMinutes()).padStart(2, "0");
+
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 document.addEventListener("DOMContentLoaded", () => {
 

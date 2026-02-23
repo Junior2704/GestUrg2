@@ -738,6 +738,9 @@ body, #mainContent {
 }
 
 
+.modal-drag-through {
+  pointer-events: none !important;
+}
   </style>
 </head>
 <body>
@@ -1558,15 +1561,20 @@ zone.style.gap = "14px";
 card.addEventListener("dragstart", e => {
   e.dataTransfer.setData("id", doc.id);
 
-  // 🔥 Ferme immédiatement la modale
   const modal = document.getElementById("modalSalle");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.classList.add("modal-drag-through");
+  }
 
   setTimeout(() => card.classList.add("dragging"), 0);
 });
-
 card.addEventListener("dragend", () => {
   card.classList.remove("dragging");
+
+  const modal = document.getElementById("modalSalle");
+  if (modal) {
+    modal.classList.remove("modal-drag-through");
+  }
 });
 card.className = "patient-card";
 card.dataset.id = doc.id;

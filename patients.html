@@ -457,10 +457,30 @@ function afficherPatients(data) {
 
 recherchePatient.addEventListener("input", e => {
   const val = e.target.value.toLowerCase();
-  const resultats = patients.filter(p =>
-    (p.nom && p.nom.toLowerCase().includes(val)) ||
-    (p.prenom && p.prenom.toLowerCase().includes(val))
-  );
+
+  const resultats = patients.filter(p => {
+    // Normalisation de la date de naissance : jj/mm/aaaa
+    let dateFormatee = "";
+    if (p.dateNaissance) {
+      const d = new Date(p.dateNaissance);
+      if (!isNaN(d)) {
+        const jour = String(d.getDate()).padStart(2, "0");
+        const mois = String(d.getMonth() + 1).padStart(2, "0");
+        const annee = d.getFullYear();
+        dateFormatee = `${jour}/${mois}/${annee}`;
+      } else {
+        dateFormatee = p.dateNaissance; // si pas une date valide
+      }
+    }
+
+    return (
+      (p.nom && p.nom.toLowerCase().includes(val)) ||
+      (p.prenom && p.prenom.toLowerCase().includes(val)) ||
+      (p.id && p.id.toLowerCase().includes(val)) ||
+      (dateFormatee && dateFormatee.includes(val)) // comparaison avec date normalisée
+    );
+  });
+
   afficherPatients(resultats);
 });
 document.querySelectorAll(".menu-toggle").forEach(btn => {

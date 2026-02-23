@@ -741,6 +741,25 @@ body, #mainContent {
 .modal-drag-through {
   pointer-events: none !important;
 }
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  padding: 6px 0;
+  z-index: 100000;
+  min-width: 180px;
+}
+
+.context-menu-item {
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.context-menu-item:hover {
+  background: #e6f0fc;
+}
   </style>
 </head>
 <body>
@@ -1011,6 +1030,54 @@ function sansAccents(str) {
   "psy": { capacite: 4, flexible: false },
   "sortie": { capacite: 2, flexible: true } // salle infinie
 };
+function afficherMenuSalles(x, y, patientId) {
+  // Supprime ancien menu
+  const ancien = document.querySelector(".context-menu");
+  if (ancien) ancien.remove();
+
+  const menu = document.createElement("div");
+  menu.className = "context-menu";
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  Object.keys(sallesConfig).forEach(salleId => {
+    const item = document.createElement("div");
+    item.className = "context-menu-item";
+    item.textContent = document.querySelector(`#${salleId} h3`)?.textContent || salleId;
+
+    item.addEventListener("click", async () => {
+      await tenterDeplacement(patientId, salleId);
+      menu.remove();
+    });
+
+    menu.appendChild(item);
+  });
+
+  document.body.appendChild(menu);
+
+  // clic ailleurs → ferme
+  document.addEventListener("click", () => menu.remove(), { once: true });
+}
+async function tenterDeplacement(patientId, salleId) {
+  const config = sallesConfig[salleId];
+  const salle = document.getElementById(salleId);
+  if (!salle) return;
+
+  const zone = salle.querySelector(".salle-patients");
+  const nbPatients = zone.querySelectorAll(".patient-card").length;
+
+  if (!config.flexible && nbPatients >= config.capacite) {
+    afficherBulle("Salle pleine", "error");
+    return;
+  }
+
+  await db.collection("patients").doc(patientId).update({
+    position: salleId
+  });
+
+  afficherBulle("Patient déplacé", "success");
+  rechargerPlan();
+}
 function tronque(txt, max = 18) {
   if (!txt) return "N/A";
   return txt.length > max ? txt.slice(0, max) + "…" : txt;
@@ -1187,7 +1254,10 @@ if (data.hospitalisationActiveId) {
   <div class="ligne">📋|${tronque(statut)}</div>
   <div class="ligne">🧭|${tronque(circuit)}</div>
 `;
-
+card.addEventListener("contextmenu", e => {
+  e.preventDefault();
+  afficherMenuSalles(e.clientX, e.clientY, id); // ou doc.id dans la modale
+});
   // drag
   card.addEventListener("dragstart", e => {
     e.dataTransfer.setData("id", id);
@@ -1557,7 +1627,10 @@ zone.style.gap = "14px";
 
     const card = document.createElement("div");
     card.draggable = true;
-
+card.addEventListener("contextmenu", e => {
+  e.preventDefault();
+  afficherMenuSalles(e.clientX, e.clientY, id); // ou doc.id dans la modale
+});
 card.addEventListener("dragstart", e => {
   e.dataTransfer.setData("id", doc.id);
 

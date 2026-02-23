@@ -748,7 +748,10 @@ body, #mainContent {
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
   padding: 6px 0;
   z-index: 100000;
-  min-width: 180px;
+  min-width: 220px;
+
+  max-height: 320px;     /* 🔥 hauteur max */
+  overflow-y: auto;      /* 🔥 scroll interne */
 }
 
 .context-menu-item {
@@ -1037,8 +1040,22 @@ function afficherMenuSalles(x, y, patientId) {
 
   const menu = document.createElement("div");
   menu.className = "context-menu";
-  menu.style.left = x + "px";
-  menu.style.top = y + "px";
+const largeurMenu = 240;
+const hauteurMenu = 320;
+
+let posX = x;
+let posY = y;
+
+if (x + largeurMenu > window.innerWidth) {
+  posX = window.innerWidth - largeurMenu - 10;
+}
+
+if (y + hauteurMenu > window.innerHeight) {
+  posY = window.innerHeight - hauteurMenu - 10;
+}
+
+menu.style.left = posX + "px";
+menu.style.top = posY + "px";
 
   Object.keys(sallesConfig).forEach(salleId => {
     const item = document.createElement("div");
@@ -1055,8 +1072,24 @@ function afficherMenuSalles(x, y, patientId) {
 
   document.body.appendChild(menu);
 
-  // clic ailleurs → ferme
-  document.addEventListener("click", () => menu.remove(), { once: true });
+function fermerMenu() {
+  if (menu) menu.remove();
+  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("scroll", handleScroll, true);
+}
+
+function handleClickOutside(e) {
+  if (!menu.contains(e.target)) {
+    fermerMenu();
+  }
+}
+
+function handleScroll() {
+  fermerMenu();
+}
+
+document.addEventListener("click", handleClickOutside);
+document.addEventListener("scroll", handleScroll, true);
 }
 async function tenterDeplacement(patientId, salleId) {
   const config = sallesConfig[salleId];
@@ -1629,7 +1662,7 @@ zone.style.gap = "14px";
     card.draggable = true;
 card.addEventListener("contextmenu", e => {
   e.preventDefault();
-  afficherMenuSalles(e.clientX, e.clientY, id); // ou doc.id dans la modale
+  afficherMenuSalles(e.clientX, e.clientY, doc.id);
 });
 card.addEventListener("dragstart", e => {
   e.dataTransfer.setData("id", doc.id);

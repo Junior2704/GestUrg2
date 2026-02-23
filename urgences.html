@@ -1613,7 +1613,45 @@ zone.appendChild(card);
 
   }
 }
+/* ===============================
+   AUTO SCROLL PENDANT DRAG
+=================================*/
 
+let autoScrollInterval = null;
+
+document.addEventListener("dragover", (e) => {
+  const zoneDeclenchement = 120; // distance du bord (px)
+  const vitesseScroll = 20;      // vitesse du scroll
+
+  const hauteurFenetre = window.innerHeight;
+  const positionY = e.clientY;
+
+  // Si on est proche du haut
+  if (positionY < zoneDeclenchement) {
+    if (!autoScrollInterval) {
+      autoScrollInterval = setInterval(() => {
+        window.scrollBy(0, -vitesseScroll);
+      }, 16); // ~60fps
+    }
+  }
+  // Si on est proche du bas
+  else if (positionY > hauteurFenetre - zoneDeclenchement) {
+    if (!autoScrollInterval) {
+      autoScrollInterval = setInterval(() => {
+        window.scrollBy(0, vitesseScroll);
+      }, 16);
+    }
+  }
+  else {
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
+  }
+});
+
+document.addEventListener("dragend", () => {
+  clearInterval(autoScrollInterval);
+  autoScrollInterval = null;
+});
 
 
 

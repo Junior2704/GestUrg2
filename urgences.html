@@ -1006,6 +1006,43 @@ function sansAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+// --- Affiche l’écran de chargement ---
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
+
+
  const sallesConfig = {
   "salle-attente": { capacite: 12, flexible: true },
   "iao": { capacite: 4, flexible: false },
@@ -1574,41 +1611,7 @@ function ajusterTailleSalles() {
 
   console.log(`✅ ${count} lien(s) supprimé(s).`);
 }
-// --- Affiche l’écran de chargement ---
-window.afficherLoader = function() {
-  let loader = document.getElementById("loadingScreen");
-  
-  if (!loader) {
-    loader = document.createElement("iframe");
-    loader.id = "loadingScreen";
-    loader.src = "loader.html?modal=true"; 
-    loader.style.position = "fixed";
-    loader.style.top = "0";
-    loader.style.left = "0";
-    loader.style.width = "100%";
-    loader.style.height = "100%";
-    loader.style.border = "none";
-    loader.style.zIndex = "9999";
-    loader.style.background = "transparent";
-    loader.style.pointerEvents = "none"; 
-    document.body.appendChild(loader);
-  }
 
-  loader.style.display = "block";
-  loader.style.opacity = "1";
-};
-
-// --- Masque l’écran de chargement ---
-window.masquerLoader = function() {
-  const loader = document.getElementById("loadingScreen");
-  if (loader) {
-    loader.style.transition = "opacity 0.3s ease";
-    loader.style.opacity = "0";
-    setTimeout(() => {
-      loader.style.display = "none";
-    }, 300); // délai pour l’animation
-  }
-};
 document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".menu-toggle").forEach(btn => {

@@ -909,8 +909,11 @@ body, #mainContent {
     appId: "1:392921498200:web:7ccce767332c67c697c02d",
     measurementId: "G-C74MK2KYDL"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // Charge les patients Firestore
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const db = getFirestore(app);
 const inputId = document.getElementById("idPatient");
 const inputSearchInModal = document.getElementById("searchInModal");
 const resultatsRecherche = document.getElementById("resultatsRecherche");
@@ -1230,21 +1233,31 @@ function remplirFormulaireDepuisPatient(id, data) {
   });
 
   
-  // Charge les patients Firestore
+
+
+
 async function chargerPatients() {
+  // Vérifie qu'un utilisateur est connecté
+  const user = auth.currentUser;
+  if (!user) {
+    console.warn("Impossible de charger les patients : utilisateur non connecté");
+    return;
+  }
+
   afficherLoader();
 
   try {
-    const snapshot = await db
-      .collection("patients")
-      .where("hospitalisationActiveId", "!=", "")
-      .get();
+    // Version modulaire : collection + query + getDocs
+    const patientsRef = collection(db, "patients");
+    const q = query(patientsRef, where("hospitalisationActiveId", "!=", ""));
+    const snapshot = await getDocs(q);
 
     for (const doc of snapshot.docs) {
       const data = doc.data();
       const salleId = data.position || "salle-attente";
       await ajouterPatientVisuel(doc.id, data, salleId);
     }
+
   } catch (e) {
     console.error("Erreur chargement patients", e);
   } finally {
@@ -1361,12 +1374,7 @@ async function rechargerPlan() {
 }
 
 
-// Initialisation
-document.addEventListener("DOMContentLoaded", () => {
-  ajusterTailleSalles();
-  rechargerPlan();
-  setInterval(rechargerPlan, 1 * 60 * 1000)
-});
+
 
 function afficherModalListePatients(salleId) {
   const salle = document.getElementById(salleId);
@@ -1806,41 +1814,58 @@ document.addEventListener("dragend", () => {
      nettoyerPDFs();
 </script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
+// --- Configuration Firebase ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  
-  // Déconnexion
-window.addEventListener("message", (event) => {
-  if (!event.data) return;
+// --- Gestion état utilisateur ---
+let currentUser = null;
 
-  if (event.data.type === "USER_CONNECTED") {
-    const user = event.data.user;
-    
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    console.log("Utilisateur connecté :", user.uid, user.email);
+   
+    ajusterTailleSalles();
+  rechargerPlan();
+  setInterval(rechargerPlan, 1 * 60 * 1000)
+  } else {
+    currentUser = null;
+    console.log("Aucun utilisateur connecté");
   }
 });
 
-  let appLocked = false;
+
+
+// --- Déconnexion exemple ---
+async function deconnexion() {
+  try {
+    await signOut(auth);
+    console.log("Utilisateur déconnecté");
+  } catch (err) {
+    console.error("Erreur déconnexion :", err);
+  }
+}
+
+// --- Gestion verrouillage app ---
+let appLocked = false;
 
 window.addEventListener("message", (event) => {
-
   if (!event.data) return;
 
   if (event.data.type === "APP_LOCK") {
     appLocked = true;
-
-    // Stopper timers éventuels si besoin
     document.body.style.filter = "grayscale(0.8)";
   }
 
@@ -1850,23 +1875,13 @@ window.addEventListener("message", (event) => {
   }
 });
 
-// Exemple protection bouton
 document.addEventListener("click", function(e){
   if(appLocked){
     e.stopPropagation();
     e.preventDefault();
   }
 }, true);
-  
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    console.log("Utilisateur connecté :", user.uid, user.email);
-    // user.uid -> identifiant unique dans Firestore
-    // user.email -> email si disponible
-  } else {
-    console.log("Aucun utilisateur connecté");
-  }
-});
+
 
 
 

@@ -378,7 +378,98 @@
   </div>
 </div>
 
-<script>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
+  </div>
+</div>
+<script type="module">
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  deleteDoc,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+
+
+onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+          
+          return;
+      }
+afficherLoader();
+      try {
+          const docRef = doc(fdb, "medecins", user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+              const data = docSnap.data();
+
+          
+              window.peutSupprimer = !!(data.pages?.suprdocs);
+
+              // infos médecin (stockées globalement si besoin)
+              window.medecinNom = data.nom || "";
+              window.medecinSpecialite = data.specialite || "";
+              window.medecinLieu = data.lieu || "";
+
+              // Vérification d'accès à la page
+              const pages = data.pages || {};
+              const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
+              if (!pages[currentPage]) {
+                  const modal = document.getElementById("modal-no-access");
+                  if (modal) masquerLoader();
+                  modal.style.display = "flex";
+                  console.warn("Accès refusé à", currentPage);
+                  return;
+              }
+
+              
+              afficherDocuments();
+
+          } else {
+              const modal = document.getElementById("modal-no-access");
+              if (modal) modal.style.display = "flex";
+              console.warn("Médecin non trouvé");
+              return;
+          }
+
+      }   catch (error) {
+          console.error("Erreur lors de la récupération du médecin :", error);
+          const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";
+      }
+
+  });
+  
+
+
+
+
 // Conteneur global pour les bulles
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
@@ -512,19 +603,6 @@ async function enregistrerDocBase64() {
     el.addEventListener('transitionend', () => el.remove());
   }, 3000);
 
-/* --- Initialisation compat Firebase (inchangée) --- */
-const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
 const urlParams = new URLSearchParams(window.location.search);
 const idPatient = urlParams.get('id');
@@ -562,93 +640,99 @@ function fermerModal() {
     pdfViewer.src = "";
 }
 
-function afficherDocuments() {
+async function afficherDocuments() {
     afficherLoader();
 
-    db.collection('documents')
-      .where('patientId', '==', idPatient)
-      .get()
-      .then(querySnapshot => {
+    try {
 
-          if (querySnapshot.empty) {
-              documentList.innerHTML = "<li>Aucun document trouvé.</li>";
-              return;
-          }
+        const q = query(
+            collection(db, "documents"),
+            where("patientId", "==", idPatient)
+        );
 
-          const docsArray = [];
-          querySnapshot.forEach(doc => {
-              docsArray.push({
-                  id: doc.id,
-                  ...doc.data()
-              });
-          });
+        const querySnapshot = await getDocs(q);
 
-          docsArray.sort((a, b) => {
-              const dateA = parseDateFR(a.dateCreation);
-              const dateB = parseDateFR(b.dateCreation);
-              return dateB - dateA;
-          });
+        if (querySnapshot.empty) {
+            documentList.innerHTML = "<li>Aucun document trouvé.</li>";
+            return;
+        }
 
-          documentList.innerHTML = "";
+        const docsArray = [];
 
-          docsArray.forEach(data => {
-              let extrait = "(pas de contenu)";
+        querySnapshot.forEach(doc => {
+            docsArray.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
 
-              if (typeof data.contenu === "string") {
-                  extrait = data.contenu.substring(0, 50) + "…";
-              } else if (data.contenu?.text) {
-                  extrait = data.contenu.text.substring(0, 50) + "…";
-              }
+        docsArray.sort((a, b) => {
+            const dateA = parseDateFR(a.dateCreation);
+            const dateB = parseDateFR(b.dateCreation);
+            return dateB - dateA;
+        });
 
-              const li = document.createElement('li');
+        documentList.innerHTML = "";
 
-              let boutonsHTML = `<button class="btn-loupe" type="button">🔎</button>`;
-              if (window.peutSupprimer) {
-                  boutonsHTML += `<button class="btn-delete" type="button" data-doc-id="${data.id}">🗑️</button>`;
-              }
+        docsArray.forEach(data => {
 
-              li.innerHTML = `
-                  <div style="display:flex; align-items:center; gap:12px;">
-                      <span class="doc-type">${data.type || ""}</span>
-                      <span class="doc-date">${data.dateCreation || ""}</span>
-                      <span class="doc-contenu">${extrait}</span>
-                  </div>
-                  <div style="display:flex; gap:10px;">
-                      ${boutonsHTML}
-                  </div>
-              `;
+            let extrait = "(pas de contenu)";
 
-li.querySelector('.btn-loupe')?.addEventListener('click', () => {
-    const id = data.id;
+            if (typeof data.contenu === "string") {
+                extrait = data.contenu.substring(0, 50) + "…";
+            } else if (data.contenu?.text) {
+                extrait = data.contenu.text.substring(0, 50) + "…";
+            }
 
+            const li = document.createElement("li");
 
-    window.parent.postMessage(
-        {
-            type: "OPEN_TAB",
-            title: data.type || "Document",
-            url: `viewer.html?docId=${id}`
-        },
-        "*"
-    );
-});
+            let boutonsHTML = `<button class="btn-loupe" type="button">🔎</button>`;
+            if (window.peutSupprimer) {
+                boutonsHTML += `<button class="btn-delete" type="button" data-doc-id="${data.id}">🗑️</button>`;
+            }
 
+            li.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="doc-type">${data.type || ""}</span>
+                    <span class="doc-date">${data.dateCreation || ""}</span>
+                    <span class="doc-contenu">${extrait}</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    ${boutonsHTML}
+                </div>
+            `;
 
-         
+            li.querySelector(".btn-loupe")?.addEventListener("click", () => {
 
-              li.querySelector('.btn-delete')?.addEventListener('click', e => {
-                  ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);
-              });
+                window.parent.postMessage(
+                    {
+                        type: "OPEN_TAB",
+                        title: data.type || "Document",
+                        url: `viewer.html?docId=${data.id}`
+                    },
+                    "*"
+                );
 
-              documentList.appendChild(li);
-          });
-      })
-      .catch(err => {
-          console.error(err);
-          documentList.innerHTML = "<li>Erreur lors du chargement.</li>";
-      })
-      .finally(() => {
-          masquerLoader(); // ✅ toujours exécuté
-      });
+            });
+
+            li.querySelector(".btn-delete")?.addEventListener("click", e => {
+                ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);
+            });
+
+            documentList.appendChild(li);
+
+        });
+
+    } catch (err) {
+
+        console.error(err);
+        documentList.innerHTML = "<li>Erreur lors du chargement.</li>";
+
+    } finally {
+
+        masquerLoader(); // toujours exécuté
+
+    }
 }
 
 
@@ -667,18 +751,27 @@ function fermerConfirmDeleteModal() {
 
 document.getElementById("btnCancelDelete").onclick = fermerConfirmDeleteModal;
 
-document.getElementById("btnConfirmDelete").onclick = async function() {
+document.getElementById("btnConfirmDelete").onclick = async function () {
+
     if (!documentToDelete) return;
 
     try {
-        await db.collection("documents").doc(documentToDelete).delete();
+
+        await deleteDoc(
+            doc(db, "documents", documentToDelete)
+        );
+
         fermerConfirmDeleteModal();
-        afficherDocuments(); // recharge la liste
+        afficherDocuments();
         afficherBulle("Document supprimé !", "success");
+
     } catch (err) {
+
         console.error(err);
         afficherBulle("Erreur lors de la suppression.", "error");
+
     }
+
 };
 function parseDateFR(dateStr) {
     if (!dateStr) return new Date(0); // valeur par défaut
@@ -687,16 +780,40 @@ function parseDateFR(dateStr) {
     const [hours, minutes, seconds] = timePart.split(":").map(Number);
     return new Date(year, month - 1, day, hours, minutes, seconds);
 }
+
 window.afficherLoader = function() {
-    const loader = document.getElementById("loadingScreen");
-    if (!loader) return;
-    loader.style.display = "flex"; // force l'affichage
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
 };
 
+// --- Masque l’écran de chargement ---
 window.masquerLoader = function() {
-    const loader = document.getElementById("loadingScreen");
-    if (!loader) return;
-    loader.style.display = "none";  // masquage direct
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
 };
 
 
@@ -704,76 +821,10 @@ window.masquerLoader = function() {
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("confirmDeleteModal").style.display = "none";
 });
-</script>
 
-<script type="module">
-  /* --- Module Firebase (modulaire) : on l'utilise seulement pour l'auth et la récupération du doc "medecins" --- */
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfigMod = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfigMod);
-  const auth = getAuth(app);
-  const fdb = getFirestore(app);
-
-  // IMPORTANT : ne pas déclarer `let peutSupprimer` dans la portée du module.
-  // On définit la variable globale window.peutSupprimer pour que le script non-modulaire l'utilise.
-  window.peutSupprimer = false;
-onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-          //window.location.href = "index.html";
-          //return;
-      }
-
-      try {
-          const docRef = doc(fdb, "medecins", user.uid);
-          const docSnap = await getDoc(docRef);
-
-          if (docSnap.exists()) {
-              const data = docSnap.data();
-
-              // Définit la variable globale (accessible depuis le script non-module)
-              window.peutSupprimer = !!(data.pages?.suprdocs);
-
-              // infos médecin (stockées globalement si besoin)
-              window.medecinNom = data.nom || "";
-              window.medecinSpecialite = data.specialite || "";
-              window.medecinLieu = data.lieu || "";
-
-              // Vérification d'accès à la page
-              const pages = data.pages || {};
-              const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
-              if (!pages[currentPage]) {
-                  const modal = document.getElementById("modal-no-access");
-                  if (modal) modal.style.display = "flex";
-                  console.warn("Accès refusé à", currentPage);
-                  return;
-              }
-
-              // Appelle l'affichage après avoir défini window.peutSupprimer
-              afficherDocuments();
-
-          } else {
-              const modal = document.getElementById("modal-no-access");
-              if (modal) modal.style.display = "flex";
-              console.warn("Médecin non trouvé");
-              return;
-          }
-
-      }   catch (error) {
-          console.error("Erreur lors de la récupération du médecin :", error);
-          const modal = document.getElementById("modal-no-access");
-          if (modal) modal.style.display = "flex";
-      }
-
-  });
   
+  window.peutSupprimer = false;
+
 </script>
 
 

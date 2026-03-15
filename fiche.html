@@ -2420,6 +2420,12 @@ nav:hover .nav-item span {
    let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
+  const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get("id");
+
+if (!patientId) {
+  console.error("ID patient manquant");
+}
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     return;
@@ -2467,7 +2473,7 @@ const modal = document.getElementById("modal-no-access");
       }
       chargerActes();
       initialiserScope();
-      chargerPatient();
+      chargerPatient(patientId);
       rafraichirChampsSortie();
       chargerEquipeReferente();
     } catch (error) {
@@ -2476,9 +2482,7 @@ const modal = document.getElementById("modal-no-access");
     }
   }
 });
-	// Récupérer l'ID du patient depuis l'URL
-const urlParams = new URLSearchParams(window.location.search);
- const patientId = new URLSearchParams(window.location.search).get("id");
+
 // Créer la référence au document patient
 const patientRef = doc(db, "patients", patientId);
 

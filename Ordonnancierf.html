@@ -982,7 +982,7 @@ html, body {
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -1090,8 +1090,8 @@ const envoyerMailBtn = document.getElementById("btnEnvoyerMail");
 }
 
     try {
-      const docRef = db.collection("patients").doc(id);
-      const docSnap = await docRef.get();
+      const docRef = doc(db, "patients", id);
+const docSnap = await getDoc(docRef);
       if (docSnap.exists) {
         const data = docSnap.data();
         document.getElementById("patient-first-name").value = data.prenom || "";
@@ -1190,28 +1190,38 @@ async function validatePrescription() {
 
   // 5️⃣ Enregistrement dans Firestore
   const patientId = getIdFromURL();
-  if (patientId) {
-    try {
-      const idUnique = Math.random().toString(36).substring(2, 10);
-      const dateFormatted = formatDate(new Date());
-console.log("📅 Date formatée envoyée :", dateFormatted);
-window.pdfIdExistante = idUnique; // après avoir créé le document
 
-await db.collection("documents").doc(idUnique).set({
-  patientId: patientId,
-  dateCreation: dateFormatted,
-  type: "Ordonnance médicale",
-  contenu: prescriptionText,
-  pdfBase64: pdfBase64
-});
+if (patientId) {
+
+  try {
+
+    const idUnique = Math.random().toString(36).substring(2, 10);
+    const dateFormatted = formatDate(new Date());
+
+    console.log("📅 Date formatée envoyée :", dateFormatted);
+
+    window.pdfIdExistante = idUnique;
+
+    await setDoc(
+      doc(db, "documents", idUnique),
+      {
+        patientId: patientId,
+        dateCreation: dateFormatted,
+        type: "Ordonnance médicale",
+        contenu: prescriptionText,
+        pdfBase64: pdfBase64
+      }
+    );
+
+  } catch (err) {
+    console.error(err);
+  }
+
+}
 
       console.log("✅ Ordonnance enregistrée avec ID unique :", idUnique);
       afficherBulle("✅ Ordonnance enregistrée !", "success");
-    } catch (err) {
-      console.error("❌ Erreur enregistrement Firestore :", err);
-      afficherBulle("❌ Erreur enregistrement", "alerte");
-    }
-  }
+    
 }
 
 function formatDate(date) {
@@ -1426,8 +1436,8 @@ async function remplirInfosPatientDepuisFirestore() {
   if (!id) return;
 
   try {
-    const docRef = db.collection("patients").doc(id);
-    const docSnap = await docRef.get();
+    const docRef = doc(db, "patients", id);
+const docSnap = await getDoc(docRef);
 
     if (docSnap.exists) {
       const data = docSnap.data();
@@ -1579,16 +1589,22 @@ document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
   document.getElementById("otherEmailInput").disabled = !e.target.checked;
 });
 document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
+
   // pas de pdfBase64 préexistant dans cette page — on générera le PDF au moment de l'envoi
-  const doc = await patientRef.get();
-  if (!doc.exists) {
+  const docSnap = await getDoc(patientRef);
+
+  if (!docSnap.exists()) {
     afficherBulle("❌ Patient introuvable", "alerte");
     return;
   }
-  const data = doc.data();
+
+  const data = docSnap.data();
   const emails = data.email || ""; // chaîne formatée "a@x.com//b@y.fr"
+
   console.log("📧 Emails trouvés (dossier) :", emails);
+
   openEmailSelectModal(emails);
+
 });
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
@@ -1633,11 +1649,14 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     const fileName =  `Ordonnance - ${firstName} ${lastName}.pdf`;
 
     // --- 4) Enregistrement dans Firestore
-    await db.collection("liens_pdfs").doc(idUnique).set({
-      base64: pdfBase64,
-      nomFichier: fileName,
-      dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    await setDoc(
+  doc(db, "liens_pdfs", idUnique),
+  {
+    base64: pdfBase64,
+    nomFichier: fileName,
+    dateCreation: serverTimestamp()
+  }
+);
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
     console.log("✅ Lien Firestore :", lienPdf);

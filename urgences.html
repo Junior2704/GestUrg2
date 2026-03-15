@@ -920,18 +920,32 @@ const resultatsRecherche = document.getElementById("resultatsRecherche");
 let currentUser = null;
 
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    console.log("Utilisateur connecté :", user.uid, user.email);
-   
-    ajusterTailleSalles();
-  rechargerPlan();
-  setInterval(rechargerPlan, 1 * 60 * 1000)
-  } else {
-    currentUser = null;
+
+  if (!user) {
     console.log("Aucun utilisateur connecté");
+    return;
   }
+
+  currentUser = user;
+
+  console.log("Utilisateur connecté :", user.uid, user.email);
+
+  initialiserApp();
+
 });
+function initialiserApp(){
+
+  console.log("Initialisation application urgences...");
+
+  ajusterTailleSalles();
+
+  rechargerPlan();
+
+  setInterval(rechargerPlan, 60 * 1000);
+
+  nettoyerPDFs();
+
+}
 
 // Conteneur global pour les bulles
 let notificationContainer = document.getElementById('notification-container');
@@ -1680,6 +1694,7 @@ document.querySelectorAll(".salle").forEach(salle => {
   });
 
 salle.addEventListener("drop", async e => {
+
   e.preventDefault();
   salle.classList.remove("dragover");
 
@@ -1693,15 +1708,29 @@ salle.addEventListener("drop", async e => {
   // salle pleine NON flexible → refus
   if (!config.flexible && nbPatients >= config.capacite) {
     afficherBulle("Salle pleine", "error");
-    return; // ⛔ le patient reste là où il était
+    return;
   }
 
-  await db.collection("patients").doc(patientId).update({
-    position: salle.id
-  });
-const modal = document.getElementById("modalSalle");
-if (modal) modal.style.display = "none";
-  rechargerPlan();
+  try {
+
+    const patientRef = doc(db, "patients", patientId);
+
+    await updateDoc(patientRef, {
+      position: salle.id
+    });
+
+    const modal = document.getElementById("modalSalle");
+    if (modal) modal.style.display = "none";
+
+    rechargerPlan();
+
+  } catch (err) {
+
+    console.error("Erreur déplacement patient :", err);
+    afficherBulle("Erreur déplacement patient", "error");
+
+  }
+
 });
 
 });
@@ -1857,7 +1886,7 @@ document.addEventListener("dragend", () => {
 
 
 
-     nettoyerPDFs();
+
 async function deconnexion() {
   try {
     await signOut(auth);

@@ -1830,20 +1830,20 @@ async function ouvrirSalleEnGrand(salleId) {
 
   const snapshot = await getDocs(q);
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    console.log(doc.id, data);
+  for (const docP of snapshot.docs) {
+    const data = docP.data();
+    console.log(docP.id, data);
 
     const card = document.createElement("div");
     card.draggable = true;
 
     card.addEventListener("contextmenu", e => {
       e.preventDefault();
-      afficherMenuSalles(e.clientX, e.clientY, doc.id);
+      afficherMenuSalles(e.clientX, e.clientY, docP.id);
     });
 
     card.addEventListener("dragstart", e => {
-      e.dataTransfer.setData("id", doc.id);
+      e.dataTransfer.setData("id", docP.id);
       const modal = document.getElementById("modalSalle");
       if (modal) modal.classList.add("modal-drag-through");
       setTimeout(() => card.classList.add("dragging"), 0);
@@ -1856,7 +1856,7 @@ async function ouvrirSalleEnGrand(salleId) {
     });
 
     card.className = "patient-card";
-    card.dataset.id = doc.id;
+    card.dataset.id = docP.id;
 
     // --- hospitalisation ---
     let gravite = "P0";
@@ -1903,7 +1903,7 @@ async function ouvrirSalleEnGrand(salleId) {
         {
           type: "OPEN_TAB",
           title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-          url: `fiche.html?id=${doc.id}&from=urgences`
+          url: `fiche.html?id=${docP.id}&from=urgences`
         },
         "*"
       );

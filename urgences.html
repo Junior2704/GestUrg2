@@ -1808,6 +1808,7 @@ salle.addEventListener("drop", async (e) => {
 
 });
 
+
 async function ouvrirSalleEnGrand(salleId) {
   const modal = document.getElementById("modalSalle");
   const titre = document.getElementById("modalSalleTitre");
@@ -1816,108 +1817,101 @@ async function ouvrirSalleEnGrand(salleId) {
   modal.style.display = "block";
   titre.textContent = document.querySelector(`#${salleId} h3`).textContent;
   zone.innerHTML = "";
-zone.style.display = "grid";
-zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
-zone.style.gap = "14px";
-const patientsRef = collection(db, "patients");
+  zone.style.display = "grid";
+  zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
+  zone.style.gap = "14px";
 
-const q = query(
-  patientsRef,
-  where("position", "==", salleId),
-  where("hospitalisationActiveId", ">", "")
-);
+  const patientsRef = collection(db, "patients");
+  const q = query(
+    patientsRef,
+    where("position", "==", salleId),
+    where("hospitalisationActiveId", ">", "")
+  );
 
-const snapshot = await getDocs(q);
+  const snapshot = await getDocs(q);
 
-snapshot.forEach((doc) => {
-  const data = doc.data();
-  console.log(doc.id, data);
-});
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    console.log(doc.id, data);
 
     const card = document.createElement("div");
     card.draggable = true;
-card.addEventListener("contextmenu", e => {
-  e.preventDefault();
-  afficherMenuSalles(e.clientX, e.clientY, doc.id);
-});
-card.addEventListener("dragstart", e => {
-  e.dataTransfer.setData("id", doc.id);
 
-  const modal = document.getElementById("modalSalle");
-  if (modal) {
-    modal.classList.add("modal-drag-through");
-  }
+    card.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      afficherMenuSalles(e.clientX, e.clientY, doc.id);
+    });
 
-  setTimeout(() => card.classList.add("dragging"), 0);
-});
-card.addEventListener("dragend", () => {
-  card.classList.remove("dragging");
+    card.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("id", doc.id);
+      const modal = document.getElementById("modalSalle");
+      if (modal) modal.classList.add("modal-drag-through");
+      setTimeout(() => card.classList.add("dragging"), 0);
+    });
 
-  const modal = document.getElementById("modalSalle");
-  if (modal) {
-    modal.classList.remove("modal-drag-through");
-  }
-});
-card.className = "patient-card";
-card.dataset.id = doc.id;
-// --- hospitalisation ---
-let gravite = "P0";
-let motif = "N/A";
-let statut = "N/A";
-let circuit = "N/A";
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      const modal = document.getElementById("modalSalle");
+      if (modal) modal.classList.remove("modal-drag-through");
+    });
 
-if (data.hospitalisationActiveId) {
-  const hosp = await db
-    .collection("hospitalisations")
-    .doc(data.hospitalisationActiveId)
-    .get();
+    card.className = "patient-card";
+    card.dataset.id = doc.id;
 
-  if (hosp.exists) {
-    const h = hosp.data();
-    gravite = h.gravite || gravite;
-    motif = h.motif || motif;
-    statut = h.pdcStatut || statut
-    circuit = h.circuit || circuit;
+    // --- hospitalisation ---
+    let gravite = "P0";
+    let motif = "N/A";
+    let statut = "N/A";
+    let circuit = "N/A";
+
+    if (data.hospitalisationActiveId) {
+      const hospRef = docRef(db, "hospitalisations", data.hospitalisationActiveId);
+      const hospSnap = await getDoc(hospRef);
+      if (hospSnap.exists()) {
+        const h = hospSnap.data();
+        gravite = h.gravite || gravite;
+        motif = h.motif || motif;
+        statut = h.pdcStatut || statut;
+        circuit = h.circuit || circuit;
+      }
+    }
+
+    // couleur gravité
+    const couleurs = {
+      P0: "#4CAF50",
+      P1: "#FFFF00",
+      P2: "#FF9800",
+      P3: "#F44336",
+      Urgences_Vitales: "#000000",
+      Administratif: "#4169E1"
+    };
+    card.style.borderLeftColor = couleurs[gravite] || "#999";
+
+    card.innerHTML = `
+      <strong class="patient-nom" title="${data.nom} ${data.prenom}">
+        ${data.nom} ${data.prenom}
+      </strong>
+      <div class="ligne">⚠️|${tronque(gravite)}</div>
+      <div class="ligne">🩺|${tronque(motif)}</div>
+      <div class="ligne">📋|${tronque(statut)}</div>
+      <div class="ligne">🧭|${tronque(circuit)}</div>
+    `;
+
+    // double clic fiche patient
+    card.ondblclick = () => {
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${data.nom} ${data.prenom}`,
+          url: `fiche.html?id=${doc.id}&from=urgences`
+        },
+        "*"
+      );
+    };
+
+    zone.appendChild(card);
   }
 }
-
-// couleur gravité
-const couleurs = {
-  P0: "#4CAF50",
-  P1: "#FFFF00",
-  P2: "#FF9800",
-  P3: "#F44336",
-  Urgences_Vitales: "#000000",
-  Administratif: "#4169E1"
-};
-card.style.borderLeftColor = couleurs[gravite] || "#999";
-
- card.innerHTML = `
-<strong class="patient-nom" title="${data.nom} ${data.prenom}">
-  ${data.nom} ${data.prenom}
-</strong>
-  <div class="ligne">⚠️|${tronque(gravite)}</div>
-  <div class="ligne">🩺|${tronque(motif)}</div>
-  <div class="ligne">📋|${tronque(statut)}</div>
-  <div class="ligne">🧭|${tronque(circuit)}</div>
-`;
-
-// double clic fiche patient
-card.ondblclick = () => {
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-      url: `fiche.html?id=${doc.id}&from=urgences`
-    },
-    "*"
-  );
-};
-
-zone.appendChild(card);
-
-
-  }
 
 /* ===============================
    AUTO SCROLL PENDANT DRAG

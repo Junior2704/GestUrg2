@@ -4556,9 +4556,12 @@ async function chargerRealisateurs() {
 
   try {
     // On suppose que tu stockes les réalisateurs dans "référentiels/realisateurs"
-    const doc = await db.collection("référentiels").doc("personnel").get();
-    const data = doc.data();
-    const liste = data?.liste || [];
+    const docRef = doc(db, "référentiels", "personnel");
+const snapshot = await getDoc(docRef);
+
+const data = snapshot.data();
+const liste = data?.liste || [];
+   
 
     if (liste.length === 0) {
       select.innerHTML = "<option>Aucun disponible</option>";

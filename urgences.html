@@ -43,7 +43,40 @@
     padding: 8px 10px;
     cursor: pointer;
   }
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
 
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
   .resultat-item:hover {
     background-color: #f0f8ff;
   }
@@ -752,7 +785,12 @@ body, #mainContent {
 <div id="mainContent">
 
  
- 
+ <div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+  </div>
+</div>
 
  
 <button id="btnAddPatient" class="icon-btn" title="Ajouter un patient">➕ Ajouter un patient</button>
@@ -920,18 +958,44 @@ const resultatsRecherche = document.getElementById("resultatsRecherche");
 let currentUser = null;
 
 onAuthStateChanged(auth, (user) => {
-
   if (!user) {
     console.log("Aucun utilisateur connecté");
     return;
   }
-afficherLoader();
-  currentUser = user;
 
   console.log("Utilisateur connecté :", user.uid, user.email);
+  afficherLoader();
+  currentUser = user;
 
-  initialiserApp();
+  const docRef = doc(db, "medecins", user.uid);
+  getDoc(docRef)
+    .then((docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log(data);
 
+        const pages = data.pages || {};
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+          const modal = document.getElementById("modal-no-access");
+          if (modal) modal.style.display = "flex";
+          console.warn("Accès refusé à", currentPage);
+          return;
+        } else {
+          console.log("Accès autorisé à", currentPage);
+        }
+
+        // Initialiser l'application uniquement après avoir vérifié l'accès
+        initialiserApp();
+
+      } else {
+        console.warn("Document medecins non trouvé pour cet utilisateur :", user.uid);
+      }
+    })
+    .catch((error) => {
+      console.error("Erreur lecture document :", error);
+    });
 });
 function initialiserApp(){
 

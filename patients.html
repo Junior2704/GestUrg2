@@ -331,16 +331,38 @@ footer {
   </div>
 
 <footer> © 2026 — GestUrg2 | Patients  </footer>
-<script>
-// === CONFIG FIREBASE ===
-const firebaseConfig = {
-  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-  authDomain: "urgences-a8ed4.firebaseapp.com",
-  projectId: "urgences-a8ed4",
-  storageBucket: "urgences-a8ed4.appspot.com",
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+<script type="module">
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4",
+    storageBucket: "urgences-a8ed4.firebasestorage.app",
+    messagingSenderId: "392921498200",
+    appId: "1:392921498200:web:7ccce767332c67c697c02d",
+    measurementId: "G-C74MK2KYDL"
+  };
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    console.log("Aucun utilisateur connecté");
+    return;
+  }
+
+  console.log("Utilisateur connecté :", user.uid, user.email);
+  afficherLoader();
+  currentUser = user;
+chargerPatients();
+});
 
 // === VARIABLES ===
 const liste = document.getElementById("listePatients");
@@ -349,9 +371,14 @@ let patients = [];
 
 // === CHARGEMENT ===
 async function chargerPatients() {
-  const snap = await db.collection("patients").orderBy("nom").get();
-  patients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  afficherPatients(patients);
+  try {
+    const q = query(collection(db, "patients"), orderBy("nom"));
+    const snap = await getDocs(q);
+    const patients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    afficherPatients(patients);
+  } catch (error) {
+    console.error("Erreur lors du chargement des patients :", error);
+  }
 }
 
 function afficherPatients(data) {
@@ -424,8 +451,7 @@ document.addEventListener("click", () => {
   document.querySelectorAll(".menu-wrapper").forEach(m => m.classList.remove("open"));
 });
 
-// Init
-chargerPatients();
+
 </script>
 </body>
 </html>

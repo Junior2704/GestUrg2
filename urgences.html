@@ -6,9 +6,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Urgences</title>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
 /* ⭐ Étoile d’allergie importante */
@@ -898,7 +896,7 @@ body, #mainContent {
 }
 </style>
 
-<script>
+<script type="module">
 
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -909,14 +907,31 @@ body, #mainContent {
     appId: "1:392921498200:web:7ccce767332c67c697c02d",
     measurementId: "G-C74MK2KYDL"
   };
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    // Charge les patients Firestore
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const inputId = document.getElementById("idPatient");
 const inputSearchInModal = document.getElementById("searchInModal");
 const resultatsRecherche = document.getElementById("resultatsRecherche");
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    console.log("Utilisateur connecté :", user.uid, user.email);
+   
+    ajusterTailleSalles();
+  rechargerPlan();
+  setInterval(rechargerPlan, 1 * 60 * 1000)
+  } else {
+    currentUser = null;
+    console.log("Aucun utilisateur connecté");
+  }
+});
+
 // Conteneur global pour les bulles
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
@@ -1117,6 +1132,11 @@ function handleScroll(e) {
 window.addEventListener("scroll", handleScroll);
 }
 async function tenterDeplacement(patientId, salleId) {
+  if (!currentUser) {
+    afficherBulle("Action impossible : utilisateur non connecté", "error");
+    return;
+  }
+
   const config = sallesConfig[salleId];
   const salle = document.getElementById(salleId);
   if (!salle) return;
@@ -1129,9 +1149,18 @@ async function tenterDeplacement(patientId, salleId) {
     return;
   }
 
-  await db.collection("patients").doc(patientId).update({
-    position: salleId
-  });
+  try {
+    // Firebase v10 modulaire
+    const patientRef = doc(db, "patients", patientId);
+    await updateDoc(patientRef, { position: salleId });
+
+    afficherBulle("Patient déplacé", "success");
+    rechargerPlan(); // si tu veux recharger l'affichage
+  } catch (err) {
+    console.error("Erreur déplacement patient :", err);
+    afficherBulle("Erreur déplacement patient", "error");
+  }
+}
 
   afficherBulle("Patient déplacé", "success");
   rechargerPlan();
@@ -1574,26 +1603,38 @@ function ajusterTailleSalles() {
 
 
 
-   async function nettoyerPDFs() {
+async function nettoyerPDFs() {
+  if (!currentUser) {
+    afficherBulle("Action impossible : utilisateur non connecté", "error");
+    console.warn("Impossible de nettoyer les PDFs : pas d'utilisateur connecté");
+    return;
+  }
+
   console.log("🧹 Nettoyage des PDFs patients en cours...");
   const now = new Date();
   const uneSemaine = 7 * 24 * 60 * 60 * 1000; // 7 jours en ms
 
-  const snapshot = await db.collection("liens_pdfs").get();
-  let count = 0;
+  try {
+    const liensPDFsCol = collection(db, "liens_pdfs");
+    const snapshot = await getDocs(liensPDFsCol);
+    let count = 0;
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    if (data.dateCreation?.toDate) {
-      const age = now - data.dateCreation.toDate();
-      if (age > uneSemaine) {
-        await doc.ref.delete();
-        count++;
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      if (data.dateCreation?.toDate) {
+        const age = now - data.dateCreation.toDate();
+        if (age > uneSemaine) {
+          await deleteDoc(doc(db, "liens_pdfs", docSnap.id));
+          count++;
+        }
       }
     }
-  }
 
-  console.log(`✅ ${count} lien(s) supprimé(s).`);
+    console.log(`✅ ${count} lien(s) supprimé(s).`);
+  } catch (err) {
+    console.error("Erreur lors du nettoyage des PDFs :", err);
+    afficherBulle("Erreur nettoyage PDFs", "error");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1812,43 +1853,6 @@ document.addEventListener("dragend", () => {
 
 
      nettoyerPDFs();
-</script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// --- Configuration Firebase ---
-const firebaseConfig = {
-  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-  authDomain: "urgences-a8ed4.firebaseapp.com",
-  projectId: "urgences-a8ed4"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// --- Gestion état utilisateur ---
-let currentUser = null;
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    console.log("Utilisateur connecté :", user.uid, user.email);
-   
-    ajusterTailleSalles();
-  rechargerPlan();
-  setInterval(rechargerPlan, 1 * 60 * 1000)
-  } else {
-    currentUser = null;
-    console.log("Aucun utilisateur connecté");
-  }
-});
-
-
-
-// --- Déconnexion exemple ---
 async function deconnexion() {
   try {
     await signOut(auth);
@@ -1881,10 +1885,6 @@ document.addEventListener("click", function(e){
     e.preventDefault();
   }
 }, true);
-
-
-
-
 
 
 </script>

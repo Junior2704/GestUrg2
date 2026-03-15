@@ -1819,16 +1819,20 @@ async function ouvrirSalleEnGrand(salleId) {
 zone.style.display = "grid";
 zone.style.gridTemplateColumns = "repeat(auto-fill, minmax(240px, 1fr))";
 zone.style.gap = "14px";
-const snapshot = await db
-  .collection("patients")
-  .where("position", "==", salleId)
-  .where("hospitalisationActiveId", ">", "") 
-  .get();
+const patientsRef = collection(db, "patients");
 
-for (const doc of snapshot.docs) {
+const q = query(
+  patientsRef,
+  where("position", "==", salleId),
+  where("hospitalisationActiveId", ">", "")
+);
+
+const snapshot = await getDocs(q);
+
+snapshot.forEach((doc) => {
   const data = doc.data();
   console.log(doc.id, data);
-}
+});
 
     const card = document.createElement("div");
     card.draggable = true;

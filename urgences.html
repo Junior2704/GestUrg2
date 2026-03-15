@@ -1693,19 +1693,26 @@ document.querySelectorAll(".salle").forEach(salle => {
     salle.classList.remove("dragover");
   });
 
-salle.addEventListener("drop", async e => {
+salle.addEventListener("drop", async (e) => {
+
+  // sécurité : vérifier que c'est bien un drop utilisateur
+  if (!e.dataTransfer) return;
 
   e.preventDefault();
+  e.stopPropagation();
+
   salle.classList.remove("dragover");
 
   const patientId = e.dataTransfer.getData("id");
-  if (!patientId) return;
+
+  // sécurité anti déclenchement fantôme
+  if (!patientId || patientId === "") return;
 
   const config = sallesConfig[salle.id];
   const zone = salle.querySelector(".salle-patients");
   const nbPatients = zone.querySelectorAll(".patient-card").length;
 
-  // salle pleine NON flexible → refus
+  // salle pleine NON flexible
   if (!config.flexible && nbPatients >= config.capacite) {
     afficherBulle("Salle pleine", "error");
     return;

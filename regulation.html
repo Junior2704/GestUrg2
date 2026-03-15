@@ -727,16 +727,89 @@ body {
 🚑 GestUrg2 - Tableau  </footer>
 
 
-<script>
-  // === FIREBASE ===
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
     projectId: "urgences-a8ed4"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+      updateMedicalDashboard();
+      setInterval(refreshTempsEcoule, 60000); 
+setInterval(updateMedicalDashboard, 10000); // toutes les 5 secondes
+    } catch (error) {
+      console.error("Erreur chargement médecin :", error);
+      alert("Une erreur est survenue, veuillez réessayer plus tard.");
+    }
+  }
+});
 const STATUTS_ATTENTE = [
   "Attente enregistrement",
   "Attente dossier administratif",
@@ -753,11 +826,12 @@ const STATUTS_ATTENTE = [
     if (el) el.textContent = val;
   }
 
+
 async function updateMedicalDashboard() {
   try {
-    const snapshot = await db.collection('patients')
-      .where('hospitalisationActive', '==', true)
-      .get();
+    const patientsRef = collection(db, 'patients');
+    const q = query(patientsRef, where('hospitalisationActive', '==', true));
+    const snapshot = await getDocs(q);
 
     const counts = { total: 0, attente: 0, couche: 0, critique: 0, admin: 0 };
     const circuits = { general: 0, pediatrie: 0, traumato: 0, ophtalmo: 0, gyn: 0, psy: 0 };
@@ -765,11 +839,11 @@ async function updateMedicalDashboard() {
     const tbody = document.getElementById('patient-list');
     tbody.innerHTML = '';
 
-    for (const doc of snapshot.docs) {
-      const data = doc.data() || {};
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data() || {};
       counts.total++;
 
-      const id = doc.id;
+      const id = docSnap.id;
       const nom = data.nom || '';
       const prenom = data.prenom || '';
       const position = data.position || '';
@@ -777,10 +851,9 @@ async function updateMedicalDashboard() {
 
       let hosp = {};
       if (data.hospitalisationActiveId) {
-        const hospDoc = await db.collection('hospitalisations')
-          .doc(data.hospitalisationActiveId)
-          .get();
-        if (hospDoc.exists) hosp = hospDoc.data();
+        const hospRef = doc(db, 'hospitalisations', data.hospitalisationActiveId);
+        const hospDoc = await getDoc(hospRef);
+        if (hospDoc.exists()) hosp = hospDoc.data();
       }
 
       const gravite = hosp.gravite ?? '—';
@@ -802,51 +875,40 @@ async function updateMedicalDashboard() {
       else if (circuitLower.includes('psy')) circuits.psy++;
       else circuits.general++;
 
-/* ⏱ TEMPS ÉCOULÉ */
-let tempsEcoule = '—';
-let startMs = null;
+      /* ⏱ TEMPS ÉCOULÉ */
+      let tempsEcoule = '—';
+      let startMs = null;
 
-if (hosp.dateDebut) {
+      if (hosp.dateDebut) {
+        if (hosp.dateDebut.seconds) {
+          // Firestore Timestamp
+          startMs = hosp.dateDebut.seconds * 1000;
+        } else if (typeof hosp.dateDebut === 'number') {
+          startMs = hosp.dateDebut;
+        } else if (typeof hosp.dateDebut === 'string') {
+          const parts = hosp.dateDebut.split(' ');
+          if (parts.length === 2) {
+            const [d, m, y] = parts[0].split('/');
+            const [hh, mm, ss] = parts[1].split(':');
+            startMs = new Date(y, m - 1, d, hh, mm, ss).getTime();
+          }
+        }
+      }
 
-  if (hosp.dateDebut.seconds) {
-    // Firestore Timestamp
-    startMs = hosp.dateDebut.seconds * 1000;
-
-  } else if (typeof hosp.dateDebut === 'number') {
-    // Timestamp déjà en ms
-    startMs = hosp.dateDebut;
-
-  } else if (typeof hosp.dateDebut === 'string') {
-    // format attendu : "15/12/2025 18:25:51"
-    const parts = hosp.dateDebut.split(' ');
-
-    if (parts.length === 2) {
-      const [d, m, y] = parts[0].split('/');
-      const [hh, mm, ss] = parts[1].split(':');
-      startMs = new Date(y, m - 1, d, hh, mm, ss).getTime();
-    }
-  }
-}
-
-// Calcul du temps seulement si startMs existe
-if (startMs) {
-  const diffMs = Date.now() - startMs;
-  const h = Math.floor(diffMs / 3600000);
-  const m = Math.floor((diffMs % 3600000) / 60000);
-  tempsEcoule = `${h}h ${m}m`;
-}
-
-
+      if (startMs) {
+        const diffMs = Date.now() - startMs;
+        const h = Math.floor(diffMs / 3600000);
+        const m = Math.floor((diffMs % 3600000) / 60000);
+        tempsEcoule = `${h}h ${m}m`;
+      }
 
       /* VIGILANCES */
       const vigilances = data.vigilances?.trim() || 'aucune';
-      const vigilanceClass = vigilances !== 'aucune'
-        ? 'vigilance-alert'
-        : 'vigilance-none';
+      const vigilanceClass = vigilances !== 'aucune' ? 'vigilance-alert' : 'vigilance-none';
 
       const tr = document.createElement('tr');
 
-      /* 🎨 CaOULEURS GRAVITÉ */
+      /* 🎨 Couleurs gravité */
       if (gravLower.includes('p3') || gravLower.includes('vital')) tr.classList.add('grav-p3');
       else if (gravLower.includes('p2')) tr.classList.add('grav-p2');
       else if (gravLower.includes('p1')) tr.classList.add('grav-p1');
@@ -866,22 +928,21 @@ if (startMs) {
         <td>${circuit}</td>
         <td>${pdcStatut}</td>
         <td>${position}</td>
-<td class="temps-ecoule" data-start="${startMs || ''}">${tempsEcoule}</td>
-<td>${formatEquipe(data.equipe)}</td>
-
-
+        <td class="temps-ecoule" data-start="${startMs || ''}">${tempsEcoule}</td>
+        <td>${formatEquipe(data.equipe)}</td>
       `;
-      // Lors de la création du tr
-tr.setAttribute('data-temps', Math.floor(startMs / 1000) || 0);
-tr.setAttribute('data-equipe', JSON.stringify(data.equipe || {}));
 
-tr.addEventListener('click', () => {
-  window.parent.postMessage({
-    type: "OPEN_TAB",
-    title: `Fiche Urgences ${nom} ${prenom}`,
-    url: `fiche.html?id=${id}&from=tableau`
-  }, "*");
-});
+      tr.setAttribute('data-temps', Math.floor(startMs / 1000) || 0);
+      tr.setAttribute('data-equipe', JSON.stringify(data.equipe || {}));
+
+      tr.addEventListener('click', () => {
+        window.parent.postMessage({
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${nom} ${prenom}`,
+          url: `fiche.html?id=${id}&from=tableau`
+        }, "*");
+      });
+
       tbody.appendChild(tr);
     }
 
@@ -895,6 +956,7 @@ tr.addEventListener('click', () => {
     Object.keys(circuits).forEach(c =>
       setVal(`circuit-${c}`, circuits[c])
     );
+
     applyFilters();
 
   } catch (err) {
@@ -919,7 +981,6 @@ function refreshTempsEcoule() {
     td.textContent = `${h}h ${m}m`;
   });
 }
-setInterval(refreshTempsEcoule, 60000); // toutes les minutes
 
 
 function isPhaseAttente(pdcStatut) {
@@ -1095,8 +1156,7 @@ function resetFilters(apply = true) {
 document.getElementById('filterLocalisation')
   .addEventListener('change', applyFilters);
 
-  updateMedicalDashboard();
-setInterval(updateMedicalDashboard, 10000); // toutes les 5 secondes
+  
 </script>
 
 </body>

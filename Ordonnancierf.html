@@ -795,23 +795,7 @@ html, body {
 }
 
 
-#loadingScreen {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 99999;
-  color: white;
-  font-family: 'Inter', sans-serif;
-  transition: opacity 0.5s ease;
-}
 
-#loadingScreen.hidden {
-  opacity: 0;
-}
 
 .loader-content {
   text-align: center;
@@ -913,14 +897,7 @@ html, body {
 
 	
   
-<!-- Écran de chargement -->
-<div id="loadingScreen">
-  <div class="loader-content">
-    <div class="spinner"></div>
-    <h2>Chargement des données...</h2>
-    <p>Merci de patienter quelques instants</p>
-  </div>
-</div>
+
 <!-- Modale de sélection des e-mails -->
 <div id="emailSelectModal">
   <div class="modal-content">
@@ -955,6 +932,14 @@ html, body {
   <div class="card">
     <h2>⛔️ Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
+  </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
   </div>
 </div>
 <!-- 🔶 MODALE DE CONFIRMATION VALIDATION -->
@@ -993,36 +978,23 @@ html, body {
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 
-<script>
-let db;
-let patientRef; // ✅ rendu global
-let id;         // ✅ global aussi
+<script type="module">
 
-window.addEventListener("DOMContentLoaded", async () => {
-  hideLoadingModal();
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // --- Initialisation Firebase ---
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
+    projectId: "urgences-a8ed4"
   };
-  
   emailjs.init("CZapZCcxYfJ8-acLS");
   firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-
-  // --- Récupération de l'ID patient ---
-  function getIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("id");
-  }
-
-  id = getIdFromURL();
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+ id = getIdFromURL();
   if (!id) {
     console.error("❌ Aucun ID patient trouvé dans l’URL.");
     afficherBulle("⚠️ Aucun dossier patient trouvé", "alerte");
@@ -1032,19 +1004,88 @@ window.addEventListener("DOMContentLoaded", async () => {
   // ✅ Création de la référence Firestore globale
   patientRef = db.collection("patients").doc(id);
   console.log("📁 patientRef initialisé :", patientRef.path);
+let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
 
-  // --- Chargement des infos du patient ---
-  await remplirInfosPatientDepuisFirestore();
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    
+    return;
+  }
+afficherLoader();
+  try {
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
 
+    if (!docSnap.exists()) {
+      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+      return;
+    }
 
+    const data = docSnap.data();
+    const medecinNom = data.nom || "";
+    const medecinSpecialite = data.specialite || "";
+    const medecinLieu = data.lieu || "";
+
+    // variables globales
+    window.medecinNom = medecinNom;
+    window.medecinSpecialite = medecinSpecialite;
+    window.medecinLieu = medecinLieu;
+
+   
+const pages = data.pages || {};
+    const currentPath = window.location.pathname;
+const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+// Mapping pour Firestore
+const pageMapping = {
+  "Ordonnancierf": "Ordonnancier" // Ordonnancierf.html utilise les droits de Ordonnancier
+};
+
+const pageKey = pageMapping[currentPage] || currentPage;
+console.log("Page actuelle :", currentPage);
+console.log("Page Firestore :", pageKey);
+if (!pages[pageKey]) {
+  const modal = document.getElementById("modal-no-access");
+  if (modal) masquerLoader();
+   modal.style.display = "flex";
+  console.warn("Accès refusé à", currentPage);
+  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
+} else {
+  console.log("Accès autorisé à", currentPage);
+  // Ici tu peux mettre tout le code spécifique à cette page
+}
+ remplirInfosPatientDepuisFirestore();
+
+  } catch (error) {
+    console.error("Erreur chargement médecin :", error);
+    const modal = document.getElementById("modal-error");
+  if (modal) masquerLoader();
+   modal.style.display = "flex";
+  }
 });
+
+  // --- Récupération de l'ID patient ---
+  function getIdFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("id");
+  }
+
+ 
+
+
+
 const envoyerMailBtn = document.getElementById("btnEnvoyerMail");
   
 
   async function remplirInfosPatientDepuisFirestore() {
 	 afficherLoader();
     if (!id) {
-  masquerLoader();
+      const modal = document.getElementById("modal-error");
+  if (modal) masquerLoader();
+   modal.style.display = "flex";
+ 
   return;
 }
 
@@ -1797,9 +1838,8 @@ document.addEventListener("click", e => {
 });
 
 
-
 window.afficherLoader = function() {
-  let loader = document.getElementById("loadingscreen");
+  let loader = document.getElementById("loadingScreen");
   
   if (!loader) {
     loader = document.createElement("iframe");
@@ -1867,81 +1907,7 @@ function confirmValidation() {
 }
 
 
-	</script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "accueil.html";
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "medecins", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-      return;
-    }
-
-    const data = docSnap.data();
-    const medecinNom = data.nom || "";
-    const medecinSpecialite = data.specialite || "";
-    const medecinLieu = data.lieu || "";
-
-    // variables globales
-    window.medecinNom = medecinNom;
-    window.medecinSpecialite = medecinSpecialite;
-    window.medecinLieu = medecinLieu;
-
-   
-const pages = data.pages || {};
-    const currentPath = window.location.pathname;
-const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-// Mapping pour Firestore
-const pageMapping = {
-  "Ordonnancierf": "Ordonnancier" // Ordonnancierf.html utilise les droits de Ordonnancier
-};
-
-const pageKey = pageMapping[currentPage] || currentPage;
-console.log("Page actuelle :", currentPage);
-console.log("Page Firestore :", pageKey);
-if (!pages[pageKey]) {
-  const modal = document.getElementById("modal-no-access");
-  if (modal) modal.style.display = "flex";
-  console.warn("Accès refusé à", currentPage);
-  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
-} else {
-  console.log("Accès autorisé à", currentPage);
-  // Ici tu peux mettre tout le code spécifique à cette page
-}
-
-  } catch (error) {
-    console.error("Erreur chargement médecin :", error);
-    alert("Une erreur est survenue, veuillez réessayer plus tard.");
-  }
-});
-</script>
-<script>
 (function(){ 
     var properties = [
         'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',

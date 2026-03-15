@@ -2467,7 +2467,7 @@ const modal = document.getElementById("modal-no-access");
       }
       chargerActes();
       initialiserScope();
-      chargerpatient();
+      chargerPatient();
       rafraichirChampsSortie();
       chargerEquipeReferente();
     } catch (error) {
@@ -4445,10 +4445,11 @@ window.openTab = function(tabName, evt) {
 async function chargerActes() {
   try {
     // 1️⃣ Récupérer le patient
-    const patientDoc = await db.collection("patients").doc(patientId).get();
-    if (!patientDoc.exists) return;
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+    if (!patientSnap.exists()) return;
 
-    const patientData = patientDoc.data();
+    const patientData = patientSnap.data();
 
     // 2️⃣ Déterminer l'hospitalisation active
     const hospitalisationId = patientData.hospitalisationActiveId
@@ -4459,13 +4460,14 @@ async function chargerActes() {
     }
 
     // 3️⃣ Charger l'hospitalisation
-    const hospiDoc = await db.collection("hospitalisations").doc(hospitalisationId).get();
-    if (!hospiDoc.exists) {
+    const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists()) {
       document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
       return;
     }
 
-    const hosp = hospiDoc.data();
+    const hosp = hospiSnap.data();
 
     if (!hosp.actes || hosp.actes.length === 0) {
       document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";

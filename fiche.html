@@ -3884,27 +3884,7 @@ function mettreAJourListeActes(filtre) {
   selectActe.appendChild(optAutre);
 }
 
-async function chargerRealisateurs() {
-  const select = document.getElementById("selectRealisateur");
-  select.innerHTML = "";
 
-  try {
-    const docRef = doc(db, "référentiels", "personnel");
-    const docSnap = await getDoc(docRef);
-    const data = docSnap.data();
-
-    if (data && Array.isArray(data.liste)) {
-      data.liste.forEach(nom => {
-        const opt = document.createElement("option");
-        opt.value = nom;
-        opt.textContent = nom;
-        select.appendChild(opt);
-      });
-    }
-  } catch (err) {
-    console.error("Erreur chargement réalisateurs :", err);
-  }
-}
 
 
 
@@ -4280,28 +4260,7 @@ async function enregistrerEvolution() {
 }
 
 
-async function chargerRealisateurs() {
-  const select = document.getElementById("selectRealisateur");
-  select.innerHTML = "<option>⏳Chargement...</option>";
-  
-  try {
-    const realisateursRef = doc(db, "référentiels", "réalisateurs");
-    const snapshot = await getDoc(realisateursRef);
-    const data = snapshot.data();
 
-    select.innerHTML = "";
-    (data?.liste || []).forEach(realisateur => {
-      const option = document.createElement("option");
-      option.value = realisateur;
-      option.textContent = realisateur;
-      select.appendChild(option);
-    });
-
-  } catch (e) {
-    console.error("Erreur chargement réalisateurs :", e);
-    select.innerHTML = "<option>⚠️ Erreur chargement</option>";
-  }
-}
 async function chargerHistoriqueComplet() {
   const contenu = document.getElementById("hospitalisationsContent");
   if (!contenu) {

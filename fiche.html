@@ -2469,6 +2469,7 @@ const modal = document.getElementById("modal-no-access");
       initialiserScope();
       chargerpatient();
       rafraichirChampsSortie();
+      chargerEquipeReferente();
     } catch (error) {
       console.error("Erreur chargement médecin :", error);
       alert("Une erreur est survenue, veuillez réessayer plus tard.");
@@ -4776,12 +4777,12 @@ window.openDocumentFromMenu = function(tabId, file) {
 // ===============================
 
 const patientIdEquipe = new URLSearchParams(window.location.search).get("id");
-const patientRefEquipe = db.collection("patients").doc(patientIdEquipe);
+const patientRefEquipe = doc(db, "patients", patientIdEquipe);
 
 // 🔎 Déterminer hospitalisation active
 async function getHospActive() {
-  const snap = await patientRefEquipe.get();
-  if (!snap.exists) throw "Patient introuvable";
+  const snap = await getDoc(patientRefEquipe);
+  if (!snap.exists()) throw "Patient introuvable";
 
   const data = snap.data();
   const hospitalisationId = data.hospitalisationActiveId
@@ -4789,19 +4790,19 @@ async function getHospActive() {
 
   if (!hospitalisationId) throw "Aucune hospitalisation active";
 
-  const hospiRef = db.collection("hospitalisations").doc(hospitalisationId);
-  const hospiSnap = await hospiRef.get();
-  if (!hospiSnap.exists) throw "Hospitalisation introuvable";
+  const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+  const hospiSnap = await getDoc(hospiRef);
+  if (!hospiSnap.exists()) throw "Hospitalisation introuvable";
 
   return { hospiRef, hospiData: hospiSnap.data() };
 }
 
 // 💾 SAUVEGARDE ÉQUIPE (TRANSACTION SAFE)
 async function saveEquipe(roleKey, equipeData) {
-  const { hospiRef, hospiData } = await getHospActive();
-  await db.runTransaction(async (tx) => {
+  const { hospiRef } = await getHospActive();
+  await runTransaction(db, async (tx) => {
     const snap = await tx.get(hospiRef);
-    if (!snap.exists) throw "Hospitalisation introuvable";
+    if (!snap.exists()) throw "Hospitalisation introuvable";
 
     const data = snap.data();
     const hospitalisationUpdate = {
@@ -4817,10 +4818,10 @@ async function saveEquipe(roleKey, equipeData) {
 
 // ❌ SUPPRESSION ÉQUIPE
 async function removeEquipe(roleKey) {
-  const { hospiRef, hospiData } = await getHospActive();
-  await db.runTransaction(async (tx) => {
+  const { hospiRef } = await getHospActive();
+  await runTransaction(db, async (tx) => {
     const snap = await tx.get(hospiRef);
-    if (!snap.exists) return;
+    if (!snap.exists()) return;
 
     const data = snap.data();
     if (data.equipe) {
@@ -4858,7 +4859,7 @@ function setupUserSearchEquipe(inputId, listId, expectedType, alertId, roleKey) 
     if (alertBox) alertBox.style.display = "none";
     if (q.length < 2) return;
 
-    const snap = await db.collection("medecins").get();
+    const snap = await getDocs(collection(db, "medecins"));
     snap.forEach(d => {
       const u = d.data();
       if (!u.nom.toLowerCase().includes(q)) return;
@@ -4929,7 +4930,7 @@ setupClearButton("infirmierReferent", "clearInfirmier", "infirmierReferent");
 setupClearButton("interneReferent", "clearInterne", "interneReferent");
 setupClearButton("externeReferent", "clearExterne", "externeReferent");
 
-chargerEquipeReferente();
+
 
 async function getHospitalisationEnCours(patientId) {
   if (!patientId) throw "Patient ID non fourni";

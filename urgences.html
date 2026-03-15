@@ -1151,7 +1151,7 @@ async function tenterDeplacement(patientId, salleId) {
   }
 
   try {
-    // Firebase v10 modulaire
+    
     const patientRef = doc(db, "patients", patientId);
     await updateDoc(patientRef, { position: salleId });
 
@@ -1252,7 +1252,8 @@ function remplirFormulaireDepuisPatient(id, data) {
 
 
 async function chargerPatients() {
-  // Vérifie qu'un utilisateur est connecté
+
+  // Vérifier qu'un utilisateur est connecté
   const user = auth.currentUser;
   if (!user) {
     console.warn("Impossible de charger les patients : utilisateur non connecté");
@@ -1262,21 +1263,33 @@ async function chargerPatients() {
   afficherLoader();
 
   try {
-    // Version modulaire : collection + query + getDocs
+
     const patientsRef = collection(db, "patients");
-    const q = query(patientsRef, where("hospitalisationActiveId", "!=", ""));
+
+    const q = query(
+      patientsRef,
+      where("hospitalisationActiveId", "!=", "")
+    );
+
     const snapshot = await getDocs(q);
 
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
+    for (const docSnap of snapshot.docs) {
+
+      const data = docSnap.data();
       const salleId = data.position || "salle-attente";
-      await ajouterPatientVisuel(doc.id, data, salleId);
+
+      await ajouterPatientVisuel(docSnap.id, data, salleId);
+
     }
 
   } catch (e) {
-    console.error("Erreur chargement patients", e);
+
+    console.error("Erreur chargement patients :", e);
+
   } finally {
+
     masquerLoader();
+
   }
 }
 
@@ -1290,6 +1303,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 async function ajouterPatientVisuel(id, data, salleId) {
+
   const salle = document.getElementById(salleId);
   if (!salle) return;
 
@@ -1300,25 +1314,26 @@ async function ajouterPatientVisuel(id, data, salleId) {
   if (zone.querySelector(`.patient-card[data-id="${id}"]`)) return;
 
   /* ---- hospitalisation ---- */
+
   let gravite = "P0";
   let motif = "N/A";
   let statut = "N/A";
   let circuit = "N/A";
 
-if (data.hospitalisationActiveId) {
-  const hosp = await db
-    .collection("hospitalisations")
-    .doc(data.hospitalisationActiveId)
-    .get();
+  if (data.hospitalisationActiveId) {
 
-  if (hosp.exists) {
-    const h = hosp.data();
-    gravite = h.gravite || gravite;
-    motif = h.motif || motif;
-    statut = h.pdcStatut || statut
-    circuit = h.circuit || circuit;
+    const hospRef = doc(db, "hospitalisations", data.hospitalisationActiveId);
+    const hosp = await getDoc(hospRef);
+
+    if (hosp.exists()) {
+      const h = hosp.data();
+      gravite = h.gravite || gravite;
+      motif = h.motif || motif;
+      statut = h.pdcStatut || statut;
+      circuit = h.circuit || circuit;
+    }
+
   }
-}
 
   const couleurs = {
     P0: "#4CAF50",
@@ -1339,15 +1354,17 @@ if (data.hospitalisationActiveId) {
 <strong class="patient-nom" title="${data.nom} ${data.prenom}">
   ${data.nom} ${data.prenom}
 </strong>
-  <div class="ligne">⚠️|${tronque(gravite)}</div>
-  <div class="ligne">🩺|${tronque(motif)}</div>
-  <div class="ligne">📋|${tronque(statut)}</div>
-  <div class="ligne">🧭|${tronque(circuit)}</div>
+<div class="ligne">⚠️|${tronque(gravite)}</div>
+<div class="ligne">🩺|${tronque(motif)}</div>
+<div class="ligne">📋|${tronque(statut)}</div>
+<div class="ligne">🧭|${tronque(circuit)}</div>
 `;
-card.addEventListener("contextmenu", e => {
-  e.preventDefault();
-  afficherMenuSalles(e.clientX, e.clientY, id); // ou doc.id dans la modale
-});
+
+  card.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    afficherMenuSalles(e.clientX, e.clientY, id);
+  });
+
   // drag
   card.addEventListener("dragstart", e => {
     e.dataTransfer.setData("id", id);
@@ -1357,10 +1374,11 @@ card.addEventListener("contextmenu", e => {
   card.addEventListener("dragend", () => {
     card.classList.remove("dragging");
   });
-const ancienneCarte = document.querySelector(
-  `.patient-card[data-id="${id}"]`
-);
-if (ancienneCarte) ancienneCarte.remove();
+
+  const ancienneCarte = document.querySelector(
+    `.patient-card[data-id="${id}"]`
+  );
+  if (ancienneCarte) ancienneCarte.remove();
 
   // double clic
   card.ondblclick = () => {
@@ -1375,9 +1393,9 @@ if (ancienneCarte) ancienneCarte.remove();
   };
 
   zone.appendChild(card);
+
   mettreAJourSalle(salleId);
 }
-
 
 
 async function rechargerPlan() {

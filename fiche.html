@@ -4937,42 +4937,38 @@ async function getHospitalisationEnCours(patientId) {
 
   try {
     // 🔹 Récupérer le document patient
-    const patientDoc = await db.collection("patients").doc(patientId).get();
-    if (!patientDoc.exists) {
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+    if (!patientSnap.exists()) {
       console.warn("Patient introuvable :", patientId);
       return null;
     }
 
-    const patientData = patientDoc.data();
+    const patientData = patientSnap.data();
     const hospiActiveId = patientData.hospitalisationActiveId;
 
     if (!hospiActiveId) {
-      console.log("Aucun hospitalisationActiveId défini pour ce patient");
+      console.log("Aucune hospitalisationActiveId définie pour ce patient");
       return null;
     }
 
     // 🔹 Vérifier que le document hospitalisation existe
-    const hospiDoc = await db
-      .collection("patients")
-      .doc(patientId)
-      .collection("hospitalisations")
-      .doc(hospiActiveId)
-      .get();
+    const hospiRef = doc(collection(db, "patients", patientId, "hospitalisations"), hospiActiveId);
+    const hospiSnap = await getDoc(hospiRef);
 
-    if (!hospiDoc.exists) {
+    if (!hospiSnap.exists()) {
       console.warn("Hospitalisation référencée par hospitalisationActiveId introuvable :", hospiActiveId);
       return null;
     }
 
-    console.log("Hospitalisation active trouvée :", hospiDoc.id);
-    return hospiDoc.id;
+    console.log("Hospitalisation active trouvée :", hospiSnap.id);
+    return hospiSnap.id;
 
   } catch (err) {
     console.error("Erreur récupération hospitalisation en cours :", err);
     return null;
   }
 }
-
 
 
 const input = document.getElementById("rechercheHistorique");

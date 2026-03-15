@@ -335,32 +335,108 @@ width: 100%;
   </div>
 </div>
 
-  <!-- Firebase + logique JS -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script>
-    // --- Configuration fournie par l'utilisateur ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-      authDomain: "urgences-a8ed4.firebaseapp.com",
-      projectId: "urgences-a8ed4",
-      storageBucket: "urgences-a8ed4.appspot.com",
-      messagingSenderId: "392921498200",
-      appId: "1:392921498200:web:7ccce767332c67c697c02d",
-      measurementId: "G-C74MK2KYDL"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+ 
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+    onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+    loadHistory();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      
+      
+    }
+  }
+});
 
     // Récupérer l'ID du patient depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const patientId = urlParams.get("id");
-    const patientRef = db.collection("patients").doc(patientId);
+  if (!patientId) {
+  const modal = document.getElementById("modal-error");
+  if (modal) {
+    masquerLoader();
+    modal.style.display = "flex";
+  }
+}
+   const patientRef = doc(db, "patients", patientId);
+
 document.addEventListener("DOMContentLoaded", () => {
     const selectNow = document.getElementById("moment-now");
     const selectOther = document.getElementById("moment-other");
     const dateField = document.getElementById("date-time-field");
-	
+    
     const radios = document.querySelectorAll('input[name="when"]');
     const dateInput = document.getElementById("pres-datetime");
 
@@ -374,8 +450,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     radios.forEach(r => r.addEventListener("change", updateDateVisibility));
-
-    updateDateVisibility();
 });
 
     // --- insertion de la liste fournie par l'utilisateur ---
@@ -460,75 +534,76 @@ function formatDate(d) {
     }
     document.getElementById('pres-cancel').onclick = ()=> modalPres.style.display='none';
 
-    document.getElementById('pres-save').onclick = async ()=>{
-      modalPres.style.display='none';
-      const name = presName.value;
-      const comment = presComment.value || '';
-      const whenChoice = presNowRadio();
-      const everyHours = parseInt(presEvery.value) || null;
-      const repeatCount = parseInt(presRepeat.value) || 1;
+    document.getElementById('pres-save').onclick = async () => {
+  modalPres.style.display = 'none';
+  const name = presName.value;
+  const comment = presComment.value || '';
+  const whenChoice = presNowRadio();
+  const everyHours = parseInt(presEvery.value) || null;
+  const repeatCount = parseInt(presRepeat.value) || 1;
 
-      const now = new Date();
-      const scheduled = (whenChoice==='now') ? now : (presDatetime.value ? new Date(presDatetime.value) : now);
+  const now = new Date();
+  const scheduled = (whenChoice === 'now') ? now : (presDatetime.value ? new Date(presDatetime.value) : now);
 
-      // prepare multiple events depending on frequency
-      const events = [];
-for (let i = 0; i < repeatCount; i++) {
+  // Préparer les événements
+  const events = [];
+  for (let i = 0; i < repeatCount; i++) {
+    const d = new Date(scheduled.getTime() + (everyHours ? i * everyHours * 3600 * 1000 : 0));
+    const formattedDueAt = formatDate(d);
+    const formattedCreatedAt = formatDate(new Date());
 
-  const d = new Date(scheduled.getTime() + (everyHours ? i * everyHours * 3600 * 1000 : 0));
-  const formattedDueAt = formatDate(d);
-  const formattedCreatedAt = formatDate(new Date());
-
-  events.push({
-    product: name,
-    comment: comment,
-    createdAt: formattedCreatedAt,  // format JJ/MM/AAAA HH:MM:SS
-    dueAt: formattedDueAt,         // format JJ/MM/AAAA HH:MM:SS
-    status: 'a-donner',
-    takenAt: null,
-    takeComment: null
-  });
-}
-
-
-      try {
-  // 🔹 Récupérer le patient
-  const patientSnap = await patientRef.get();
-  if (!patientSnap.exists) { 
-    alert('Patient introuvable'); 
-    return; 
-  }
-  const patientData = patientSnap.data();
-
-  // 🔹 Récupérer l'hospitalisation active
-  const hospiId = patientData.hospitalisationActiveId;
-  if (!hospiId) {
-    alert('Aucune hospitalisation active trouvée');
-    return;
+    events.push({
+      product: name,
+      comment: comment,
+      createdAt: formattedCreatedAt, // format JJ/MM/AAAA HH:MM:SS
+      dueAt: formattedDueAt,         // format JJ/MM/AAAA HH:MM:SS
+      status: 'a-donner',
+      takenAt: null,
+      takeComment: null
+    });
   }
 
-  const hospiRef = db.collection('hospitalisations').doc(hospiId);
-  const hospiSnap = await hospiRef.get();
-  if (!hospiSnap.exists) {
-    alert('Hospitalisation introuvable');
-    return;
+  try {
+    // 🔹 Récupérer le patient
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+    if (!patientSnap.exists()) { 
+      alert('Patient introuvable'); 
+      return; 
+    }
+    const patientData = patientSnap.data();
+
+    // 🔹 Récupérer l'hospitalisation active
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) {
+      alert('Aucune hospitalisation active trouvée');
+      return;
+    }
+
+    const hospiRef = doc(db, 'hospitalisations', hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists()) {
+      alert('Hospitalisation introuvable');
+      return;
+    }
+
+    const hospiData = hospiSnap.data();
+    hospiData.meds = Array.isArray(hospiData.meds) ? hospiData.meds : [];
+
+    // 🔹 Ajouter les événements
+    events.forEach(ev => hospiData.meds.push(ev));
+
+    // 🔹 Mettre à jour l'hospitalisation
+    await updateDoc(hospiRef, { meds: hospiData.meds });
+
+    afficherBulle('✔️ Demande enregistrée', 'success');
+    loadHistory();
+
+  } catch (err) {
+    console.error(err);
+    alert('Erreur enregistrement: ' + err.message);
   }
-
-  const hospiData = hospiSnap.data();
-  hospiData.meds = Array.isArray(hospiData.meds) ? hospiData.meds : [];
-
-  // 🔹 Ajouter les événements
-  events.forEach(ev => hospiData.meds.push(ev));
-
-  // 🔹 Mettre à jour l'hospitalisation
-  await hospiRef.update({ meds: hospiData.meds });
-
-  afficherBulle('✔️ Demande enregistrée', 'success');
-  loadHistory();
-      }catch(err){
-        console.error(err);alert('Erreur enregistrement: '+err.message)
-      }
-    };
+};
 
   async function loadHistory() {
   const container = document.getElementById("history");
@@ -537,10 +612,10 @@ for (let i = 0; i < repeatCount; i++) {
 
   try {
     // 🔹 Récupérer le patient
-    const patientRef = db.collection("patients").doc(patientId);
-    const patientSnap = await patientRef.get();
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
 
-    if (!patientSnap.exists) {
+    if (!patientSnap.exists()) {
       console.error("❌ Patient introuvable");
       container.innerHTML = "<div class='muted'>Patient introuvable</div>";
       return;
@@ -557,10 +632,10 @@ for (let i = 0; i < repeatCount; i++) {
       return;
     }
 
-    const hospiRef = db.collection("hospitalisations").doc(hospiId);
-    const hospiSnap = await hospiRef.get();
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
 
-    if (!hospiSnap.exists) {
+    if (!hospiSnap.exists()) {
       console.error("❌ Hospitalisation introuvable");
       container.innerHTML = "<div class='muted'>Hospitalisation introuvable</div>";
       return;
@@ -639,7 +714,6 @@ for (let i = 0; i < repeatCount; i++) {
   }
 }
 
-
 let currentDetailId = null;
 
 async function showDetails(medIndex) {
@@ -647,8 +721,8 @@ async function showDetails(medIndex) {
 
   try {
     // 🔹 Récupérer le patient
-    const patientRef = db.collection("patients").doc(patientId);
-    const snap = await patientRef.get();
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
     if (!snap.exists) return;
 
     const patientData = snap.data();
@@ -657,8 +731,8 @@ async function showDetails(medIndex) {
     const hospiId = patientData.hospitalisationActiveId;
     if (!hospiId) return;
 
-    const hospiRef = db.collection("hospitalisations").doc(hospiId);
-    const hospiSnap = await hospiRef.get();
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
     if (!hospiSnap.exists) return;
 
     const hosp = hospiSnap.data();
@@ -716,8 +790,8 @@ async function deleteFromModal() {
 
   try {
     // 🔹 Récupérer le patient
-    const patientRef = db.collection("patients").doc(patientId);
-    const snap = await patientRef.get();
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
     if (!snap.exists) {
       alert("Patient introuvable.");
       return;
@@ -731,8 +805,8 @@ async function deleteFromModal() {
     }
 
     // 🔹 Récupérer l'hospitalisation active
-    const hospiRef = db.collection("hospitalisations").doc(hospiId);
-    const hospiSnap = await hospiRef.get();
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
     if (!hospiSnap.exists) {
       alert("Hospitalisation introuvable.");
       return;
@@ -750,7 +824,7 @@ async function deleteFromModal() {
     meds.splice(currentDetailId, 1);
 
     // 🔹 Mettre à jour Firestore
-    await hospiRef.update({ meds });
+    await updateDoc(hospiRef, { meds });
 
     afficherBulle("✔️ Demande supprimée", "success");
 
@@ -774,7 +848,7 @@ async function deleteFromModal() {
     function openTakeModal(docId, name){ currentTakingDocId = docId; takeName.value = name; takeComment.value=''; modalTake.style.display='flex'; }
     document.getElementById('take-cancel').onclick = ()=> modalTake.style.display='none';
 
-    document.getElementById('take-save').onclick = async () => {
+ document.getElementById('take-save').onclick = async () => {
   modalTake.style.display = 'none';
 
   if (currentTakingDocId == null) return;
@@ -782,9 +856,9 @@ async function deleteFromModal() {
   try {
     const takeAt = new Date();
 
-    // 🔹 Récupérer le patient
-    const patientRef = db.collection("patients").doc(patientId);
-    const snap = await patientRef.get();
+    // 🔹 Récupérer le patient et hospitalisation
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
     if (!snap.exists) {
       alert("Patient introuvable.");
       return;
@@ -797,9 +871,8 @@ async function deleteFromModal() {
       return;
     }
 
-    // 🔹 Récupérer le document hospitalisation
-    const hospiRef = db.collection("hospitalisations").doc(hospiId);
-    const hospiSnap = await hospiRef.get();
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
     if (!hospiSnap.exists) {
       alert("Hospitalisation introuvable.");
       return;
@@ -821,7 +894,7 @@ async function deleteFromModal() {
       takeComment: takeComment.value || ""
     };
 
-    await hospiRef.update({ meds });
+    await updateDoc(hospiRef, { meds });
 
     afficherBulle("✔️ Administration enregistrée");
     loadHistory();
@@ -829,8 +902,8 @@ async function deleteFromModal() {
   } catch (err) {
     console.error(err);
     alert("Erreur: " + err.message);
-  }
-};
+  } 
+}; 
 
 
     // --- helper pour notifications simples ---
@@ -899,82 +972,15 @@ function afficherBulle(msg, type = 'info') {
 }
 
 
-    // --- initial load ---
-    if(!patientId){ alert('Aucun id patient trouvé dans l\'URL. Ajoutez ?id=<patientId>'); }
-    else loadHistory();
+ 
 
     // fermer modals si on clique en dehors
     window.addEventListener('click', (e)=>{
       if(e.target===modalPres) modalPres.style.display='none';
       if(e.target===modalTake) modalTake.style.display='none';
     });
-  </script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    //window.location.href = "accueil.html";
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "medecins", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-      window.location.href = "index.html";
-      return;
-    }
-
-    const data = docSnap.data();
-    const medecinNom = data.nom || "";
-    const medecinSpecialite = data.specialite || "";
-    const medecinLieu = data.lieu || "";
-
-    // variables globales
-    window.medecinNom = medecinNom;
-    window.medecinSpecialite = medecinSpecialite;
-    window.medecinLieu = medecinLieu;
-
-   
-
-    // Vérification accès page
-    const pages = data.pages || {};
-    const currentPath = window.location.pathname;
-    const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-    if (!pages[currentPage]) {
-      const modal = document.getElementById("modal-no-access");
-      modal.style.display = "flex";
-
-      
-
-      return; // Stoppe le reste du script
-    }
-
-  } catch (error) {
-    console.error("Erreur chargement médecin :", error);
-    alert("Une erreur est survenue, veuillez réessayer plus tard.");
-  }
-});
+ 
 
 </script>
 </body>

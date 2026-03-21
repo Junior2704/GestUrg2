@@ -111,22 +111,30 @@ if (isMobileDevice()) {
     const ref = doc(db, "referentiel", "fonctionnement");
     const snap = await getDoc(ref);
 
+    console.log("🔥 Firestore snap exists:", snap.exists());
+    console.log("🔥 Firestore data:", snap.data());
+
     if (!snap.exists()) {
-      showSystemModal("❌ Erreur système", "Données de fonctionnement introuvables.");
+      showSystemModal("❌ Erreur système", "Document introuvable");
       return false;
     }
 
     const data = snap.data();
-    const mode = (data.mode || "").toLowerCase();
 
-    if (mode === "normal") {
-      return true;
-    }
+    // ⚠️ DEBUG IMPORTANT
+    const rawMode = data.mode ?? data.Mode ?? data.etat ?? data.status;
+    console.log("🔥 MODE BRUT =", rawMode);
+
+    const mode = String(rawMode || "").trim().toLowerCase();
+
+    console.log("🔥 MODE NORMALISÉ =", mode);
+
+    if (mode === "normal") return true;
 
     if (mode === "maintenance") {
       showSystemModal(
         "🚧 Maintenance en cours",
-        "Le système est actuellement en maintenance. Merci de réessayer plus tard."
+        "Le système est en maintenance. Merci de réessayer plus tard."
       );
       return false;
     }
@@ -134,23 +142,21 @@ if (isMobileDevice()) {
     if (mode === "erreur") {
       showSystemModal(
         "❌ Erreur système",
-        "Une erreur critique est survenue. L'accès est temporairement bloqué."
+        "Accès bloqué pour cause d’erreur système."
       );
       return false;
     }
 
-    // cas inattendu
     showSystemModal(
-      "⚠️ État inconnu",
-      "Le mode système est invalide : " + mode
+      "⚠️ Mode inconnu",
+      "Valeur reçue : " + mode
     );
+
     return false;
 
   } catch (e) {
-    showSystemModal(
-      "❌ Erreur Firestore",
-      e.message
-    );
+    console.error("🔥 FIRESTORE ERROR:", e);
+    showSystemModal("❌ Erreur Firestore", e.message);
     return false;
   }
 }

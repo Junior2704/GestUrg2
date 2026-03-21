@@ -106,6 +106,84 @@ if (isMobileDevice()) {
   message.textContent = errorMsg;
 }
   };
+  async function checkFonctionnement() {
+  try {
+    const ref = doc(db, "referentiel", "fonctionnement");
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      showSystemModal("❌ Erreur système", "Données de fonctionnement introuvables.");
+      return false;
+    }
+
+    const data = snap.data();
+    const mode = (data.mode || "").toLowerCase();
+
+    if (mode === "normal") {
+      return true;
+    }
+
+    if (mode === "maintenance") {
+      showSystemModal(
+        "🚧 Maintenance en cours",
+        "Le système est actuellement en maintenance. Merci de réessayer plus tard."
+      );
+      return false;
+    }
+
+    if (mode === "erreur") {
+      showSystemModal(
+        "❌ Erreur système",
+        "Une erreur critique est survenue. L'accès est temporairement bloqué."
+      );
+      return false;
+    }
+
+    // cas inattendu
+    showSystemModal(
+      "⚠️ État inconnu",
+      "Le mode système est invalide : " + mode
+    );
+    return false;
+
+  } catch (e) {
+    showSystemModal(
+      "❌ Erreur Firestore",
+      e.message
+    );
+    return false;
+  }
+}
+window.showSystemModal = function(title, text) {
+  document.getElementById("systemModalTitle").textContent = title;
+  document.getElementById("systemModalText").textContent = text;
+
+  const icon = document.getElementById("systemModalIcon");
+
+  if (title.includes("Maintenance")) icon.textContent = "🚧";
+  else if (title.includes("Erreur")) icon.textContent = "❌";
+  else icon.textContent = "⚠️";
+
+  document.getElementById("systemModal").style.display = "flex";
+};
+
+window.closeSystemModal = function() {
+  document.getElementById("systemModal").style.display = "none";
+};
+window.addEventListener("DOMContentLoaded", async () => {
+  const ok = await checkFonctionnement();
+
+  // si pas OK → on bloque les boutons
+  if (!ok) {
+    document.querySelectorAll("button").forEach(btn => {
+      if (btn.textContent.includes("Se connecter")) {
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+      }
+    });
+  }
+});
 </script>
 
   <style>
@@ -279,6 +357,22 @@ if (isMobileDevice()) {
     <p id="qrStatus">Génération du QR...</p>
     <button onclick="closeQRLogin()" style="margin-top:10px;padding:8px 15px;border:none;background:#e74c3c;color:white;border-radius:6px;cursor:pointer;">
       ❌ Fermer
+    </button>
+  </div>
+</div>
+<div id="systemModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
+
+  <div style="background:white; padding:25px; border-radius:12px; width:320px; text-align:center;">
+    
+    <div id="systemModalIcon" style="font-size:40px; margin-bottom:10px;">⚠️</div>
+    
+    <h3 id="systemModalTitle">Titre</h3>
+    <p id="systemModalText" style="margin-top:10px;"></p>
+
+    <button onclick="closeSystemModal()"
+      style="margin-top:15px; padding:10px 20px; border:none; background:#d9534f; color:white; border-radius:8px; cursor:pointer;">
+      Fermer
     </button>
   </div>
 </div>

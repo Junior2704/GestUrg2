@@ -463,41 +463,66 @@ function updateNav() {
 /* ---------- RECHERCHE ---------- */
 search.oninput = async () => {
   results.innerHTML = "";
+
   const valRaw = search.value.toLowerCase().trim();
   if (valRaw.length < 2) return;
 
-  // On retire les "/" de la recherche pour comparaison
   const val = valRaw.replace(/\//g, "");
 
-  const snap = await db.collection("patients").get();
+  let resultsMap = new Map();
 
-  snap.forEach(doc => {
-    const p = doc.data();
+  // 🔎 1. Recherche NOM (préfixe)
+  const qNom = query(
+    collection(db, "patients"),
+    where("nom", ">=", valRaw),
+    where("nom", "<=", valRaw + "\uf8ff"),
+    limit(10)
+  );
 
-    // Normalisation de la date de naissance : jj/mm/aaaa
+  // 🔎 2. Recherche PRENOM
+  const qPrenom = query(
+    collection(db, "patients"),
+    where("prenom", ">=", valRaw),
+    where("prenom", "<=", valRaw + "\uf8ff"),
+    limit(10)
+  );
+
+  // 🔎 3. On exécute en parallèle
+  const [snapNom, snapPrenom] = await Promise.all([
+    getDocs(qNom),
+    getDocs(qPrenom)
+  ]);
+
+  // Fusion sans doublons
+  snapNom.forEach(doc => resultsMap.set(doc.id, doc));
+  snapPrenom.forEach(doc => resultsMap.set(doc.id, doc));
+
+  // 🔎 4. Filtrage intelligent (date + ID inclus)
+  resultsMap.forEach((docSnap) => {
+    const p = docSnap.data();
+
     let dateFormatee = "";
     if (p.dateNaissance) {
       const d = new Date(p.dateNaissance);
       if (!isNaN(d)) {
-        const jour = String(d.getDate()).padStart(2, "0");
-        const mois = String(d.getMonth() + 1).padStart(2, "0");
-        const annee = d.getFullYear();
-        dateFormatee = `${jour}${mois}${annee}`; // on enlève les "/" pour comparer
+        const j = String(d.getDate()).padStart(2, "0");
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const a = d.getFullYear();
+        dateFormatee = `${j}${m}${a}`;
       } else {
-        dateFormatee = p.dateNaissance.replace(/\//g, ""); // si format libre
+        dateFormatee = p.dateNaissance.replace(/\//g, "");
       }
     }
 
-    // Vérifie si la recherche correspond à nom, prénom, ID ou date de naissance
     if (
-      p.nom?.toLowerCase().includes(val) ||
-      p.prenom?.toLowerCase().includes(val) ||
-      doc.id.toLowerCase().includes(val) ||
+      p.nom?.toLowerCase().includes(valRaw) ||
+      p.prenom?.toLowerCase().includes(valRaw) ||
+      docSnap.id.toLowerCase().includes(val) ||
       dateFormatee.includes(val)
     ) {
       const div = document.createElement("div");
       div.className = "result";
-      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${doc.id}`;
+      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${docSnap.id}`;
 
       div.onclick = async () => {
         if (p.hospitalisationActiveId) {
@@ -505,25 +530,19 @@ search.oninput = async () => {
           return;
         }
 
-        // Champs identité
         nom.value = p.nom;
         prenom.value = p.prenom;
         sexe.value = p.sexe || "";
         naissance.value = p.dateNaissance || "";
-        nom.dataset.id = doc.id;
+        nom.dataset.id = docSnap.id;
         adresse.value = p.adresse || "";
         telephone.value = p.telephone || "";
         email.value = p.email || "";
-        idPatient.value = doc.id;
+        idPatient.value = docSnap.id;
 
-        // 🔹 Pré-remplissage données médicales depuis Firestore
-        const patientRef = db.collection("patients").doc(doc.id);
-        const patientSnap = await patientRef.get();
-        const patientData = patientSnap.data();
-
-        document.getElementById("medtraitant").value = patientData.medtraitant || "";
-        document.getElementById("vigilances").value = patientData.vigilances || "aucune";
-        document.getElementById("allergies").value = patientData.allergies || "aucun";
+        document.getElementById("medtraitant").value = p.medtraitant || "";
+        document.getElementById("vigilances").value = p.vigilances || "aucune";
+        document.getElementById("allergies").value = p.allergies || "aucun";
 
         patientSelected = true;
         updateNav();
@@ -537,7 +556,8 @@ search.oninput = async () => {
 // 🌟 Stockage temporaire pour les nouveaux patients
 let patientMedicalData = { medtraitant: "", vigilances: "", allergies: "" };
 
-document.getElementById("saveMedicalData").onclick = () => {
+
+document.getElementById("saveMedicalData").onclick = async () => {
   const medtraitantVal = document.getElementById("medtraitant").value.trim();
   const vigilancesVal = document.getElementById("vigilances").value.trim();
   const allergiesVal = document.getElementById("allergies").value.trim();
@@ -545,26 +565,34 @@ document.getElementById("saveMedicalData").onclick = () => {
   const patientId = nom.dataset.id;
 
   if (patientId) {
-    // 🔹 Patient existant → sauvegarde Firestore
-    db.collection("patients").doc(patientId).update({
+    try {
+      // 🔹 Référence doc Firestore v10
+      const patientRef = doc(db, "patients", patientId);
+
+      // 🔹 Update
+      await updateDoc(patientRef, {
+        medtraitant: medtraitantVal,
+        vigilances: vigilancesVal,
+        allergies: allergiesVal
+      });
+
+      openTab(4); // passer à hospitalisation
+
+    } catch (err) {
+      console.error(err);
+      showInfoModal("❌ Erreur lors de la sauvegarde", false);
+    }
+  } else {
+    // 🔹 Nouveau patient → sauvegarde locale temporaire
+    patientMedicalData = {
       medtraitant: medtraitantVal,
       vigilances: vigilancesVal,
       allergies: allergiesVal
-    })
-    .then(() => {
-      openTab(4); // passer à hospitalisation
-    })
-    .catch(err => {
-      console.error(err);
-      showInfoModal("❌ Erreur lors de la sauvegarde", false);
-    });
-  } else {
-    // 🔹 Nouveau patient → sauvegarde locale temporaire
-    patientMedicalData = { medtraitant: medtraitantVal, vigilances: vigilancesVal, allergies: allergiesVal };
-    openTab(4); // passer à hospitalisation
+    };
+
+    openTab(4);
   }
 };
-
 
 
 
@@ -619,25 +647,27 @@ validateAll.onclick = async () => {
     return;
   }
 
-  const patientId = nom.dataset.id || null; // 🔒 ID patient
+  const patientId = nom.dataset.id || null;
 
   try {
     if (patientId) {
       // 🔹 Patient existant
-      const patientRef = db.collection("patients").doc(patientId);
-      const patientSnap = await patientRef.get();
-      if (!patientSnap.exists) {
+      const patientRef = doc(db, "patients", patientId);
+      const patientSnap = await getDoc(patientRef);
+
+      if (!patientSnap.exists()) {
         showInfoModal("❌ Patient introuvable !", true);
         return;
       }
 
       const patientData = patientSnap.data();
+
       const hospitalisationsIds = Array.isArray(patientData.hospitalisations)
         ? [...patientData.hospitalisations]
         : [];
 
-      // 🔹 Créer une nouvelle hospitalisation
-      const hospiRef = await db.collection("hospitalisations").add({
+      // 🔹 Création hospitalisation
+      const hospiRef = await addDoc(collection(db, "hospitalisations"), {
         patientId: patientId,
         dateDebut: now,
         gravite: graviteVal,
@@ -658,7 +688,8 @@ validateAll.onclick = async () => {
 
       hospitalisationsIds.push(hospiRef.id);
 
-      await patientRef.update({
+      // 🔹 Update patient
+      await updateDoc(patientRef, {
         nom: nomVal,
         prenom: prenomVal,
         sexe: sexeVal,
@@ -675,7 +706,7 @@ validateAll.onclick = async () => {
 
     } else {
       // 🔹 Nouveau patient
-      const newPatientRef = await db.collection("patients").add({
+      const newPatientRef = await addDoc(collection(db, "patients"), {
         nom: nomVal,
         prenom: prenomVal,
         sexe: sexeVal,
@@ -686,11 +717,11 @@ validateAll.onclick = async () => {
         hospitalisations: [],
         hospitalisationActiveId: null,
         position: "salle-attente",
-		...patientMedicalData
+        ...patientMedicalData
       });
 
-      // 🔹 Créer la première hospitalisation
-      const hospiRef = await db.collection("hospitalisations").add({
+      // 🔹 Création hospitalisation
+      const hospiRef = await addDoc(collection(db, "hospitalisations"), {
         patientId: newPatientRef.id,
         dateDebut: now,
         gravite: graviteVal,
@@ -709,21 +740,24 @@ validateAll.onclick = async () => {
         cloturee: false
       });
 
-      // 🔹 Mettre à jour le patient avec tableau d’IDs + hospitalisationActiveId
-      await newPatientRef.update({
+      // 🔹 Update patient
+      const patientRef = doc(db, "patients", newPatientRef.id);
+
+      await updateDoc(patientRef, {
         hospitalisations: [hospiRef.id],
         hospitalisationActiveId: hospiRef.id
       });
 
-      nom.dataset.id = newPatientRef.id; // 🔒 Stockage ID pour futur usage
+      nom.dataset.id = newPatientRef.id;
+
       showInfoModal("✅ Nouveau patient créé !", true);
     }
+
   } catch (err) {
     console.error(err);
     showInfoModal("❌ Erreur lors de l'hospitalisation", false);
   }
 };
-
 
 
 </script>

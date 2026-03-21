@@ -161,6 +161,8 @@ if (isMobileDevice()) {
   }
 }
 window.showSystemModal = function(title, text) {
+  const modal = document.getElementById("systemModal");
+
   document.getElementById("systemModalTitle").textContent = title;
   document.getElementById("systemModalText").textContent = text;
 
@@ -170,11 +172,10 @@ window.showSystemModal = function(title, text) {
   else if (title.includes("Erreur")) icon.textContent = "❌";
   else icon.textContent = "⚠️";
 
-  document.getElementById("systemModal").style.display = "flex";
-};
+  // 🔒 BLOQUAGE TOTAL INTERFACE
+  document.body.classList.add("locked");
 
-window.closeSystemModal = function() {
-  document.getElementById("systemModal").style.display = "none";
+  modal.style.display = "flex";
 };
 window.addEventListener("DOMContentLoaded", async () => {
   const ok = await checkFonctionnement();
@@ -306,7 +307,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 #window-controls button.close:hover {
   background: #e74c3c;
 }
-
+body.locked {
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
 
 
   </style>
@@ -366,20 +370,36 @@ window.addEventListener("DOMContentLoaded", async () => {
     </button>
   </div>
 </div>
-<div id="systemModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
+<div id="systemModal" style="
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  background:rgba(0,0,0,0.85);
+  z-index:999999;
+  justify-content:center;
+  align-items:center;
+  backdrop-filter: blur(6px);
+">
 
-  <div style="background:white; padding:25px; border-radius:12px; width:320px; text-align:center;">
-    
-    <div id="systemModalIcon" style="font-size:40px; margin-bottom:10px;">⚠️</div>
-    
-    <h3 id="systemModalTitle">Titre</h3>
-    <p id="systemModalText" style="margin-top:10px;"></p>
+  <div style="
+    background:white;
+    padding:30px;
+    border-radius:14px;
+    width:360px;
+    text-align:center;
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    font-family:sans-serif;
+  ">
 
-    <button onclick="closeSystemModal()"
-      style="margin-top:15px; padding:10px 20px; border:none; background:#d9534f; color:white; border-radius:8px; cursor:pointer;">
-      Fermer
-    </button>
+    <div id="systemModalIcon" style="font-size:50px; margin-bottom:10px;">⚠️</div>
+
+    <h2 id="systemModalTitle" style="margin:0;"></h2>
+
+    <p id="systemModalText" style="margin-top:10px; font-size:14px;"></p>
+
   </div>
 </div>
 <script>

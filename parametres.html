@@ -404,7 +404,25 @@ body {
     <ul id="moyensList"></ul>
   </div>
 </div>
+<div class="section" collapsed>
+  <h2>⚙️ Mode du système</h2>
 
+  <div style="display:flex; gap:10px; align-items:center;">
+    
+    <select id="modeSysteme" style="padding:10px; border-radius:8px;">
+      <option value="normal">🟢 Normal</option>
+      <option value="maintenance">🚧 Maintenance</option>
+      <option value="erreur">❌ Erreur</option>
+    </select>
+
+    <button class="btn btn-add" onclick="saveModeSysteme()">
+      💾 Enregistrer
+    </button>
+
+    <span id="modeStatus" style="margin-left:10px;"></span>
+
+  </div>
+</div>
 <!-- Modale spécifique pour les facturables -->
 <div class="modal" id="modalFacturable">
   <div class="modal-content">
@@ -624,7 +642,44 @@ let moyens = [];
 let personnel = [];
 let spécialités = [];
 let currentType = null;
+const modeSelect = document.getElementById("modeSysteme");
+const modeStatus = document.getElementById("modeStatus");
 
+// 🔄 Charger le mode actuel
+async function loadModeSysteme() {
+  try {
+    const ref = doc(db, "référentiel", "fonctionnement");
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      const mode = snap.data().mode || "normal";
+      modeSelect.value = mode;
+    }
+  } catch (e) {
+    console.error("Erreur chargement mode :", e);
+  }
+}
+
+// 💾 Sauvegarder le mode
+window.saveModeSysteme = async function () {
+  try {
+    const mode = modeSelect.value;
+
+    await setDoc(doc(db, "référentiel", "fonctionnement"), {
+      mode: mode
+    }, { merge: true });
+
+    modeStatus.textContent = "✅ Sauvegardé";
+    modeStatus.style.color = "green";
+
+    setTimeout(() => modeStatus.textContent = "", 2000);
+
+  } catch (e) {
+    console.error(e);
+    modeStatus.textContent = "❌ Erreur";
+    modeStatus.style.color = "red";
+  }
+};
 async function saveToFirestore() {
   try {
 
@@ -825,7 +880,7 @@ toggleBureaux.addEventListener("change", async () => {
   await saveBureaux();
 });
 
-
+loadModeSysteme();
 function renderBureaux() {
   bureauxListEl.innerHTML = "";
   Object.entries(bureaux).forEach(([nom, info]) => {

@@ -636,9 +636,10 @@ window.validerCertificat=validerCertificat;
       // crée idUnique pour liens_pdfs (évite collision)
       let idUnique, docSnap;
       do {
-        idUnique = Math.random().toString(36).substring(2, 10);
-        docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
-      } while (docSnap.exists);
+      idUnique = Math.random().toString(36).substring(2, 10);
+      const docRef = doc(db, "liens_pdfs", idUnique);
+      docSnap = await getDoc(docRef);
+    } while (docSnap.exists()); 
 
       const nom = document.getElementById('nom').value.trim();
       const prenom = document.getElementById('prenom').value.trim();

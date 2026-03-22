@@ -530,8 +530,29 @@ const modal = document.getElementById("modal-no-access");
     }
   }
 });
-  
-  
+  function toggleSublist(listId){
+  const sublist = document.getElementById(listId);
+  sublist.style.display = sublist.style.display === "block" ? "none" : "block";
+}
+window.toggleSublist=toggleSublist;
+function toggleExam(checkbox){
+  const value = checkbox.value;
+  const prescriptionList = document.getElementById("prescription-list");
+  if(checkbox.checked){
+    const div = document.createElement("div");
+    div.className = "prescription-item";
+    div.dataset.exam = value;
+    div.innerHTML = `${value} <button class="btn-delete" onclick="removeExam(this)">✖</button>`;
+    prescriptionList.appendChild(div);
+  } else {
+    Array.from(prescriptionList.children).forEach(child=>{
+      if(child.dataset.exam === value) prescriptionList.removeChild(child);
+    });
+  }
+  checkIfPrescriptionsRemain();
+ 
+}
+  window.toggleExam=toggleExam;
 window.afficherLoader = function() {
   let loader = document.getElementById("loadingScreen");
   

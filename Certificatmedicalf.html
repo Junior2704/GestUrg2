@@ -818,21 +818,33 @@ window.validerCertificat=validerCertificat;
   }
 
   async function openEmailSelectModal() {
-    // Fetch patient emails from Firestore if possible
-    if (!patientId) {
-      // no patientId: open empty modal (user can type emails)
-      openEmailSelectModalWithString("");
-      return;
-    }
-    try {
-      const docSnap = await db.collection("patients").doc(patientId).get();
-      const emails = (docSnap.exists && docSnap.data().email) ? docSnap.data().email : "";
-      openEmailSelectModalWithString(emails);
-    } catch (err) {
-      console.error("Erreur récupération emails patient :", err);
-      openEmailSelectModalWithString("");
-    }
+
+  // Si pas d'ID patient → modal vide
+  if (!patientId) {
+    openEmailSelectModalWithString("");
+    return;
   }
+
+  try {
+    // 🔥 Référence document (v10)
+    const patientRef = doc(db, "patients", patientId);
+
+    // 🔥 Lecture document
+    const docSnap = await getDoc(patientRef);
+
+    let emails = "";
+
+    if (docSnap.exists()) {
+      emails = docSnap.data().email || "";
+    }
+
+    openEmailSelectModalWithString(emails);
+
+  } catch (err) {
+    console.error("Erreur récupération emails patient :", err);
+    openEmailSelectModalWithString("");
+  }
+}
 
   function closeEmailSelectModal() {
     document.getElementById("emailSelectModal").style.display = "none";

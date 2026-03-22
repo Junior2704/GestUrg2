@@ -228,19 +228,19 @@
          <div class="form-group hidden-field">
   <div class="form-group">
     <label>Prénom</label>
-    <input type="text" id="patient-first-name" oninput="updateOrdonnance()">
+    <input type="text" id="patient-first-name" >
   </div>
   <div class="form-group">
     <label>Nom</label>
-    <input type="text" id="patient-last-name" oninput="updateOrdonnance()">
+    <input type="text" id="patient-last-name" >
   </div>
   <div class="form-group">
     <label>Date de naissance</label>
-    <input type="date" id="patient-birthdate" onchange="updateOrdonnance()">
+    <input type="date" id="patient-birthdate" >
   </div>
   <div class="form-group">
     <label>Sexe</label>
-    <select id="sexe" onchange="updateOrdonnance()">
+    <select id="sexe" >
       <option value="M">M</option>
       <option value="Mme">Mme</option>
       <option value="L'enfant">L'enfant</option>
@@ -345,7 +345,7 @@
   <br><br>
   <div class="form-group hidden-field">
   <label for="commentaireExamen">💬 Commentaire</label><br>
-  <textarea id="commentaireExamen" placeholder="Détails supplémentaires..." oninput="updateOrdonnance()"></textarea>
+  <textarea id="commentaireExamen" placeholder="Détails supplémentaires..." ></textarea>
 </div>
   <div id="prescription-list" class="prescription-list"></div>
 
@@ -467,7 +467,7 @@ if (patientId) {
         new Date(data.dateNaissance.seconds * 1000);
     }
 
-    updateOrdonnance();
+    
   }
 }
 if (!patientId) {
@@ -566,24 +566,6 @@ window.masquerLoader = function() {
     }, 300); // délai pour l’animation
   }
 };
-
-function updateOrdonnance(){
-  const patientName = document.getElementById("patient-first-name").value + " " + document.getElementById("patient-last-name").value;
-  document.getElementById("patient-name-display").textContent = patientName;
-  document.getElementById("medecin-nom-display").textContent = medecinNom;
-  document.getElementById("medecin-specialite-display").textContent = medecinSpecialite;
-  const today = new Date();
-  document.getElementById("current-date").textContent = today.toLocaleDateString();
-  const examensList = document.getElementById("examens-list-display");
-  examensList.innerHTML = "";
-  Array.from(document.getElementById("prescription-list").children).forEach(item=>{
-    const div = document.createElement("div");
-    div.textContent = item.dataset.exam;
-    examensList.appendChild(div);
-  });
-  document.getElementById("commentaire-display").textContent = document.getElementById("commentaireExamen").value;
-}
-window.updateOrdonnance=updateOrdonnance;
 
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 window.validerPrescription = async function () {

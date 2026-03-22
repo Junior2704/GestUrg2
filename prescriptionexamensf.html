@@ -567,8 +567,23 @@ window.masquerLoader = function() {
   }
 };
 
-
-
+function updateOrdonnance(){
+  const patientName = document.getElementById("patient-first-name").value + " " + document.getElementById("patient-last-name").value;
+  document.getElementById("patient-name-display").textContent = patientName;
+  document.getElementById("medecin-nom-display").textContent = medecinNom;
+  document.getElementById("medecin-specialite-display").textContent = medecinSpecialite;
+  const today = new Date();
+  document.getElementById("current-date").textContent = today.toLocaleDateString();
+  const examensList = document.getElementById("examens-list-display");
+  examensList.innerHTML = "";
+  Array.from(document.getElementById("prescription-list").children).forEach(item=>{
+    const div = document.createElement("div");
+    div.textContent = item.dataset.exam;
+    examensList.appendChild(div);
+  });
+  document.getElementById("commentaire-display").textContent = document.getElementById("commentaireExamen").value;
+}
+window.updateOrdonnance=updateOrdonnance;
 
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 window.validerPrescription = async function () {

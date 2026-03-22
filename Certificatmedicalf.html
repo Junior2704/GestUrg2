@@ -267,19 +267,133 @@
 
   </div>
 </div>
-<script>
-  // --- Firebase (compat) init (ton config existant) ---
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
+    projectId: "urgences-a8ed4"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+  const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get("id");
+
+if (!patientId) {
+  console.error("ID patient manquant");
+}
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+        const pageMapping = { "Certificatmedicalf": "Certificatmedical" };
+        const pageKey = pageMapping[currentPage] || currentPage;
+
+        if (!pages[pageKey]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+      demarrage();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      console.error("Erreur chargement médecin :", error);
+      
+    }
+  }
+});
+  
+  
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
 
   // EmailJS init (optionnel mais pratique)
   if (window.emailjs) {
@@ -287,10 +401,7 @@
   }
 
   // Globals
-  let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-  let patientId = null;
+
   let patientRef = null;
 
   function toggleInput(inputId) {
@@ -317,7 +428,7 @@ function imprimer() {
         "*"
     );
 }
-
+window.imprimer=imprimer;
   // ========== Génération PDF (renvoie base64 si telecharger=false) ==========
   async function genererCertif(telecharger = false) {
     try {
@@ -390,7 +501,7 @@ function imprimer() {
     genererCertif(true);
     afficherBulle("📥 PDF téléchargé", "success");
   }
-
+window.telechargerCertif =telechargerCertif;
   // utilitaire notifications
   function afficherBulle(msg, type = 'info') {
     const container = document.getElementById('notification-container');
@@ -436,66 +547,81 @@ function imprimer() {
 
   // ========== Validation & enregistrement (documents) ==========
   async function validerCertificat() {
-    const nom = document.getElementById('nom').value.trim();
-    const prenom = document.getElementById('prenom').value.trim();
-    if (!nom || !prenom) { afficherBulle("Veuillez remplir nom et prénom", "warning"); return; }
+  const nom = document.getElementById('nom').value.trim();
+  const prenom = document.getElementById('prenom').value.trim();
 
-    // génère pdf base64
-    const pdfBase64 = await genererCertif(false);
+  if (!nom || !prenom) {
+    afficherBulle("Veuillez remplir nom et prénom", "warning");
+    return;
+  }
 
-    // création du contenu texte depuis cases cochées
-    const conds = [
-      { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
-      { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
-      { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
-      { id: 'condition4', inputId: 'input4', label: "Absence scolaire/professionnelle :", suffix: " jour(s)" }
-    ];
-    let contenuTextuel = [];
-    conds.forEach(c => {
-      const cb = document.getElementById(c.id);
-      if (cb && cb.checked) {
-        const v = (document.getElementById(c.inputId)?.value || "").trim();
-        contenuTextuel.push(`${c.label} ${v}${c.suffix}`);
-      }
-    });
-    const contenuFinal = contenuTextuel.join("\n");
+  // génère pdf base64
+  const pdfBase64 = await genererCertif(false);
 
-    try {
-      const idUnique = Math.random().toString(36).substring(2,10);
-      const dateFormatted = formatDate(new Date());
-      const nom = document.getElementById('nom').value.trim();
-      const prenom = document.getElementById('prenom').value.trim();
-      const fileName = `Certificat - ${prenom} ${nom}.pdf`;
-      if (!patientId) { afficherBulle("Erreur : aucun patientId reçu", "alerte"); return; }
-window.pdfIdExistante = idUnique;
-      await db.collection("documents").doc(idUnique).set({
-        patientId: patientId,
-        nomFichier: fileName,
-        dateCreation: dateFormatted,
-        type: "Certificat médical",
-        contenu: contenuFinal,
-        pdfBase64: pdfBase64
-      });
+  // création du contenu texte depuis cases cochées
+  const conds = [
+    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
+    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
+    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
+    { id: 'condition4', inputId: 'input4', label: "Absence scolaire/professionnelle :", suffix: " jour(s)" }
+  ];
 
-      afficherBulle("✅ Certificat enregistré !", "success");
-    } catch (err) {
-      console.error("Erreur enregistrement certificat :", err);
-      afficherBulle("❌ Erreur enregistrement", "alerte");
+  let contenuTextuel = [];
+
+  conds.forEach(c => {
+    const cb = document.getElementById(c.id);
+    if (cb && cb.checked) {
+      const v = (document.getElementById(c.inputId)?.value || "").trim();
+      contenuTextuel.push(`${c.label} ${v}${c.suffix}`);
+    }
+  });
+
+  const contenuFinal = contenuTextuel.join("\n");
+
+  try {
+    const idUnique = Math.random().toString(36).substring(2,10);
+    const dateFormatted = formatDate(new Date());
+    const fileName = `Certificat - ${prenom} ${nom}.pdf`;
+
+    if (!patientId) {
+      afficherBulle("Erreur : aucun patientId reçu", "alerte");
       return;
     }
 
-    // blocage complet du formulaire (sauf actions post-validation)
-    const allInputs = document.querySelectorAll("input, textarea, select, button");
-    allInputs.forEach(el => {
-      if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
-        el.disabled = true;
-      }
+    window.pdfIdExistante = idUnique;
+
+    // ✅ Firestore v10
+    await setDoc(doc(db, "documents", idUnique), {
+      patientId: patientId,
+      nomFichier: fileName,
+      dateCreation: dateFormatted,
+      type: "Certificat médical",
+      contenu: contenuFinal,
+      pdfBase64: pdfBase64
     });
 
-    const btnInitial = document.getElementById("btnGenererInitial");
-    if (btnInitial) btnInitial.style.display = "none";
-    document.getElementById("postValidationActions").style.display = "block";
+    afficherBulle("✅ Certificat enregistré !", "success");
+
+  } catch (err) {
+    console.error("Erreur enregistrement certificat :", err);
+    afficherBulle("❌ Erreur enregistrement", "alerte");
+    return;
   }
+
+  // blocage du formulaire
+  const allInputs = document.querySelectorAll("input, textarea, select, button");
+  allInputs.forEach(el => {
+    if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
+      el.disabled = true;
+    }
+  });
+
+  const btnInitial = document.getElementById("btnGenererInitial");
+  if (btnInitial) btnInitial.style.display = "none";
+
+  document.getElementById("postValidationActions").style.display = "block";
+}
+window.validerCertificat=validerCertificat;
 
   // ========== Envoi par email (pattern Ordonnancier) ==========
   async function envoyerCertificatParEmail(destinataires = []) {
@@ -518,11 +644,11 @@ window.pdfIdExistante = idUnique;
       const prenom = document.getElementById('prenom').value.trim();
       const fileName = `Certificat - ${prenom} ${nom}.pdf`;
 
-      await db.collection("liens_pdfs").doc(idUnique).set({
-        base64: pdfBase64,
+         await setDoc(doc(db, "liens_pdf", idUnique), {
+      base64: pdfBase64,
         nomFichier: fileName,
         dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+    });
 
       const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
 
@@ -633,24 +759,38 @@ window.pdfIdExistante = idUnique;
 
   // ========== Chargement patient depuis Firestore ==========
   async function chargerDepuisFirestore(id) {
-    try {
-      patientId = id;
-      patientRef = db.collection("patients").doc(id);
-      const docSnap = await patientRef.get();
-      if (docSnap.exists) {
-        const data = docSnap.data();
-        document.getElementById('nom').value = data.nom || "";
-        document.getElementById('prenom').value = data.prenom || "";
-        if (data.dateNaissance) {
-          const date = data.dateNaissance.toDate ? data.dateNaissance.toDate() : new Date(data.dateNaissance);
-          document.getElementById('dateNaissance').value = date.toISOString().split("T")[0];
-        }
-        document.getElementById('sexe').value = data.sexe || data.Sexe || "M";
+  try {
+    patientId = id;
+
+    // ✅ référence document (v10)
+    const patientRef = doc(db, "patients", id);
+
+    // ✅ récupération document
+    const docSnap = await getDoc(patientRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+
+      document.getElementById('nom').value = data.nom || "";
+      document.getElementById('prenom').value = data.prenom || "";
+
+      if (data.dateNaissance) {
+        const date = data.dateNaissance.toDate
+          ? data.dateNaissance.toDate()
+          : new Date(data.dateNaissance);
+
+        document.getElementById('dateNaissance').value =
+          date.toISOString().split("T")[0];
       }
-    } catch (e) {
-      console.error("Erreur Firestore :", e);
+
+      document.getElementById('sexe').value =
+        data.sexe || data.Sexe || "M";
     }
+
+  } catch (e) {
+    console.error("Erreur Firestore :", e);
   }
+}
 
   // ========== Modale e-mails : ouverture / remplissage / confirmation ==========
   function openEmailSelectModalWithString(emailsString) {
@@ -734,9 +874,8 @@ window.pdfIdExistante = idUnique;
   // bind the main "open email modal" button
   document.getElementById("btnOpenEmailModal").addEventListener("click", openEmailSelectModal);
 
-  // ========== window.onload : récupération ID et pré-remplissage ==========
-  window.onload = function() {
-    const id = new URLSearchParams(window.location.search).get('id');
+function demarrage(){
+const id = new URLSearchParams(window.location.search).get('id');
     if (id) {
       chargerDepuisFirestore(id);
     } else {
@@ -750,8 +889,7 @@ window.pdfIdExistante = idUnique;
         localStorage.removeItem("certificatPatient");
       }
     }
-  };
-
+};
   // reset form
   function reinitialiserForm() {
     document.getElementById('nom').value = "";
@@ -765,6 +903,7 @@ window.pdfIdExistante = idUnique;
       if (input) { input.value = ""; input.style.display = 'none'; }
     });
   }
+  window.reinitialiserForm=reinitialiserForm;
 /* --------------------------------------------------
    🔶 OUVERTURE DE LA MODALE DE CONFIRMATION
 -------------------------------------------------- */
@@ -800,7 +939,7 @@ function openConfirmModal() {
 
   document.getElementById("confirmPrescriptionModal").style.display = "flex";
 }
-
+window.openConfirmModal=openConfirmModal;
 /* --------------------------------------------------
    🔶 FERMETURE
 -------------------------------------------------- */
@@ -819,50 +958,6 @@ function confirmValidation() {
 
 </script>
 
-<!-- Auth / medecin data (module, as in your original file) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfigModule = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-  const app = initializeApp(firebaseConfigModule);
-  const auth = getAuth(app);
-  const fdb = getFirestore(app);
-
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.location.href = "accueil.html"; return; }
-    try {
-      const docRef = doc(fdb, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        window.medecinNom = data.nom || "";
-        window.medecinSpecialite = data.specialite || "";
-        window.medecinLieu = data.lieu || "";
-
-        // permission check (as in your original)
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-        const pageMapping = { "Certificatmedicalf": "Certificatmedical" };
-        const pageKey = pageMapping[currentPage] || currentPage;
-        const pages = data.pages || {};
-        if (!pages[pageKey]) {
-          const modal = document.getElementById("modal-no-access");
-          if (modal) modal.style.display = "flex";
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Erreur chargement médecin :", error);
-      alert("Une erreur est survenue, veuillez réessayer plus tard.");
-    }
-  });
-</script>
 
 </body>
 </html>

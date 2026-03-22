@@ -236,71 +236,38 @@ const docId = urlParams.get("id");
 let pdfDoc = null;
 let nomFichier = "document.pdf";
 
-// 📄 AFFICHAGE PDF
 async function afficherPDF() {
-  if (!docId) return showError("Lien invalide");
+  console.log("1️⃣ START");
 
-  showLoading();
+  console.log("2️⃣ docId =", docId);
 
-  try {
-    const docSnap = await getDoc(doc(db, "liens_pdfs", docId));
+  const docSnap = await getDoc(doc(db, "liens_pdfs", docId));
+  console.log("3️⃣ Firestore OK", docSnap.exists());
 
-    if (!docSnap.exists()) {
-      return showError("Document introuvable.");
-    }
+  const data = docSnap.data();
+  console.log("4️⃣ data récupérée");
 
-    const data = docSnap.data();
+  let base64 = data.base64;
+  console.log("5️⃣ base64 length =", base64?.length);
 
-    nomFichier = data.nomFichier || "document.pdf";
-    document.title = nomFichier;
+  const commaIndex = base64.indexOf(',');
+  if (commaIndex !== -1) base64 = base64.slice(commaIndex + 1);
 
-    let base64 = data.base64;
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
 
-    // 🔧 nettoyage base64
-    const commaIndex = base64.indexOf(',');
-    if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
-      base64 = base64.slice(commaIndex + 1);
-    }
+  console.log("6️⃣ bytes OK");
 
-    // 🔄 conversion en bytes
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    const loadingTask = pdfjsLib.getDocument({ data: bytes });
-    pdfDoc = await loadingTask.promise;
-console.log("PDF DOC =", pdfDoc);
-console.log("NB PAGES =", pdfDoc.numPages);
-    const viewer = document.getElementById("pdf-viewer");
-    viewer.innerHTML = "";
+  const loadingTask = pdfjsLib.getDocument({ data: bytes });
 
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const scale = window.innerWidth < 768 ? 0.9 : 1.5;
-      const viewport = page.getViewport({ scale });
+  console.log("7️⃣ PDF.js loading...");
 
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
+  pdfDoc = await loadingTask.promise;
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      await page.render({
-        canvasContext: context,
-        viewport
-      }).promise;
-
-      viewer.appendChild(canvas);
-    }
-
-    hideLoading();
-
-  } catch (error) {
-    console.error("Erreur chargement PDF :", error);
-    showError("Erreur lors du chargement du document.");
-  }
+  console.log("8️⃣ PDF CHARGÉ, pages =", pdfDoc.numPages);
 }
 window.afficherPDF = afficherPDF;
 // ⬇️ DOWNLOAD

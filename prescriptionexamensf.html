@@ -403,17 +403,38 @@
 
 
 <div id="bubble-container"></div>
-<div id="modal-no-access" class="modalna">
+ <div id="modal-no-access" class="modalna">
   <div class="card">
     <h2>⛔️ Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
+        <p>Veuillez contacter un adminitrateur pour plus d'informations.</p>
+
+  </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
   </div>
 </div>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -424,700 +445,202 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-let medecinNom = "";
+   let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "accueil.html";
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "medecins", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-      window.location.href = "accueil.html";
-      return;
-    }
-
-    const data = docSnap.data();
-    const medecinNom = data.nom || "";
-    const medecinSpecialite = data.specialite || "";
-    const medecinLieu = data.lieu || "";
-
-    // variables globales
-    window.medecinNom = medecinNom;
-    window.medecinSpecialite = medecinSpecialite;
-    window.medecinLieu = medecinLieu;
-
-   
-const pages = data.pages || {};
-    const currentPath = window.location.pathname;
-const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-// Mapping pour Firestore
-const pageMapping = {
-  "prescriptionexamensf": "prescriptionexamens" // Ordonnancierf.html utilise les droits de Ordonnancier
-};
-
-const pageKey = pageMapping[currentPage] || currentPage;
-console.log("Page actuelle :", currentPage);
-console.log("Page Firestore :", pageKey);
-if (!pages[pageKey]) {
-  const modal = document.getElementById("modal-no-access");
-  if (modal) modal.style.display = "flex";
-  console.warn("Accès refusé à", currentPage);
-  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
-} else {
-  console.log("Accès autorisé à", currentPage);
-  // Ici tu peux mettre tout le code spécifique à cette page
-}
-
-  } catch (error) {
-    console.error("Erreur chargement médecin :", error);
-    alert("Une erreur est survenue, veuillez réessayer plus tard.");
-  }
-});
-</script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",  
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL" 
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Pré-remplissage patient depuis URL
+  // 📌 RÉCUP PATIENT (V10)
 const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
 
-if(patientId){
-  db.collection("patients").doc(patientId).get().then(doc=>{
-    if(doc.exists){
-      const data = doc.data();
-      document.getElementById("patient-first-name").value = data.prenom || "";
-      document.getElementById("patient-last-name").value = data.nom || "";
-      document.getElementById("sexe").value = data.sexe || "M";
-      const naissance = data.dateNaissance;
-      if(naissance instanceof firebase.firestore.Timestamp){
-        document.getElementById("patient-birthdate").valueAsDate = naissance.toDate();
-      } else if(typeof naissance === "string"){
-        document.getElementById("patient-birthdate").value = naissance;
-      }
-      updateOrdonnance();
+if (patientId) {
+  const docSnap = await getDoc(doc(db, "patients", patientId));
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+
+    document.getElementById("patient-first-name").value = data.prenom || "";
+    document.getElementById("patient-last-name").value = data.nom || "";
+    document.getElementById("sexe").value = data.sexe || "M";
+
+    if (data.dateNaissance?.seconds) {
+      document.getElementById("patient-birthdate").valueAsDate =
+        new Date(data.dateNaissance.seconds * 1000);
     }
-  });
+
+    updateOrdonnance();
+  }
 }
-function imprimer() {
-    // Vérifie que l'ID du document existe
-    if (!window.pdfIdExistante) {
-        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+if (!patientId) {
+  console.error("ID patient manquant");
+}
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+        const pageMapping = { "prescriptionexamensf": "prescriptionexamen" };
+        const pageKey = pageMapping[currentPage] || currentPage;
+
+        if (!pages[pageKey]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
         return;
+      }
+      demarrage();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      console.error("Erreur chargement médecin :", error);
+      
     }
-
-    // Envoie le message au parent pour ouvrir un nouvel onglet
-    window.parent.postMessage(
-        {
-            type: "OPEN_TAB",
-            title: "Prescription",
-            url: `viewer.html?docId=${window.pdfIdExistante}` // URL avec l'ID existant
-        },
-        "*"
-    );
-}
-
-function toggleSublist(listId){
-  const sublist = document.getElementById(listId);
-  sublist.style.display = sublist.style.display === "block" ? "none" : "block";
-}
-
-function toggleExam(checkbox){
-  const exam = checkbox.value;  // <-- corrige ici
+  }
+});
   
-  const prescriptionList = document.getElementById("prescription-list");
-
-  if (checkbox.checked) {
-
-    const div = document.createElement("div");
-    div.className = "prescription-item";
-    div.dataset.exam = exam;
-
-    div.innerHTML = `
-      <div style="display:flex; flex-direction:column; width:100%;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span><strong>${exam}</strong></span>
-
-          <button onclick="removeExam('${exam}')"
-                  style="border:none; background:transparent; font-size:20px; cursor:pointer;">×</button>
-        </div>
-
-        <textarea 
-          class="comment-exam"
-          placeholder="Commentaire pour cet examen…"
-          data-comment-for="${exam}"
-          style="margin-top:6px; padding:6px; border-radius:6px; border:1px solid #ccc; width:100%; min-height:45px;"></textarea>
-      </div>
-    `;
-
-    prescriptionList.appendChild(div);
-
-  } else {
-    Array.from(prescriptionList.children).forEach(child => {
-      if (child.dataset.exam === exam) prescriptionList.removeChild(child);
-    });
+  
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
   }
 
-  checkIfPrescriptionsRemain();
-  updateOrdonnance();
-}
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
 
-
-function removeExam(exam){
-  const prescriptionList = document.getElementById("prescription-list");
-
-  Array.from(prescriptionList.children).forEach(div => {
-    if (div.dataset.exam === exam) div.remove();
-  });
-
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    if (cb.value === exam) cb.checked = false;
-  });
-
-  checkIfPrescriptionsRemain();
-  updateOrdonnance();
-}
-
-function checkIfPrescriptionsRemain(){
-  const ordonnance = document.getElementById("ordonnance");
-  const buttonsWrapper = ordonnance.querySelector(".buttons-wrapper");
-  if(document.getElementById("prescription-list").children.length > 0){
-    ordonnance.style.display = "block";
-    buttonsWrapper.style.display = "block";
-  } else {
-    ordonnance.style.display = "none";
-    buttonsWrapper.style.display = "none";
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
   }
-}
+};
 
 
-function telechargerExamens(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("🧪 Prescription d'Examens", 105, 20, null, null, "center");
-  doc.setFontSize(12);
-  doc.text(`Médecin: ${medecinNom} - ${medecinSpecialite}`, 10, 30);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 10, 40);
-  const patientName = document.getElementById("patient-first-name").value + " " + document.getElementById("patient-last-name").value;
-  doc.text(`Patient: ${patientName}`, 10, 50);
-  doc.text("Examens prescrits:", 10, 60);
-  let y = 70;
-  Array.from(document.getElementById("prescription-list").children).forEach(item=>{
-    doc.text("- " + item.dataset.exam, 15, y);
-    y += 10;
-  });
-  const commentaire = document.getElementById("commentaireExamen").value;
-  if(commentaire){
-    doc.text("Commentaire: " + commentaire, 10, y + 10);
-  }
-  doc.save("Prescription_Examens.pdf");
-}
 
-async function validerPrescription() {
+
+// 💾 ENREGISTREMENT FIRESTORE (V10)
+window.validerPrescription = async function () {
+
   const prenom = document.getElementById("patient-first-name").value.trim();
   const nom = document.getElementById("patient-last-name").value.trim();
 
   if (!prenom || !nom) {
-    afficherBulle("Veuillez remplir nom et prénom du patient", "warning");
-    return;
-  }
-
-  const nb = document.getElementById("prescription-list").children.length;
-  if (nb === 0) {
-    afficherBulle("Aucun examen sélectionné", "warning");
+    afficherBulle("Nom/prénom requis", "warning");
     return;
   }
 
   const pdfBase64 = await genererPrescription(false);
-
-  const examensAvecCommentaires = Array.from(document.getElementById("prescription-list").children).map(div => {
-  const exam = div.dataset.exam;
-  const commentaire = div.querySelector(".comment-exam")?.value.trim() || "";
-  return { examen: exam, commentaire: commentaire };
-});
-
-
-  const commentaire = document.getElementById("commentaireExamen").value.trim();
-  const contenuFinal = items + (commentaire ? "\nCommentaire : " + commentaire : "");
 
   try {
     const idUnique = Math.random().toString(36).substring(2, 10);
-    const dateCreation = new Date().toLocaleString("fr-FR");
-    const prenom = document.getElementById("patient-first-name").value.trim();
-    const nom = document.getElementById("patient-last-name").value.trim();
-const fileName = `Prescription - ${prenom || ""} ${nom || ""}.pdf`;
-window.pdfIdExistante = idUnique;
-    await db.collection("documents").doc(idUnique).set({
-      patientId: patientId,
-      nomFicher: fileName,
-      dateCreation: dateCreation,
+
+    await setDoc(doc(db, "documents", idUnique), {
+      patientId: patientId || null,
+      nomFichier: `Prescription - ${prenom} ${nom}.pdf`,
+      dateCreation: serverTimestamp(), // ✅ CORRIGÉ
       type: "Prescription d’examens",
-      contenu: examensAvecCommentaires,
       pdfBase64: pdfBase64
     });
 
-    afficherBulle("✔ Prescription enregistrée", "success");
+    window.pdfIdExistante = idUnique;
+
+    afficherBulle("✅ Enregistré", "success");
 
   } catch (err) {
     console.error(err);
-    afficherBulle("Erreur enregistrement Firestore", "alerte");
-    return;
+    afficherBulle("Erreur Firestore", "alerte");
   }
-
-  // Désactiver tout
-  const allInputs = document.querySelectorAll("input, textarea, select, button");
-  allInputs.forEach(el => {
-    if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
-      el.disabled = true;
-    }
-  });
-
-  document.getElementById("btnValiderPrescription").style.display = "none";
-  document.getElementById("postValidationActions").style.display = "block";
-}
-function telechargerPrescription() {
-  genererPrescription(true);
-  afficherBulle("📥 PDF téléchargé", "success");
-}
-/* ---------- Notifications (comme Certificat) ---------- */
-function afficherBulle(msg, type = 'info') {
-  const container = document.getElementById('notification-container');
-  if (!container) return;
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '8px';
-  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-  el.style.fontSize = '14px';
-  el.style.fontWeight = '500';
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(-8px)';
-  el.style.transition = 'opacity 0.25s, transform 0.25s';
-  el.style.marginTop = '6px';
-  switch (type) {
-    case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
-    case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
-    case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
-    default: el.style.background = '#333'; el.style.color = '#fff'; break;
-  }
-  container.appendChild(el);
-  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-8px)';
-    el.addEventListener('transitionend', () => el.remove());
-  }, 3000);
-}
-
-/* ---------- Génération PDF (style certificat) ---------- */
-async function genererPrescription(telecharger = false) {
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const prenom = document.getElementById("patient-first-name").value.trim();
-    const nom = document.getElementById("patient-last-name").value.trim();
-    const commentaire = document.getElementById("commentaireExamen").value.trim();
-
-    // entête bleu
-    doc.setFillColor(52, 152, 219);
-    doc.rect(0, 0, 210, 20, 'F');
-    doc.setFontSize(20);
-    doc.setTextColor(255,255,255);
-    doc.text("Prescription d'examens", 105, 14, { align: "center" });
-
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(14);
-    doc.text(window.medecinNom || "Dr [Nom]", 20, 30);
-    doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
-
-    const currentDate = new Date().toLocaleDateString("fr-FR");
-    doc.text(`Le ${currentDate}`, 150, 30);
-    if (window.medecinLieu) doc.text(`À ${window.medecinLieu}`, 150, 38);
-
-    doc.setFontSize(12);
-    doc.text(`Je soussigné(e) ${window.medecinNom || "Dr [Nom]"}, prescris les examens suivants pour ${prenom} ${nom} :`, 20, 55);
-
-    let y = 70;
-    const items = Array.from(document.getElementById("prescription-list").children)
-      .map(d => d.dataset.exam);
-
-    const examensCommentes = Array.from(document.getElementById("prescription-list").children).map(div => {
-  return {
-    examen: div.dataset.exam,
-    commentaire: div.querySelector(".comment-exam")?.value.trim() || ""
-  };
-});
-
-examensCommentes.forEach(e => {
-  const lines = doc.splitTextToSize(`- ${e.examen}`, 170);
-  doc.text(lines, 20, y);
-  y += lines.length * 8;
-
-  if (e.commentaire) {
-    const cLines = doc.splitTextToSize(`   Commentaire : ${e.commentaire}`, 160);
-    doc.text(cLines, 25, y);
-    y += cLines.length * 8;
-  }
-});
+};
 
 
-    if (commentaire) {
-      const comY = y + 6;
-      doc.text("Commentaire :", 20, comY);
-      const comLines = doc.splitTextToSize(commentaire, 170);
-      doc.text(comLines, 20, comY + 8);
-      y = comY + comLines.length * 8 + 8;
-    }
+// 📧 ENVOI EMAIL (V10 FIX)
+window.envoyerPrescriptionParEmail = async function (destinataires = []) {
 
-    doc.text(`Prescription remise en main propre le ${currentDate}.`, 20, y + 18);
-    doc.text(`${window.medecinNom || "Dr [Nom]"}`, 150, y + 40);
-
-    const pdfData = doc.output("datauristring");
-    const base64 = pdfData.split(",")[1] || "";
-
-    if (telecharger) {
-      const fileName = `Prescription - ${prenom || ""} ${nom || ""}.pdf`;
-      doc.save(fileName);
-    }
-    return base64;
-  } catch (err) {
-    console.error("Erreur génération prescription :", err);
-    return "";
-  }
-}
-
-/* ---------- Validation et enregistrement Firestore ---------- */
-async function validerPrescription() {
-  const prenom = document.getElementById("patient-first-name").value.trim();
-  const nom = document.getElementById("patient-last-name").value.trim();
-
-  if (!prenom || !nom) {
-    afficherBulle("Veuillez remplir le nom et prénom du patient", "warning");
-    return;
-  }
-  const nb = document.getElementById("prescription-list").children.length;
-  if (nb === 0) {
-    afficherBulle("Aucun examen sélectionné", "warning");
-    return;
-  }
-
-  afficherBulle("Enregistrement en cours...", "administratif");
-
-  // Génère PDF base64 (sans téléchargement)
-  const pdfBase64 = await genererPrescription(false);
-
-  // contenu textuel
-  const items = Array.from(document.getElementById("prescription-list").children)
-    .map(d => d.dataset.exam)
-    .join("\n");
-  const commentaire = document.getElementById("commentaireExamen").value.trim();
-  const contenuFinal = items + (commentaire ? "\nCommentaire : " + commentaire : "");
+  if (!destinataires.length) return;
 
   try {
-    // id unique pour le document (documents)
-    const idUniqueDoc = Math.random().toString(36).substring(2, 10);
-    const dateCreation = new Date().toLocaleString("fr-FR");
-
-    // patientId est défini plus haut dans ton fichier (const patientId = urlParams.get("id");)
-    await db.collection("documents").doc(idUniqueDoc).set({
-      patientId: patientId || null,
-      dateCreation: dateCreation,
-      type: "Prescription d’examens",
-      contenu: contenuFinal,
-      pdfBase64: pdfBase64
-    });
-
-    afficherBulle("✅ Prescription enregistrée", "success");
-
-  } catch (err) {
-    console.error("Erreur enregistrement prescription :", err);
-    afficherBulle("❌ Erreur enregistrement", "alerte");
-    return;
-  }
-
-  // verrouillage formulaire (sauf postValidationActions et modal)
-  const allInputs = document.querySelectorAll("input, textarea, select, button");
-  allInputs.forEach(el => {
-    if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
-      el.disabled = true;
-    }
-  });
-
-  const btn = document.getElementById("btnValiderPrescription");
-  if (btn) btn.style.display = "none";
-  document.getElementById("postValidationActions").style.display = "block";
-}
-
-/* ---------- Téléchargement après validation ---------- */
-function telechargerPrescription() {
-  genererPrescription(true);
-  afficherBulle("📥 PDF téléchargé", "success");
-}
-
-/* ---------- Modal e-mails : ouverture / remplissage / confirmation ---------- */
-function openEmailSelectModalWithString(emailsString) {
-  const modal = document.getElementById("emailSelectModal");
-  const container = document.getElementById("emailCheckboxes");
-  container.innerHTML = "";
-
-  const emails = (emailsString || "").split("//").map(e=>e.trim()).filter(e => e.includes("@"));
-  if (emails.length === 0) {
-    container.innerHTML = "<p style='color:#777;'>Aucune adresse trouvée pour ce patient.</p>";
-  } else {
-    emails.forEach((email, i) => {
-      const id = "emailCheck_" + i;
-      const label = document.createElement("label");
-      label.style.display = 'flex';
-      label.style.alignItems = 'center';
-      label.style.gap = '8px';
-      label.style.padding = '8px 10px';
-      label.style.borderRadius = '8px';
-      label.style.background = '#f8fafc';
-      label.style.border = '1px solid transparent';
-      label.innerHTML = `<input type="checkbox" id="${id}" value="${email}" checked style="transform:scale(1.1); margin-right:6px;"> ${email}`;
-      container.appendChild(label);
-    });
-  }
-
-  document.getElementById("otherEmailCheck").checked = false;
-  document.getElementById("otherEmailInput").value = "";
-  document.getElementById("otherEmailInput").disabled = true;
-
-  modal.style.display = "flex";
-}
-
-async function openEmailSelectModal() {
-  if (!patientId) {
-    openEmailSelectModalWithString("");
-    return;
-  }
-  try {
-    const docSnap = await db.collection("patients").doc(patientId).get();
-    const emailsField = (docSnap.exists && docSnap.data().email) ? docSnap.data().email : "";
-    openEmailSelectModalWithString(emailsField);
-  } catch (err) {
-    console.error("Erreur récupération emails patient :", err);
-    openEmailSelectModalWithString("");
-  }
-}
-
-function closeEmailSelectModal() {
-  const modal = document.getElementById("emailSelectModal");
-  if (modal) modal.style.display = "none";
-}
-
-/* active/désactive champ "autre email" */
-document.addEventListener('change', function(e) {
-  if (e.target && e.target.id === 'otherEmailCheck') {
-    document.getElementById('otherEmailInput').disabled = !e.target.checked;
-  }
-});
-
-/* ---------- Envoi par e-mail (multi-compte EmailJS) ---------- */
-async function envoyerPrescriptionParEmail(destinataires = []) {
-  if (!Array.isArray(destinataires) || destinataires.length === 0) {
-    afficherBulle("Aucun destinataire", "alerte"); return;
-  }
-
-  try {
-    // Génère le PDF base64
     const pdfBase64 = await genererPrescription(false);
 
-    // Crée id unique pour liens_pdfs (évite collision)
     let idUnique, docSnap;
+
     do {
       idUnique = Math.random().toString(36).substring(2, 10);
-      docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
-    } while (docSnap.exists);
+      docSnap = await getDoc(doc(db, "liens_pdfs", idUnique));
+    } while (docSnap.exists());
 
-    const prenom = document.getElementById("patient-first-name").value.trim();
-    const nom = document.getElementById("patient-last-name").value.trim();
-    const fileName = `Prescription - ${prenom} ${nom}.pdf`;
-
-    // Enregistrement du base64 dans liens_pdfs (utilise nomFichier ici uniquement pour la page monpdf)
-    await db.collection("liens_pdfs").doc(idUnique).set({
+    await setDoc(doc(db, "liens_pdfs", idUnique), {
       base64: pdfBase64,
-      nomFichier: fileName,
-      dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
+      dateCreation: serverTimestamp() // ✅ CORRIGÉ
     });
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
 
-    // Template HTML adapté
-           const htmlMessage = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Ordonnance médicale</title>
-</head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
-    <tr>
-      <td style="background-color:#1a73e8; padding:24px; text-align:center;">
-        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
-        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
-        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
-      </td>
-    </tr>
-
-    <tr>
-      <td style="padding:30px;">
-        <h2 style="color:#1a73e8; font-weight:600; margin-top:0;">Votre prescription d'examens</h2>
-
-        <p style="font-size:16px; line-height:1.6;">
-          Bonjour <strong>{{patient_prenom}} {{patient_nom}}</strong>,
-        </p>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          Votre prescription pour un(des) examen(s) vient d’être validée par le médecin responsable et est désormais disponible.
-          Elle vous permettra de réaliser le ou les examen(s) demandé(s). Pensez à communiquer les résultats à votre médecin traitant !
-        </p>
-
-        <div style="text-align:center; margin:30px 0;">
-          <a href="{{lien_compte_rendu}}" 
-             style="background-color:#1a73e8; color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; display:inline-block;">
-            🩻 Voir la prescription
-          </a>
-        </div>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          ⚠️ Ce lien reste actif 7 jours pour garantir la confidentialité de vos données.
-          Au-delà, le document sera automatiquement supprimé.
-        </p>
-
-        <p style="font-size:14px; color:#777;">
-          Pour toute question, merci de contacter le service des Urgences :
-          <a href="mailto:urgences.hopj@gmail.com" style="color:#1a73e8;">urgences.hopj@gmail.com</a>
-        </p>
-
-        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
-        <p style="font-size:13px; color:#999; text-align:center;">
-          Service des Urgences<br>
-          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-    // Multi-comptes EmailJS (fallback)
-    const comptesEmailJS = [
-      { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
-      { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
-      { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
-    ];
-
-    // Initialise EmailJS si présent
-    if (window.emailjs && emailjs.init) {
-      try { emailjs.init("CZapZCcxYfJ8-acLS"); } catch(e) { /* ignore */ }
+    for (const email of destinataires) {
+      await emailjs.send("service_o07vuso", "template_vj03i4u", {
+        to_email: email,
+        lien: lienPdf
+      });
     }
 
-    for (const email of destinataires) {
-      const emailTrim = email.trim();
-      if (!emailTrim || !emailTrim.includes("@")) {
-        afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte");
-        continue;
-      }
-      let envoye = false;
-      for (const compte of comptesEmailJS) {
-        try {
-          // remplace variables dans template HTML si besoin
-        
-const htmlFinal = htmlMessage
-  .replace(/{{patient_prenom}}/g, prenom)
-  .replace(/{{patient_nom}}/g, nom)
-  .replace(/{{lien_compte_rendu}}/g, lienPdf);
-          // send via EmailJS
-          if (!window.emailjs || !emailjs.send) throw new Error("EmailJS non chargé");
+    afficherBulle("📨 Envoyé", "success");
 
-          await emailjs.send(compte.serviceID, compte.templateID, {
-            to_email: emailTrim,
-            subject: "Votre prescription d'examens est disponible",
-            html_message: htmlFinal
-          }, compte.publicKey);
-
-          afficherBulle(`📨 Envoyé : ${emailTrim}`, "administratif");
-          envoye = true;
-          break;
-        } catch (err) {
-          console.warn("Échec envoi via", compte.serviceID, err);
-          // si quota, essaie le suivant, sinon arrête la boucle interne
-          const texteErr = (err && err.text) ? err.text.toLowerCase() : String(err).toLowerCase();
-          if (texteErr.includes("quota") || texteErr.includes("quota") || texteErr.includes("exceeded")) {
-            continue; // essaie le compte suivant
-          } else {
-            // erreur fatale : on quitte l'essai de ce destinataire
-            break;
-          }
-        }
-      } // end comptes loop
-
-      if (!envoye) {
-        afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
-      }
-    } // end destinataires loop
-
-    afficherBulle("📨 Envois terminés !", "administratif");
   } catch (err) {
-    console.error("Erreur envoyerPrescriptionParEmail :", err);
+    console.error(err);
     afficherBulle("Erreur envoi", "alerte");
   }
-}
-
-/* ---------- Confirmation modale : collecte destinataires et envoi ---------- */
-document.addEventListener('click', async function(e) {
-  if (e.target && e.target.id === 'confirmEmails') {
-    try {
-      const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
-      let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
-
-      const otherChecked = document.getElementById("otherEmailCheck").checked;
-      const otherEmail = document.getElementById("otherEmailInput").value.trim();
-      if (otherChecked && otherEmail) destinataires.push(otherEmail);
-
-      if (destinataires.length === 0) {
-        afficherBulle("Veuillez cocher au moins une adresse e-mail.", "warning");
-        return;
-      }
-
-      closeEmailSelectModal();
-      afficherBulle("Envoi en cours...", "administratif");
-      await envoyerPrescriptionParEmail(destinataires);
-    } catch (err) {
-      console.error("Erreur confirmEmails :", err);
-      afficherBulle("Erreur lors de l'envoi", "alerte");
-    }
-  }
-});
-
-/* ---------- Bind du bouton ouvrir modal (post-validation) ---------- */
-document.addEventListener('click', function(e) {
-  if (e.target && e.target.id === 'btnOpenEmailModal') {
-    openEmailSelectModal();
-  }
-});
+};
 
 </script>
 

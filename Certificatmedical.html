@@ -1,100 +1,161 @@
 <!DOCTYPE html>
 <html lang="fr">
-<style>
-#bubble-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 9999;
-  align-items: flex-end;
-}
-
-.bubble {
-  max-width: 300px;
-  padding: 10px 15px;
-  border-radius: 8px;
-  color: white;
-  font-family: sans-serif;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  animation: fadeout 0.5s ease-in-out 1.5s forwards;
-  word-wrap: break-word;
-  text-align: left;
-}
-
-.administratif {
-  background-color: #2196F3; /* bleu */
-}
-
-.alerte {
-  background-color: #f44336; /* rouge */
-}
-
-@keyframes fadeout {
-  to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-}
-
-</style>
 <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🩺 Générateur de Certificat Médical</title>
     <link rel="icon" type="image/jpeg" href="logog.png">
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🩺 Générateur de Certificat Médical</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
- 
+<style>
+/* --- styles (conservés/améliorés) --- */
+#bubble-container { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; align-items: flex-end; }
+.bubble { max-width: 300px; padding: 10px 15px; border-radius: 8px; color: white; font-family: sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.2); animation: fadeout 0.5s ease-in-out 1.5s forwards; word-wrap: break-word; text-align: left; }
+.administratif { background-color: #2196F3; }
+.alerte { background-color: #f44336; }
+@keyframes fadeout { to { opacity: 0; transform: translateX(-20px); } }
+.modalna { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(5px); z-index: 9999; }
+.modalna .card { background: #fff; padding: 24px 32px; border-radius: 12px; text-align: center; max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.hidden-field { display: none !important; }
+
+/* --- modal selection emails (ordonnancier style) --- */
+#emailSelectModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); justify-content: center; align-items: center; z-index: 200; }
+#emailSelectModal .modal-content { width: 380px; max-width: 90%; background: linear-gradient(to bottom right, #ffffff, #f9fafc); border-radius: 16px; padding: 20px 18px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.06); }
+#emailSelectModal h3 { text-align:center; margin-top:0; font-size:1.1rem; }
+#emailSelectModal .email-options { margin-top: 12px; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow:auto; padding-right:6px; }
+#emailSelectModal label { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; cursor:pointer; background:#f8fafc; border:1px solid transparent; }
+#emailSelectModal label:hover { background:#eff6ff; border-color:#bfdbfe; transform:scale(1.01); }
+#emailSelectModal input[type="checkbox"] { transform:scale(1.15); accent-color:#2563eb; }
+#emailSelectModal input[type="email"] { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem; }
+#emailSelectModal .modal-actions { margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
+#emailSelectModal .btn-cancel { background:#e2e8f0; color:#1e293b; border:none; padding:8px 12px; border-radius:8px; }
+#emailSelectModal .btn-confirm { background:#2563eb; color:#fff; border:none; padding:8px 12px; border-radius:8px; }
+#confirmPrescriptionModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+}
+
+#confirmPrescriptionModal .modal-content {
+  background: #ffffff;
+  max-width: 520px;
+  width: 90%;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+#confirmPrescriptionModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 9999;
+}
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* ✅ Valider — vert */
+.btn-confirm {
+  background: #16a34a;           /* vert médical */
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-confirm:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+}
+
+/* ⬜ Annuler — gris */
+/* ⬛ Annuler — gris foncé */
+.btn-cancel {
+  background: #9ca3af;        /* gris foncé */
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-cancel:hover {
+  background: #6b7280;
+  transform: translateY(-1px);
+}
+
+
+</style>
 </head>
 
-<body>
-  <body class="bg-light">
+<body class="bg-light">
+  <div id="modal-no-access" class="modalna">
+    <div class="card">
+      <h2>⛔️ Accès refusé</h2>
+      <p>Vous n’avez pas accès à cette page.</p>
+    </div>
+  </div>
+  
+
   <div class="container py-5">
     <div class="card shadow-lg">
       <div class="card-body">
         <h2 class="card-title text-center mb-4">🩺 Formulaire de Certificat Médical</h2>
-        <form id="patientForm">
+        <form id="patientForm" onsubmit="return false;">
 
-          <div class="d-flex justify-content-between mb-4">
-      
-
-            <button type="button" class="btn btn-outline-danger" onclick="reinitialiserForm()">❌ Réinitialiser</button>
-          </div>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="nom" class="form-label">Nom du Patient</label>
-              <input type="text" class="form-control" id="nom" required>
+         
+            <div class="d-flex justify-content-between mb-4">
+              <button type="button" class="btn btn-outline-danger" onclick="reinitialiserForm()">❌ Réinitialiser</button>
             </div>
-            <div class="col-md-6">
-              <label for="prenom" class="form-label">Prénom du Patient</label>
-              <input type="text" class="form-control" id="prenom" required>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="nom" class="form-label">Nom du Patient</label>
+                <input type="text" class="form-control" id="nom" required>
+              </div>
+              <div class="col-md-6">
+                <label for="prenom" class="form-label">Prénom du Patient</label>
+                <input type="text" class="form-control" id="prenom" required>
+              </div>
+              <div class="col-md-6">
+                <label for="dateNaissance" class="form-label">Date de naissance</label>
+                <input type="date" class="form-control" id="dateNaissance" required>
+              </div>
+              <div class="col-md-6">
+                <label for="sexe" class="form-label">Sexe</label>
+                <select class="form-select" id="sexe">
+                  <option value="M">M</option>
+                  <option value="Mme">Mme</option>
+                  <option value="L’enfant">L'enfant</option>
+                </select>
+              </div>
             </div>
-            <div class="col-md-6">
-              <label for="dateNaissance" class="form-label">Date de naissance</label>
-              <input type="date" class="form-control" id="dateNaissance" required>
-            </div>
-            <div class="col-md-6">
-              <label for="sexe" class="form-label">Sexe</label>
-              <select class="form-select" id="sexe">
-                <option value="M">M</option>
-                <option value="Mme">Mme</option>
-                <option value="L’enfant">L'enfant</option>
-              </select>
-            </div>
-          </div>
-
-          <hr class="my-4">
+            <hr class="my-4">
+          
 
           <fieldset class="mb-4">
-            <legend class="h5 mb-3">✅ Mentions à inclure dans le certificat</legend>
+            <legend class="h5 mb-3">Mentions à inclure dans le certificat :</legend>
 
             <div class="form-check mb-3">
               <input type="checkbox" class="form-check-input" id="condition1" onchange="toggleInput('input1')">
@@ -121,75 +182,275 @@
             </div>
           </fieldset>
 
-          <div class="d-grid">
-            <button type="button" class="btn btn-primary btn-lg" onclick="generatePDF()">📝 Générer le certificat médical</button>
+          <div class="d-grid mb-3">
+            <button id="btnGenererInitial" type="button" class="btn btn-primary btn-lg"
+                    onclick="openConfirmModal()">
+              📝 Valider & enregistrer le certificat
+            </button>
+          </div>
+
+          <!-- Zone affichée après validation du certificat -->
+          <div id="postValidationActions" style="display:none; margin-top:20px; text-align:center;">
+            <h3>✔ Certificat validé</h3>
+<button type="button" class="btn btn-success btn-lg" onclick="imprimer()">
+                🖨️ Imprimer le certificat
+            </button>
+            <button type="button" class="btn btn-success btn-lg" onclick="telechargerCertif()">
+                📥 Télécharger le certificat
+            </button>
+
+            <button type="button" class="btn btn-info btn-lg" id="btnOpenEmailModal">
+              ✉ Envoyer par e-mail
+            </button>
           </div>
 
         </form>
       </div>
     </div>
   </div>
-</body>
 
-  <script>
-	      const firebaseConfig = {
-      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  <!-- ===== Modal de sélection des emails (copié/adapté de l'Ordonnancier) ===== -->
+  <div id="emailSelectModal">
+    <div class="modal-content">
+      <h3>📧 Choisissez les destinataires</h3>
+
+      <div id="emailCheckboxes" class="email-options"></div>
+
+      <hr>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+        <input type="checkbox" id="otherEmailCheck"> Autre destinataire :
+      </label>
+      <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled style="margin-top:8px;">
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeEmailSelectModal()">Annuler</button>
+        <button type="button" id="confirmEmails" class="btn-confirm">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- petit conteneur pour notifications si besoin -->
+  <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
+<!-- 🔶 MODALE DE CONFIRMATION VALIDATION -->
+<div id="confirmPrescriptionModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:600px;">
+
+    <h2>Confirmation</h2>
+
+    <!-- Bandeau d'avertissement -->
+    <div style="
+      background:#ffb84d;
+      color:#5a3d00;
+      padding:12px;
+      border-radius:8px;
+      margin-bottom:15px;
+      font-weight:600;
+      text-align:center;
+      ">
+      ⚠️ Attention : valider la prescription va verrouiller la modification et l’enregistrer définitivement dans le dossier patient.
+    </div>
+
+    <!-- Prévisualisation -->
+    <h3 style="margin-top:10px; text-align:left;">Prescription :</h3>
+    <div id="preview-ordo" 
+        style="background:#f8f9fa; padding:15px; border-radius:8px;
+               border:1px solid #ddd; text-align:left; max-height:250px;
+               overflow-y:auto;">
+    </div>
+
+    <div class="modal-buttons">
+  <button class="btn-confirm" onclick="confirmValidation()">✔️ Valider</button>
+  <button class="btn-cancel" onclick="closeConfirmModal()">Annuler</button>
+</div>
+
+
+  </div>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",  
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    projectId: "urgences-a8ed4"
+  };
 
-    let medecinNom = "";
-    let medecinSpecialite = "";	
-    let medecinLieu = "";
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    function toggleInput(inputId) {
-      const input = document.getElementById(inputId);
-      if (input) {
-        input.style.display = input.style.display === 'none' ? 'block' : 'none';
-        if(input.style.display === 'none') {
-          input.value = "";
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+  const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get("id");
+
+if (!patientId) {
+  console.error("ID patient manquant");
+}
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+        const pageMapping = { "Certificatmedicalf": "Certificatmedical" };
+        const pageKey = pageMapping[currentPage] || currentPage;
+
+        if (!pages[pageKey]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
         }
-      }
-    }
-
-    async function generatePDF() {
-
-      const { jsPDF } = window.jspdf;
-
-      const nom = document.getElementById('nom').value.trim();
-      const prenom = document.getElementById('prenom').value.trim();
-
-      const rawDate = document.getElementById('dateNaissance').value; // yyyy-mm-dd
-      const dateParts = rawDate.split('-'); // ["aaaa", "mm", "jj"]
-      const dateNaissance = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : rawDate;
-
-      const sexe = document.getElementById('sexe').value;
-
-      if (!nom || !prenom || !rawDate) {
-	afficherBulle("Veuiller remplir tout les champs obligatoires", "warning")
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
         return;
       }
+      demarrage();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      console.error("Erreur chargement médecin :", error);
+      
+    }
+  }
+});
+  
+  
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
 
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
+
+  // EmailJS init (optionnel mais pratique)
+  if (window.emailjs) {
+    try { emailjs.init("CZapZCcxYfJ8-acLS"); } catch(e) { /* ignore */ }
+  }
+
+  // Globals
+
+  let patientRef = null;
+
+  window.toggleInput = function(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.style.display = input.style.display === 'none' ? 'block' : 'none';
+      if(input.style.display === 'none') input.value = "";
+    }
+  }
+function imprimer() {
+    // Vérifie que l'ID du document existe
+    if (!window.pdfIdExistante) {
+        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+        return;
+    }
+
+    // Envoie le message au parent pour ouvrir un nouvel onglet
+    window.parent.postMessage(
+        {
+            type: "OPEN_TAB",
+            title: "Certificat médical",
+            url: `viewer.html?docId=${window.pdfIdExistante}` // URL avec l'ID existant
+        },
+        "*"
+    );
+}
+window.imprimer=imprimer;
+  // ========== Génération PDF (renvoie base64 si telecharger=false) ==========
+  async function genererCertif(telecharger = false) {
+    try {
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
+      const nom = document.getElementById('nom').value.trim();
+      const prenom = document.getElementById('prenom').value.trim();
+      const rawDate = document.getElementById('dateNaissance').value;
+      const dateParts = rawDate ? rawDate.split('-') : [];
+      const dateNaissance = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : rawDate;
+      const sexe = document.getElementById('sexe').value;
 
-      // En-tête coloré
       doc.setFillColor(52, 152, 219);
       doc.rect(0, 0, 210, 20, 'F');
       doc.setFontSize(20);
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(255,255,255);
       doc.text("Certificat Médical", 105, 14, { align: "center" });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(0,0,0);
       doc.setFontSize(14);
-
-      doc.text(`${window.medecinNom || "Dr [Nom]"},`, 20, 30);
-doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
-
+      doc.text(`${window.medecinNom || "Dr [Nom]"}`, 20, 30);
+      doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
       const currentDate = new Date().toLocaleDateString("fr-FR");
       doc.text(`Le ${currentDate},`, 150, 30);
       doc.text(`À ${window.medecinLieu || "[Lieu]"}`, 150, 38);
@@ -208,13 +469,8 @@ doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
       let y = 90;
       conditions.forEach((cond, index) => {
         if (document.getElementById(cond.id).checked) {
-          let valeur = document.getElementById(cond.inputId)?.value.trim() || "____";
-
-          // Ajout automatique de "jour(s)" pour les conditions 3 et 4
-          if (index === 2 || index === 3) {
-            valeur += " jour(s)";
-          }
-
+          let valeur = (document.getElementById(cond.inputId)?.value || "____").trim();
+          if (index === 2 || index === 3) valeur += " jour(s)";
           const ligne = `- ${cond.label} ${valeur}`;
           const splitText = doc.splitTextToSize(ligne, 170);
           doc.text(splitText, 20, y);
@@ -224,220 +480,498 @@ doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
 
       const today = new Date();
       const dateStr = today.toLocaleDateString("fr-FR");
-      doc.text(`Certificat remis en main propre à la demande de l'intéressé(e) le ${dateStr}.`, 20, y + 20);
+      doc.text(`Certificat remis en main propre à la demande de l'intéressé(e) le ${dateStr} pour faire valoir`, 20, y + 20);
+      doc.text(`ce que de droit.`, 20, y + 30);
 
-      doc.save(`certificat medical - ${prenom} ${nom}_.pdf`);
-    }
-   
 
-    async function chargerDepuisFirestore(id) {
-      try {
-        const docRef = db.collection("patients").doc(id);
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-          const data = docSnap.data();
-          document.getElementById('nom').value = data.nom || "";
-          document.getElementById('prenom').value = data.prenom || "";
-
-          if (data.dateNaissance) {
-            const date = data.dateNaissance.toDate ? data.dateNaissance.toDate() : new Date(data.dateNaissance);
-            document.getElementById('dateNaissance').value = date.toISOString().split("T")[0];
-          }
-          const sexe = data.sexe || data.Sexe || "M";
-          document.getElementById('sexe').value = sexe;
-        }
-      } catch (e) {
-        console.error("Erreur Firestore :", e);
+      const pdfData = doc.output("datauristring");
+      const base64 = pdfData.split(",")[1];
+      if (telecharger) {
+        const fileName = `Certificat - ${prenom || ""} ${nom || ""}.pdf`;
+        doc.save(fileName);
       }
+      return base64;
+    } catch (err) {
+      console.error("Erreur génération certif :", err);
+      return "";
     }
-
-    window.onload = function() {
-      const id = new URLSearchParams(window.location.search).get('id');
-      if (id) {
-        chargerDepuisFirestore(id);
-      } else {
-        const data = localStorage.getItem("certificatPatient");
-        if (data) {
-          const patient = JSON.parse(data);
-          document.getElementById('nom').value = patient.nom || "";
-          document.getElementById('prenom').value = patient.prenom || "";
-          document.getElementById('dateNaissance').value = patient.dateNaissance || "";
-          document.getElementById('sexe').value = patient.sexe || "M";
-          localStorage.removeItem("certificatPatient");
-        }
-      }
-    };
-
-    function reinitialiserForm() {
-      document.getElementById('nom').value = "";
-      document.getElementById('prenom').value = "";
-      document.getElementById('dateNaissance').value = "";
-      document.getElementById('sexe').value = "";
-      ['condition1', 'condition2', 'condition3', 'condition4'].forEach((id, index) => {
-        const checkbox = document.getElementById(id);
-        const input = document.getElementById('input' + (index + 1));
-        if (checkbox) checkbox.checked = false;
-        if (input) {
-          input.value = "";
-          input.style.display = 'none';
-        }
-      });
-    }
-	
-	// Conteneur global pour les bulles
-let notificationContainer = document.getElementById('notification-container');
-if (!notificationContainer) {
-  notificationContainer = document.createElement('div');
-  notificationContainer.id = 'notification-container';
-  notificationContainer.style.position = 'fixed';
-  notificationContainer.style.top = '12px';
-  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
-  notificationContainer.style.display = 'flex';
-  notificationContainer.style.flexDirection = 'column';
-  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
-  notificationContainer.style.zIndex = 9999;
-  document.body.appendChild(notificationContainer);
-}
-
-// Fonction pour afficher une bulle
-function afficherBulle(msg, type = 'info') {
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '8px';
-  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-  el.style.fontSize = '14px';
-  el.style.fontWeight = '500';
-  el.style.opacity = '0';
-  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-  el.style.transform = 'translateY(-10px)';
-
-  // --- Code couleur selon type ---
-  switch (type) {
-    case 'success':
-      el.style.background = '#e6ffed'; // vert clair
-      el.style.color = '#064e22';      // texte vert foncé
-      break;
-    case 'error':
-      el.style.background = '#ffdede'; // rouge clair
-      el.style.color = '#a00';         // texte rouge foncé
-      break;
-    case 'warning':
-      el.style.background = '#fff4e5'; // orange clair
-      el.style.color = '#663c00';      // texte orange foncé
-      break;
-    default: // info ou autre
-      el.style.background = '#333';    // gris foncé
-      el.style.color = '#fff';         // texte blanc
-      break;
   }
 
-  notificationContainer.appendChild(el);
+  // téléchargement sans recharger la page
+  function telechargerCertif() {
+    genererCertif(true);
+    afficherBulle("📥 PDF téléchargé", "success");
+  }
+window.telechargerCertif =telechargerCertif;
+  // utilitaire notifications
+  function afficherBulle(msg, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.padding = '10px 14px';
+    el.style.borderRadius = '8px';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    el.style.fontSize = '14px';
+    el.style.fontWeight = '500';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    el.style.transition = 'opacity 0.25s, transform 0.25s';
 
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
+    switch (type) {
+      case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
+      case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
+      case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
+      default: el.style.background = '#333'; el.style.color = '#fff'; break;
+    }
+
+    container.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-8px)';
+      el.addEventListener('transitionend', () => el.remove());
+    }, 3000);
+  }
+
+  // format date
+  function formatDate(date) {
+    const pad = n => n.toString().padStart(2, '0');
+    const jour = pad(date.getDate());
+    const mois = pad(date.getMonth() + 1);
+    const annee = date.getFullYear();
+    const heures = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const secondes = pad(date.getSeconds());
+    return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+  }
+
+  // ========== Validation & enregistrement (documents) ==========
+  async function validerCertificat() {
+  const nom = document.getElementById('nom').value.trim();
+  const prenom = document.getElementById('prenom').value.trim();
+
+  if (!nom || !prenom) {
+    afficherBulle("Veuillez remplir nom et prénom", "warning");
+    return;
+  }
+
+  // génère pdf base64
+  const pdfBase64 = await genererCertif(false);
+
+  // création du contenu texte depuis cases cochées
+  const conds = [
+    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
+    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
+    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
+    { id: 'condition4', inputId: 'input4', label: "Absence scolaire/professionnelle :", suffix: " jour(s)" }
+  ];
+
+  let contenuTextuel = [];
+
+  conds.forEach(c => {
+    const cb = document.getElementById(c.id);
+    if (cb && cb.checked) {
+      const v = (document.getElementById(c.inputId)?.value || "").trim();
+      contenuTextuel.push(`${c.label} ${v}${c.suffix}`);
+    }
   });
 
-  // Suppression automatique après 3 secondes
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-10px)';
-    el.addEventListener('transitionend', () => el.remove());
-  }, 3000);
+  const contenuFinal = contenuTextuel.join("\n");
+
+  try {
+    const idUnique = Math.random().toString(36).substring(2,10);
+    const dateFormatted = formatDate(new Date());
+    const fileName = `Certificat - ${prenom} ${nom}.pdf`;
+
+    if (!patientId) {
+      afficherBulle("Erreur : aucun patientId reçu", "alerte");
+      return;
+    }
+
+    window.pdfIdExistante = idUnique;
+
+    // ✅ Firestore v10
+    await setDoc(doc(db, "documents", idUnique), {
+      patientId: patientId,
+      nomFichier: fileName,
+      dateCreation: dateFormatted,
+      type: "Certificat médical",
+      contenu: contenuFinal,
+      pdfBase64: pdfBase64
+    });
+
+    afficherBulle("✅ Certificat enregistré !", "success");
+
+  } catch (err) {
+    console.error("Erreur enregistrement certificat :", err);
+    afficherBulle("❌ Erreur enregistrement", "alerte");
+    return;
+  }
+
+  // blocage du formulaire
+  const allInputs = document.querySelectorAll("input, textarea, select, button");
+  allInputs.forEach(el => {
+    if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
+      el.disabled = true;
+    }
+  });
+
+  const btnInitial = document.getElementById("btnGenererInitial");
+  if (btnInitial) btnInitial.style.display = "none";
+
+  document.getElementById("postValidationActions").style.display = "block";
 }
+window.validerCertificat=validerCertificat;
 
-  
+  // ========== Envoi par email (pattern Ordonnancier) ==========
+  async function envoyerCertificatParEmail(destinataires = []) {
+    if (!Array.isArray(destinataires) || destinataires.length === 0) {
+      afficherBulle("Aucun destinataire", "alerte"); return;
+    }
 
-  </script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-
-  onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "accueil.html";
-  } else {
     try {
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-  window.medecinNom = data.nom || "";
-        window.medecinSpecialite = data.specialite || "";
-        window.medecinLieu = data.lieu || "";
+      // Génère le PDF base64
+      const pdfBase64 = await genererCertif(false);
 
-        // ✅ Affichage de contrôle (facultatif)
-        console.log("Médecin connecté :", window.medecinNom, window.medecinSpecialite, window.medecinLieu);
+      // crée idUnique pour liens_pdfs (évite collision)
+      let idUnique, docSnap;
+      do {
+      idUnique = Math.random().toString(36).substring(2, 10);
+      const docRef = doc(db, "liens_pdfs", idUnique);
+      docSnap = await getDoc(docRef);
+    } while (docSnap.exists()); 
 
+      const nom = document.getElementById('nom').value.trim();
+      const prenom = document.getElementById('prenom').value.trim();
+      const fileName = `Certificat - ${prenom} ${nom}.pdf`;
 
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+         await setDoc(doc(db, "liens_pdf", idUnique), {
+      base64: pdfBase64,
+        nomFichier: fileName,
+        dateCreation: serverTimestamp()
+    });
 
-        if (!pages[currentPage]) {
-          alert("⛔️ Vous n’avez pas accès à cette page.");
-          window.location.href = "index.html";
-          return; // Stoppe le script ici
+      const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
+
+      // Template HTML (adapté au certificat)
+      const htmlMessage = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificat médical</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#333;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
+    <tr>
+      <td style="background-color:#1a73e8; padding:24px; text-align:center;">
+        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
+        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
+        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:30px;">
+        <h2 style="color:#1a73e8; font-weight:600; margin-top:0;">Votre Certificat médicale</h2>
+
+        <p style="font-size:16px; line-height:1.6;">
+          Bonjour <strong>{{patient_prenom}} {{patient_nom}}</strong>,
+        </p>
+
+        <p style="font-size:15px; line-height:1.6; color:#555;">
+          Votre certificat médicale vient d’être signé par le médecin responsable et est désormais disponible.
+          Il vous permettra de faire valoir ce que de droit.
+        </p>
+
+        <div style="text-align:center; margin:30px 0;">
+          <a href="{{lien_compte_rendu}}" 
+             style="background-color:#1a73e8; color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; display:inline-block;">
+            Voir le certificat
+          </a>
+        </div>
+
+        <p style="font-size:15px; line-height:1.6; color:#555;">
+          ⚠️ Ce lien reste actif 7 jours pour garantir la confidentialité de vos données.
+          Au-delà, le document sera automatiquement supprimé.
+        </p>
+
+        <p style="font-size:14px; color:#777;">
+          Pour toute question, merci de contacter le service des Urgences :
+          <a href="mailto:urgences.hopj@gmail.com" style="color:#1a73e8;">urgences.hopj@gmail.com</a>
+        </p>
+
+        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
+        <p style="font-size:13px; color:#999; text-align:center;">
+          Service des Urgences<br>
+          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      // Multi-compte EmailJS fallback (copié de l'Ordonnancier)
+      const comptesEmailJS = [
+        { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
+        { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
+        { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
+      ];
+
+      for (const email of destinataires) {
+        const emailTrim = email.trim();
+        if (!emailTrim || !emailTrim.includes("@")) {
+          afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte"); continue;
         }
-      } else {
-        // Document inexistant — redirection
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        window.location.href = "accueil.html";
+        let envoye = false;
+        for (const compte of comptesEmailJS) {
+          try {
+            const htmlFinal = htmlMessage
+              .replace(/{{patient_prenom}}/g, prenom)
+              .replace(/{{patient_nom}}/g, nom)
+              .replace(/{{lien_compte_rendu}}/g, lienPdf);
+
+            await emailjs.send(compte.serviceID, compte.templateID, {
+              to_email: emailTrim,
+              subject: "Votre certificat médical est disponible",
+              html_message: htmlFinal
+            }, compte.publicKey);
+
+            afficherBulle(`📨 Envoyé : ${emailTrim}`, "default");
+            envoye = true;
+            break;
+          } catch (err) {
+            console.warn("Échec envoi via", compte.serviceID, err);
+            const texteErr = (err && err.text) ? err.text.toLowerCase() : String(err).toLowerCase();
+            if (texteErr.includes("quota")) continue;
+            else break;
+          }
+        }
+        if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
       }
-    } catch (error) {
-      console.error("Erreur chargement médecin :", error);
-      alert("Une erreur est survenue, veuillez réessayer plus tard.");
+
+      afficherBulle("📨 Envois terminés !", "default");
+    } catch (err) {
+      console.error("Erreur envoyerCertificatParEmail :", err);
+      afficherBulle("Erreur envoi", "alerte");
     }
   }
-});
-let appLocked = false;
 
-window.addEventListener("message", (event) => {
+  // ========== Chargement patient depuis Firestore ==========
+  async function chargerDepuisFirestore(id) {
+  try {
 
-  if (!event.data) return;
+    // ✅ référence document (v10)
+    const patientRef = doc(db, "patients", id);
 
-  if (event.data.type === "APP_LOCK") {
-    appLocked = true;
+    // ✅ récupération document
+    const docSnap = await getDoc(patientRef);
 
-    // Stopper timers éventuels si besoin
-    document.body.style.filter = "grayscale(0.8)";
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+
+      document.getElementById('nom').value = data.nom || "";
+      document.getElementById('prenom').value = data.prenom || "";
+
+      if (data.dateNaissance) {
+        const date = data.dateNaissance.toDate
+          ? data.dateNaissance.toDate()
+          : new Date(data.dateNaissance);
+
+        document.getElementById('dateNaissance').value =
+          date.toISOString().split("T")[0];
+      }
+
+      document.getElementById('sexe').value =
+        data.sexe || data.Sexe || "M";
+    }
+
+  } catch (e) {
+    console.error("Erreur Firestore :", e);
+  }
+}
+
+  // ========== Modale e-mails : ouverture / remplissage / confirmation ==========
+  function openEmailSelectModalWithString(emailsString) {
+    const modal = document.getElementById("emailSelectModal");
+    const container = document.getElementById("emailCheckboxes");
+    container.innerHTML = "";
+
+    const emails = (emailsString || "").split("//").map(e=>e.trim()).filter(e => e.includes("@"));
+    if (emails.length === 0) {
+      container.innerHTML = "<p style='color:#777;'>Aucune adresse trouvée pour ce patient.</p>";
+    } else {
+      emails.forEach((email, i) => {
+        const id = "emailCheck_" + i;
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="checkbox" id="${id}" value="${email}" checked> ${email}`;
+        container.appendChild(label);
+      });
+    }
+
+    // reset other input
+    document.getElementById("otherEmailCheck").checked = false;
+    document.getElementById("otherEmailInput").value = "";
+    document.getElementById("otherEmailInput").disabled = true;
+
+    modal.style.display = "flex";
   }
 
-  if (event.data.type === "APP_UNLOCK") {
-    appLocked = false;
-    document.body.style.filter = "none";
-  }
-});
+  async function openEmailSelectModal() {
 
-// Exemple protection bouton
-document.addEventListener("click", function(e){
-  if(appLocked){
-    e.stopPropagation();
-    e.preventDefault();
+  // Si pas d'ID patient → modal vide
+  if (!patientId) {
+    openEmailSelectModalWithString("");
+    return;
   }
-}, true);
+
+  try {
+    // 🔥 Référence document (v10)
+    const patientRef = doc(db, "patients", patientId);
+
+    // 🔥 Lecture document
+    const docSnap = await getDoc(patientRef);
+
+    let emails = "";
+
+    if (docSnap.exists()) {
+      emails = docSnap.data().email || "";
+    }
+
+    openEmailSelectModalWithString(emails);
+
+  } catch (err) {
+    console.error("Erreur récupération emails patient :", err);
+    openEmailSelectModalWithString("");
+  }
+}
+
+  function closeEmailSelectModal() {
+    document.getElementById("emailSelectModal").style.display = "none";
+  }
+window.closeEmailSelectModal=closeEmailSelectModal;
+  // toggle other email input
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'otherEmailCheck') {
+      document.getElementById('otherEmailInput').disabled = !e.target.checked;
+    }
+  });
+
+  // confirm -> collect recipients then call envoyerCertificatParEmail
+  document.getElementById("confirmEmails").addEventListener("click", async function () {
+    try {
+      const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
+      let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
+
+      const otherChecked = document.getElementById("otherEmailCheck").checked;
+      const otherEmail = document.getElementById("otherEmailInput").value.trim();
+      if (otherChecked && otherEmail) destinataires.push(otherEmail);
+
+      if (destinataires.length === 0) {
+        afficherBulle("Veuillez cocher au moins une adresse e-mail.", "warning");
+        return;
+      }
+
+      closeEmailSelectModal();
+      // show tiny feedback
+      afficherBulle("Envoi en cours...", "administratif");
+      await envoyerCertificatParEmail(destinataires);
+    } catch (err) {
+      console.error("Erreur confirmEmails :", err);
+      afficherBulle("Erreur lors de l'envoi", "alerte");
+    }
+  });
+
+  // bind the main "open email modal" button
+  document.getElementById("btnOpenEmailModal").addEventListener("click", openEmailSelectModal);
+
+function demarrage(){
+const id = new URLSearchParams(window.location.search).get('id');
+    if (id) {
+      chargerDepuisFirestore(id);
+    } else {
+      const data = localStorage.getItem("certificatPatient");
+      if (data) {
+        const patient = JSON.parse(data);
+        document.getElementById('nom').value = patient.nom || "";
+        document.getElementById('prenom').value = patient.prenom || "";
+        document.getElementById('dateNaissance').value = patient.dateNaissance || "";
+        document.getElementById('sexe').value = patient.sexe || "M";
+        localStorage.removeItem("certificatPatient");
+      }
+    }
+    masquerLoader();
+};
+  // reset form
+  function reinitialiserForm() {
+    document.getElementById('nom').value = "";
+    document.getElementById('prenom').value = "";
+    document.getElementById('dateNaissance').value = "";
+    document.getElementById('sexe').value = "";
+    ['condition1', 'condition2', 'condition3', 'condition4'].forEach((id, index) => {
+      const checkbox = document.getElementById(id);
+      const input = document.getElementById('input' + (index + 1));
+      if (checkbox) checkbox.checked = false;
+      if (input) { input.value = ""; input.style.display = 'none'; }
+    });
+  }
+  window.reinitialiserForm=reinitialiserForm;
+/* --------------------------------------------------
+   🔶 OUVERTURE DE LA MODALE DE CONFIRMATION
+-------------------------------------------------- */
+function openConfirmModal() {
+
+  const conditions = [
+    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :" },
+    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :" },
+    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :" },
+    { id: 'condition4', inputId: 'input4', label: "Absence :" }
+  ];
+
+  let preview = "";
+  let auMoinsUne = false;
+
+  conditions.forEach((c, index) => {
+    const cb = document.getElementById(c.id);
+    if (cb && cb.checked) {
+      auMoinsUne = true;
+      let valeur = document.getElementById(c.inputId)?.value || "";
+      if (index === 2 || index === 3) valeur += " jour(s)";
+      preview += `- ${c.label} ${valeur}\n`;
+    }
+  });
+
+  if (!auMoinsUne) {
+    afficherBulle("⛔ Veuillez cocher au moins une mention.", "warning");
+    return;
+  }
+
+  // Injection TEXTE uniquement (non éditable)
+  document.getElementById("preview-ordo").textContent = preview;
+
+  document.getElementById("confirmPrescriptionModal").style.display = "flex";
+}
+window.openConfirmModal=openConfirmModal;
+/* --------------------------------------------------
+   🔶 FERMETURE
+-------------------------------------------------- */
+function closeConfirmModal() {
+  document.getElementById("confirmPrescriptionModal").style.display = "none";
+}
+window.closeConfirmModal=closeConfirmModal;
+/* --------------------------------------------------
+   🔶 VALIDATION RÉELLE (déclenche l’ancienne fonction)
+-------------------------------------------------- */
+function confirmValidation() {
+  closeConfirmModal();
+  validerCertificat(); // 🔥 Appelle TA vraie fonction déjà en place
+}
+window.confirmValidation=confirmValidation;
+
 </script>
+
 
 </body>
 </html>
-
-
-

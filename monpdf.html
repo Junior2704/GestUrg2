@@ -215,88 +215,158 @@ canvas {
 
   <div id="pdf-viewer"></div>
 
-  <script>
-    // Configuration Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-      authDomain: "urgences-a8ed4.firebaseapp.com",
-      projectId: "urgences-a8ed4"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const docId = urlParams.get("id");
+// 🔥 CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
 
-    let pdfDoc = null;
-    let nomFichier = "document.pdf";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    async function afficherPDF() {
-      if (!docId) return showError("Lien invalide");
-      showLoading();
+// 🔗 PARAMS URL
+const urlParams = new URLSearchParams(window.location.search);
+const docId = urlParams.get("id");
 
-      const docSnap = await db.collection("liens_pdfs").doc(docId).get();
-      if (!docSnap.exists) return showError("Document introuvable.");
+let pdfDoc = null;
+let nomFichier = "document.pdf";
 
-      const data = docSnap.data();
-      nomFichier = data.nomFichier || "document.pdf";
-      document.title = nomFichier;
+// 📄 AFFICHAGE PDF
+async function afficherPDF() {
+  if (!docId) return showError("Lien invalide");
 
-      let base64 = data.base64;
-      const commaIndex = base64.indexOf(',');
-      if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
-        base64 = base64.slice(commaIndex + 1);
-      }
+  showLoading();
 
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+  try {
+    const docSnap = await getDoc(doc(db, "liens_pdfs", docId));
 
-      const loadingTask = pdfjsLib.getDocument({ data: bytes });
-      pdfDoc = await loadingTask.promise;
-
-      const viewer = document.getElementById("pdf-viewer");
-      viewer.innerHTML = "";
-
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const scale = window.innerWidth < 768 ? 0.9 : 1.5; // Ajustement automatique selon l'écran
-        const viewport = page.getViewport({ scale });
-
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({ canvasContext: context, viewport }).promise;
-        viewer.appendChild(canvas);
-      }
-      hideLoading();
+    if (!docSnap.exists()) {
+      return showError("Document introuvable.");
     }
 
-    document.getElementById("download").addEventListener("click", async () => {
-      const docSnap = await db.collection("liens_pdfs").doc(docId).get();
-      const base64 = docSnap.data().base64;
-      const link = document.createElement("a");
-      link.href = "data:application/pdf;base64," + base64;
-      link.download = nomFichier;
-      link.click();
-    });
+    const data = docSnap.data();
 
-    function showLoading() {
-      document.getElementById("loading-modal").style.display = "flex";
+    nomFichier = data.nomFichier || "document.pdf";
+    document.title = nomFichier;
+
+    let base64 = data.base64;
+
+    // 🔧 nettoyage base64
+    const commaIndex = base64.indexOf(',');
+    if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
+      base64 = base64.slice(commaIndex + 1);
     }
 
-    function hideLoading() {
-      document.getElementById("loading-modal").style.display = "none";
+    // 🔄 conversion en bytes
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
 
-    function showError(message) {
-      document.getElementById("error-message").textContent = message;
-      document.getElementById("error-modal").style.display = "flex";
+    const loadingTask = pdfjsLib.getDocument({ data: bytes });
+    pdfDoc = await loadingTask.promise;
+
+    const viewer = document.getElementById("pdf-viewer");
+    viewer.innerHTML = "";
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const scale = window.innerWidth < 768 ? 0.9 : 1.5;
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({
+        canvasContext: context,
+        viewport
+      }).promise;
+
+      viewer.appendChild(canvas);
     }
 
-    afficherPDF();
+    hideLoading();
+
+  } catch (error) {
+    console.error("Erreur chargement PDF :", error);
+    showError("Erreur lors du chargement du document.");
+  }
+}
+
+// ⬇️ DOWNLOAD
+document.getElementById("download").addEventListener("click", async () => {
+  try {
+    const docSnap = await getDoc(doc(db, "liens_pdfs", docId));
+
+    if (!docSnap.exists()) {
+      return showError("Document introuvable.");
+    }
+
+    const base64 = docSnap.data().base64;
+
+    const link = document.createElement("a");
+    link.href = "data:application/pdf;base64," + base64;
+    link.download = nomFichier;
+    link.click();
+
+  } catch (err) {
+    console.error(err);
+    showError("Erreur téléchargement");
+  }
+});
+
+// 🎛 UI
+function showLoading() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+function hideLoading() {
+ const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+}
+
+function showError(message) {
+  document.getElementById("error-message").textContent = message;
+  document.getElementById("error-modal").style.display = "flex";
+}
+
+// 🚀 lancement
+afficherPDF();
+
   </script>
 </body>
 </html>

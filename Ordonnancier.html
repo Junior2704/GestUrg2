@@ -589,7 +589,6 @@
   0% { transform: translate(-50%, -50%) rotate(0deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
-
 /* --- Modale validation prescription --- */
 #confirmPrescriptionModal .modal-content {
   width: 90%;
@@ -599,18 +598,7 @@
   padding: 30px;
   box-sizing: border-box;
 }
-.preview-ordo {
-  background: #f8f9fa;
-  padding: 18px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  text-align: left;
-  max-height: 50vh;   /* ⬅️ beaucoup plus confortable */
-  overflow-y: auto;   /* ⬅️ ascenseur interne propre */
-  white-space: pre-wrap; /* conserve les retours à la ligne */
-  font-size: 14px;
-  line-height: 1.5;
-}
+
 		</style>
 	</head>
 	<body>
@@ -807,23 +795,7 @@ html, body {
 }
 
 
-#loadingScreen {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 99999;
-  color: white;
-  font-family: 'Inter', sans-serif;
-  transition: opacity 0.5s ease;
-}
 
-#loadingScreen.hidden {
-  opacity: 0;
-}
 
 .loader-content {
   text-align: center;
@@ -842,15 +814,23 @@ html, body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+.preview-ordo {
+  background: #f8f9fa;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+  max-height: 50vh;   /* ⬅️ beaucoup plus confortable */
+  overflow-y: auto;   /* ⬅️ ascenseur interne propre */
+  white-space: pre-wrap; /* conserve les retours à la ligne */
+  font-size: 14px;
+  line-height: 1.5;
+}
 </style>
 <div id="autocomplete-box"></div>
 
      
 
-
-
-		<!-- Formulaire du patient -->
-         
           		<h1>💊 Ordonnancier Médical</h1>
 		<button id="new-prescription-btn" onclick="resetOrdonnance()">❌ Réinitialiser</button>
 
@@ -879,7 +859,8 @@ html, body {
 				<option value="L'enfant">L'enfant</option>
 			</select>
 		</div>
-   
+    
+  
 
 
   <h2>Ordonnance</h2>
@@ -900,7 +881,9 @@ html, body {
 <button id="validate-prescription-btn" class="btn" onclick="openConfirmModal()">✔️ Valider la prescription</button>
 
   <div class="buttons-wrapper" style="display:none;">
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimer l'Ordonnance</button>
+    <button type="button" class="btn-print" onclick="imprimer()">
+                🖨️ Imprimer l'ordonnance
+            </button>
     <button class="btn-download" onclick="genererOrdo(true)">📥 Télécharger Ordonnance</button>
     <button type="button" id="btnEnvoyerMail" style="padding:10px 20px; background-color:#004AAD; color:white; border:none; border-radius:5px; cursor:pointer;">
       Envoyer l'ordonnance par e-mail
@@ -910,14 +893,7 @@ html, body {
 
 	
   
-<!-- Écran de chargement -->
-<div id="loadingScreen">
-  <div class="loader-content">
-    <div class="spinner"></div>
-    <h2>Chargement des données...</h2>
-    <p>Merci de patienter quelques instants</p>
-  </div>
-</div>
+
 <!-- Modale de sélection des e-mails -->
 <div id="emailSelectModal">
   <div class="modal-content">
@@ -954,6 +930,14 @@ html, body {
     <p>Vous n’avez pas accès à cette page.</p>
   </div>
 </div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
+  </div>
+</div>
 <!-- 🔶 MODALE DE CONFIRMATION VALIDATION -->
 <div id="confirmPrescriptionModal" class="modal" style="display:none;">
   <div class="modal-content" style="max-width:600px;">
@@ -970,8 +954,7 @@ html, body {
       font-weight:600;
       text-align:center;
       ">
-      ⚠️ Attention : valider la prescription va verrouiller la modification.
-      Ce document ne sera enregistré dans uncune fiche patient. Si vous souhaitez enregistrer le document dans la fiche patient, merci d'ouvrir la fiche patient (via les urgences ou via la base patients).
+      ⚠️ Attention : valider la prescription va verrouiller la modification et l’enregistrer définitivement dans le dossier patient.
     </div>
 
     <!-- Prévisualisation -->
@@ -991,28 +974,94 @@ html, body {
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 
-<script>
-let db;
-let patientRef; // ✅ rendu global
-let id;         // ✅ global aussi
+<script type="module">
 
-window.addEventListener("DOMContentLoaded", async () => {
-  hideLoadingModal();
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // --- Initialisation Firebase ---
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
+    projectId: "urgences-a8ed4"
   };
-  
   emailjs.init("CZapZCcxYfJ8-acLS");
   firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  
+ const id = getIdFromURL();
+  if (!id) {
+    console.error("❌ Aucun ID patient trouvé dans l’URL.");
+    afficherBulle("⚠️ Aucun dossier patient trouvé", "alerte");
+    
+  }
+
+
+const patientRef = doc(db, "patients", id);
+  console.log("📁 patientRef initialisé :", patientRef.path);
+let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    
+    return;
+  }
+afficherLoader();
+  try {
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+      return;
+    }
+
+    const data = docSnap.data();
+    const medecinNom = data.nom || "";
+    const medecinSpecialite = data.specialite || "";
+    const medecinLieu = data.lieu || "";
+
+    // variables globales
+    window.medecinNom = medecinNom;
+    window.medecinSpecialite = medecinSpecialite;
+    window.medecinLieu = medecinLieu;
+
+   
+const pages = data.pages || {};
+    const currentPath = window.location.pathname;
+const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+// Mapping pour Firestore
+const pageMapping = {
+  "Ordonnancierf": "Ordonnancier" // Ordonnancierf.html utilise les droits de Ordonnancier
+};
+
+const pageKey = pageMapping[currentPage] || currentPage;
+console.log("Page actuelle :", currentPage);
+console.log("Page Firestore :", pageKey);
+if (!pages[pageKey]) {
+  const modal = document.getElementById("modal-no-access");
+  if (modal) masquerLoader();
+   modal.style.display = "flex";
+  console.warn("Accès refusé à", currentPage);
+  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
+} else {
+  console.log("Accès autorisé à", currentPage);
+  // Ici tu peux mettre tout le code spécifique à cette page
+}
+ remplirInfosPatientDepuisFirestore();
+
+  } catch (error) {
+    console.error("Erreur chargement médecin :", error);
+    const modal = document.getElementById("modal-error");
+  if (modal) masquerLoader();
+   modal.style.display = "flex";
+  }
+});
 
   // --- Récupération de l'ID patient ---
   function getIdFromURL() {
@@ -1020,53 +1069,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     return params.get("id");
   }
 
-  id = getIdFromURL();
-  if (!id) {
-    console.error("❌ Aucun ID patient trouvé dans l’URL.");
-    afficherBulle("⚠️ Aucun dossier patient trouvé", "alerte");
-    return;
-  }
-
-  // ✅ Création de la référence Firestore globale
-  patientRef = db.collection("patients").doc(id);
-  console.log("📁 patientRef initialisé :", patientRef.path);
-
-  // --- Chargement des infos du patient ---
-  await remplirInfosPatientDepuisFirestore();
+ 
 
 
-});
+
 const envoyerMailBtn = document.getElementById("btnEnvoyerMail");
   
 
-  async function remplirInfosPatientDepuisFirestore() {
-	 afficherLoader();
-    if (!id) {
-  masquerLoader();
-  return;
-}
-
-    try {
-      const docRef = db.collection("patients").doc(id);
-      const docSnap = await docRef.get();
-      if (docSnap.exists) {
-        const data = docSnap.data();
-        document.getElementById("patient-first-name").value = data.prenom || "";
-        document.getElementById("patient-last-name").value = data.nom || "";
-        document.getElementById("patient-birthdate").value = data.dateNaissance || "";
-		
-        document.getElementById("sexe").value = data.sexe || "M";
-        const age = calculerAge(data.dateNaissance);
-        document.getElementById("patient-age").value = age;
-        updatePatientDisplay();
-        masquerLoader();
-      } else {
-        console.warn("Aucun patient trouvé avec cet ID");
-      }
-    } catch (error) {
-      console.error("Erreur de récupération du patient :", error);
-    }
-  }
 
   function calculerAge(dateNaissance) {
     const naissance = new Date(dateNaissance);
@@ -1085,7 +1094,25 @@ function filterMedicaments() {
   afficherMedicaments(filtres);
 }
 
+function imprimer() {
+    // Vérifie que l'ID du document existe
+    if (!window.pdfIdExistante) {
+        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+        return;
+    }
 
+    // Envoie le message au parent pour ouvrir un nouvel onglet
+    window.parent.postMessage(
+        {
+            type: "OPEN_TAB",
+            title: "Ordonnance médicale",
+            url: `viewer.html?docId=${window.pdfIdExistante}` // URL avec l'ID existant
+        },
+        "*"
+    );
+}
+
+window.imprimer=imprimer;
 
 		// Supprime toutes les références à la liste de médicaments et prescriptionItems
 
@@ -1129,27 +1156,38 @@ async function validatePrescription() {
 
   // 5️⃣ Enregistrement dans Firestore
   const patientId = getIdFromURL();
-  if (patientId) {
-    try {
-      const idUnique = Math.random().toString(36).substring(2, 10);
-      const dateFormatted = formatDate(new Date());
-console.log("📅 Date formatée envoyée :", dateFormatted);
 
-await db.collection("documents").doc(idUnique).set({
-  patientId: patientId,
-  dateCreation: dateFormatted,
-  type: "Ordonnance médicale",
-  contenu: prescriptionText,
-  pdfBase64: pdfBase64
-});
+if (patientId) {
+
+  try {
+
+    const idUnique = Math.random().toString(36).substring(2, 10);
+    const dateFormatted = formatDate(new Date());
+
+    console.log("📅 Date formatée envoyée :", dateFormatted);
+
+    window.pdfIdExistante = idUnique;
+
+    await setDoc(
+      doc(db, "documents", idUnique),
+      {
+        patientId: patientId,
+        dateCreation: dateFormatted,
+        type: "Ordonnance médicale",
+        contenu: prescriptionText,
+        pdfBase64: pdfBase64
+      }
+    );
+
+  } catch (err) {
+    console.error(err);
+  }
+
+}
 
       console.log("✅ Ordonnance enregistrée avec ID unique :", idUnique);
       afficherBulle("✅ Ordonnance enregistrée !", "success");
-    } catch (err) {
-      console.error("❌ Erreur enregistrement Firestore :", err);
-      afficherBulle("❌ Erreur enregistrement", "alerte");
-    }
-  }
+    
 }
 
 function formatDate(date) {
@@ -1242,7 +1280,7 @@ async function genererOrdo(telecharger = false) {
     return "";
   }
 }
-
+window.genererOrdo=genererOrdo;
 
 document.getElementById("new-prescription-btn").addEventListener("click", function () {
 	// Réinitialise tous les champs de l'ordonnance
@@ -1328,6 +1366,7 @@ function resetOrdonnance() {
     document.querySelector(".buttons-wrapper").style.display = "none";
     document.getElementById("validate-prescription-btn").disabled = false;
 }
+window.resetOrdonnance=resetOrdonnance;
 document.getElementById("patient-birthdate").addEventListener("change", function () {
 	const dateNaissance = this.value;
 	if (dateNaissance) {
@@ -1354,65 +1393,100 @@ document.getElementById("patient-birthdate").addEventListener("input", function 
     }
 });
 
-  function getIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
-  }
 
-  async function remplirInfosPatientDepuisFirestore() {
-    const id = getIdFromURL();
-    if (!id) return;
 
-    try {
-      const docRef = db.collection("patients").doc(id);
-      const docSnap = await docRef.get();
+async function remplirInfosPatientDepuisFirestore() {
+  const id = getIdFromURL();
+  if (!id) return;
 
-      if (docSnap.exists) {
-        const data = docSnap.data();
-        document.getElementById("patient-first-name").value = data.prenom || "";
-        document.getElementById("patient-last-name").value = data.nom || "";
-        document.getElementById("patient-birthdate").value = data.dateNaissance || "";
-        document.getElementById("sexe").value = data.sexe || "M";
+  try {
+    const docRef = doc(db, "patients", id);
+const docSnap = await getDoc(docRef);
 
-        calculerAge(); 
-        updatePatientDisplay(); 
-        console.warn("Aucun patient trouvé avec cet ID");
-      }
-    } catch (error) {
-      console.error("Erreur de récupération du patient :", error);
-    }
-  }
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      document.getElementById("patient-first-name").value = data.prenom || "";
+      document.getElementById("patient-last-name").value = data.nom || "";
+      document.getElementById("patient-birthdate").value = data.dateNaissance || "";
+      document.getElementById("sexe").value = data.sexe || "M";
 
-  function calculerAge() {
-    const birthdate = document.getElementById("patient-birthdate").value;
-    if (!birthdate) return;
-
-    const birth = new Date(birthdate);
-    const now = new Date();
-    let age = now.getFullYear() - birth.getFullYear();
-    const m = now.getMonth() - birth.getMonth();
-
-    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
-      age--;
+      calculerAge(); 
+      updatePatientDisplay();
+    } else {
+      console.warn("Aucun patient trouvé avec cet ID");
     }
 
-    document.getElementById("patient-age").value = age;
+  } catch (error) {
+    console.error("Erreur de récupération du patient :", error);
   }
-function afficherBulle(texte, type) {
-    let container = document.getElementById('bubble-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'bubble-container';
-      document.body.appendChild(container);
-    }
-    const bulle = document.createElement('div');
-    bulle.className = `bubble ${type}`;
-    bulle.textContent = texte;
-    container.appendChild(bulle);
-    setTimeout(() => {
-      bulle.remove();
-    }, 3000);
+}
+
+ // Conteneur global pour les bulles
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
+
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
   }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
+
   window.addEventListener("DOMContentLoaded", () => {
     remplirInfosPatientDepuisFirestore();
     document.getElementById("patient-birthdate").addEventListener("change", calculerAge);
@@ -1458,21 +1532,27 @@ function openEmailSelectModal(emailsString) {
 function closeEmailSelectModal() {
   document.getElementById("emailSelectModal").style.display = "none";
 }
-
+window.closeEmailSelectModal=closeEmailSelectModal;
 document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
   document.getElementById("otherEmailInput").disabled = !e.target.checked;
 });
 document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
+
   // pas de pdfBase64 préexistant dans cette page — on générera le PDF au moment de l'envoi
-  const doc = await patientRef.get();
-  if (!doc.exists) {
+  const docSnap = await getDoc(patientRef);
+
+  if (!docSnap.exists()) {
     afficherBulle("❌ Patient introuvable", "alerte");
     return;
   }
-  const data = doc.data();
+
+  const data = docSnap.data();
   const emails = data.email || ""; // chaîne formatée "a@x.com//b@y.fr"
+
   console.log("📧 Emails trouvés (dossier) :", emails);
+
   openEmailSelectModal(emails);
+
 });
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
@@ -1517,11 +1597,14 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     const fileName =  `Ordonnance - ${firstName} ${lastName}.pdf`;
 
     // --- 4) Enregistrement dans Firestore
-    await db.collection("liens_pdfs").doc(idUnique).set({
-      base64: pdfBase64,
-      nomFichier: fileName,
-      dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    await setDoc(
+  doc(db, "liens_pdfs", idUnique),
+  {
+    base64: pdfBase64,
+    nomFichier: fileName,
+    dateCreation: serverTimestamp()
+  }
+);
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
     console.log("✅ Lien Firestore :", lienPdf);
@@ -1649,6 +1732,7 @@ const htmlFinal = htmlMessage
 
 
 
+
 let medicaments = [];
 fetch('https://junior2704.github.io/GestUrg2/medicaments.json')
 
@@ -1721,9 +1805,8 @@ document.addEventListener("click", e => {
 });
 
 
-
 window.afficherLoader = function() {
-  let loader = document.getElementById("loadingscreen");
+  let loader = document.getElementById("loadingScreen");
   
   if (!loader) {
     loader = document.createElement("iframe");
@@ -1774,14 +1857,14 @@ function openConfirmModal() {
   // Affichage de la modale
   document.getElementById("confirmPrescriptionModal").style.display = "flex";
 }
-
+window.openConfirmModal=openConfirmModal;
 /* --------------------------------------------------
    🔶 FERMETURE
 -------------------------------------------------- */
 function closeConfirmModal() {
   document.getElementById("confirmPrescriptionModal").style.display = "none";
 }
-
+window.closeConfirmModal=closeConfirmModal;
 /* --------------------------------------------------
    🔶 VALIDATION RÉELLE (déclenche l’ancienne fonction)
 -------------------------------------------------- */
@@ -1789,84 +1872,9 @@ function confirmValidation() {
   closeConfirmModal();
   validatePrescription(); // 🔥 Appelle TA vraie fonction déjà en place
 }
+window.confirmValidation=confirmValidation;
 
 
-	</script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "accueil.html";
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "medecins", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-      window.location.href = "accueil.html";
-      return;
-    }
-
-    const data = docSnap.data();
-    const medecinNom = data.nom || "";
-    const medecinSpecialite = data.specialite || "";
-    const medecinLieu = data.lieu || "";
-
-    // variables globales
-    window.medecinNom = medecinNom;
-    window.medecinSpecialite = medecinSpecialite;
-    window.medecinLieu = medecinLieu;
-
-   
-const pages = data.pages || {};
-    const currentPath = window.location.pathname;
-const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-// Mapping pour Firestore
-const pageMapping = {
-  "Ordonnancierf": "Ordonnancier" // Ordonnancierf.html utilise les droits de Ordonnancier
-};
-
-const pageKey = pageMapping[currentPage] || currentPage;
-console.log("Page actuelle :", currentPage);
-console.log("Page Firestore :", pageKey);
-if (!pages[pageKey]) {
-  const modal = document.getElementById("modal-no-access");
-  if (modal) modal.style.display = "flex";
-  console.warn("Accès refusé à", currentPage);
-  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
-} else {
-  console.log("Accès autorisé à", currentPage);
-  // Ici tu peux mettre tout le code spécifique à cette page
-}
-
-  } catch (error) {
-    console.error("Erreur chargement médecin :", error);
-    alert("Une erreur est survenue, veuillez réessayer plus tard.");
-  }
-});
-</script>
-<script>
 (function(){ 
     var properties = [
         'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
@@ -1912,32 +1920,6 @@ if (!pages[pageKey]) {
 
     window.getCaretCoordinates = getCaretCoordinates;
 })();
-let appLocked = false;
-
-window.addEventListener("message", (event) => {
-
-  if (!event.data) return;
-
-  if (event.data.type === "APP_LOCK") {
-    appLocked = true;
-
-    // Stopper timers éventuels si besoin
-    document.body.style.filter = "grayscale(0.8)";
-  }
-
-  if (event.data.type === "APP_UNLOCK") {
-    appLocked = false;
-    document.body.style.filter = "none";
-  }
-});
-
-// Exemple protection bouton
-document.addEventListener("click", function(e){
-  if(appLocked){
-    e.stopPropagation();
-    e.preventDefault();
-  }
-}, true);
 </script>
 
 

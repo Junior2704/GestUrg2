@@ -665,7 +665,7 @@ window.saveModeSysteme = async function () {
   try {
     const mode = modeSelect.value;
 
-    await setDoc(doc(db, "referenteils", "fonctionnement"), {
+    await setDoc(doc(db, "referentiels", "fonctionnement"), {
       mode: mode
     }, { merge: true });
 
@@ -683,9 +683,9 @@ window.saveModeSysteme = async function () {
 async function saveToFirestore() {
   try {
 
-    await setDoc(doc(db, "referenteils", "actes"), { liste: actes });
-    await setDoc(doc(db, "referenteils", "personnel"), { liste: personnel });
-    await setDoc(doc(db, "referenteils", "spécialités"), { spécialités });
+    await setDoc(doc(db, "referentiels", "actes"), { liste: actes });
+    await setDoc(doc(db, "referentiels", "personnel"), { liste: personnel });
+    await setDoc(doc(db, "referentiels", "spécialités"), { spécialités });
 
 
     afficherBulle("✅ Données enregistrées avec succès", "administratif");
@@ -700,15 +700,15 @@ let bureauGeneralActive = false;
 async function loadData() {
   
 
-  const actesSnap = await getDoc(doc(db, "referenteils", "actes"));
+  const actesSnap = await getDoc(doc(db, "referentiels", "actes"));
   actes = actesSnap.exists() ? actesSnap.data().liste || [] : [];
   renderList("actes", actes);
 
-  const persSnap = await getDoc(doc(db, "referenteils", "personnel"));
+  const persSnap = await getDoc(doc(db, "referentiels", "personnel"));
   personnel = persSnap.exists() ? persSnap.data().liste || [] : [];
   renderList("personnel", personnel);
   
-  const spécialitésSnap = await getDoc(doc(db, "referenteils", "spécialités"));
+  const spécialitésSnap = await getDoc(doc(db, "referentiels", "spécialités"));
 spécialités = spécialitésSnap.exists() ? spécialitésSnap.data().spécialités || [] : [];
   renderList("spécialités", spécialités);
 }
@@ -777,7 +777,7 @@ let facturables = {}; // objet { nom: prix }
 
 async function loadFacturables() {
   try {
-    const snap = await getDoc(doc(db, "referenteils", "Facturables"));
+    const snap = await getDoc(doc(db, "referentiels", "Facturables"));
     facturables = snap.exists() ? snap.data() : {};
     renderFacturables();
   } catch (err) {
@@ -841,7 +841,7 @@ window.deleteFacturable = async (nom) => {
 
 async function saveFacturables() {
   try {
-    await setDoc(doc(db, "referenteils", "Facturables"), facturables);
+    await setDoc(doc(db, "referentiels", "Facturables"), facturables);
     afficherBulle("✅ Facturables enregistrés", "administratif");
   } catch (err) {
     console.error("Erreur enregistrement facturables :", err);
@@ -858,7 +858,7 @@ let editingBureau = null;
 
 // 🔹 Charger l'état général et les bureaux
 async function loadBureaux() {
-  const ref = doc(db, "referenteils", "bureau");
+  const ref = doc(db, "referentiels", "bureau");
   const snap = await getDoc(ref);
 
   if (snap.exists()) {
@@ -936,7 +936,7 @@ window.deleteBureau = async (name) => {
 // --- Sauvegarde Firestore ---
 async function saveBureaux() {
   try {
-    await setDoc(doc(db, "referenteils", "bureau"), {
+    await setDoc(doc(db, "referentiels", "bureau"), {
       ...bureaux,
       general: { active: bureauGeneralActive }
     });
@@ -1123,7 +1123,7 @@ let editingIndex = null;
 
 async function loadMessagesAccueil() {
   try {
-    const snap = await getDoc(doc(db, "referenteils", "messages_accueil"));
+    const snap = await getDoc(doc(db, "referentiels", "messages_accueil"));
     messagesAccueil = snap.exists() ? snap.data().liste || [] : [];
     renderMessagesAccueil();
   } catch (err) {
@@ -1208,7 +1208,7 @@ window.deleteMessage = async (index) => {
 // --- Sauvegarde Firestore ---
 async function saveMessagesAccueil() {
   try {
-    await setDoc(doc(db, "referenteils", "messages_accueil"), { liste: messagesAccueil });
+    await setDoc(doc(db, "referentiels", "messages_accueil"), { liste: messagesAccueil });
     afficherBulle("✅ Messages d’accueil enregistrés", "administratif");
   } catch (err) {
     console.error("Erreur enregistrement messages :", err);

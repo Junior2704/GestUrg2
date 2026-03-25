@@ -3059,7 +3059,7 @@ let moyensListe = [];
 // 🔹 Chargement Firestore (API globale)
 async function chargerMoyens() {
   const snap = await db
-    .collection("referenteils")
+    .collection("referentiels")
     .doc("moyens")
     .get();
 
@@ -3136,7 +3136,7 @@ function rafraichirChampsSortie() {
     select.id = "champServiceHospitalisation";
 
     // Récupération dynamique depuis Firestore
-    db.collection("referenteils").doc("spécialités").get().then(doc => {
+    db.collection("referentiels").doc("spécialités").get().then(doc => {
       const data = doc.data();
       (data?.spécialités || []).forEach(service => {
         const option = document.createElement("option");
@@ -3287,7 +3287,7 @@ inputActe.addEventListener("input", async (e) => {
 
   try {
     // 🔹 Récupère la liste des actes depuis Firestore
-    const doc = await db.collection("referenteils").doc("actes").get();
+    const doc = await db.collection("referentiels").doc("actes").get();
     const data = doc.data();
     const actes = data?.liste || [];
 
@@ -3793,7 +3793,7 @@ let tousLesActesDispos = [];
 
 async function chargerEtInitialiserRechercheActe() {
   try {
-    const doc = await db.collection("referenteils").doc("actes").get();
+    const doc = await db.collection("referentiels").doc("actes").get();
     const data = doc.data();
     tousLesActesDispos = Array.isArray(data?.liste) ? data.liste : [];
   } catch (e) {
@@ -3863,7 +3863,7 @@ function mettreAJourListeActes(filtre) {
 
 async function chargerRealisateurs() {
   const select = document.getElementById("selectRealisateur");
-  const doc = await db.collection("referenteils").doc("personnel").get();
+  const doc = await db.collection("referentiels").doc("personnel").get();
   const data = doc.data();
 
   select.innerHTML = "";
@@ -4005,7 +4005,7 @@ document.getElementById("btnEnregistrerActe").addEventListener("click", async ()
 async function chargerServices() {
   try {
     // 🔹 Charger les services depuis le référentiel
-    const doc = await db.collection("referenteils").doc("spécialités").get();
+    const doc = await db.collection("referentiels").doc("spécialités").get();
     const data = doc.data();
     const services = data?.spécialités || [];
 
@@ -4261,7 +4261,7 @@ async function chargerRealisateurs() {
   const select = document.getElementById("selectRealisateur");
   select.innerHTML = "<option>⏳Chargement...</option>";
   try {
-    const snapshot = await db.collection("referenteils").doc("réalisateurs").get();
+    const snapshot = await db.collection("referentiels").doc("réalisateurs").get();
     const data = snapshot.data();
     select.innerHTML = "";
     (data?.liste || []).forEach(realisateur => {
@@ -4558,8 +4558,8 @@ async function chargerRealisateurs() {
   select.innerHTML = "<option>⏳ Chargement...</option>";
 
   try {
-    // On suppose que tu stockes les réalisateurs dans "referenteils/realisateurs"
-    const doc = await db.collection("referenteils").doc("personnel").get();
+    // On suppose que tu stockes les réalisateurs dans "referentiels/realisateurs"
+    const doc = await db.collection("referentiels").doc("personnel").get();
     const data = doc.data();
     const liste = data?.liste || [];
 

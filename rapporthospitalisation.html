@@ -710,16 +710,7 @@ async function enregistrerDansFirestore() {
 }
 
 
-function addConstantesTableBlock(titre, meta, rows) {
-  addBlock(titre, ""); // titre
 
-  rows.forEach(r => {
-    addBlock(
-      `${r.date || ""} ${r.heure || ""}`,
-      `T° ${r.temperature || "-"} | FC ${r.fc || "-"} | TA ${r.ta || "-"} | Sat ${r.saturation || "-"}`
-    );
-  });
-}
 function addBlock(titre, contenu) {
           doc.setFontSize(14);
           doc.setTextColor("#1a73e8");
@@ -823,7 +814,16 @@ async function creerPDF(telecharger = false) {
           doc.line(marginLeft, y, 195, y);
           y += 10;
         }
+function addConstantesTableBlock(titre, meta, rows) {
+  addBlock(titre, ""); // titre
 
+  rows.forEach(r => {
+    addBlock(
+      `${r.date || ""} ${r.heure || ""}`,
+      `T° ${r.temperature || "-"} | FC ${r.fc || "-"} | TA ${r.ta || "-"} | Sat ${r.saturation || "-"}`
+    );
+  });
+}
         // 🔹 Ajouter les blocs depuis le formulaire
         addBlock("Identité du patient", document.getElementById("identite")?.value?.trim());
         addBlock("Hospitalisation", document.getElementById("hospitalisation")?.value?.trim());

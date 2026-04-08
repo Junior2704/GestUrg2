@@ -201,7 +201,7 @@
           <button class="btn btn-primary" id="btnSaveAnthro">💾 Enregistrer</button>
         </div>
       </div>
-      <div class="anthro-note" id="anthroNote">Ces valeurs sont verrouillées après enregistrement pour cette hospitalisation.</div>
+      <div class="anthro-note" id="anthroNote">Ces valeurs peuvent être modifiées via le bouton « Modifier » après un premier enregistrement.</div>
     </div>
     <div class="table-wrap">
       <table>
@@ -300,6 +300,7 @@
     let selectedLineId = null;
     let editingLineId = null;
     let anthropometrieVerrouillee = false;
+    let anthropometrieExiste = false;
 
     function nowDateAndTime() {
       const now = new Date();
@@ -344,12 +345,20 @@
 
       poidsInput.disabled = isLocked;
       tailleInput.disabled = isLocked;
-      btn.disabled = isLocked;
-      btn.classList.toggle("btn-muted", isLocked);
-      btn.classList.toggle("btn-primary", !isLocked);
-      note.textContent = isLocked
-        ? "✅ Poids/taille déjà enregistrés pour cette hospitalisation (modification verrouillée)."
-        : "Ces valeurs sont verrouillées après enregistrement pour cette hospitalisation.";
+      btn.disabled = false;
+      btn.classList.remove("btn-muted", "btn-primary");
+
+      if (isLocked) {
+        btn.textContent = "✏️ Modifier";
+        btn.classList.add("btn-muted");
+        note.textContent = "✅ Poids/taille enregistrés. Cliquez sur « Modifier » pour corriger.";
+      } else {
+        btn.textContent = anthropometrieExiste ? "💾 Mettre à jour" : "💾 Enregistrer";
+        btn.classList.add("btn-primary");
+        note.textContent = anthropometrieExiste
+          ? "Mode édition actif : vous pouvez corriger puis sauvegarder."
+          : "Saisissez le poids et la taille puis enregistrez.";
+      }
     }
 
     function getFormValues() {
@@ -500,11 +509,13 @@
       const hospi = hospiSnap.data();
       constantesReleves = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
       if (hospi.anthropometrie && typeof hospi.anthropometrie === "object") {
+        anthropometrieExiste = true;
         document.getElementById("poidsHosp").value = hospi.anthropometrie.poids ?? "";
         document.getElementById("tailleHosp").value = hospi.anthropometrie.taille ?? "";
         document.getElementById("imcHosp").value = hospi.anthropometrie.imc ?? "";
         setAnthroLockState(true);
       } else {
+        anthropometrieExiste = false;
         setAnthroLockState(false);
       }
       statusEl.textContent = `Hospitalisation active: ${hospitalisationId}`;
@@ -529,7 +540,7 @@
           return;
         }
         if (anthropometrieVerrouillee) {
-          alert("Poids/taille déjà enregistrés pour cette hospitalisation.");
+          setAnthroLockState(false);
           return;
         }
 
@@ -554,6 +565,7 @@
           updatedAt: serverTimestamp()
         });
 
+        anthropometrieExiste = true;
         setAnthroLockState(true);
       } catch (err) {
         console.error(err);

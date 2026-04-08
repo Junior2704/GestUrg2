@@ -720,7 +720,31 @@ function addConstantesTableBlock(titre, meta, rows) {
     );
   });
 }
+function addBlock(titre, contenu) {
+          doc.setFontSize(14);
+          doc.setTextColor("#1a73e8");
+          doc.text(titre, marginLeft, y);
+          y += lineHeight;
 
+          doc.setFontSize(11);
+          doc.setTextColor("#000000");
+
+          const splitText = doc.splitTextToSize(contenu || "—", 180);
+          for (let i = 0; i < splitText.length; i++) {
+            if (y > pageHeight - 20) {
+              doc.addPage();
+              y = 15;
+            }
+            doc.text(splitText[i], marginLeft, y);
+            y += lineHeight;
+          }
+
+          y += lineHeight;
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.6);
+          doc.line(marginLeft, y, 195, y);
+          y += 10;
+        }
 // Rendre les champs readonly et adapter style
 function setRapportValide(val) {
   rapportValide = val;

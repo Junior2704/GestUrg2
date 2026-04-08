@@ -941,6 +941,12 @@ body, #mainContent {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+.resultat-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  user-select: none; /* empêche la sélection du texte */
+}
 </style>
 
 <script type="module">
@@ -1600,25 +1606,25 @@ recherchePatient.addEventListener("input", async (e) => {
     return;
   }
 
-  results.forEach(patient => {
-    const div = document.createElement("div");
-    div.className = "resultat-item";
-    div.textContent = `${patient.nom} ${patient.prenom} (${patient.dateNaissance})`;
+results.forEach(patient => {
+  const div = document.createElement("div");
+  div.className = "resultat-item";
+  div.textContent = `${patient.nom} ${patient.prenom} (${patient.dateNaissance})`;
 
-    div.addEventListener("dblclick", () => {
-div.ondblclick = () => {
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: `Fiche Urgences ${patient.nom} ${patient.prenom}`,
-      url: `fiche.html?id=${patient.id}&from=urgences`
-    },
-    "*"
-  );
-};    });
-
-    resultatsRecherchePrincipale.appendChild(div);
+  // Ajouter le double-clic directement au div
+  div.addEventListener("dblclick", () => {
+    window.parent.postMessage(
+      {
+        type: "OPEN_TAB",
+        title: `Fiche Urgences ${patient.nom} ${patient.prenom}`,
+        url: `fiche.html?id=${patient.id}&from=urgences`
+      },
+      "*"
+    );
   });
+
+  resultatsRecherchePrincipale.appendChild(div);
+});
 
   resultatsRecherchePrincipale.classList.remove("hidden");
 });

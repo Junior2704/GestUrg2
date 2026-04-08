@@ -1799,13 +1799,11 @@ nav:hover .nav-item span {
 
 
 <section id="panel-constantes" class="panel" style="display:none;">
-  
-    <h3>🩺 Constantes</h3>
- <iframe
-  id="constantesFrame"
-  style="width:100%; border:none; border-radius:10px; overflow:hidden;">
-</iframe>
-  
+  <h3>🩺 Constantes</h3>
+  <iframe
+    id="constantesFrame"
+    style="width:100%; border:none; border-radius:10px; overflow:hidden;">
+  </iframe>
 </section>
 
 
@@ -4802,17 +4800,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const iframeconstantes = document.getElementById("constantesFrame");
         iframeconstantes.src = "constantes.html?id=" + patientId;
     });
-    const iframeconstantes = document.getElementById("constantesFrame");
-iframeconstantes.addEventListener('load', () => {
-  const doc = iframeconstantes.contentDocument || iframeconstantes.contentWindow.document;
-  const contentHeight = doc.body.scrollHeight;
-
-  // Hauteur max qu'on veut, ex: 80vh
-  const maxHeight = window.innerHeight * 0.8;
-
-  iframeconstantes.style.height = Math.min(contentHeight, maxHeight) + 'px';
+    
 });
-  });   
+   function resizeIframe() {
+  const iframe = document.getElementById('constantesFrame');
+  const headerHeight = document.querySelector('header').offsetHeight || 0; // hauteur du header
+  const h3Height = document.querySelector('#panel-constantes h3').offsetHeight || 0; // hauteur du titre
+  const padding = 20; // marge si nécessaire
+
+  const availableHeight = window.innerHeight - headerHeight - h3Height - padding;
+  iframe.style.height = availableHeight + 'px';
+}
+
+// Au chargement
+window.addEventListener('load', resizeIframe);
+// Au redimensionnement de la fenêtre
+window.addEventListener('resize', resizeIframe); 
 
 document.addEventListener("DOMContentLoaded", () => {
   const panelDocs = document.getElementById("panel-documents");

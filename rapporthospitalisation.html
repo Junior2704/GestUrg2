@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-storage-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <link rel="icon" type="image/jpeg" href="logog.png">
   <style>
     /* --- MODALE D'ENVOI EMAIL --- */
@@ -789,31 +790,53 @@ async function creerPDF(telecharger = false) {
           doc.line(marginLeft, y, 195, y);
           y += 10;
         }
-function addConstantesTableBlock(titre, meta, rows) {
-  addBlock(titre, meta || ""); 
+function addConstantesTableBlock(titre, rows) {
+  doc.setFontSize(14);
+  doc.setTextColor("#1a73e8");
+  doc.text(titre, marginLeft, y);
+  y += 8;
 
   if (!rows.length) {
-    addBlock("", "Aucune constante enregistrée.");
+    doc.setFontSize(11);
+    doc.setTextColor("#000");
+    doc.text("Aucune constante enregistrée.", marginLeft, y);
+    y += 10;
     return;
   }
 
-  rows.forEach(r => {
-    const ligne = `
-Date: ${r.date || "-"} ${r.heure || "-"}
-Temp: ${r.temperature || "-"} | FC: ${r.fc || "-"} | TA: ${r.ta || "-"}
-Sat: ${r.saturation || "-"} | FR: ${r.fr || "-"} | Douleur: ${r.douleur || "-"}
-GCS: ${r.glasgowTotal || "-"}
-Obs: ${r.observation || "-"}
-    `;
-    addBlock("", ligne.trim());
+  const tableData = rows.map(r => [
+    r.date || "-",
+    r.heure || "-",
+    r.temperature || "-",
+    r.fc || "-",
+    r.ta || "-",
+    r.saturation || "-",
+    r.fr || "-",
+    r.douleur || "-",
+    r.glasgowTotal || "-",
+    r.observation || "-"
+  ]);
+
+  doc.autoTable({
+    startY: y,
+    head: [[
+      "Date", "Heure", "Temp", "FC", "TA",
+      "Sat", "FR", "Douleur", "GCS", "Obs"
+    ]],
+    body: tableData,
+    theme: "grid",
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [26, 115, 232] }
   });
+
+  y = doc.lastAutoTable.finalY + 10;
 }
         // 🔹 Ajouter les blocs depuis le formulaire
         addBlock("Identité du patient", document.getElementById("identite")?.value?.trim());
         addBlock("Hospitalisation", document.getElementById("hospitalisation")?.value?.trim());
         addBlock("Dossier Médical", document.getElementById("medical")?.value?.trim());
         addBlock("Évolution aux urgences", document.getElementById("evolution")?.value?.trim());
-addConstantesTableBlock("Constantes Vitales", constantesMetaForPdf, constantesRowsForPdf);
+addConstantesTableBlock("Constantes Vitales", constantesRowsForPdf);
         addBlock("Examens Complémentaires", document.getElementById("examens")?.value?.trim());
         addBlock("Actes réalisés", document.getElementById("actes")?.value?.trim());
         addBlock("Médicaments administrés aux urgences",document.getElementById("medicaments")?.value?.trim());

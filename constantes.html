@@ -147,24 +147,62 @@
       border-bottom: 1px solid var(--border);
       color: var(--muted);
     }
+    .anthro-box {
+      margin: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #f9fafb;
+    }
+    .anthro-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    .anthro-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
     @media (max-width: 900px) {
       .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .anthro-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-        <div class="form-group hidden-field">
       <div>
         <h2 style="margin:0;">🩺 Relevé des constantes</h2>
         <div class="subtitle" id="patientInfo">Chargement...</div>
       </div>
-      </div>
       <button class="btn btn-primary" id="btnAdd">➕ Ajouter une ligne</button>
     </div>
     <div class="status" id="status">Initialisation...</div>
+    <div class="anthro-box">
+      <h3 style="margin:0 0 8px 0;">📏 Poids / Taille (saisie unique par hospitalisation)</h3>
+      <div class="anthro-grid">
+        <div class="field">
+          <label for="poidsHosp">Poids (kg)</label>
+          <input type="number" step="0.1" id="poidsHosp" />
+        </div>
+        <div class="field">
+          <label for="tailleHosp">Taille (cm)</label>
+          <input type="number" step="1" id="tailleHosp" />
+        </div>
+        <div class="field">
+          <label for="imcHosp">IMC</label>
+          <input type="text" id="imcHosp" readonly />
+        </div>
+        <div class="field">
+          <button class="btn btn-primary" id="btnSaveAnthro">💾 Enregistrer</button>
+        </div>
+      </div>
+      <div class="anthro-note" id="anthroNote">Ces valeurs sont verrouillées après enregistrement pour cette hospitalisation.</div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -261,6 +299,7 @@
     let constantesReleves = [];
     let selectedLineId = null;
     let editingLineId = null;
+    let anthropometrieVerrouillee = false;
 
     function nowDateAndTime() {
       const now = new Date();
@@ -282,6 +321,35 @@
       const m = Number(document.getElementById("glasgowMoteur").value || 0);
       const total = y + v + m;
       document.getElementById("glasgowTotal").value = total > 0 ? String(total) : "";
+    }
+
+    function calcImc() {
+      const poids = Number(document.getElementById("poidsHosp").value || 0);
+      const tailleCm = Number(document.getElementById("tailleHosp").value || 0);
+      if (!poids || !tailleCm) {
+        document.getElementById("imcHosp").value = "";
+        return;
+      }
+      const tailleM = tailleCm / 100;
+      const imc = poids / (tailleM * tailleM);
+      document.getElementById("imcHosp").value = Number.isFinite(imc) ? imc.toFixed(1) : "";
+    }
+
+    function setAnthroLockState(isLocked) {
+      anthropometrieVerrouillee = isLocked;
+      const poidsInput = document.getElementById("poidsHosp");
+      const tailleInput = document.getElementById("tailleHosp");
+      const btn = document.getElementById("btnSaveAnthro");
+      const note = document.getElementById("anthroNote");
+
+      poidsInput.disabled = isLocked;
+      tailleInput.disabled = isLocked;
+      btn.disabled = isLocked;
+      btn.classList.toggle("btn-muted", isLocked);
+      btn.classList.toggle("btn-primary", !isLocked);
+      note.textContent = isLocked
+        ? "✅ Poids/taille déjà enregistrés pour cette hospitalisation (modification verrouillée)."
+        : "Ces valeurs sont verrouillées après enregistrement pour cette hospitalisation.";
     }
 
     function getFormValues() {
@@ -431,6 +499,14 @@
 
       const hospi = hospiSnap.data();
       constantesReleves = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
+      if (hospi.anthropometrie && typeof hospi.anthropometrie === "object") {
+        document.getElementById("poidsHosp").value = hospi.anthropometrie.poids ?? "";
+        document.getElementById("tailleHosp").value = hospi.anthropometrie.taille ?? "";
+        document.getElementById("imcHosp").value = hospi.anthropometrie.imc ?? "";
+        setAnthroLockState(true);
+      } else {
+        setAnthroLockState(false);
+      }
       statusEl.textContent = `Hospitalisation active: ${hospitalisationId}`;
       renderTable();
     }
@@ -441,6 +517,48 @@
 
     ["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => {
       document.getElementById(id).addEventListener("input", calcGlasgowTotal);
+    });
+    ["poidsHosp", "tailleHosp"].forEach(id => {
+      document.getElementById(id).addEventListener("input", calcImc);
+    });
+
+    document.getElementById("btnSaveAnthro").addEventListener("click", async () => {
+      try {
+        if (!hospitalisationId) {
+          alert("Aucune hospitalisation active.");
+          return;
+        }
+        if (anthropometrieVerrouillee) {
+          alert("Poids/taille déjà enregistrés pour cette hospitalisation.");
+          return;
+        }
+
+        const poids = Number(document.getElementById("poidsHosp").value || 0);
+        const taille = Number(document.getElementById("tailleHosp").value || 0);
+        calcImc();
+        const imc = Number(document.getElementById("imcHosp").value || 0);
+
+        if (!poids || !taille || !imc) {
+          alert("Veuillez saisir un poids et une taille valides.");
+          return;
+        }
+
+        const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+        await updateDoc(hospiRef, {
+          anthropometrie: {
+            poids,
+            taille,
+            imc,
+            dateEnregistrement: new Date().toISOString()
+          },
+          updatedAt: serverTimestamp()
+        });
+
+        setAnthroLockState(true);
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'enregistrement poids/taille.");
+      }
     });
 
     document.getElementById("btnSaveForm").addEventListener("click", async () => {

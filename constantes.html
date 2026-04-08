@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Constantes patient</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --txt: #1f2937;
+      --muted: #6b7280;
+      --primary: #1d4ed8;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      padding: 20px;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .header {
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-muted { background: #f3f4f6; color: #111827; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1200px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f9fafb;
+      z-index: 1;
+      white-space: nowrap;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 10px;
+      font-size: 14px;
+    }
+    tbody tr:hover {
+      background: #eff6ff;
+      cursor: context-menu;
+    }
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal {
+      width: min(880px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 13px; color: var(--muted); }
+    input {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 9px;
+      font-size: 14px;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    #contextMenu {
+      position: fixed;
+      z-index: 120;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+      display: none;
+      overflow: hidden;
+      min-width: 180px;
+    }
+    #contextMenu button {
+      width: 100%;
+      border: none;
+      background: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    #contextMenu button:hover { background: #f3f4f6; }
+    #contextMenu .danger { color: var(--danger); }
+
+    .status {
+      padding: 10px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h2 style="margin:0;">🩺 Relevé des constantes</h2>
+        <div class="subtitle" id="patientInfo">Chargement...</div>
+      </div>
+      <button class="btn btn-primary" id="btnAdd">➕ Ajouter une ligne</button>
+    </div>
+    <div class="status" id="status">Initialisation...</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Heure</th>
+            <th>Temp (°C)</th>
+            <th>FC</th>
+            <th>TA</th>
+            <th>Sat (%)</th>
+            <th>FR</th>
+            <th>Douleur/10</th>
+            <th>GCS Yeux</th>
+            <th>GCS Verbal</th>
+            <th>GCS Moteur</th>
+            <th>GCS Total</th>
+            <th>Observations</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyConstantes"></tbody>
+      </table>
+      <div id="emptyState" class="empty" style="display:none;">Aucune constante enregistrée.</div>
+    </div>
+  </div>
+
+  <div id="modalFormBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="modalTitle">Nouvelle ligne de constantes</h3>
+      <div class="grid">
+        <div class="field"><label for="date">Date</label><input type="date" id="date" /></div>
+        <div class="field"><label for="heure">Heure</label><input type="time" id="heure" /></div>
+        <div class="field"><label for="temperature">Température (°C)</label><input type="number" step="0.1" id="temperature" /></div>
+        <div class="field"><label for="fc">FC</label><input type="number" id="fc" /></div>
+        <div class="field"><label for="ta">TA</label><input type="text" id="ta" placeholder="ex: 120/70" /></div>
+        <div class="field"><label for="saturation">Saturation (%)</label><input type="number" id="saturation" min="0" max="100" /></div>
+        <div class="field"><label for="fr">FR</label><input type="number" id="fr" /></div>
+        <div class="field"><label for="douleur">Douleur /10</label><input type="number" id="douleur" min="0" max="10" /></div>
+        <div class="field"><label for="glasgowYeux">GCS Yeux</label><input type="number" id="glasgowYeux" min="1" max="4" /></div>
+        <div class="field"><label for="glasgowVerbal">GCS Verbal</label><input type="number" id="glasgowVerbal" min="1" max="5" /></div>
+        <div class="field"><label for="glasgowMoteur">GCS Moteur</label><input type="number" id="glasgowMoteur" min="1" max="6" /></div>
+        <div class="field"><label for="glasgowTotal">GCS Total</label><input type="number" id="glasgowTotal" readonly /></div>
+      </div>
+      <div class="field" style="margin-top:10px;"><label for="observation">Observations</label><input type="text" id="observation" placeholder="Optionnel" /></div>
+      <div class="modal-actions">
+        <button class="btn btn-muted" id="btnCancelForm">Annuler</button>
+        <button class="btn btn-primary" id="btnSaveForm">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalDeleteBackdrop" class="modal-backdrop">
+    <div class="modal" style="max-width:460px;">
+      <h3>Confirmer la suppression</h3>
+      <p>Voulez-vous supprimer cette ligne de constantes ?</p>
+      <div class="modal-actions">
+        <button class="btn btn-muted" id="btnCancelDelete">Annuler</button>
+        <button class="btn btn-danger" id="btnConfirmDelete">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="contextMenu">
+    <button id="ctxEdit">✏️ Modifier</button>
+    <button id="ctxDelete" class="danger">🗑️ Supprimer</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+      authDomain: "urgences-a8ed4.firebaseapp.com",
+      projectId: "urgences-a8ed4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const qs = new URLSearchParams(window.location.search);
+    const patientId = qs.get("id");
+
+    const statusEl = document.getElementById("status");
+    const patientInfoEl = document.getElementById("patientInfo");
+    const tbody = document.getElementById("tbodyConstantes");
+    const emptyState = document.getElementById("emptyState");
+    const contextMenu = document.getElementById("contextMenu");
+
+    const modalFormBackdrop = document.getElementById("modalFormBackdrop");
+    const modalDeleteBackdrop = document.getElementById("modalDeleteBackdrop");
+    const modalTitle = document.getElementById("modalTitle");
+
+    let hospitalisationId = null;
+    let constantesReleves = [];
+    let selectedLineId = null;
+    let editingLineId = null;
+
+    function nowDateAndTime() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mi = String(now.getMinutes()).padStart(2, "0");
+      return { date: `${yyyy}-${mm}-${dd}`, heure: `${hh}:${mi}` };
+    }
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => `${b.date || ""} ${b.heure || ""}`.localeCompare(`${a.date || ""} ${a.heure || ""}`));
+    }
+
+    function calcGlasgowTotal() {
+      const y = Number(document.getElementById("glasgowYeux").value || 0);
+      const v = Number(document.getElementById("glasgowVerbal").value || 0);
+      const m = Number(document.getElementById("glasgowMoteur").value || 0);
+      const total = y + v + m;
+      document.getElementById("glasgowTotal").value = total > 0 ? String(total) : "";
+    }
+
+    function getFormValues() {
+      return {
+        date: document.getElementById("date").value,
+        heure: document.getElementById("heure").value,
+        temperature: document.getElementById("temperature").value || "",
+        fc: document.getElementById("fc").value || "",
+        ta: document.getElementById("ta").value.trim(),
+        saturation: document.getElementById("saturation").value || "",
+        fr: document.getElementById("fr").value || "",
+        douleur: document.getElementById("douleur").value || "",
+        glasgowYeux: document.getElementById("glasgowYeux").value || "",
+        glasgowVerbal: document.getElementById("glasgowVerbal").value || "",
+        glasgowMoteur: document.getElementById("glasgowMoteur").value || "",
+        glasgowTotal: document.getElementById("glasgowTotal").value || "",
+        observation: document.getElementById("observation").value.trim()
+      };
+    }
+
+    function fillForm(row = null) {
+      const initial = row || { ...nowDateAndTime() };
+      document.getElementById("date").value = initial.date || "";
+      document.getElementById("heure").value = initial.heure || "";
+      document.getElementById("temperature").value = initial.temperature || "";
+      document.getElementById("fc").value = initial.fc || "";
+      document.getElementById("ta").value = initial.ta || "";
+      document.getElementById("saturation").value = initial.saturation || "";
+      document.getElementById("fr").value = initial.fr || "";
+      document.getElementById("douleur").value = initial.douleur || "";
+      document.getElementById("glasgowYeux").value = initial.glasgowYeux || "";
+      document.getElementById("glasgowVerbal").value = initial.glasgowVerbal || "";
+      document.getElementById("glasgowMoteur").value = initial.glasgowMoteur || "";
+      document.getElementById("glasgowTotal").value = initial.glasgowTotal || "";
+      document.getElementById("observation").value = initial.observation || "";
+      calcGlasgowTotal();
+    }
+
+    function openFormModal(editId = null) {
+      editingLineId = editId;
+      const row = editId ? constantesReleves.find(x => x.id === editId) : null;
+      modalTitle.textContent = editId ? "Modifier une ligne de constantes" : "Nouvelle ligne de constantes";
+      fillForm(row);
+      modalFormBackdrop.style.display = "flex";
+    }
+
+    function closeFormModal() {
+      modalFormBackdrop.style.display = "none";
+      editingLineId = null;
+    }
+
+    function openDeleteModal(lineId) {
+      selectedLineId = lineId;
+      modalDeleteBackdrop.style.display = "flex";
+    }
+
+    function closeDeleteModal() {
+      modalDeleteBackdrop.style.display = "none";
+      selectedLineId = null;
+    }
+
+    function renderTable() {
+      tbody.innerHTML = "";
+      const sorted = sortRows(constantesReleves);
+
+      if (!sorted.length) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      sorted.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = row.id;
+        tr.innerHTML = `
+          <td>${row.date || ""}</td>
+          <td>${row.heure || ""}</td>
+          <td>${row.temperature || ""}</td>
+          <td>${row.fc || ""}</td>
+          <td>${row.ta || ""}</td>
+          <td>${row.saturation || ""}</td>
+          <td>${row.fr || ""}</td>
+          <td>${row.douleur || ""}</td>
+          <td>${row.glasgowYeux || ""}</td>
+          <td>${row.glasgowVerbal || ""}</td>
+          <td>${row.glasgowMoteur || ""}</td>
+          <td>${row.glasgowTotal || ""}</td>
+          <td>${row.observation || ""}</td>
+        `;
+
+        tr.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          selectedLineId = row.id;
+          contextMenu.style.display = "block";
+          contextMenu.style.left = `${e.clientX}px`;
+          contextMenu.style.top = `${e.clientY}px`;
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function persistRows() {
+      if (!hospitalisationId) return;
+      const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+      await updateDoc(hospiRef, {
+        constantesReleves,
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    async function loadData() {
+      if (!patientId) {
+        statusEl.textContent = "❌ Paramètre manquant : ?id=<patientId>";
+        return;
+      }
+
+      statusEl.textContent = "Chargement du patient...";
+
+      const patientRef = doc(db, "patients", patientId);
+      const patientSnap = await getDoc(patientRef);
+      if (!patientSnap.exists()) {
+        statusEl.textContent = `❌ Patient introuvable: ${patientId}`;
+        return;
+      }
+
+      const patient = patientSnap.data();
+      hospitalisationId = patient.hospitalisationActiveId || (Array.isArray(patient.hospitalisations) && patient.hospitalisations.length ? patient.hospitalisations[patient.hospitalisations.length - 1] : null);
+
+      patientInfoEl.textContent = `${patient.nom || ""} ${patient.prenom || ""} • ID patient: ${patientId}`.trim();
+
+      if (!hospitalisationId) {
+        statusEl.textContent = "⚠️ Aucune hospitalisation active trouvée pour ce patient.";
+        renderTable();
+        return;
+      }
+
+      const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+      const hospiSnap = await getDoc(hospiRef);
+
+      if (!hospiSnap.exists()) {
+        statusEl.textContent = `❌ Hospitalisation introuvable: ${hospitalisationId}`;
+        renderTable();
+        return;
+      }
+
+      const hospi = hospiSnap.data();
+      constantesReleves = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
+      statusEl.textContent = `Hospitalisation active: ${hospitalisationId}`;
+      renderTable();
+    }
+
+    document.getElementById("btnAdd").addEventListener("click", () => openFormModal());
+    document.getElementById("btnCancelForm").addEventListener("click", closeFormModal);
+    document.getElementById("btnCancelDelete").addEventListener("click", closeDeleteModal);
+
+    ["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => {
+      document.getElementById(id).addEventListener("input", calcGlasgowTotal);
+    });
+
+    document.getElementById("btnSaveForm").addEventListener("click", async () => {
+      try {
+        if (!hospitalisationId) {
+          alert("Aucune hospitalisation active.");
+          return;
+        }
+
+        const payload = getFormValues();
+        if (!payload.date || !payload.heure) {
+          alert("La date et l'heure sont obligatoires.");
+          return;
+        }
+
+        if (editingLineId) {
+          constantesReleves = constantesReleves.map(row => row.id === editingLineId ? { ...row, ...payload } : row);
+        } else {
+          const id = (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+          constantesReleves.push({ id, ...payload, createdAtIso: new Date().toISOString() });
+        }
+
+        await persistRows();
+        closeFormModal();
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'enregistrement.");
+      }
+    });
+
+    document.getElementById("ctxEdit").addEventListener("click", () => {
+      contextMenu.style.display = "none";
+      if (!selectedLineId) return;
+      openFormModal(selectedLineId);
+    });
+
+    document.getElementById("ctxDelete").addEventListener("click", () => {
+      contextMenu.style.display = "none";
+      if (!selectedLineId) return;
+      openDeleteModal(selectedLineId);
+    });
+
+    document.getElementById("btnConfirmDelete").addEventListener("click", async () => {
+      try {
+        if (!selectedLineId) return;
+        constantesReleves = constantesReleves.filter(row => row.id !== selectedLineId);
+        await persistRows();
+        closeDeleteModal();
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la suppression.");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!contextMenu.contains(e.target)) {
+        contextMenu.style.display = "none";
+      }
+    });
+
+    modalFormBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalFormBackdrop) closeFormModal();
+    });
+
+    modalDeleteBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalDeleteBackdrop) closeDeleteModal();
+    });
+
+    loadData().catch((err) => {
+      console.error(err);
+      statusEl.textContent = "❌ Erreur de chargement.";
+    });
+  </script>
+</body>
+</html>

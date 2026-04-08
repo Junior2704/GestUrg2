@@ -298,7 +298,26 @@
 .email-btn.primary:hover {
   background: #1d4ed8;
 }
-
+.constantes-section {
+  border: 1px solid #d6e4ff;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafcff;
+  margin-bottom: 14px;
+}
+.constantes-meta {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.constantes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.constantes-table th,
+.constantes-table td {
+  border: 1px solid #d6d6d6;
+  padding: 6px;
+}
   </style>
 </head>
 <body>
@@ -382,7 +401,23 @@
   <textarea id="evolution"></textarea>
 
   <label for="constantes">Constantes Vitales</label>
-  <textarea id="constantes"></textarea>
+<div id="constantesSection" class="constantes-section">
+  <div id="constantesMeta" class="constantes-meta">Aucune constante enregistrée.</div>
+  <div class="table-responsive">
+    <table id="constantesTable" class="constantes-table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Heure</th><th>Temp</th><th>FC</th><th>TA</th>
+          <th>Sat</th><th>FR</th><th>Douleur</th><th>GCS</th><th>Observation</th>
+        </tr>
+      </thead>
+      <tbody id="constantesTableBody">
+        <tr><td colspan="10">Aucune constante enregistrée.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<textarea id="constantes" style="display:none;"></textarea>
 
   <label for="examens">Examens Complémentaires</label>
   <textarea id="examens"></textarea>
@@ -532,9 +567,7 @@ async function chargerDepuisFirestore() {
       `Auscultation initiale :\n${hospi.dossierMedical?.auscultation || ''}`;
 
     document.getElementById("evolution").value = hospi.evolution || '';
-    document.getElementById("constantes").value =
-      `Température : ${hospi.constantes?.temperature || ''}°C\nFC : ${hospi.constantes?.fc || ''} bpm\nTA : ${hospi.constantes?.ta || ''}\nSaturation : ${hospi.constantes?.saturation || ''}%\nFR : ${hospi.constantes?.fr || ''}\nDouleur : ${hospi.constantes?.douleur || ''}/10`;
-
+    
     document.getElementById("examens").value =
       (hospi.examens || []).map(e => {
         const commentaire = e.commentaire || '';
@@ -593,8 +626,47 @@ async function chargerDepuisFirestore() {
     afficherBulle("Erreur chargement patient : " + err.message, "error");
   }
 }
+let constantesRowsForPdf = [];
+let constantesMetaForPdf = "";
 
+function trierConstantes(releves = []) {
+  return [...releves].sort((a, b) =>
+    `${b.date || ""} ${b.heure || ""}`.localeCompare(`${a.date || ""} ${a.heure || ""}`)
+  );
+}
 
+function renderConstantesSection(hospi = {}) {
+  const rows = trierConstantes(hospi.constantesReleves || []);
+  const tbody = document.getElementById("constantesTableBody");
+
+  tbody.innerHTML = "";
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10">Aucune constante enregistrée.</td></tr>`;
+  } else {
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.date || "—"}</td>
+        <td>${r.heure || "—"}</td>
+        <td>${r.temperature || "—"}</td>
+        <td>${r.fc || "—"}</td>
+        <td>${r.ta || "—"}</td>
+        <td>${r.saturation || "—"}</td>
+        <td>${r.fr || "—"}</td>
+        <td>${r.douleur || "—"}</td>
+        <td>${r.glasgowTotal || "—"}</td>
+        <td>${r.observation || "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("constantesMeta").textContent = "Constantes patient";
+  constantesRowsForPdf = rows;
+}
+
+renderConstantesSection(hospi);
 // Enregistrer dans Firestore
 async function enregistrerDansFirestore() {
   try {
@@ -723,7 +795,7 @@ async function creerPDF(telecharger = false) {
         addBlock("Hospitalisation", document.getElementById("hospitalisation")?.value?.trim());
         addBlock("Dossier Médical", document.getElementById("medical")?.value?.trim());
         addBlock("Évolution aux urgences", document.getElementById("evolution")?.value?.trim());
-        addBlock("Constantes Vitales", document.getElementById("constantes")?.value?.trim());
+addConstantesTableBlock("Constantes Vitales", constantesMetaForPdf, constantesRowsForPdf);
         addBlock("Examens Complémentaires", document.getElementById("examens")?.value?.trim());
         addBlock("Actes réalisés", document.getElementById("actes")?.value?.trim());
         addBlock("Médicaments administrés aux urgences",document.getElementById("medicaments")?.value?.trim());

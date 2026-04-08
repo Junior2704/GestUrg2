@@ -2343,31 +2343,7 @@ nav:hover .nav-item span {
   100% { transform: rotate(360deg); }
 }
 </style>
-<div class="modal-overlay" id="modalGlasgow">
-  <div class="modal">
-    <h3>🧠 Score de Glasgow</h3>
-    <img src="glasgow.jpg" alt="Échelle de Glasgow" style="width:100%; margin-bottom:15px; border-radius:8px;" />
-    
-    <label>👁 Ouverture des yeux (max 4)</label>
-    <input type="number" id="glasgowYeux" min="1" max="4" />
 
-    <label>🗣 Réponse verbale (max 5)</label>
-    <input type="number" id="glasgowVerbal" min="1" max="5" />
-
-    <label>💪 Réponse motrice (max 6)</label>
-    <input type="number" id="glasgowMoteur" min="1" max="6" />
-
-    <label>🎯 Score total</label>
-    <input type="number" id="glasgowTotal" disabled />
-
-<div id="glasgowPronostic" style="margin: 10px 0; font-style: italic;"></div>
-<div id="glasgowPronostic2" style="margin: 10px 0; font-style: italic;"></div>
-    <div class="modal-buttons">
-      <button id="btnFermerGlasgow" class="secondary">❌ Fermer</button>
-      <button id="btnEnregistrerGlasgow" class="success">💾 Enregistrer</button>
-    </div>
-  </div>
-</div>
 
 
  </div>
@@ -3959,87 +3935,6 @@ document.getElementById('readVitaleBtn').addEventListener('click', () => {
   }, duration);
 });
 
-document.getElementById("btnGlasgow").addEventListener("click", () => {
-  document.getElementById("modalGlasgow").style.display = "flex";
-});
-
-document.getElementById("btnFermerGlasgow").addEventListener("click", () => {
-  document.getElementById("modalGlasgow").style.display = "none";
-});
-
-["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => {
-  document.getElementById(id).addEventListener("input", () => {
-    const yeux = parseInt(document.getElementById("glasgowYeux").value) || 0;
-    const verbal = parseInt(document.getElementById("glasgowVerbal").value) || 0;
-    const moteur = parseInt(document.getElementById("glasgowMoteur").value) || 0;
-    const total = yeux + verbal + moteur;
-    document.getElementById("glasgowTotal").value = total;
-
-    const pronostic = document.getElementById("glasgowPronostic");
-    if (total <= 4) pronostic.innerText = " 7 % de bonne récupération et 87 % de mortalité.";
-    else if (total <= 7) pronostic.innerText = "34 % de bonne récupération et 53 % de mortalité.";
-    else if (total <= 10) pronostic.innerText = " 68 % de bonne récupération et 27 % de mortalité.";
-    else pronostic.innerText = " 82 % de bonne récupération et 12 % de mortalité.";
-  
-  const pronostic2 = document.getElementById("glasgowPronostic2");
-    if (total <= 6) pronostic.innerText = "Coma Profond";
-    else if (total <= 9) pronostic.innerText = "Coma Lourd";
-    else if (total <= 14) pronostic.innerText = "Somnoloence / Coma Léger";
-    else pronostic.innerText = "Conscience Normale";
-});
-});
-function toggleSublist(id) {
-    const list = document.getElementById(id);
-    list.style.display = list.style.display === "block" ? "none" : "block";
-  }
-
-	
-document.getElementById("btnEnregistrerGlasgow").addEventListener("click", async () => {
-  const yeux = parseInt(document.getElementById("glasgowYeux").value) || 0;
-  const verbal = parseInt(document.getElementById("glasgowVerbal").value) || 0;
-  const moteur = parseInt(document.getElementById("glasgowMoteur").value) || 0;
-  const total = yeux + verbal + moteur;
-  const texte = `Score de Glasgow enregistré : ${total} (Yeux ${yeux}, Verbal ${verbal}, Moteur ${moteur})`;
-
-  try {
-    // 1️⃣ Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-    const patientData = patientSnap.data();
-    if (!patientData) throw new Error("Patient introuvable");
-
-    // 2️⃣ Déterminer l'hospitalisation active
-    const hospitalisationId = patientData.hospitalisationActiveId
-                              || patientData.hospitalisations?.slice(-1)[0];
-    if (!hospitalisationId) {
-      afficherBulle("⚠️ Aucune hospitalisation active", "warning");
-      return;
-    }
-
-    // 3️⃣ Référence de l'hospitalisation
-    const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-
-    // 4️⃣ Mise à jour du score de Glasgow
-    await updateDoc(hospiRef, {
-      glasgow: {
-        yeux,
-        verbal,
-        moteur,
-        total,
-        date: new Date().toISOString()
-      }
-    });
-
-    // 5️⃣ Historique et feedback
-    await ajouterEntreeHistorique(texte);
-    afficherBulle("✔️ Score de Glasgow enregistré", "success");
-    document.getElementById("modalGlasgow").style.display = "none";
-
-  } catch (e) {
-    console.error("Erreur enregistrement Glasgow :", e);
-    afficherBulle("❌ Erreur enregistrement", "error");
-  }
-});
 
 function ajouterHorodatage() {
   const textarea = document.getElementById("texteRemarque");

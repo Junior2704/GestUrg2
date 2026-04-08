@@ -1196,7 +1196,11 @@ function closeOverflowModal() {
 // Mise à jour toutes les secondes
 setInterval(updateDateTime, 1000);
 updateDateTime();
-
+document.getElementById("unlockPassword").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && document.getElementById("lockOverlay").classList.contains("active")) {
+    unlockSession();
+  }
+});
 </script>
 <script type="module">
   
@@ -1381,7 +1385,9 @@ function preventDevTools(e) {
 
 // ===== LOCK =====
 function lockSession() {
-
+setTimeout(() => {
+  document.getElementById("unlockPassword").focus();
+}, 100);
   isLocked = true;
   sessionStorage.setItem("appLocked", "true");
 

@@ -1806,27 +1806,8 @@ nav:hover .nav-item span {
   style="width:100%; height:calc(100vh - 60px); border:none; border-radius:10px; overflow:hidden;">
 </iframe>
  
-  	<br>
-  <hr>
-	<br>
-    <h4>Poids / Taille / IMC</h4>
-    <div class="inline-fields">
-      <div class="field-group">
-        <label for="poids">Poids (kg)</label>
-        <input type="number" id="poids" step="0.1" class="text1"/>
-     
-      <div class="field-group">
-        <label for="taille">Taille (cm) </label>
-        <input type="number" id="taille" step="1" class="text1"/>
-      </div>
-      <div class="field-group">
-        <label>IMC</label>
-        <span id="imc"></span>
-      </div>
-    </div>
-		</div>
-		<br>
-    <button id="btnSavePoids">💾 Enregistrer poids/taille/IMC</button>
+  	
+
   
 </section>
 
@@ -2804,8 +2785,8 @@ async function chargerPatient(patientId) {
     document.getElementById("nom").textContent = patient.nom || "";
     document.getElementById("prenom").textContent = patient.prenom || "";
     document.getElementById("sexe").textContent = patient.sexe || "";
-    document.getElementById("poids").value = patient.poids || "";
-    document.getElementById("taille").value = patient.taille || "";
+
+
     document.getElementById("allergies").value = patient.allergies || "aucun";
     document.getElementById("vigilances").value = patient.vigilances || "aucune";
     document.getElementById("medtraitant").value = patient.medtraitant || "";
@@ -2824,15 +2805,8 @@ async function chargerPatient(patientId) {
       window.location.href = from ? `${from}.html` : "index.html";
     };
 
-    // IMC
-    const poids = parseFloat(patient.poids);
-    const taille = parseFloat(patient.taille);
-    const elImc = document.getElementById("imc");
-    if (!isNaN(poids) && !isNaN(taille) && taille > 0) {
-      elImc.textContent = (poids / ((taille / 100) ** 2)).toFixed(1);
-    } else {
-      elImc.textContent = "–";
-    }
+    
+    
 
     // Âge
     if (patient.dateNaissance) {
@@ -3288,28 +3262,6 @@ async function ajouterEntreeHistorique(texte) {
 }
 
 
-
-document.getElementById("btnSavePoids").addEventListener("click", async () => {
-  const poids = parseFloat(document.getElementById("poids").value);
-  const taille = parseFloat(document.getElementById("taille").value);
-
-  if (!poids || !taille) {
-    afficherBulle("❌ Veuillez entrer un poids et une taille valides", "warning");
-    return;
-  }
-
-  try {
-    await updateDoc(patientRef, { poids, taille });
-    ajouterEntreeHistorique(`Poids/Taille/IMC enregistrés: ${poids}kg / ${taille}cm`);
-    afficherBulle("✔️ Poids et taille enregistrés", "success");
-
-    // 🔄 Recalcul de l’IMC
-    chargerPatient(patientId); 
-  } catch (err) {
-    console.error("Erreur enregistrement poids/taille :", err);
-    afficherBulle("❌ Erreur lors de l’enregistrement du poids/taille", "error");
-  }
-});
 
 
 

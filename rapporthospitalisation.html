@@ -639,7 +639,7 @@ function trierConstantes(releves = []) {
 function renderConstantesSection(hospi = {}) {
   const rows = trierConstantes(hospi.constantesReleves || []);
   const tbody = document.getElementById("constantesTableBody");
-
+constantesMetaForPdf = "Constantes patient";
   tbody.innerHTML = "";
 
   if (!rows.length) {
@@ -790,13 +790,22 @@ async function creerPDF(telecharger = false) {
           y += 10;
         }
 function addConstantesTableBlock(titre, meta, rows) {
-  addBlock(titre, ""); // titre
+  addBlock(titre, meta || ""); 
+
+  if (!rows.length) {
+    addBlock("", "Aucune constante enregistrée.");
+    return;
+  }
 
   rows.forEach(r => {
-    addBlock(
-      `${r.date || ""} ${r.heure || ""}`,
-      `T° ${r.temperature || "-"} | FC ${r.fc || "-"} | TA ${r.ta || "-"} | Sat ${r.saturation || "-"}`
-    );
+    const ligne = `
+Date: ${r.date || "-"} ${r.heure || "-"}
+Temp: ${r.temperature || "-"} | FC: ${r.fc || "-"} | TA: ${r.ta || "-"}
+Sat: ${r.saturation || "-"} | FR: ${r.fr || "-"} | Douleur: ${r.douleur || "-"}
+GCS: ${r.glasgowTotal || "-"}
+Obs: ${r.observation || "-"}
+    `;
+    addBlock("", ligne.trim());
   });
 }
         // 🔹 Ajouter les blocs depuis le formulaire

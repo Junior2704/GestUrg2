@@ -567,6 +567,7 @@ async function chargerDepuisFirestore() {
       `Auscultation initiale :\n${hospi.dossierMedical?.auscultation || ''}`;
 
     document.getElementById("evolution").value = hospi.evolution || '';
+    renderConstantesSection(hospi);
     
     document.getElementById("examens").value =
       (hospi.examens || []).map(e => {
@@ -666,7 +667,7 @@ function renderConstantesSection(hospi = {}) {
   constantesRowsForPdf = rows;
 }
 
-renderConstantesSection(hospi);
+
 // Enregistrer dans Firestore
 async function enregistrerDansFirestore() {
   try {
@@ -709,7 +710,16 @@ async function enregistrerDansFirestore() {
 }
 
 
+function addConstantesTableBlock(titre, meta, rows) {
+  addBlock(titre, ""); // titre
 
+  rows.forEach(r => {
+    addBlock(
+      `${r.date || ""} ${r.heure || ""}`,
+      `T° ${r.temperature || "-"} | FC ${r.fc || "-"} | TA ${r.ta || "-"} | Sat ${r.saturation || "-"}`
+    );
+  });
+}
 
 // Rendre les champs readonly et adapter style
 function setRapportValide(val) {

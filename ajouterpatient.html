@@ -291,58 +291,66 @@ if (!patientId) {
   console.error("ID patient manquant");
 }
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    return;
-  } else {
-    try {
-      window.afficherLoader();
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        medecinNom = data.nom || "";
-        medecinSpecialite = data.specialite || "";
-        medecinLieu = data.lieu || "";
+  if (!user) return;
 
-        // Met à jour aussi les variables globales sur window
-        window.medecinNom = medecinNom;
-        window.medecinSpecialite = medecinSpecialite;
-        window.medecinLieu = medecinLieu;
+  try {
+    window.afficherLoader();
 
-        // Mise à jour des éléments HTML si présents
-        const nomElem = document.getElementById("nom-medecin");
-        if (nomElem) nomElem.textContent = medecinNom;
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
 
-        const specElem = document.getElementById("specialite");
-        if (specElem) specElem.textContent = medecinSpecialite;
+    if (!docSnap.exists()) {
+      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+      return;
+    }
 
-        const lieuElem = document.getElementById("lieu-medecin");
-        if (lieuElem) lieuElem.textContent = medecinLieu;
+    const data = docSnap.data();
 
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+    medecinNom = data.nom || "";
+    medecinSpecialite = data.specialite || "";
+    medecinLieu = data.lieu || "";
 
-        if (!pages[currentPage]) {
-const modal = document.getElementById("modal-no-access");
-          if (modal) {masquerLoader();
-          modal.style.display = "flex";       
-          console.warn("Accès refusé à", currentPage);
-        }
-      } else {
-        // Document inexistant — redirection
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        return;
+    window.medecinNom = medecinNom;
+    window.medecinSpecialite = medecinSpecialite;
+    window.medecinLieu = medecinLieu;
+
+    // UI
+    const nomElem = document.getElementById("nom-medecin");
+    if (nomElem) nomElem.textContent = medecinNom;
+
+    const specElem = document.getElementById("specialite");
+    if (specElem) specElem.textContent = medecinSpecialite;
+
+    const lieuElem = document.getElementById("lieu-medecin");
+    if (lieuElem) lieuElem.textContent = medecinLieu;
+
+    // 🔐 Vérification accès page
+    const pages = data.pages || {};
+    const currentPath = window.location.pathname;
+    const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+    if (!pages[currentPage]) {
+      const modal = document.getElementById("modal-no-access");
+
+      if (modal) {
+        masquerLoader();
+        modal.style.display = "flex";
       }
-     // Appel au chargement de la page
-chargerServices();
-    } catch (error) {
-      const modal = document.getElementById("modal-error");
-          if (modal) masquerLoader();
-          modal.style.display = "flex"; 
-      console.error("Erreur chargement médecin :", error);
-      
+
+      console.warn("Accès refusé à", currentPage);
+      return; // 🔥 IMPORTANT : on stoppe ici
+    }
+
+    // ✅ Si tout est OK
+    chargerServices();
+
+  } catch (error) {
+    console.error("Erreur chargement médecin :", error);
+
+    const modal = document.getElementById("modal-error");
+    if (modal) {
+      masquerLoader();
+      modal.style.display = "flex";
     }
   }
 });

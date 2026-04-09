@@ -414,11 +414,13 @@ function closeInfoModal() {
 }
 async function chargerServices() {
   try {
-    const doc = await db.collection("referentiels").doc("spécialités").get();
-    const services = doc.data()?.spécialités || [];
+    const docRef = doc(db, "referentiels", "spécialités");
+    const docSnap = await getDoc(docRef);
+
+    const services = docSnap.data()?.spécialités || [];
 
     const select = document.getElementById("service");
-    select.innerHTML = ""; // vide les anciennes options
+    select.innerHTML = "";
 
     services.forEach(service => {
       const option = document.createElement("option");
@@ -426,9 +428,12 @@ async function chargerServices() {
       option.textContent = service;
       select.appendChild(option);
     });
+
     masquerLoader();
+
   } catch (e) {
     console.error("Erreur chargement services :", e);
+    masquerLoader(); // 🔥 important aussi en cas d'erreur
   }
 }
 

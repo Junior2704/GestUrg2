@@ -444,6 +444,7 @@ body {
       modalTitle.textContent = editId ? "Modifier une ligne de constantes" : "Nouvelle ligne de constantes";
       fillForm(row);
       modalFormBackdrop.style.display = "flex";
+      enableEnterNavigation(modalFormBackdrop);
     }
 
     function closeFormModal() {
@@ -681,7 +682,24 @@ body {
     modalDeleteBackdrop.addEventListener("click", (e) => {
       if (e.target === modalDeleteBackdrop) closeDeleteModal();
     });
+focusables.forEach((el, index) => {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
 
+        // Cherche le prochain élément focusable
+        let next = focusables[index + 1];
+
+        if (next) {
+          next.focus();
+        } else {
+          // Si on est au dernier champ → clique sur "Enregistrer"
+          const saveBtn = modalElement.querySelector("#btnSaveForm");
+          if (saveBtn) saveBtn.click();
+        }
+      }
+    });
+  });
     loadData().catch((err) => {
       console.error(err);
       statusEl.textContent = "❌ Erreur de chargement.";

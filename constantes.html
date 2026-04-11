@@ -444,7 +444,12 @@ body {
       modalTitle.textContent = editId ? "Modifier une ligne de constantes" : "Nouvelle ligne de constantes";
       fillForm(row);
       modalFormBackdrop.style.display = "flex";
-      enableEnterNavigation(modalFormBackdrop);
+      setTimeout(() => {
+    const firstInput = modalFormBackdrop.querySelector("input");
+    if (firstInput) firstInput.focus();
+  }, 50);
+}
+      
     }
 
     function closeFormModal() {
@@ -682,12 +687,18 @@ body {
     modalDeleteBackdrop.addEventListener("click", (e) => {
       if (e.target === modalDeleteBackdrop) closeDeleteModal();
     });
-    const focusables = modalFormBackdrop.querySelectorAll(
-  "input, select, textarea, button:not(#btnCancelForm)"
-);
-focusables.forEach((el, index) => {
+let enterNavInitialized = false;
+
+function setupEnterNavigation() {
+  if (enterNavInitialized) return;
+  enterNavInitialized = true;
+
+  const focusables = modalFormBackdrop.querySelectorAll(
+    "input, select, textarea"
+  );
+
+  focusables.forEach((el, index) => {
     el.addEventListener("keydown", (e) => {
-      // Ignore textarea (sinon pas de retour à la ligne)
       if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
         e.preventDefault();
 
@@ -702,6 +713,8 @@ focusables.forEach((el, index) => {
       }
     });
   });
+}
+setupEnterNavigation();
     loadData().catch((err) => {
       console.error(err);
       statusEl.textContent = "❌ Erreur de chargement.";

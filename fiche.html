@@ -1792,11 +1792,16 @@ nav:hover .nav-item span {
  <div>
   <label>Médecin(s) traitant(s)</label>
 
-  <input type="text" id="searchMedecin" placeholder="Rechercher un médecin..." />
+  <input 
+    type="text" 
+    id="searchMedecin" 
+    placeholder="Nom ou prénom du médecin..."
+    autocomplete="off"
+/>
 
-  <div id="resultatsMedecins" class="resultats"></div>
+  <div id="resultatsMedecins"></div>
 
-  <textarea id="medtraitant" placeholder="Médecins sélectionnés..."></textarea>
+  <textarea id="medtraitant"></textarea>
 </div>
    <div>
     <label>Vigilance(s)</label>
@@ -2710,8 +2715,21 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
+async function searchMedecinsFHIR(query) {
+  const url =
+    `https://gateway.api.esante.gouv.fr/fhir/Practitioner?name=${encodeURIComponent(query)}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "Accept": "application/fhir+json"
+    }
+  });
+
+  const data = await res.json();
+  return data.entry || [];
+}
 document.getElementById("searchMedecin").addEventListener("input", async (e) => {
-  const q = e.target.value.toLowerCase().trim();
+  const q = e.target.value.trim();
   const container = document.getElementById("resultatsMedecins");
 
   container.innerHTML = "";
@@ -2719,66 +2737,45 @@ document.getElementById("searchMedecin").addEventListener("input", async (e) => 
   if (q.length < 2) return;
 
   try {
-    // 🔥 1. appel API (100 résultats max)
-    const res = await fetch(API_BASE);
-    const data = await res.json();
+    const results = await searchMedecinsFHIR(q);
 
-    let results = data.results || [];
+    results.slice(0, 10).forEach(item => {
+      const resource = item.resource;
 
-    // 🔥 2. filtrage JS intelligent
-    results = results.filter(m => {
-      const nom = (m.nom || "").toLowerCase();
-      const prenom = (m.prenom || "").toLowerCase();
-      const prof = (m.libelle_profession || "").toLowerCase();
-      const ville = (m.commune || m.ville || "").toLowerCase();
+      const nom = resource.name?.[0]?.family || "";
+      const prenom = resource.name?.[0]?.given?.[0] || "";
+      const profession = resource.qualification?.[0]?.code?.text || "Médecin";
 
-      return (
-        nom.includes(q) ||
-        prenom.includes(q) ||
-        prof.includes(q) ||
-        ville.includes(q)
-      );
-    });
-
-    // 🔥 3. affichage
-    results.slice(0, 10).forEach(m => {
       const div = document.createElement("div");
+      div.textContent = `${prenom} ${nom} - ${profession}`;
 
-      const texte =
-        `${m.prenom || ""} ${m.nom || ""} - ${m.libelle_profession || ""} - ${m.commune || ""}`;
-
-      div.textContent = texte;
-
-      div.onclick = () => ajouterMedecin({
-        nom: m.nom,
-        prenom: m.prenom,
-        prof: m.libelle_profession,
-        adresse: m.adresse,
-        ville: m.commune
+      div.onclick = () => ajouterMedecinFHIR({
+        nom,
+        prenom,
+        profession
       });
 
       container.appendChild(div);
     });
 
   } catch (err) {
-    console.error("Erreur API médecins :", err);
+    console.error("Erreur FHIR API :", err);
   }
 });
-function ajouterMedecin(m) {
+function ajouterMedecinFHIR(m) {
   const textarea = document.getElementById("medtraitant");
 
   textarea.value +=
-`Nom: ${m.nom || ""}
-Prénom: ${m.prenom || ""}
-Profession: ${m.prof || ""}
-Ville: ${m.ville || ""}
-Adresse: ${m.adresse || ""}
--------------------------
+`Nom: ${m.nom}
+Prénom: ${m.prenom}
+Profession: ${m.profession}
+----------------------
 `;
 
   document.getElementById("resultatsMedecins").innerHTML = "";
   document.getElementById("searchMedecin").value = "";
 }
+
 function openTab(tabId, event) {
   document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
   document.querySelectorAll(".tablink").forEach(btn => btn.classList.remove("active"));

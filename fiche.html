@@ -1793,10 +1793,11 @@ nav:hover .nav-item span {
  <div>
   <label>Recherche médecin</label>
 
-  <input type="text" id="searchMedecin" placeholder="Nom, prénom, spécialité..." />
+  <input type="text" id="searchMedecin" placeholder="Nom, prénom, spécialité..." autocomplete="off"/>
 
   <div id="resultatsMedecins"></div>
 
+  <label>Médecin(s) traitant(s)</label>
   <textarea id="medtraitant"></textarea>
 </div>
    <div>
@@ -2711,24 +2712,26 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
-let medecins = [];
 
+  let medecins = [];
+
+// 🔥 1. Charger le CSV
 async function chargerMedecins() {
-  const url =
-    "https://raw.githubusercontent.com/junior2704/GestUrg2/main/medecins.xlsx";
+  const res = await fetch("medecins.csv");
+  const text = await res.text();
 
-  const response = await fetch(url);
-  const data = await response.arrayBuffer();
+  const lignes = text.split("\n");
 
-  const workbook = XLSX.read(data);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-  medecins = XLSX.utils.sheet_to_json(sheet);
+  medecins = lignes
+    .map(l => l.trim())
+    .filter(l => l.length > 0); // enlève lignes vides
 
   console.log("Médecins chargés :", medecins.length);
 }
 
 chargerMedecins();
+
+// 🔍 2. Recherche
 document.getElementById("searchMedecin").addEventListener("input", (e) => {
   const q = e.target.value.toLowerCase();
   const container = document.getElementById("resultatsMedecins");
@@ -2737,55 +2740,45 @@ document.getElementById("searchMedecin").addEventListener("input", (e) => {
 
   if (q.length < 2) return;
 
-  const results = medecins.filter(m => {
-    return (
-      (m["Nom d'exercice"] || "").toLowerCase().includes(q) ||
-      (m["Prénom d'exercice"] || "").toLowerCase().includes(q) ||
-      (m["Libellé profession"] || "").toLowerCase().includes(q)
-    );
-  });
+  const results = medecins
+    .filter(line => line.toLowerCase().includes(q))
+    .slice(0, 10);
 
-  results.slice(0, 10).forEach(m => {
+  results.forEach(line => {
+    const [nom, prenom, profession, adresse] = line.split("|");
+
     const div = document.createElement("div");
 
-    div.textContent =
-      `${m["Prénom d'exercice"] || ""} ${m["Nom d'exercice"] || ""} - ${m["Libellé profession"] || ""}`;
+    div.innerHTML = `
+      <strong>${prenom} ${nom}</strong><br>
+      <small>${profession}</small><br>
+      <em>${adresse}</em>
+    `;
 
-    div.onclick = () => ajouterMedecin(m);
+    div.onclick = () => ajouterMedecin(nom, prenom, profession, adresse);
 
     container.appendChild(div);
   });
 });
 
-
-function ajouterMedecin(m) {
-  const t = document.getElementById("medtraitant");
+// ➕ 3. Ajout dans textarea
+function ajouterMedecin(nom, prenom, profession, adresse) {
+  const textarea = document.getElementById("medtraitant");
 
   const texte =
 `------------------------
-Nom: ${m["Nom d'exercice"] || ""}
-Prénom: ${m["Prénom d'exercice"] || ""}
-Profession: ${m["Libellé profession"] || ""}
-Adresse: ${m["Numéro Voie (coord. structure)"] || ""} ${m["Libellé Voie (coord. structure)"] || ""}
-Téléphone: ${m["Téléphone (coord. structure)"] || ""}
+${prenom} ${nom}
+${profession}
+${adresse}
 ------------------------
 `;
 
-  t.value += texte;
+  textarea.value += texte;
 
-  document.getElementById("resultatsMedecins").innerHTML = "";
+  // reset
   document.getElementById("searchMedecin").value = "";
+  document.getElementById("resultatsMedecins").innerHTML = "";
 }
-function openTab(tabId, event) {
-  document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
-  document.querySelectorAll(".tablink").forEach(btn => btn.classList.remove("active"));
-  document.getElementById(tabId).style.display = "block";
-  if (event) event.currentTarget.classList.add("active");
-   if (tabId === "tab-historique") {
-    chargerHistoriqueComplet();
-  }
-}
-// Affichage du module Ordonnancier
 
 
 	

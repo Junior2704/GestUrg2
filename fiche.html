@@ -2722,7 +2722,12 @@ async function rechercherMedecins(q) {
   const res = await fetch(url);
   const text = await res.text();
 
-  const json = JSON.parse(text.substring(47).slice(0, -2));
+  console.log("RAW:", text); // 👈 DEBUG
+
+  // 🔥 extraction propre
+  const json = JSON.parse(
+    text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
+  );
 
   return json.table.rows.map(r => {
     const c = r.c;

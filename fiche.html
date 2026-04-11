@@ -2712,19 +2712,19 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
+async function rechercherMedecins(q) {
+  const query = encodeURIComponent(
+    `SELECT * WHERE A CONTAINS '${q}' OR B CONTAINS '${q}' OR C CONTAINS '${q}'`
+  );
 
- let medecins = [];
-
-async function chargerMedecins() {
-  const url = "https://docs.google.com/spreadsheets/d/17ysdYdKtpcsdBlP5lojwA7vGGkfZeGtH/gviz/tq?tqx=out:json";
+  const url = `https://docs.google.com/spreadsheets/d/17ysdYdKtpcsdBlP5lojwA7vGGkfZeGtH/gviz/tq?tqx=out:json&tq=${query}`;
 
   const res = await fetch(url);
   const text = await res.text();
 
-  // nettoyer réponse Google
   const json = JSON.parse(text.substring(47).slice(0, -2));
 
-  medecins = json.table.rows.map(r => {
+  return json.table.rows.map(r => {
     const c = r.c;
 
     return {
@@ -2735,28 +2735,28 @@ async function chargerMedecins() {
       tel: c[7]?.v || ""
     };
   });
-
-  console.log("Médecins chargés :", medecins.length);
 }
+let timeout;
 
-chargerMedecins();
 document.getElementById("searchMedecin").addEventListener("input", (e) => {
-  const q = e.target.value.toLowerCase();
-  const container = document.getElementById("resultatsMedecins");
+  clearTimeout(timeout);
 
-  container.innerHTML = "";
+  const q = e.target.value.trim();
 
   if (q.length < 2) return;
 
-  const results = medecins
-    .filter(m =>
-      m.nom.toLowerCase().includes(q) ||
-      m.prenom.toLowerCase().includes(q) ||
-      m.profession.toLowerCase().includes(q)
-    )
-    .slice(0, 10);
+  // 🔥 anti-lag (attend que user ait fini de taper)
+  timeout = setTimeout(async () => {
+    const results = await rechercherMedecins(q);
 
-  results.forEach(m => {
+    afficherResultats(results);
+  }, 300);
+});
+function afficherResultats(results) {
+  const container = document.getElementById("resultatsMedecins");
+  container.innerHTML = "";
+
+  results.slice(0, 10).forEach(m => {
     const div = document.createElement("div");
 
     div.innerHTML = `
@@ -2778,7 +2778,7 @@ Tel: ${m.tel}
 
     container.appendChild(div);
   });
-});
+}
 	
   function calculerAge(dateNaissance) {
     const birth = new Date(dateNaissance);

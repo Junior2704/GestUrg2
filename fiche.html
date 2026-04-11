@@ -2380,8 +2380,8 @@ import {
     authDomain: "urgences-a8ed4.firebaseapp.com",
     projectId: "urgences-a8ed4"
   };
-const API_MEDECINS =
-"https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/medecins/records?limit=10&q=";
+const API_BASE =
+"https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/medecins/records?limit=100";
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -2710,37 +2710,51 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
-
 document.getElementById("searchMedecin").addEventListener("input", async (e) => {
-  const query = e.target.value.trim();
+  const q = e.target.value.toLowerCase().trim();
   const container = document.getElementById("resultatsMedecins");
 
-  if (query.length < 3) {
-    container.innerHTML = "";
-    return;
-  }
+  container.innerHTML = "";
+
+  if (q.length < 2) return;
 
   try {
-    const res = await fetch(API_MEDECINS + encodeURIComponent(query));
+    // 🔥 1. appel API (100 résultats max)
+    const res = await fetch(API_BASE);
     const data = await res.json();
 
-    container.innerHTML = "";
+    let results = data.results || [];
 
-    (data.results || []).forEach(m => {
+    // 🔥 2. filtrage JS intelligent
+    results = results.filter(m => {
+      const nom = (m.nom || "").toLowerCase();
+      const prenom = (m.prenom || "").toLowerCase();
+      const prof = (m.libelle_profession || "").toLowerCase();
+      const ville = (m.commune || m.ville || "").toLowerCase();
+
+      return (
+        nom.includes(q) ||
+        prenom.includes(q) ||
+        prof.includes(q) ||
+        ville.includes(q)
+      );
+    });
+
+    // 🔥 3. affichage
+    results.slice(0, 10).forEach(m => {
       const div = document.createElement("div");
 
-      const nom = m.nom || "";
-      const prenom = m.prenom || "";
-      const prof = m.libelle_profession || m.profession || "";
-      const adresse = m.adresse || "";
+      const texte =
+        `${m.prenom || ""} ${m.nom || ""} - ${m.libelle_profession || ""} - ${m.commune || ""}`;
 
-      div.textContent = `${prenom} ${nom} - ${prof} - ${adresse}`;
+      div.textContent = texte;
 
       div.onclick = () => ajouterMedecin({
-        nom,
-        prenom,
-        prof,
-        adresse
+        nom: m.nom,
+        prenom: m.prenom,
+        prof: m.libelle_profession,
+        adresse: m.adresse,
+        ville: m.commune
       });
 
       container.appendChild(div);
@@ -2753,15 +2767,14 @@ document.getElementById("searchMedecin").addEventListener("input", async (e) => 
 function ajouterMedecin(m) {
   const textarea = document.getElementById("medtraitant");
 
-  const texte = `
-Nom: ${m.nom || ""}
+  textarea.value +=
+`Nom: ${m.nom || ""}
 Prénom: ${m.prenom || ""}
 Profession: ${m.prof || ""}
+Ville: ${m.ville || ""}
 Adresse: ${m.adresse || ""}
 -------------------------
 `;
-
-  textarea.value += texte;
 
   document.getElementById("resultatsMedecins").innerHTML = "";
   document.getElementById("searchMedecin").value = "";

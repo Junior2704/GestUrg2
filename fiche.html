@@ -1789,10 +1789,15 @@ nav:hover .nav-item span {
     <label>Âge</label>
     <span id="age"></span>
   </div>
-  <div>
-    <label>Médecin(s) traitant(s)</label>
-    <textarea id="medtraitant"></textarea>
-  </div>
+ <div>
+  <label>Médecin(s) traitant(s)</label>
+
+  <input type="text" id="searchMedecin" placeholder="Rechercher un médecin..." />
+
+  <div id="resultatsMedecins" class="resultats"></div>
+
+  <textarea id="medtraitant" placeholder="Médecins sélectionnés..."></textarea>
+</div>
    <div>
     <label>Vigilance(s)</label>
   <input type="text" id="vigilances" class="text2" />
@@ -2375,7 +2380,8 @@ import {
     authDomain: "urgences-a8ed4.firebaseapp.com",
     projectId: "urgences-a8ed4"
   };
-
+const API_MEDECINS =
+"https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/medecins/records?limit=10&search=";
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -2705,7 +2711,61 @@ document
   }
 });
 
+document.getElementById("searchMedecin").addEventListener("input", async (e) => {
+  const query = e.target.value.trim();
+  const container = document.getElementById("resultatsMedecins");
 
+  if (query.length < 3) {
+    container.innerHTML = "";
+    return;
+  }
+
+  try {
+    const res = await fetch(API_MEDECINS + encodeURIComponent(query));
+    const data = await res.json();
+
+    container.innerHTML = "";
+
+    (data.results || []).forEach(m => {
+      const div = document.createElement("div");
+
+      const nom = m.nom || "";
+      const prenom = m.prenom || "";
+      const prof = m.libelle_profession || m.profession || "";
+      const adresse = m.adresse || "";
+
+      div.textContent = `${prenom} ${nom} - ${prof} - ${adresse}`;
+
+      div.onclick = () => ajouterMedecin({
+        nom,
+        prenom,
+        prof,
+        adresse
+      });
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error("Erreur API médecins :", err);
+  }
+});
+function ajouterMedecin(m) {
+  const textarea = document.getElementById("medtraitant");
+
+  const texte = `
+Nom: ${m.nom || ""}
+Prénom: ${m.prenom || ""}
+Profession: ${m.prof || ""}
+Adresse: ${m.adresse || ""}
+-------------------------
+`;
+
+  textarea.value += texte;
+
+  document.getElementById("resultatsMedecins").innerHTML = "";
+  document.getElementById("searchMedecin").value = "";
+}
 function openTab(tabId, event) {
   document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
   document.querySelectorAll(".tablink").forEach(btn => btn.classList.remove("active"));

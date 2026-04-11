@@ -682,22 +682,21 @@ body {
     modalDeleteBackdrop.addEventListener("click", (e) => {
       if (e.target === modalDeleteBackdrop) closeDeleteModal();
     });
-    const focusables = modalElement.querySelectorAll(
+    const focusables = modalFormBackdrop.querySelectorAll(
   "input, select, textarea, button:not(#btnCancelForm)"
 );
 focusables.forEach((el, index) => {
     el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+      // Ignore textarea (sinon pas de retour à la ligne)
+      if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
         e.preventDefault();
 
-        // Cherche le prochain élément focusable
         let next = focusables[index + 1];
 
         if (next) {
           next.focus();
         } else {
-          // Si on est au dernier champ → clique sur "Enregistrer"
-          const saveBtn = modalElement.querySelector("#btnSaveForm");
+          const saveBtn = modalFormBackdrop.querySelector("#btnSaveForm");
           if (saveBtn) saveBtn.click();
         }
       }

@@ -9,6 +9,7 @@
   <title>Fiche Patient </title>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
    <style>
 html, body {
   height: 100%;
@@ -1790,14 +1791,9 @@ nav:hover .nav-item span {
     <span id="age"></span>
   </div>
  <div>
-  <label>Médecin(s) traitant(s)</label>
+  <label>Recherche médecin</label>
 
-  <input 
-    type="text" 
-    id="searchMedecin" 
-    placeholder="Nom ou prénom du médecin..."
-    autocomplete="off"
-/>
+  <input type="text" id="searchMedecin" placeholder="Nom, prénom, spécialité..." />
 
   <div id="resultatsMedecins"></div>
 
@@ -2715,67 +2711,71 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
-async function searchMedecinsFHIR(query) {
+let medecins = [];
+
+async function chargerMedecins() {
   const url =
-    `https://gateway.api.esante.gouv.fr/fhir/Practitioner?name=${encodeURIComponent(query)}`;
+    "https://raw.githubusercontent.com/junior2704/GestUrg2/main/medecins.xlsx";
 
-  const res = await fetch(url, {
-    headers: {
-      "Accept": "application/fhir+json"
-    }
-  });
+  const response = await fetch(url);
+  const data = await response.arrayBuffer();
 
-  const data = await res.json();
-  return data.entry || [];
+  const workbook = XLSX.read(data);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  medecins = XLSX.utils.sheet_to_json(sheet);
+
+  console.log("Médecins chargés :", medecins.length);
 }
-document.getElementById("searchMedecin").addEventListener("input", async (e) => {
-  const q = e.target.value.trim();
+
+chargerMedecins();
+document.getElementById("searchMedecin").addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase();
   const container = document.getElementById("resultatsMedecins");
 
   container.innerHTML = "";
 
   if (q.length < 2) return;
 
-  try {
-    const results = await searchMedecinsFHIR(q);
+  const results = medecins.filter(m => {
+    return (
+      (m["Nom d'exercice"] || "").toLowerCase().includes(q) ||
+      (m["Prénom d'exercice"] || "").toLowerCase().includes(q) ||
+      (m["Libellé profession"] || "").toLowerCase().includes(q)
+    );
+  });
 
-    results.slice(0, 10).forEach(item => {
-      const resource = item.resource;
+  results.slice(0, 10).forEach(m => {
+    const div = document.createElement("div");
 
-      const nom = resource.name?.[0]?.family || "";
-      const prenom = resource.name?.[0]?.given?.[0] || "";
-      const profession = resource.qualification?.[0]?.code?.text || "Médecin";
+    div.textContent =
+      `${m["Prénom d'exercice"] || ""} ${m["Nom d'exercice"] || ""} - ${m["Libellé profession"] || ""}`;
 
-      const div = document.createElement("div");
-      div.textContent = `${prenom} ${nom} - ${profession}`;
+    div.onclick = () => ajouterMedecin(m);
 
-      div.onclick = () => ajouterMedecinFHIR({
-        nom,
-        prenom,
-        profession
-      });
-
-      container.appendChild(div);
-    });
-
-  } catch (err) {
-    console.error("Erreur FHIR API :", err);
-  }
+    container.appendChild(div);
+  });
 });
-function ajouterMedecinFHIR(m) {
-  const textarea = document.getElementById("medtraitant");
 
-  textarea.value +=
-`Nom: ${m.nom}
-Prénom: ${m.prenom}
-Profession: ${m.profession}
-----------------------
+
+function ajouterMedecin(m) {
+  const t = document.getElementById("medtraitant");
+
+  const texte =
+`------------------------
+Nom: ${m["Nom d'exercice"] || ""}
+Prénom: ${m["Prénom d'exercice"] || ""}
+Profession: ${m["Libellé profession"] || ""}
+Adresse: ${m["Numéro Voie (coord. structure)"] || ""} ${m["Libellé Voie (coord. structure)"] || ""}
+Téléphone: ${m["Téléphone (coord. structure)"] || ""}
+------------------------
 `;
+
+  t.value += texte;
 
   document.getElementById("resultatsMedecins").innerHTML = "";
   document.getElementById("searchMedecin").value = "";
 }
-
 function openTab(tabId, event) {
   document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
   document.querySelectorAll(".tablink").forEach(btn => btn.classList.remove("active"));

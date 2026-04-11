@@ -2713,25 +2713,33 @@ document
   }
 });
 
-  let medecins = [];
+ let medecins = [];
 
-// 🔥 1. Charger le CSV
 async function chargerMedecins() {
-  const res = await fetch("medecins.csv");
+  const url = "https://docs.google.com/spreadsheets/d/17ysdYdKtpcsdBlP5lojwA7vGGkfZeGtH/gviz/tq?tqx=out:json";
+
+  const res = await fetch(url);
   const text = await res.text();
 
-  const lignes = text.split("\n");
+  // nettoyer réponse Google
+  const json = JSON.parse(text.substring(47).slice(0, -2));
 
-  medecins = lignes
-    .map(l => l.trim())
-    .filter(l => l.length > 0); // enlève lignes vides
+  medecins = json.table.rows.map(r => {
+    const c = r.c;
+
+    return {
+      nom: c[0]?.v || "",
+      prenom: c[1]?.v || "",
+      profession: c[2]?.v || "",
+      adresse: `${c[3]?.v || ""} ${c[4]?.v || ""} ${c[5]?.v || ""} ${c[6]?.v || ""}`,
+      tel: c[7]?.v || ""
+    };
+  });
 
   console.log("Médecins chargés :", medecins.length);
 }
 
 chargerMedecins();
-
-// 🔍 2. Recherche
 document.getElementById("searchMedecin").addEventListener("input", (e) => {
   const q = e.target.value.toLowerCase();
   const container = document.getElementById("resultatsMedecins");
@@ -2741,46 +2749,36 @@ document.getElementById("searchMedecin").addEventListener("input", (e) => {
   if (q.length < 2) return;
 
   const results = medecins
-    .filter(line => line.toLowerCase().includes(q))
+    .filter(m =>
+      m.nom.toLowerCase().includes(q) ||
+      m.prenom.toLowerCase().includes(q) ||
+      m.profession.toLowerCase().includes(q)
+    )
     .slice(0, 10);
 
-  results.forEach(line => {
-    const [nom, prenom, profession, adresse] = line.split("|");
-
+  results.forEach(m => {
     const div = document.createElement("div");
 
     div.innerHTML = `
-      <strong>${prenom} ${nom}</strong><br>
-      <small>${profession}</small><br>
-      <em>${adresse}</em>
+      <strong>${m.prenom} ${m.nom}</strong><br>
+      <small>${m.profession}</small><br>
+      <em>${m.adresse}</em>
     `;
 
-    div.onclick = () => ajouterMedecin(nom, prenom, profession, adresse);
+    div.onclick = () => {
+      document.getElementById("medtraitant").value +=
+`------------------------
+${m.prenom} ${m.nom}
+${m.profession}
+${m.adresse}
+Tel: ${m.tel}
+------------------------
+`;
+    };
 
     container.appendChild(div);
   });
 });
-
-// ➕ 3. Ajout dans textarea
-function ajouterMedecin(nom, prenom, profession, adresse) {
-  const textarea = document.getElementById("medtraitant");
-
-  const texte =
-`------------------------
-${prenom} ${nom}
-${profession}
-${adresse}
-------------------------
-`;
-
-  textarea.value += texte;
-
-  // reset
-  document.getElementById("searchMedecin").value = "";
-  document.getElementById("resultatsMedecins").innerHTML = "";
-}
-
-
 	
   function calculerAge(dateNaissance) {
     const birth = new Date(dateNaissance);

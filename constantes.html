@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <title>Constantes patient</title>
   <style>
     :root {
@@ -408,32 +410,78 @@ body {
       }
     }
 window.generatePdf = async function () {
-  const element = document.body; // ou .container si tu veux cibler
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-  const opt = {
-    margin: 0.5,
-    filename: 'constantes.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
-  };
+  // =========================
+  // 🧾 INFOS PATIENT
+  // =========================
+  const patientNom = document.getElementById("patientInfo").textContent;
+  const dateExport = new Date().toLocaleString();
 
-  // Génère le PDF en blob
-  const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+  doc.setFontSize(16);
+  doc.text("Relevé des constantes", 14, 15);
 
-  // Crée une URL locale
+  doc.setFontSize(10);
+  doc.text(patientNom, 14, 22);
+  doc.text("Date d'export : " + dateExport, 14, 28);
+
+  // =========================
+  // 📊 TABLEAU
+  // =========================
+  const rows = constantesReleves.map(r => [
+    r.date || "",
+    r.heure || "",
+    r.temperature || "",
+    r.fc || "",
+    r.ta || "",
+    r.saturation || "",
+    r.fr || "",
+    r.douleur || "",
+    r.glasgowTotal || "",
+    r.observation || ""
+  ]);
+
+  doc.autoTable({
+    startY: 35,
+    head: [[
+      "Date", "Heure", "Temp", "FC", "TA", "Sat", "FR", "Douleur", "GCS", "Obs"
+    ]],
+    body: rows,
+
+    styles: {
+      fontSize: 8,
+      cellPadding: 2
+    },
+
+    headStyles: {
+      fillColor: [29, 78, 216] // bleu
+    },
+
+    alternateRowStyles: {
+      fillColor: [245, 247, 250]
+    }
+  });
+
+  // =========================
+  // 📄 EXPORT BLOB
+  // =========================
+  const pdfBlob = doc.output("blob");
   const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  // Envoi vers ton viewer interne
+  // =========================
+  // 🚀 OUVERTURE DANS TON VIEWER
+  // =========================
   window.parent.postMessage(
     {
       type: "OPEN_TAB",
-      title: "Constantes patient PDF",
-url: `viewer.html?file=${encodeURIComponent(pdfUrl)}&title=Constantes`
+      title: "Constantes PDF",
+      url: `viewer.html?file=${encodeURIComponent(pdfUrl)}`
     },
     "*"
   );
 }
+
     function getFormValues() {
       return {
         date: document.getElementById("date").value,

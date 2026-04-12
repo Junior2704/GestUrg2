@@ -1793,10 +1793,6 @@ nav:hover .nav-item span {
  <div>
   <label>Recherche médecin</label>
 
-  <input type="text" id="searchMedecin" placeholder="Nom, prénom, spécialité..." autocomplete="off"/>
-
-  <div id="resultatsMedecins"></div>
-
   <label>Médecin(s) traitant(s)</label>
   <textarea id="medtraitant"></textarea>
 </div>
@@ -2712,81 +2708,6 @@ document
     console.error("Erreur chargement examens :", e);
   }
 });
-async function rechercherMedecins(q) {
- const query = encodeURIComponent(
-  `SELECT * WHERE 
-   LOWER(A) CONTAINS LOWER('${q}') OR 
-   LOWER(B) CONTAINS LOWER('${q}') OR 
-   LOWER(C) CONTAINS LOWER('${q}')`
-);
-
-  const url = `https://docs.google.com/spreadsheets/d/17ysdYdKtpcsdBlP5lojwA7vGGkfZeGtH/gviz/tq?tqx=out:json&tq=${query}`;
-
-  const res = await fetch(url);
-  const text = await res.text();
-
-  console.log("RAW:", text); // 👈 DEBUG
-
-  // 🔥 extraction propre
-  const json = JSON.parse(
-    text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
-  );
-
-  return json.table.rows.map(r => {
-    const c = r.c;
-
-    return {
-      nom: c[0]?.v || "",
-      prenom: c[1]?.v || "",
-      profession: c[2]?.v || "",
-      adresse: `${c[3]?.v || ""} ${c[4]?.v || ""} ${c[5]?.v || ""} ${c[6]?.v || ""}`,
-      tel: c[7]?.v || ""
-    };
-  });
-}
-let timeout;
-
-document.getElementById("searchMedecin").addEventListener("input", (e) => {
-  clearTimeout(timeout);
-
-  const q = e.target.value.trim();
-
-  if (q.length < 2) return;
-
-  // 🔥 anti-lag (attend que user ait fini de taper)
-  timeout = setTimeout(async () => {
-    const results = await rechercherMedecins(q);
-
-    afficherResultats(results);
-  }, 300);
-});
-function afficherResultats(results) {
-  const container = document.getElementById("resultatsMedecins");
-  container.innerHTML = "";
-
-  results.slice(0, 10).forEach(m => {
-    const div = document.createElement("div");
-
-    div.innerHTML = `
-      <strong>${m.prenom} ${m.nom}</strong><br>
-      <small>${m.profession}</small><br>
-      <em>${m.adresse}</em>
-    `;
-
-    div.onclick = () => {
-      document.getElementById("medtraitant").value +=
-`------------------------
-${m.prenom} ${m.nom}
-${m.profession}
-${m.adresse}
-Tel: ${m.tel}
-------------------------
-`;
-    };
-
-    container.appendChild(div);
-  });
-}
 	
   function calculerAge(dateNaissance) {
     const birth = new Date(dateNaissance);

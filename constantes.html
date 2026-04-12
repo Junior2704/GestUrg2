@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <title>Constantes patient</title>
   <style>
     :root {
@@ -244,6 +245,9 @@ body {
   <div class="table-header">
   <h3>Relevé des Constantes</h3>
   <button class="btn btn-primary" id="btnAdd">➕ Ajouter une ligne</button>
+  <button class="btn btn-primary" onclick="generatePdf()">
+  📄 Suivi des constantes PDF
+</button>
 </div>
       <table>
         <thead>
@@ -401,7 +405,33 @@ body {
           : "Saisissez le poids et la taille puis enregistrez.";
       }
     }
+async function generatePdf() {
+  const element = document.body; // ou .container si tu veux cibler
 
+  const opt = {
+    margin: 0.5,
+    filename: 'constantes.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // Génère le PDF en blob
+  const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+
+  // Crée une URL locale
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+
+  // Envoi vers ton viewer interne
+  window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: "Constantes patient PDF",
+url: `viewer.html?file=${encodeURIComponent(pdfUrl)}&title=Constantes`
+    },
+    "*"
+  );
+}
     function getFormValues() {
       return {
         date: document.getElementById("date").value,

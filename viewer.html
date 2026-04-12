@@ -77,10 +77,43 @@ const db = firebase.firestore();
    =============================== */
 const params = new URLSearchParams(window.location.search);
 const docId = params.get("docId");
+const fileUrl = params.get("file");
 
-if (!docId) {
-    document.body.innerHTML = "<h2 style='padding:20px'>Document manquant</h2>";
-    throw new Error("docId manquant");
+// 👉 CAS 1 : PDF généré dynamiquement
+if (fileUrl) {
+    document.getElementById("pdfFrame").src = decodeURIComponent(fileUrl);
+    const title = params.get("title");
+if (title) document.title = title;
+}
+
+// 👉 CAS 2 : PDF Firebase (ton système actuel)
+else if (docId) {
+
+    db.collection("documents").doc(docId).get().then(snap => {
+
+        if (!snap.exists) {
+            document.body.innerHTML = "<h2 style='padding:20px'>Document introuvable</h2>";
+            return;
+        }
+
+        const data = snap.data();
+
+        if (!data.pdfBase64) {
+            document.body.innerHTML = "<h2 style='padding:20px'>PDF indisponible</h2>";
+            return;
+        }
+
+        const blob = b64toBlob(data.pdfBase64, "application/pdf");
+        const url = URL.createObjectURL(blob);
+
+        document.getElementById("pdfFrame").src = url;
+    });
+
+}
+
+// 👉 CAS 3 : rien fourni
+else {
+    document.body.innerHTML = "<h2 style='padding:20px'>Aucun document fourni</h2>";
 }
 
 /* ===============================

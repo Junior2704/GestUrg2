@@ -471,7 +471,6 @@ nav3.onclick = () => { if (!identityValidated) return; openTab(3); };
 nav4.onclick = () => { if (!identityValidated) return; openTab(4); };
 
 
-
 search.oninput = async () => {
   results.innerHTML = "";
 
@@ -479,56 +478,20 @@ search.oninput = async () => {
   if (valRaw.length < 2) return;
 
   try {
-    // 🔎 On récupère un batch de patients (rapide et simple)
-    const snap = await getDocs(
-      query(collection(db, "patients"), limit(50))
+    const q = query(
+      collection(db, "patients"),
+      where("searchIndex", "array-contains", valRaw),
+      limit(10)
     );
 
-    let found = [];
+    const snap = await getDocs(q);
 
     snap.forEach(docSnap => {
       const p = docSnap.data();
+      const id = docSnap.id;
 
-      const nom = (p.nom || "").toLowerCase();
-      const prenom = (p.prenom || "").toLowerCase();
-      const id = docSnap.id.toLowerCase();
-
-      // 🔎 Format date multiple
-      let dateFormats = [];
-      if (p.dateNaissance) {
-        const d = new Date(p.dateNaissance);
-        if (!isNaN(d)) {
-          const j = String(d.getDate()).padStart(2, "0");
-          const m = String(d.getMonth() + 1).padStart(2, "0");
-          const a = d.getFullYear();
-
-          dateFormats.push(`${j}${m}${a}`);      // 01011990
-          dateFormats.push(`${j}/${m}/${a}`);    // 01/01/1990
-          dateFormats.push(`${a}-${m}-${j}`);    // 1990-01-01
-        } else {
-          dateFormats.push(p.dateNaissance.toLowerCase());
-        }
-      }
-
-      // 🔥 Matching intelligent
-      const match =
-        nom.includes(valRaw) ||
-        prenom.includes(valRaw) ||
-        (nom + " " + prenom).includes(valRaw) ||
-        (prenom + " " + nom).includes(valRaw) ||
-        id.includes(valRaw) ||
-        dateFormats.some(df => df.includes(valRaw));
-
-      if (match) {
-        found.push({ id: docSnap.id, data: p });
-      }
-    });
-
-    // 🔽 Limite affichage
-    found.slice(0, 10).forEach(({ id, data: p }) => {
       const div = document.createElement("div");
       div.className = "result";
-
       div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${id}`;
 
       div.onclick = () => {
@@ -561,13 +524,48 @@ search.oninput = async () => {
     });
 
   } catch (err) {
-    console.error("Erreur recherche :", err);
+    console.error(err);
   }
 };
 // 🌟 Stockage temporaire pour les nouveaux patients
 let patientMedicalData = { medtraitant: "", vigilances: "", allergies: "" };
 
+function buildSearchIndex(nom, prenom, dateNaissance) {
+  const n = (nom || "").toLowerCase();
+  const p = (prenom || "").toLowerCase();
 
+  let index = new Set();
+
+  // 🔤 Préfixes (dup, dupo, dupont...)
+  function prefixes(word) {
+    for (let i = 1; i <= word.length; i++) {
+      index.add(word.slice(0, i));
+    }
+  }
+
+  prefixes(n);
+  prefixes(p);
+
+  // 🔗 Combinaisons
+  index.add(n + " " + p);
+  index.add(p + " " + n);
+
+  // 📅 Date
+  if (dateNaissance) {
+    const d = new Date(dateNaissance);
+    if (!isNaN(d)) {
+      const j = String(d.getDate()).padStart(2, "0");
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const a = d.getFullYear();
+
+      index.add(`${j}${m}${a}`);
+      index.add(`${j}/${m}/${a}`);
+      index.add(a.toString());
+    }
+  }
+
+  return Array.from(index);
+}
 document.getElementById("saveMedicalData").onclick = async () => {
   const medtraitantVal = document.getElementById("medtraitant").value.trim();
   const vigilancesVal = document.getElementById("vigilances").value.trim();
@@ -708,6 +706,8 @@ if (patientId) {
       hospitalisationsIds.push(hospiRef.id);
 
       // 🔹 Update patient
+            const searchIndex = buildSearchIndex(nomVal, prenomVal, naissanceVal);
+
       await updateDoc(patientRef, {
         nom: nomVal,
         prenom: prenomVal,
@@ -718,13 +718,15 @@ if (patientId) {
         email: emailVal,
         hospitalisations: hospitalisationsIds,
         hospitalisationActiveId: hospiRef.id,
-        position: "salle-attente"
+        position: "salle-attente",
+        searchIndex: buildSearchIndex(nomVal, prenomVal, naissanceVal)
       });
 
       showInfoModal("✅ Nouvelle hospitalisation créée !", true);
 
     } else {
       // 🔹 Nouveau patient
+      const searchIndex = buildSearchIndex(nomVal, prenomVal, naissanceVal);
       const newPatientRef = await addDoc(collection(db, "patients"), {
         nom: nomVal,
         prenom: prenomVal,
@@ -736,6 +738,7 @@ if (patientId) {
         hospitalisations: [],
         hospitalisationActiveId: null,
         position: "salle-attente",
+        searchIndex: searchIndex,
         ...patientMedicalData
       });
 

@@ -3541,15 +3541,23 @@ function getBadge(categorie) {
 }
 const searchInput = document.getElementById("searchExamen");
 const resultatsDiv = document.getElementById("resultatsExamens");
+function matchExamen(examen, query) {
+  const motsQuery = normaliser(query).split(" ").filter(Boolean);
 
+  const texte = normaliser(examen.type + " " + examen.categorie);
+
+  return motsQuery.every(mot => {
+    return texte.includes(mot);
+  });
+}
 searchInput.addEventListener("input", () => {
-  const valeur = normaliser(searchInput.value);
+  const valeur = searchInput.value.trim();
   resultatsDiv.innerHTML = "";
 
   if (valeur.length < 2) return;
 
   const resultats = examensDisponibles.filter(ex =>
-    normaliser(ex.type).includes(valeur)
+    matchExamen(ex, valeur)
   );
 
   resultats.forEach(examen => {
@@ -3559,7 +3567,7 @@ searchInput.addEventListener("input", () => {
     div.innerHTML = `
       <span>${getBadge(examen.categorie)}</span>
       <strong>${examen.type}</strong>
-      <small style="margin-left:8px;color:gray;">${examen.categorie}</small>
+      <small>${examen.categorie}</small>
     `;
 
     div.onclick = () => ajouterExamen(examen.type);
@@ -3567,11 +3575,10 @@ searchInput.addEventListener("input", () => {
     resultatsDiv.appendChild(div);
   });
 
-  // ajout libre
   if (resultats.length === 0) {
     const div = document.createElement("div");
-    div.textContent = `➕ Ajouter "${searchInput.value}"`;
-    div.onclick = () => ajouterExamen(searchInput.value);
+    div.textContent = `➕ Ajouter "${valeur}"`;
+    div.onclick = () => ajouterExamen(valeur);
     resultatsDiv.appendChild(div);
   }
 });

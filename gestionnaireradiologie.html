@@ -651,29 +651,6 @@ function hideSpinner() {
 }
 
 
-    function formatDateHeure(dateStr) {
-  if (!dateStr || dateStr === "?") return "?";
-
-  // dateStr attendu au format "DD/MM/YYYY HH:MM:SS"
-  const [datePart, timePart] = dateStr.split(" ");
-  if (!datePart || !timePart) return "?";
-
-  const [day, month, year] = datePart.split("/").map(Number);
-  const [hour, minute, second] = timePart.split(":").map(Number);
-
-  // Création de la date valide
-  const dateObj = new Date(year, month - 1, day, hour, minute, second);
-  if (isNaN(dateObj)) return "?";
-
-  // Formatage en "DD/MM/YYYY HH:MM"
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const yyyy = dateObj.getFullYear();
-  const hh = String(dateObj.getHours()).padStart(2, "0");
-  const min = String(dateObj.getMinutes()).padStart(2, "0");
-
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-}
 
     function calculerAge(dateNaissance) {
       const d = new Date(dateNaissance);
@@ -966,27 +943,51 @@ window.openEditModal = (patientId, hospitalisationId, examIndex) => {
   compteRenduInput.value = "";
   editModal.style.display = "flex";
 };
+function formatDateHeure(input) {
+  if (!input) return "?";
 
-function formatDateHeure(dateStr) {
-  if (!dateStr || dateStr === "?") return "?";
+  let date;
 
-  // dateStr attendu au format "DD/MM/YYYY HH:MM:SS"
-  const [datePart, timePart] = dateStr.split(" ");
-  if (!datePart || !timePart) return "?";
+  // 1️⃣ Déjà un objet Date
+  if (input instanceof Date) {
+    date = input;
+  }
 
-  const [day, month, year] = datePart.split("/").map(Number);
-  const [hour, minute, second] = timePart.split(":").map(Number);
+  // 2️⃣ Timestamp numérique
+  else if (typeof input === "number") {
+    date = new Date(input);
+  }
 
-  // Création de la date valide
-  const dateObj = new Date(year, month - 1, day, hour, minute, second);
-  if (isNaN(dateObj)) return "?";
+  // 3️⃣ ISO string (ex: new Date().toISOString())
+  else if (typeof input === "string" && input.includes("T")) {
+    date = new Date(input);
+  }
 
-  // Formatage en "DD/MM/YYYY HH:MM"
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const yyyy = dateObj.getFullYear();
-  const hh = String(dateObj.getHours()).padStart(2, "0");
-  const min = String(dateObj.getMinutes()).padStart(2, "0");
+  // 4️⃣ Format "DD/MM/YYYY HH:MM:SS"
+  else if (typeof input === "string" && input.includes("/")) {
+    const [datePart, timePart] = input.split(" ");
+
+    if (!datePart || !timePart) return "?";
+
+    const [day, month, year] = datePart.split("/").map(Number);
+    const [hour, minute, second] = timePart.split(":").map(Number);
+
+    date = new Date(year, month - 1, day, hour, minute, second);
+  }
+
+  // 5️⃣ fallback
+  else {
+    date = new Date(input);
+  }
+
+  if (isNaN(date.getTime())) return "?";
+
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
 
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }

@@ -472,72 +472,66 @@ nav4.onclick = () => { if (!identityValidated) return; openTab(4); };
 
 
 
-
-/* ---------- RECHERCHE ---------- */
 search.oninput = async () => {
   results.innerHTML = "";
 
-  const valRaw = search.value.toLowerCase().trim();
+  const valRaw = search.value.trim().toLowerCase();
   if (valRaw.length < 2) return;
 
-  const val = valRaw.replace(/\//g, "");
+  try {
+    // 🔎 On récupère un batch de patients (rapide et simple)
+    const snap = await getDocs(
+      query(collection(db, "patients"), limit(50))
+    );
 
-  let resultsMap = new Map();
+    let found = [];
 
-  // 🔎 1. Recherche NOM (préfixe)
-  const qNom = query(
-    collection(db, "patients"),
-    where("nom", ">=", valRaw),
-    where("nom", "<=", valRaw + "\uf8ff"),
-    limit(10)
-  );
+    snap.forEach(docSnap => {
+      const p = docSnap.data();
 
-  // 🔎 2. Recherche PRENOM
-  const qPrenom = query(
-    collection(db, "patients"),
-    where("prenom", ">=", valRaw),
-    where("prenom", "<=", valRaw + "\uf8ff"),
-    limit(10)
-  );
+      const nom = (p.nom || "").toLowerCase();
+      const prenom = (p.prenom || "").toLowerCase();
+      const id = docSnap.id.toLowerCase();
 
-  // 🔎 3. On exécute en parallèle
-  const [snapNom, snapPrenom] = await Promise.all([
-    getDocs(qNom),
-    getDocs(qPrenom)
-  ]);
+      // 🔎 Format date multiple
+      let dateFormats = [];
+      if (p.dateNaissance) {
+        const d = new Date(p.dateNaissance);
+        if (!isNaN(d)) {
+          const j = String(d.getDate()).padStart(2, "0");
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const a = d.getFullYear();
 
-  // Fusion sans doublons
-  snapNom.forEach(doc => resultsMap.set(doc.id, doc));
-  snapPrenom.forEach(doc => resultsMap.set(doc.id, doc));
-
-  // 🔎 4. Filtrage intelligent (date + ID inclus)
-  resultsMap.forEach((docSnap) => {
-    const p = docSnap.data();
-
-    let dateFormatee = "";
-    if (p.dateNaissance) {
-      const d = new Date(p.dateNaissance);
-      if (!isNaN(d)) {
-        const j = String(d.getDate()).padStart(2, "0");
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const a = d.getFullYear();
-        dateFormatee = `${j}${m}${a}`;
-      } else {
-        dateFormatee = p.dateNaissance.replace(/\//g, "");
+          dateFormats.push(`${j}${m}${a}`);      // 01011990
+          dateFormats.push(`${j}/${m}/${a}`);    // 01/01/1990
+          dateFormats.push(`${a}-${m}-${j}`);    // 1990-01-01
+        } else {
+          dateFormats.push(p.dateNaissance.toLowerCase());
+        }
       }
-    }
 
-    if (
-      p.nom?.toLowerCase().includes(valRaw) ||
-      p.prenom?.toLowerCase().includes(valRaw) ||
-      docSnap.id.toLowerCase().includes(val) ||
-      dateFormatee.includes(val)
-    ) {
+      // 🔥 Matching intelligent
+      const match =
+        nom.includes(valRaw) ||
+        prenom.includes(valRaw) ||
+        (nom + " " + prenom).includes(valRaw) ||
+        (prenom + " " + nom).includes(valRaw) ||
+        id.includes(valRaw) ||
+        dateFormats.some(df => df.includes(valRaw));
+
+      if (match) {
+        found.push({ id: docSnap.id, data: p });
+      }
+    });
+
+    // 🔽 Limite affichage
+    found.slice(0, 10).forEach(({ id, data: p }) => {
       const div = document.createElement("div");
       div.className = "result";
-      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${docSnap.id}`;
 
-      div.onclick = async () => {
+      div.textContent = `${p.nom} ${p.prenom} (${p.dateNaissance || "?"}) - CIP: ${id}`;
+
+      div.onclick = () => {
         if (p.hospitalisationActiveId) {
           showInfoModal("⛔ Ce patient est déjà hospitalisé", true);
           return;
@@ -547,11 +541,12 @@ search.oninput = async () => {
         prenom.value = p.prenom;
         sexe.value = p.sexe || "";
         naissance.value = p.dateNaissance || "";
-        nom.dataset.id = docSnap.id;
+        nom.dataset.id = id;
+
         adresse.value = p.adresse || "";
         telephone.value = p.telephone || "";
         email.value = p.email || "";
-        idPatient.value = docSnap.id;
+        idPatient.value = id;
 
         document.getElementById("medtraitant").value = p.medtraitant || "";
         document.getElementById("vigilances").value = p.vigilances || "aucune";
@@ -563,8 +558,11 @@ search.oninput = async () => {
       };
 
       results.appendChild(div);
-    }
-  });
+    });
+
+  } catch (err) {
+    console.error("Erreur recherche :", err);
+  }
 };
 // 🌟 Stockage temporaire pour les nouveaux patients
 let patientMedicalData = { medtraitant: "", vigilances: "", allergies: "" };

@@ -787,7 +787,8 @@ function afficherBulle(msg, type = 'info') {
 window.imprimer=imprimer;
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 window.validerPrescription = async function (){
-
+const btn = document.getElementById("btnValiderPrescription");
+  btn.disabled = true;
   // 🔥 on transforme les examens en texte (comme avant)
   const prescriptionText = getExamensSelectionnes()
     .map(e => `${e.type}${e.commentaire ? " - " + e.commentaire : ""}`)
@@ -798,9 +799,7 @@ window.validerPrescription = async function (){
     return;
   }
 
-  document.getElementById("btnValiderPrescription").style.display = "none";
-  document.getElementById("postValidationActions").style.display = "flex";
-
+ 
   // 🔹 Création du .ord EXACTEMENT comme toi
   const ord = construireORD();
 
@@ -831,6 +830,8 @@ localStorage.setItem("pdfIdExistante", idUnique);
 
         }
       );
+ document.getElementById("btnValiderPrescription").style.display = "none";
+  document.getElementById("postValidationActions").style.display = "flex";
 
       console.log("✅ Prescription enregistrée avec ID unique :", idUnique);
       afficherBulle("✅ Prescription enregistrée !", "success");

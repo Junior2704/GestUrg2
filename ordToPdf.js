@@ -51,7 +51,7 @@ function generateHTML(ord) {
 
 #ordonnance {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
     padding: 18mm;
     box-sizing: border-box;
     color: #1f2937;
@@ -103,11 +103,18 @@ function generateHTML(ord) {
 }
 
 .signature {
-    margin-top: 50px;
+    margin-top: 30px;
     text-align: right;
     font-weight: 600;
     font-size: 15px;
     color: #111827;
+}
+    #ordonnance {
+    page-break-after: avoid;
+}
+
+body {
+    page-break-after: avoid;
 }
         </style>
     </head>
@@ -164,15 +171,15 @@ function ordToPDF(ord) {
 
  return html2pdf()
     .set({
-        margin: 0,
+          margin: [0, 0, 0, 0],
         filename: `${ord.titre || "document"}.pdf`,
-        html2canvas: { scale: 2, scrollY: 0 },
+        html2canvas: { scale: 1, scrollY: 0 },
         jsPDF: {
             unit: 'mm',
             format: 'a4',
             orientation: 'portrait'
         },
-        pagebreak: { mode: ['css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all'] }
     })
     .from(container)
     .save();

@@ -1,1148 +1,418 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>💰 Facturation - Urgences</title>
-  <link rel="icon" type="image/jpeg" href="logo.png" />
-
-  <!-- Librairies -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facturation RPO</title>
+  <link rel="icon" type="image/png" href="logo.png" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <!-- EmailJS (même version que dans ton rapport) -->
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root{
-      --primary:#007bff; --accent:#17a2b8; --success:#28a745; --danger:#dc3545; --muted:#6c757d; --card:#ffffff;
-    }
-    body{ font-family:"Segoe UI", Roboto, Arial, sans-serif; background: linear-gradient(90deg,#f4f6f8,#e9ecef); margin:0; padding:24px; color:#222;}
-    h1{ text-align:center; margin:6px 0 18px; }
-    form{ max-width:1000px; margin:0 auto; background:var(--card); padding:22px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.08); }
-    label{ display:block; margin-top:12px; font-weight:700; color:#333; }
-    input, select { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #d3d7db; box-sizing:border-box; font-size:15px; }
-    input:disabled, select:disabled{ background:#f7f7f7; color:#777; }
-    .btn-container{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
-    .button{ background:var(--success); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    .button.secondary{ background:var(--accent); }
-    .button.danger{ background:var(--danger); }
-    .button.warning{ background:#ffc107; color:#111; }
-    .button[disabled]{ opacity:0.6; cursor:not-allowed; }
-    table{ width:100%; border-collapse:collapse; margin-top:18px; }
-    th,td{ border:1px solid #e6e9ec; padding:10px; text-align:center; font-size:14px; }
-    th{ background:#f7f9fb; font-weight:700; color:#333; }
-    .price, .lineTotal{ font-weight:700; color:#111; }
-    #grandTotal{ font-size:16px; font-weight:800; color:var(--primary); }
-    .muted{ color:var(--muted); font-size:13px; }
-    .flex{ display:flex; gap:10px; align-items:center; }
-    .right{ margin-left:auto; }
-    #processingPopup{ display:none; position:fixed; left:50%; transform:translateX(-50%); top:18px; background:var(--primary); color:#fff; padding:14px 20px; border-radius:10px; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.12); }
-    #progressBar{ height:8px; width:0%; background:#fff; border-radius:6px; transition:width 2.2s linear; margin-top:10px; }
-    #vitaleModal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:10000; justify-content:center; align-items:center; }
-    #vitaleModal .box{ background:#fff; padding:28px; border-radius:12px; text-align:center; width:320px; box-shadow:0 12px 32px rgba(0,0,0,0.18); }
-    .spinner{ width:48px; height:48px; border-radius:50%; border:6px solid #eee; border-top-color:var(--primary); margin:0 auto 12px; animation:spin 1s linear infinite; }
-    @keyframes spin{ to{ transform:rotate(360deg);} }
-    #bubble-container{ position:fixed; top:20px; right:20px; display:flex; flex-direction:column; gap:10px; z-index:11000; }
-    .bubble{ padding:10px 14px; border-radius:8px; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,0.12); max-width:320px; }
-    .administratif{ background:#2196F3; } .alerte{ background:#f44336; }
-    /* --- MODALE D'ENVOI EMAIL (version harmonisée & élégante) --- */
-#emailSelectModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  justify-content: center;
-  align-items: center;
-  z-index: 200;
-  animation: fadeInModal 0.3s ease-out;
-}
-
-#emailSelectModal.show {
-  display: flex;
-}
-
-#emailSelectModal .modal-content {
-  width: 400px; /* ✅ Taille idéale (ni trop large, ni trop serrée) */
-  max-width: 90%;
-  background: linear-gradient(to bottom right, #ffffff, #f9fafc);
-  border-radius: 16px;
-  padding: 28px 26px 22px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  animation: slideUpModal 0.35s ease-out;
-  transform-origin: center;
-  text-align: left;
-}
-
-#emailSelectModal h3 {
-  text-align: center;
-  margin-top: 0;
-  font-size: 1.25rem;
-  color: #1e293b;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-#emailSelectModal .email-options {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#emailSelectModal label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f8fafc;
-  transition: background 0.2s ease, transform 0.1s ease;
-  border: 1px solid transparent;
-}
-
-#emailSelectModal label:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  transform: scale(1.02);
-}
-
-#emailSelectModal input[type="checkbox"] {
-  accent-color: #2563eb;
-  transform: scale(1.15);
-}
-
-#emailSelectModal input[type="email"] {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  font-size: 0.9rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-#emailSelectModal input[type="email"]:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  outline: none;
-}
-
-#emailSelectModal .modal-actions {
-  margin-top: 22px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-#emailSelectModal button {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.1s ease;
-}
-
-#emailSelectModal .btn-cancel {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-#emailSelectModal .btn-cancel:hover {
-  background: #cbd5e1;
-}
-
-#emailSelectModal .btn-confirm {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
-}
-
-#emailSelectModal .btn-confirm:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
-
-/* --- ANIMATIONS --- */
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUpModal {
-  from {
-    transform: translateY(30px) scale(0.98);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 720px) {
-  #emailSelectModal .modal-content {
-    width: 95%;
-    padding: 22px 18px;
-  }
-}
-footer {
-  margin-top: auto; /* pousse le footer en bas */
-  padding: 15px;
-  text-align: center; /* centre le texte à l'intérieur */
-  color: #777;
-  font-size: 0.9rem;
-  width: 100%; /* assure que le footer prend toute la largeur */
-}
+    :root { --bg:#f3f5f8; --card:#fff; --primary:#0d6efd; --ok:#198754; --warn:#fd7e14; --danger:#dc3545; --muted:#6c757d; }
+    body { margin:0; background:var(--bg); font-family:Segoe UI, Arial, sans-serif; color:#1f2937; }
+    .wrap { max-width:1200px; margin:24px auto; padding:0 16px; }
+    .card { background:var(--card); border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.08); padding:18px; margin-bottom:16px; }
+    h1,h2,h3 { margin:0 0 12px; }
+    h1 { text-align:center; margin-bottom:18px; }
+    .grid { display:grid; gap:10px; }
+    .g-3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
+    .g-4 { grid-template-columns:repeat(4, minmax(0,1fr)); }
+    label { font-weight:600; font-size:.92rem; display:block; margin-bottom:5px; }
+    input,select,button { border:1px solid #d1d5db; border-radius:10px; padding:9px 10px; font-size:.95rem; }
+    input,select { width:100%; box-sizing:border-box; }
+    button { cursor:pointer; font-weight:600; }
+    .btn { background:var(--primary); color:#fff; border:none; }
+    .btn-ok { background:var(--ok); color:#fff; border:none; }
+    .btn-warn { background:var(--warn); color:#fff; border:none; }
+    .btn-danger { background:var(--danger); color:#fff; border:none; }
+    .btn-light { background:#e9ecef; }
+    .line { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th,td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
+    th { background:#f8fafc; }
+    td.left { text-align:left; }
+    .search-box { position:relative; }
+    .suggestions { position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #d1d5db; border-radius:8px; max-height:160px; overflow:auto; display:none; z-index:20; }
+    .suggestions div { padding:8px; cursor:pointer; }
+    .suggestions div:hover { background:#eef2ff; }
+    .totaux { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; margin-top:12px; }
+    .kpi { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
+    .kpi b { display:block; font-size:1.1rem; margin-top:6px; }
+    .small { color:var(--muted); font-size:.84rem; }
+    .status { font-weight:700; }
+    @media (max-width:900px){ .g-3,.g-4,.totaux { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
+<div class="wrap">
+  <h1>🧾 Facturation RPO</h1>
 
-<h1>💰 Facturation - Urgences</h1>
-
-<form id="invoiceForm">
-  <div class="btn-container">
-    <button type="button" id="resetBtn" class="button danger">❌ Réinitialiser</button>
-    <button type="button" id="readVitaleBtn" class="button">🆔 Lecture Carte Vitale</button>
+  <div class="card">
+    <h2>Patient / recherche facture</h2>
+    <div class="grid g-4">
+      <div><label>ID patient (URL ?id=...)</label><input id="patientId" disabled /></div>
+      <div><label>Nom</label><input id="nom" /></div>
+      <div><label>Prénom</label><input id="prenom" /></div>
+      <div><label>Date de naissance</label><input id="naissance" type="date" /></div>
+    </div>
+    <div class="line" style="margin-top:10px;">
+      <input id="searchInvoiceId" placeholder="ID facture à charger" style="max-width:260px;" />
+      <button id="loadInvoiceBtn" class="btn-light" type="button">🔎 Charger facture</button>
+      <span class="small">Une facture sauvegardée peut être retrouvée puis réimprimée en PDF.</span>
+    </div>
   </div>
 
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
-    <div>
-      <label for="lastName">Nom :</label>
-      <input id="lastName" type="text" required>
+  <div class="card">
+    <h2>Prestations</h2>
+    <div class="line">
+      <div class="search-box" style="min-width:330px; flex:1;">
+        <label>Ajouter une prestation (barre de recherche)</label>
+        <input id="prestationSearch" placeholder="Tapez une prestation..." />
+        <div id="suggestions" class="suggestions"></div>
+      </div>
+      <button type="button" id="addManualLine" class="btn-light">➕ Ligne manuelle</button>
     </div>
-    <div>
-      <label for="firstName">Prénom :</label>
-      <input id="firstName" type="text" required>
-    </div>
-    <div>
-      <label for="birthDate">Date de naissance :</label>
-      <input id="birthDate" type="date" required>
-      <div id="ageDisplay" class="muted"></div>
-    </div>
-    
-  </div>
 
-  <h2 style="margin-top:18px;">🩺 Prestations</h2>
-
-  <table id="itemsTable">
-    <thead>
+    <table>
+      <thead>
       <tr>
-        <th style="text-align:left; padding-left:12px;">Prestation</th>
-        <th>Quantité</th>
-        <th>Prix Unitaire (€)</th>
-        <th>Total (€)</th>
-        <th></th>
+        <th>Prestation</th><th>Qté</th><th>Prix unitaire (€)</th><th>Total (€)</th><th></th>
       </tr>
-    </thead>
-    <tbody id="itemsBody"></tbody>
-
-    <tfoot>
-      <tr>
-        <td colspan="2" style="text-align:left; padding-left:12px;" class="muted">Remerciements: Merci de votre confiance</td>
-        <td style="text-align:right; font-weight:700;">Total TTC</td>
-        <td id="grandTotal">0.00</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div style="display:flex; gap:10px; margin-top:14px; align-items:center; flex-wrap:wrap;">
-    <button type="button" id="addItemBtn" class="button">➕ Ajouter une prestation</button>
-    <div class="right muted" style="margin-left:auto;">(Les champs deviennent non modifiables après validation)</div>
+      </thead>
+      <tbody id="lignes"></tbody>
+      <tfoot>
+        <tr><td colspan="3" style="text-align:right; font-weight:700;">Total</td><td id="totalGlobal">0.00</td><td></td></tr>
+      </tfoot>
+    </table>
   </div>
-<div>
-      <label for="paymentMode">Mode de paiement :</label>
-      <select id="paymentMode" required>
-        <option value="">-- Choisir --</option>
-        <option>💶 Espèces</option>
-        <option>💳 Carte bancaire</option>
-        <option>✍️ Chèque</option>
-        <option>🆔 Carte Vitale</option>
-        <option>🏥 Hospitalisation</option>
-      </select>
+
+  <div class="card">
+    <h2>Répartition Secu / Mutuelle / Patient</h2>
+    <div class="grid g-4">
+      <div>
+        <label>Régime sécu</label>
+        <select id="regimeSecu">
+          <option value="70">Régime général (70%)</option>
+          <option value="90">Alsace-Moselle (90%)</option>
+          <option value="100">100% (ALD/CMU/AME)</option>
+          <option value="0">Sans prise en charge</option>
+        </select>
+      </div>
+      <div>
+        <label>Taux mutuelle (%) sur le reste</label>
+        <input id="tauxMutuelle" type="number" min="0" max="100" value="100" />
+      </div>
+      <div>
+        <label>Part sécu (€)</label>
+        <input id="partSecu" disabled />
+      </div>
+      <div>
+        <label>Part mutuelle (€)</label>
+        <input id="partMutuelle" disabled />
+      </div>
     </div>
-  <div class="btn-container" style="margin-top:18px;">
-    <button type="button" id="validateBtn" class="button secondary">✅ Valider le paiement</button>
-    <button type="button" id="downloadPdfBtn" class="button" style="display:none;">📄 Télécharger la facture (PDF)</button>
-        <button type="button" id="btnImprimer" class="button secondary">🖨️ Imprimer</button>
-
-
-    <!-- bouton d'envoi email : apparait en même temps que téléchargement -->
-    <button type="button" id="sendEmailBtn" class="button" style="display:none; background:#004AAD;">📧 Envoyer par e-mail</button>
+    <div class="totaux">
+      <div class="kpi">Part patient restante<b id="partPatient">0.00 €</b></div>
+      <div class="kpi">Déjà payé<b id="dejaPaye">0.00 €</b></div>
+      <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
+      <div class="kpi">Statut paiement<b class="status" id="statutPaiement">INCOMPLET</b></div>
+    </div>
   </div>
-</form>
 
-<!-- Processing popup -->
-<div id="processingPopup">
-  <div style="font-weight:700;">Validation en cours...</div>
-  <div style="background:rgba(255,255,255,0.2); padding:6px; border-radius:6px; margin-top:8px;">
-    <div id="progressBar"></div>
+  <div class="card">
+    <h2>Paiement en plusieurs fois</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Mode</th><th>Montant (€)</th><th></th></tr></thead>
+      <tbody id="payments"></tbody>
+    </table>
+    <button id="addPayment" type="button" class="btn-light" style="margin-top:8px;">➕ Ajouter un paiement</button>
   </div>
-</div>
 
-<!-- Carte Vitale modal -->
-<div id="vitaleModal">
-  <div class="box">
-    <div class="spinner"></div>
-    <div style="font-weight:700; margin-top:6px;">Lecture Carte Vitale en cours...</div>
-  </div>
-</div>
-
-<!-- Modale de sélection des e-mails -->
-<div id="emailSelectModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); justify-content:center; align-items:center; z-index:200;">
-  <div class="modal-content" style="width:340px; text-align:left;">
-    <h3 style="text-align:center;">📧 Choisissez les destinataires</h3>
-    <form id="emailSelectForm">
-      <div id="emailCheckboxes"></div>
-      <hr style="margin:15px 0;">
-      <label style="display:flex; align-items:center; gap:6px;">
-        <input type="checkbox" id="otherEmailCheck"> Autre destinataire :
-      </label>
-      <input type="email" id="otherEmailInput" placeholder="exemple@mail.com"
-             style="margin-top:5px; padding:6px; width:100%; border:1px solid #ccc; border-radius:6px;" disabled>
-      <br><br>
-      
-      <button type="button" onclick="closeEmailSelectModal()" style="background:#ccc;">Annuler</button>
-      <button type="button" id="confirmEmails">Envoyer</button>
-    </form>
+  <div class="card">
+    <div class="line">
+      <button id="saveInvoiceBtn" type="button" class="btn-ok">💾 Enregistrer la facture</button>
+      <button id="downloadPdfBtn" type="button" class="btn">📄 Générer / télécharger PDF</button>
+      <button id="resetBtn" type="button" class="btn-danger">♻️ Réinitialiser</button>
+      <span class="small" id="saveMsg"></span>
+    </div>
   </div>
 </div>
 
-
-<!-- 🔷 MODALE DE CHARGEMENT -->
-<div id="loadingModal" class="loadingModal">
-  <div class="modal-content">
-    <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo hôpital" class="logo">
-    <div class="loader"></div>
-    <p>Envoi du compte-rendu en cours...</p>
-  </div>
-</div>
-
-<style>
-/* --- Arrière-plan plein écran --- */
-.loadingModal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  display: none; /* masquée par défaut */
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-/* --- Boîte centrale --- */
-.loadingModal-content {
-  background: #fff;
-  padding: 30px 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  text-align: center;
-  width: 320px;
-  animation: fadeIn 0.3s ease;
-}
-
-/* --- Logo --- */
-.loadingModal-content .logo {
-  height: 70px;
-  margin-bottom: 20px;
-}
-
-/* --- Texte --- */
-.loadingModal-content p {
-  color: #333;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* --- Loader --- */
-.loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #1a73e8;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  margin: 15px auto;
-  animation: spin 1s linear infinite;
-}
-
-/* --- Animations --- */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* --- États JS --- */
-#loadingModal.show {
-  display: flex;
-}</style>
-<!-- notification bubbles -->
-<div id="bubble-container"></div>
-<footer> © 2025 — GestUrg2 | Facturation  </footer>
 <script>
-  // -------- EmailJS init (comme dans rapport) ----------
-  emailjs.init("CZapZCcxYfJ8-acLS"); 
-
-  // -------- Firebase config (inchangé) ----------
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
     projectId: "urgences-a8ed4",
     storageBucket: "urgences-a8ed4.appspot.com",
     messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
+    appId: "1:392921498200:web:7ccce767332c67c697c02d"
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ---------- UI helpers & variables ----------
-  const itemsTable = document.querySelector('#itemsTable tbody');
-  const grandTotalElem = document.getElementById('grandTotal');
-  const addItemBtn = document.getElementById('addItemBtn');
-  const ageDisplay = document.getElementById('ageDisplay');
-  const birthDateInput = document.getElementById('birthDate');
-  let currentFactureId = null; // id Firestore après validation
+  const state = { facturables:{}, currentInvoiceId:null };
+  const lignesBody = document.getElementById('lignes');
+  const paymentsBody = document.getElementById('payments');
 
-  function calculateAge(birthDate){
-    if(!birthDate) return '';
-    const today=new Date();
-    const b=new Date(birthDate);
-    let age=today.getFullYear()-b.getFullYear();
-    const m=today.getMonth()-b.getMonth();
-    if(m<0||(m===0 && today.getDate() < b.getDate())) age--;
-    return age;
+  const euros = v => (Number(v || 0)).toFixed(2);
+
+  function addLine(line = {description:'', quantity:1, unitPrice:0}) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="left"><input class="desc" value="${line.description || ''}" /></td>
+      <td><input class="qty" type="number" min="1" value="${line.quantity || 1}" /></td>
+      <td><input class="pu" type="number" step="0.01" min="0" value="${line.unitPrice || 0}" /></td>
+      <td class="lt">0.00</td>
+      <td><button type="button" class="btn-danger del">🗑</button></td>`;
+    lignesBody.appendChild(tr);
+    tr.querySelectorAll('input').forEach(i => i.addEventListener('input', recompute));
+    tr.querySelector('.del').addEventListener('click', () => { tr.remove(); recompute(); });
+    recompute();
   }
-  birthDateInput.addEventListener('change', ()=> {
-    ageDisplay.textContent = birthDateInput.value ? `Âge : ${calculateAge(birthDateInput.value)} ans` : '';
-  });
 
- function updateLine(row) {
-  const qty = parseFloat(row.querySelector('.qty').value) || 0;
-  const price = parseFloat(row.querySelector('.price').textContent) || 0;
-  row.querySelector('.lineTotal').textContent = (qty * price).toFixed(2);
-}
+  function addPayment(p = {}) {
+    const today = new Date().toISOString().slice(0,10);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="pdate" type="date" value="${p.date || today}" /></td>
+      <td>
+        <select class="pmode">
+          <option>Espèces</option><option>Carte bancaire</option><option>Chèque</option><option>Virement</option><option>Autre</option>
+        </select>
+      </td>
+      <td><input class="pamount" type="number" min="0" step="0.01" value="${p.amount || 0}" /></td>
+      <td><button type="button" class="btn-danger delpay">🗑</button></td>`;
+    paymentsBody.appendChild(tr);
+    if (p.mode) tr.querySelector('.pmode').value = p.mode;
+    tr.querySelectorAll('input,select').forEach(i => i.addEventListener('input', recompute));
+    tr.querySelector('.delpay').addEventListener('click', () => { tr.remove(); recompute(); });
+    recompute();
+  }
 
-  function updateTotals(){
+  function readLines() {
+    return [...lignesBody.querySelectorAll('tr')].map(tr => {
+      const quantity = Number(tr.querySelector('.qty').value || 0);
+      const unitPrice = Number(tr.querySelector('.pu').value || 0);
+      return {
+        description: tr.querySelector('.desc').value.trim(),
+        quantity,
+        unitPrice,
+        lineTotal: Number((quantity * unitPrice).toFixed(2))
+      };
+    }).filter(x => x.description);
+  }
+
+  function readPayments() {
+    return [...paymentsBody.querySelectorAll('tr')].map(tr => ({
+      date: tr.querySelector('.pdate').value,
+      mode: tr.querySelector('.pmode').value,
+      amount: Number(tr.querySelector('.pamount').value || 0)
+    })).filter(x => x.amount > 0);
+  }
+
+  function recompute() {
     let total = 0;
-    itemsTable.querySelectorAll('tr').forEach(row => {
-      updateLine(row);
-      total += parseFloat(row.querySelector('.lineTotal').textContent) || 0;
+    [...lignesBody.querySelectorAll('tr')].forEach(tr => {
+      const qty = Number(tr.querySelector('.qty').value || 0);
+      const pu = Number(tr.querySelector('.pu').value || 0);
+      const lt = qty * pu;
+      tr.querySelector('.lt').textContent = euros(lt);
+      total += lt;
     });
-    grandTotalElem.textContent = total.toFixed(2);
+    document.getElementById('totalGlobal').textContent = euros(total);
+
+    const secuRate = Number(document.getElementById('regimeSecu').value || 0) / 100;
+    const mutuelleRate = Number(document.getElementById('tauxMutuelle').value || 0) / 100;
+
+    const partSecu = total * secuRate;
+    const resteApresSecu = Math.max(total - partSecu, 0);
+    const partMutuelle = resteApresSecu * mutuelleRate;
+    const partPatient = Math.max(total - partSecu - partMutuelle, 0);
+
+    const dejaPaye = readPayments().reduce((s,p) => s + p.amount, 0);
+    const restePayer = Math.max(partPatient - dejaPaye, 0);
+
+    document.getElementById('partSecu').value = euros(partSecu);
+    document.getElementById('partMutuelle').value = euros(partMutuelle);
+    document.getElementById('partPatient').textContent = `${euros(partPatient)} €`;
+    document.getElementById('dejaPaye').textContent = `${euros(dejaPaye)} €`;
+    document.getElementById('restePayer').textContent = `${euros(restePayer)} €`;
+    document.getElementById('statutPaiement').textContent = restePayer <= 0.009 ? 'COMPLET' : 'INCOMPLET';
   }
 
-  function addListeners(row){
-    row.querySelector('.serviceSelect').addEventListener('change', updateTotals);
-    row.querySelector('.qty').addEventListener('input', updateTotals);
-    row.querySelector('.removeBtn').addEventListener('click', () => { row.remove(); updateTotals(); });
+  async function preloadPatient() {
+    const params = new URLSearchParams(window.location.search);
+    const patientId = params.get('id');
+    if (!patientId) return;
+    document.getElementById('patientId').value = patientId;
+    const snap = await db.collection('patients').doc(patientId).get();
+    if (!snap.exists) return;
+    const p = snap.data();
+    document.getElementById('nom').value = p.nom || '';
+    document.getElementById('prenom').value = p.prenom || '';
+    if (p.dateNaissance) {
+      const d = p.dateNaissance.toDate ? p.dateNaissance.toDate() : new Date(p.dateNaissance);
+      document.getElementById('naissance').value = d.toISOString().slice(0,10);
+    }
   }
-  // ---- Charger les prestations Firestore ----
-let facturables = {};
-db.collection("referentiels").doc("Facturables").get().then(doc => {
-  if (doc.exists) {
-    facturables = doc.data(); // Exemple : { "Forfait Urgences": 29, "Vaccination": 15 }
-  } else {
-    console.warn("⚠️ Document 'Facturables' introuvable !");
+
+  async function loadFacturables() {
+    const snap = await db.collection('referentiels').doc('Facturables').get();
+    state.facturables = snap.exists ? snap.data() : {};
   }
-});
 
-// ---- Fonction pour créer une ligne ----
-function createItemRow() {
-  const row = itemsTable.insertRow();
-
-  row.innerHTML = `
-    <td style="text-align:left; padding-left:12px; position:relative;">
-      <input type="text" class="serviceSearch" placeholder="Rechercher une prestation..." style="width:100%; padding:8px; border-radius:8px; border:1px solid #ccc;">
-      <div class="suggestions" style="position:absolute; background:#fff; border:1px solid #ddd; border-radius:8px; width:100%; max-height:150px; overflow-y:auto; display:none; z-index:10;"></div>
-    </td>
-    <td><input class="qty" type="number" min="1" value="1"></td>
-    <td class="price">0.00</td>
-    <td class="lineTotal">0.00</td>
-    <td><button type="button" class="button warning removeBtn">🗑️</button></td>
-  `;
-
-  const searchInput = row.querySelector('.serviceSearch');
-  const suggestionsDiv = row.querySelector('.suggestions');
-
-  // Afficher les suggestions selon le texte tapé
-  searchInput.addEventListener('input', () => {
-    const query = searchInput.value.toLowerCase();
-    suggestionsDiv.innerHTML = '';
-    if (!query) { suggestionsDiv.style.display = 'none'; return; }
-
-    const results = Object.keys(facturables).filter(key => key.toLowerCase().includes(query));
-    if (results.length === 0) { suggestionsDiv.style.display = 'none'; return; }
-
-    results.forEach(result => {
-      const div = document.createElement('div');
-      div.textContent = `${result} - ${facturables[result]} €`;
-      div.style.padding = '6px 10px';
-      div.style.cursor = 'pointer';
-      div.addEventListener('mouseenter', () => div.style.background = '#f1f5ff');
-      div.addEventListener('mouseleave', () => div.style.background = 'white');
-      div.addEventListener('click', () => {
-        searchInput.value = result;
-        row.querySelector('.price').textContent = parseFloat(facturables[result]).toFixed(2);
-        suggestionsDiv.style.display = 'none';
-        updateTotals();
+  function setupSearch() {
+    const input = document.getElementById('prestationSearch');
+    const box = document.getElementById('suggestions');
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      box.innerHTML = '';
+      if (!q) { box.style.display='none'; return; }
+      const results = Object.keys(state.facturables).filter(k => k.toLowerCase().includes(q)).slice(0,15);
+      results.forEach(name => {
+        const price = Number(state.facturables[name] || 0);
+        const div = document.createElement('div');
+        div.textContent = `${name} — ${euros(price)} €`;
+        div.onclick = () => { addLine({description:name, quantity:1, unitPrice:price}); input.value=''; box.style.display='none'; };
+        box.appendChild(div);
       });
-      suggestionsDiv.appendChild(div);
+      box.style.display = results.length ? 'block' : 'none';
     });
-    suggestionsDiv.style.display = 'block';
-  });
-
-  // Fermer les suggestions quand on clique ailleurs
-  document.addEventListener('click', (e) => {
-    if (!row.contains(e.target)) suggestionsDiv.style.display = 'none';
-  });
-
-  row.querySelector('.qty').addEventListener('input', updateTotals);
-  row.querySelector('.removeBtn').addEventListener('click', () => { row.remove(); updateTotals(); });
-}
-
-// ---- Créer la première ligne automatiquement ----
-createItemRow();
-
-// ---- Bouton "Ajouter une prestation" ----
-addItemBtn.addEventListener('click', () => createItemRow());
-
-
-  // ---------- Chargement patient depuis l'URL (collection "patients") ----------
-  window.addEventListener('DOMContentLoaded', async () => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    if (id) {
-      try {
-        const doc = await db.collection('patients').doc(id).get();
-        if (doc.exists) {
-          const data = doc.data();
-          document.getElementById('lastName').value = data.nom || '';
-          document.getElementById('firstName').value = data.prenom || '';
-          if (data.dateNaissance) {
-            const d = data.dateNaissance.toDate ? data.dateNaissance.toDate() : new Date(data.dateNaissance);
-            document.getElementById('birthDate').value = d.toISOString().split('T')[0];
-            ageDisplay.textContent = `Âge : ${calculateAge(d.toISOString().split('T')[0])} ans`;
-          }
-          // stocke patient data global pour utiliser les emails
-          window.patientData = data;
-          afficherBulle(`👤 Patient chargé : ${data.prenom || ''} ${data.nom || ''}`, 'administratif');
-        } else {
-          afficherBulle('❌ Patient introuvable (id:'+id+')','alerte');
-        }
-      } catch (err) {
-        console.error('Erreur chargement patient', err);
-        afficherBulle('⚠️ Erreur de chargement patient','alerte');
-      }
-    }
-  });
-function getIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
+    document.addEventListener('click', e => { if (!box.contains(e.target) && e.target !== input) box.style.display='none'; });
   }
-  // ---------- Lecture Carte Vitale simulée ----------
-  document.getElementById('readVitaleBtn').addEventListener('click', () => {
-    const modal = document.getElementById('vitaleModal');
-    modal.style.display = 'flex';
-    const duration = 3000 + Math.random() * 4000; // 3-7s
-    setTimeout(() => {
-      modal.style.display = 'none';
-      const success = Math.random() < 0.8; // 80% réussite
-      if (success) afficherBulle('✅ Lecture Carte Vitale réussie !', 'administratif');
-      else afficherBulle('❌ Erreur lecture Carte Vitale - réessayez', 'alerte');
-    }, duration);
-  });
 
-  function afficherBulle(message, type='administratif'){
-    let container = document.getElementById('bubble-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'bubble-container';
-      document.body.appendChild(container);
-    }
-    const div = document.createElement('div');
-    div.className = 'bubble ' + (type || 'administratif');
-    div.textContent = message;
-    container.appendChild(div);
-    setTimeout(()=> div.remove(), 3000);
-  }
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result.split(',')[1]); 
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-  // ---------- Valider paiement ----------
-  document.getElementById('validateBtn').addEventListener('click', async () => {
-    updateTotals();
-    const nom = document.getElementById('lastName').value.trim();
-    const prenom = document.getElementById('firstName').value.trim();
-    const naissance = document.getElementById('birthDate').value;
-    const paiement = document.getElementById('paymentMode').value;
-
-    if(!nom || !prenom || !naissance || !paiement) {
-      alert('Veuillez compléter tous les champs obligatoires.');
-      return;
-    }
-
-const prestations = [...itemsTable.querySelectorAll('tr')].map(row => {
-  const descInput = row.querySelector('.serviceSearch');
-  const desc = descInput ? descInput.value.trim() : '';
-  return {
-    description: desc,
-    quantity: parseInt(row.querySelector('.qty').value) || 0,
-    unitPrice: parseFloat(row.querySelector('.price').textContent) || 0,
-    lineTotal: parseFloat(row.querySelector('.lineTotal').textContent) || 0
-  };
-}).filter(p => p.description);
-
-
-    if(prestations.length === 0) {
-      alert('Veuillez ajouter au moins une prestation.');
-      return;
-    }
-  const totalTTC = parseFloat(grandTotalElem.textContent || '0').toFixed(2);
-
-    const factureData = {
-      patient: { nom, prenom, naissance },
-      prestations,
-      modePaiement: paiement,
-      totalTTC: parseFloat(grandTotalElem.textContent || '0'),
-      statut: 'acquittee',
-      createdAt: new Date().toISOString()
+  function serializeInvoice() {
+    recompute();
+    const total = Number(document.getElementById('totalGlobal').textContent || 0);
+    const partSecu = Number(document.getElementById('partSecu').value || 0);
+    const partMutuelle = Number(document.getElementById('partMutuelle').value || 0);
+    const partPatient = Number(document.getElementById('partPatient').textContent.replace('€','') || 0);
+    const dejaPaye = Number(document.getElementById('dejaPaye').textContent.replace('€','') || 0);
+    const restePayer = Number(document.getElementById('restePayer').textContent.replace('€','') || 0);
+    return {
+      patientId: document.getElementById('patientId').value || null,
+      patient: {
+        nom: document.getElementById('nom').value.trim(),
+        prenom: document.getElementById('prenom').value.trim(),
+        naissance: document.getElementById('naissance').value
+      },
+      regimeSecuPct: Number(document.getElementById('regimeSecu').value || 0),
+      mutuellePct: Number(document.getElementById('tauxMutuelle').value || 0),
+      prestations: readLines(),
+      payments: readPayments(),
+      totals: { total, partSecu, partMutuelle, partPatient, dejaPaye, restePayer },
+      statutPaiement: restePayer <= 0.009 ? 'complet' : 'incomplet',
+      updatedAt: new Date().toISOString()
     };
-
-    // Affiche animation
-    const popup = document.getElementById('processingPopup');
-    popup.style.display = 'block';
-    const bar = document.getElementById('progressBar');
-    bar.style.width = '0%';
-    setTimeout(()=> bar.style.width = '100%', 100);
-const pdfBlob = await creerFacture(false);
-const pdfBase64 = await blobToBase64(pdfBlob);
-    try {
-      // 5️⃣ Enregistrement dans Firestore
-  const patientId = getIdFromURL();
-  if (patientId) {
-    try {
-      const idUnique = Math.random().toString(36).substring(2, 10);
-      const dateFormatted = formatDate(new Date());
-console.log("📅 Date formatée envoyée :", dateFormatted);
-
-const totalTTCNumber = parseFloat(grandTotalElem.textContent || '0'); // nombre
-const totalTTCStr = totalTTCNumber.toFixed(2); // string pour affichage si nécessaire
-
-await db.collection("documents").doc(idUnique).set({
-  patientId: patientId,
-  dateCreation: dateFormatted,
-  type: "Facture",
-contenu: totalTTCStr + " €",   // <-- maintenant une string avec € 
-  pdfBase64: pdfBase64
-});
-
-
-      console.log("✅ Ordonnance enregistrée avec ID unique :", idUnique);
-      afficherBulle("✅ Ordonnance enregistrée !", "success");
-    } catch (err) {
-      console.error("❌ Erreur enregistrement Firestore :", err);
-      afficherBulle("❌ Erreur enregistrement", "alerte");
-    }
-  }
-      // fin animation & lock
-      setTimeout(()=> {
-        popup.style.display = 'none';
-        afficherBulle('✅ Paiement validé (ID: ' + currentFactureId + ')', 'administratif');
-        verrouillerFormulaire();
-        // afficher boutons PDF et envoi email
-        document.getElementById('downloadPdfBtn').style.display = 'inline-block';
-                document.getElementById('btnImprimer').style.display = 'inline-block';
-
-        document.getElementById('sendEmailBtn').style.display = 'inline-block';
-        
-
-
-      }, 1200);
-    } catch (err) {
-      console.error('Erreur enregistrement facture', err);
-      popup.style.display = 'none';
-      afficherBulle('❌ Erreur enregistrement facture', 'alerte');
-    }
-  });
-function formatDate(date) {
-  const pad = (n) => n.toString().padStart(2, '0');
-  const jour = pad(date.getDate());
-  const mois = pad(date.getMonth() + 1); // Les mois vont de 0 à 11
-  const annee = date.getFullYear();
-  const heures = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const secondes = pad(date.getSeconds());
-  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
-}
-
-  function verrouillerFormulaire(){
-    // Désactive tous les inputs/selects et boutons (sauf downloadPdfBtn & sendEmailBtn)
-    document.querySelectorAll('#invoiceForm input, #invoiceForm select, #invoiceForm button').forEach(el => {
-      if(el.id === 'downloadPdfBtn' || el.id === 'sendEmailBtn'|| el.id === 'retourBtn'|| el.id === 'readVitaleBtn'|| el.id === 'resetBtn') return;
-      el.disabled = true;
-    });
-    // Hide remove buttons visually
-    document.querySelectorAll('.removeBtn').forEach(b => b.style.display = 'none');
-    document.getElementById('addItemBtn').style.display = 'none';
-    document.getElementById('validateBtn').style.display = 'none';
   }
 
-async function creerFacture(telecharger = false) {
-  const nom = document.getElementById('lastName').value || '';
-  const prenom = document.getElementById('firstName').value || '';
-  const naissance = document.getElementById('birthDate').value || '';
-  const paiement = document.getElementById('paymentMode').value || '';
-  const dateStr = new Date().toLocaleDateString('fr-FR');
-  const factureNum = currentFactureId || ('temp-' + Date.now());
-  const dateFact = new Date().toLocaleDateString('fr-FR');
-
-  const prestations = [...itemsTable.querySelectorAll('tr')].map(row => {
-    const serviceInput = row.querySelector('.serviceSearch');
-    const service = serviceInput ? serviceInput.value.trim() : '';
-    const qty = row.querySelector('.qty').value || '0';
-    const pu = row.querySelector('.price').textContent || '0';
-    const total = row.querySelector('.lineTotal').textContent || '0';
-    return { service, qty, pu, total };
-  }).filter(p => p.service);
-
-  const totalTTC = parseFloat(grandTotalElem.textContent || '0').toFixed(2);
-  const totalHT = (totalTTC / 1.2).toFixed(2);
-  const totalTVA = (totalTTC - totalTTC / 1.2).toFixed(2);
-
-  // --- HTML de la facture ---
-  const invoiceHtml = `
-<div style="font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;padding:32px;max-width:900px;margin:auto;background:#fff;border-radius:10px;position:relative;">
-      
-      <!-- En-tête -->
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid #0078d7;padding-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <img src="logo.png" alt="Logo" style="height:80px;object-fit:contain;border-radius:6px;">
-          <div>
-            <div style="font-size:18px;font-weight:700;color:#0078d7;">CENTRE HOSPITALIER UNIVERSITAIRE</div>
-            <div style="font-size:13px;color:#444;">Service des Urgences - Département Médical</div>
-            <div style="font-size:12px;color:#666;"></div>
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:15px;font-weight:700;">FACTURE N° <span style="color:#0078d7;">${factureNum}</span></div>
-          <div style="font-size:13px;color:#555;">Émise le : ${dateStr}</div>
-        </div>
-      </div>
-
-      <!-- Infos patient -->
-      <div style="display:flex;justify-content:space-between;margin-top:22px;gap:20px;">
-        <div style="flex:1;">
-          <div style="font-weight:700;color:#333;">Facturé à :</div>
-          <div style="margin-top:8px;font-size:14px;">
-            <strong>${prenom} ${nom}</strong><br>
-            Né(e) le : ${naissance || '-'}<br>
-            Mode de paiement : ${paiement}
-          </div>
-        </div>
-        <div style="flex:1;text-align:right;">
-          <div style="font-weight:700;color:#333;">Émis par :</div>
-          <div style="margin-top:8px;font-size:14px;">
-            Centre Hospitalier Universitaire<br>
-            Service des Urgences<br>
-            urgences.hopj@gmail.com
-          </div>
-        </div>
-      </div>
-
-      <!-- Tableau prestations -->
-      <table style="width:100%;border-collapse:collapse;margin-top:20px;font-size:14px;">
-        <thead>
-          <tr style="background:#f2f6fb;border-bottom:2px solid #d0d7e2;">
-            <th style="padding:10px;text-align:left;">Prestation</th>
-            <th style="padding:10px;text-align:center;">Quantité</th>
-            <th style="padding:10px;text-align:center;">Prix Unitaire (€)</th>
-            <th style="padding:10px;text-align:center;">Total (€)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${prestations.map(p => `
-            <tr>
-              <td style="padding:10px;border-bottom:1px solid #eee;">${p.service}</td>
-              <td style="padding:10px;text-align:center;border-bottom:1px solid #eee;">${p.qty}</td>
-              <td style="padding:10px;text-align:center;border-bottom:1px solid #eee;">${parseFloat(p.pu).toFixed(2)}</td>
-              <td style="padding:10px;text-align:center;border-bottom:1px solid #eee;">${parseFloat(p.total).toFixed(2)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr><td colspan="2"></td><td style="text-align:right;padding:10px;font-weight:700;">Total HT :</td><td style="text-align:center;">${totalHT} €</td></tr>
-          <tr><td colspan="2"></td><td style="text-align:right;padding:10px;font-weight:700;">TVA (20%) :</td><td style="text-align:center;">${totalTVA} €</td></tr>
-          <tr style="background:#e8f3ff;"><td colspan="2"></td><td style="text-align:right;padding:10px;font-weight:800;">TOTAL TTC :</td><td style="text-align:center;font-weight:800;">${totalTTC} €</td></tr>
-        </tfoot>
-      </table>
-
-      <!-- Mentions & Signature -->
-      <div style="margin-top:26px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
-        <div style="font-size:12.5px;color:#555;max-width:60%;">
-          <strong>Mentions :</strong><br>
-          Paiement reçu le ${dateStr}.<br>
-          Ce document fait office de justificatif comptable.
-          
-          <!-- Tampon rouge -->
-          <div style="margin-top:14px;font-weight:900;color:#b71c1c;font-size:24px;display:inline-block;border:2px solid rgba(183,28,28,0.3);padding:6px 12px;border-radius:6px;background:rgba(183,28,28,0.05);">
-  FACTURE ACQUITTÉE
-</div>
-
-        </div>
-
-        <div style="text-align:right;">
-          <div style="font-weight:700;font-size:13px;">Signature autorisée :</div>
-          <div style="margin-top:10px;border-top:1px solid #ccc;padding-top:6px;font-size:13px;">
-            Dr. <em>Dabadie</em><br>Chef de Service - Urgences
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:100px;border-top:1px dashed #ccc;padding-top:10px;font-size:12px;text-align:center;color:#777;">
-        Centre Hospitalier Universitaire • urgences.hopj@gmail.com
-      </div>
-    </div>
-  `;
-
-  // Génération du PDF
-  const container = document.createElement('div');
-  container.innerHTML = invoiceHtml;
-  document.body.appendChild(container);
-
-  const opt = {
-    margin: 0.5,
-    filename: `Facture - ${prenom} ${nom} - ${dateFact}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-  };
-
-  try {
-    if (telecharger) {
-      await html2pdf().set(opt).from(container).save();
-      container.remove();
-      return null;
+  async function saveInvoice() {
+    const payload = serializeInvoice();
+    if (!payload.patient.nom || !payload.patient.prenom || !payload.patient.naissance) {
+      alert('Complète les informations patient.');
+      return;
+    }
+    if (!payload.prestations.length) {
+      alert('Ajoute au moins une prestation.');
+      return;
+    }
+    const col = db.collection('facture');
+    if (state.currentInvoiceId) {
+      await col.doc(state.currentInvoiceId).set(payload, { merge:true });
     } else {
-      const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
-      container.remove();
-      return pdfBlob;
+      payload.createdAt = payload.updatedAt;
+      const ref = await col.add(payload);
+      state.currentInvoiceId = ref.id;
     }
-  } catch (err) {
-    console.error('❌ Erreur génération PDF', err);
-    afficherBulle('❌ Erreur génération PDF', 'alerte');
+    document.getElementById('saveMsg').textContent = `✅ Facture enregistrée: ${state.currentInvoiceId}`;
+  }
+
+  async function loadInvoiceById(id) {
+    const snap = await db.collection('facture').doc(id).get();
+    if (!snap.exists) { alert('Facture introuvable.'); return; }
+    const f = snap.data();
+    state.currentInvoiceId = id;
+    document.getElementById('patientId').value = f.patientId || '';
+    document.getElementById('nom').value = f.patient?.nom || '';
+    document.getElementById('prenom').value = f.patient?.prenom || '';
+    document.getElementById('naissance').value = f.patient?.naissance || '';
+    document.getElementById('regimeSecu').value = String(f.regimeSecuPct ?? 70);
+    document.getElementById('tauxMutuelle').value = String(f.mutuellePct ?? 100);
+    lignesBody.innerHTML = '';
+    paymentsBody.innerHTML = '';
+    (f.prestations || []).forEach(addLine);
+    (f.payments || []).forEach(addPayment);
+    recompute();
+    document.getElementById('saveMsg').textContent = `📂 Facture chargée: ${id}`;
+  }
+
+  async function generatePdf() {
+    const f = serializeInvoice();
+    const id = state.currentInvoiceId || 'temp-' + Date.now();
+    const today = new Date().toLocaleDateString('fr-FR');
+    const html = `
+      <div style="font-family:Arial,sans-serif;padding:28px;color:#111;">
+        <h2 style="margin:0 0 6px;color:#0d6efd;">Facture RPO #${id}</h2>
+        <div style="font-size:12px;color:#555;">Émise le ${today}</div>
+        <hr>
+        <p><b>Patient :</b> ${f.patient.prenom} ${f.patient.nom} — Né(e) le ${f.patient.naissance}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th style="border:1px solid #ddd;padding:6px;">Prestation</th><th style="border:1px solid #ddd;padding:6px;">Qté</th><th style="border:1px solid #ddd;padding:6px;">PU</th><th style="border:1px solid #ddd;padding:6px;">Total</th></tr></thead>
+          <tbody>${f.prestations.map(p=>`<tr><td style="border:1px solid #ddd;padding:6px;">${p.description}</td><td style="border:1px solid #ddd;padding:6px;text-align:center;">${p.quantity}</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.unitPrice)} €</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.lineTotal)} €</td></tr>`).join('')}</tbody>
+        </table>
+        <h3>Répartition</h3>
+        <ul>
+          <li>Total: ${euros(f.totals.total)} €</li>
+          <li>Part Sécurité sociale: ${euros(f.totals.partSecu)} €</li>
+          <li>Part Mutuelle: ${euros(f.totals.partMutuelle)} €</li>
+          <li>Part Patient: ${euros(f.totals.partPatient)} €</li>
+          <li>Déjà payé: ${euros(f.totals.dejaPaye)} €</li>
+          <li>Reste à payer: ${euros(f.totals.restePayer)} € (${f.statutPaiement.toUpperCase()})</li>
+        </ul>
+        <h3>Paiements</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th style="border:1px solid #ddd;padding:6px;">Date</th><th style="border:1px solid #ddd;padding:6px;">Mode</th><th style="border:1px solid #ddd;padding:6px;">Montant</th></tr></thead>
+          <tbody>${(f.payments.length?f.payments:[{date:'-',mode:'-',amount:0}]).map(p=>`<tr><td style="border:1px solid #ddd;padding:6px;">${p.date}</td><td style="border:1px solid #ddd;padding:6px;">${p.mode}</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.amount)} €</td></tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    await html2pdf().set({
+      margin: 0.35,
+      filename: `Facture_${f.patient.nom}_${today.replaceAll('/','-')}.pdf`,
+      image: { type:'jpeg', quality:0.98 },
+      html2canvas: { scale:2, useCORS:true },
+      jsPDF: { unit:'in', format:'a4', orientation:'portrait' }
+    }).from(container).save();
     container.remove();
-    return null;
-  }
-}
-
-document.getElementById('btnImprimer').addEventListener("click", async () => {
-  const pdfBlob = await creerFacture(false);
-
-  // 🔹 Crée une URL temporaire vers le PDF
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-const nomfacture = document.getElementById('lastName')
-const prenomfacture = document.getElementById('firstname')
-
-  // 🔹 Ouvre le PDF dans un nouvel onglet (sans téléchargement)
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: `Facture ${nomfacture} ${prenomfacture}`,
-      url: pdfUrl
-    },
-    "*"
-  );
-});
-
-
-  // Download PDF button (uses html2pdf and cleans up)
-  document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
-  await creerFacture(true);
-});
-
-
-  // ---------- Email sending system (copié/adapté du rapport) ----------
-  // comptes EmailJS multi-comptes (identiques au rapport)
-  const comptesEmailJS = [
-    { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
-    { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },//secours urg
-    { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }//secours llb09
-  ];
-
-  function openEmailSelectModal(emailsString) {
-    const modal = document.getElementById("emailSelectModal");
-    const container = document.getElementById("emailCheckboxes");
-    container.innerHTML = "";
-
-    const emails = (emailsString || "").split("//").filter(e => e.includes("@"));
-    if (emails.length === 0) {
-      container.innerHTML = "<p style='color:#777;'>Aucune adresse trouvée pour ce patient.</p>";
-    } else {
-      emails.forEach((email, i) => {
-        const id = "emailCheck_" + i;
-        container.innerHTML += `
-          <label style="display:flex; align-items:center; gap:6px; margin:6px 0;">
-            <input type="checkbox" id="${id}" value="${email}" checked>
-            ${email}
-          </label>`;
-      });
-    }
-
-    modal.style.display = "flex";
   }
 
-  function closeEmailSelectModal() {
-    document.getElementById("emailSelectModal").style.display = "none";
-  }
+  document.getElementById('addManualLine').onclick = () => addLine();
+  document.getElementById('addPayment').onclick = () => addPayment();
+  document.getElementById('regimeSecu').onchange = recompute;
+  document.getElementById('tauxMutuelle').oninput = recompute;
+  document.getElementById('saveInvoiceBtn').onclick = saveInvoice;
+  document.getElementById('downloadPdfBtn').onclick = generatePdf;
+  document.getElementById('loadInvoiceBtn').onclick = () => {
+    const id = document.getElementById('searchInvoiceId').value.trim();
+    if (!id) return;
+    loadInvoiceById(id);
+  };
+  document.getElementById('resetBtn').onclick = () => { state.currentInvoiceId=null; lignesBody.innerHTML=''; paymentsBody.innerHTML=''; addLine(); addPayment(); recompute(); document.getElementById('saveMsg').textContent=''; };
 
-  document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
-    document.getElementById("otherEmailInput").disabled = !e.target.checked;
-  });
-
-  // Click on "Envoyer par e-mail" opens modal prefilled with patient emails (if any)
-  document.getElementById('sendEmailBtn').addEventListener('click', async () => {
-    // get patient stored emails (string like "a@x.com//b@y.fr") from patientData if present
-    const patientData = window.patientData || {};
-    const emails = patientData.email || ""; // same format as in rapport
-    openEmailSelectModal(emails);
-  });
-
-  // confirmEmails handler (copied/adapted)
-  document.getElementById('confirmEmails').addEventListener('click', async function () {
-    try {
-      // Récupère les adresses sélectionnées dans la modale
-      const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
-      let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
-
-      const otherChecked = document.getElementById("otherEmailCheck").checked;
-      const otherEmail = document.getElementById("otherEmailInput").value.trim();
-      if (otherChecked && otherEmail) destinataires.push(otherEmail);
-
-      if (destinataires.length === 0) {
-        alert("Veuillez cocher au moins une adresse e-mail.");
-        return;
-      }
-
-      closeEmailSelectModal();
-      showLoadingModal()
-      
-// --- 1) Génération du PDF via creerFacture(false) ---
-const pdfBlob = await creerFacture(false);
-if (!pdfBlob) throw new Error("Erreur lors de la génération du PDF.");
-      
-
-      const pdfBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result;
-          const base64 = dataUrl.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = (e) => reject(e);
-        reader.readAsDataURL(pdfBlob);
-      });
-
-      // --- 2) Création d'un ID unique et enregistrement dans Firestore (collection 'liens_pdfs') ---
-      let idUnique, docSnap;
-      do {
-        idUnique = Math.random().toString(36).substring(2, 10);
-        docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
-      } while (docSnap.exists);
-
-      // Get patient name for filename
-      const patientDocId = new URLSearchParams(window.location.search).get('id');
-      let firstName = document.getElementById('firstName').value || '';
-      let lastName = document.getElementById('lastName').value || '';
-      if (patientDocId) {
-        try {
-          const pd = await db.collection('patients').doc(patientDocId).get();
-          if (pd.exists) {
-            const pdata = pd.data();
-            firstName = pdata.prenom || firstName;
-            lastName = pdata.nom || lastName;
-          }
-        } catch (e) { /* ignore */ }
-      }
-
-      const dateFact = new Date().toLocaleDateString('fr-FR');
-      const fileName = `Facture - ${firstName} ${lastName} - ${dateFact}.pdf`;
-
-      await db.collection("liens_pdfs").doc(idUnique).set({
-        base64: pdfBase64,
-        nomFichier: fileName,
-        dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
-
-      // --- 3) Préparer le message HTML (template similaire au rapport, adapté pour facture) ---
-      const htmlMessage = `
-<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="utf-8"></head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
-    <tr>
-      <td style="background-color:#0057a4; padding:24px; text-align:center;">
-        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
-        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
-        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:30px;">
-        <h2 style="color:#0057a4; font-weight:600; margin-top:0;">Votre facture est disponible</h2>
-
-        <p style="font-size:16px; line-height:1.6;">
-          Bonjour <strong>${firstName} ${lastName}</strong>,
-        </p>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          La facture (d'un montant de <strong>${parseFloat(grandTotalElem.textContent || '0').toFixed(2)} €</strong>) relative à votre prise en charge est disponible.
-          Vous pouvez la cosulter et la télécharger en cliquant sur le lien ci-dessous.
-        </p>
-
-        <div style="text-align:center; margin:30px 0;">
-          <a href="${lienPdf}" 
-             style="background-color:#0057a4; color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; display:inline-block;">
-            🔗 Voir la facture
-          </a>
-        </div>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          ⚠️ Ce lien reste actif 7 jours. Pour des raisons de confidentialité, la facture ne sera plus accessible après ce délai.
-        </p>
-
-        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
-        <p style="font-size:13px; color:#999; text-align:center;">
-          Service des Urgences<br>
-          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-      // --- 4) Envoi vers chaque destinataire via multi comptes EmailJS (template_general) ---
-      for (const email of destinataires) {
-        const emailTrim = email.trim();
-        if (!emailTrim || !emailTrim.includes("@")) {
-          afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte");
-          continue;
-        }
-
-        let envoye = false;
-        let derniereErreur = "";
-        for (const compte of comptesEmailJS) {
-          try {
-            console.log(`📨 Envoi à ${emailTrim} via ${compte.serviceID}...`);
-            await emailjs.send(compte.serviceID, compte.templateID, {
-              to_email: emailTrim,
-              subject: `Votre facture - ${firstName} ${lastName}`,
-              html_message: htmlMessage
-            }, compte.publicKey);
-
-            afficherBulle(`📨 Envoyé : ${emailTrim}`, "administratif");
-            envoye = true;
-            break;
-          } catch (err) {
-            console.warn(`⚠️ Échec ${compte.serviceID} -> ${err && err.text ? err.text : err}`);
-            derniereErreur = err && err.text ? err.text : String(err);
-            // si erreur de quota, on essaye le compte suivant
-            if (derniereErreur.toLowerCase().includes("quota")) continue;
-            else break;
-          }
-        }
-
-        if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
-      }
-
-      // --- 5) Fin & UI updates ---
-      hideLoadingModal()
-      afficherBulle("📨 Envois terminés !", "administratif");
-      // reload to reset UI (optionnel)
-     // setTimeout(() => location.reload(true), 1500);
-
-    } catch (err) {
-      hideLoadingModal()
-      console.error("Erreur confirmEmails :", err);
-      alert("Erreur lors de l'envoi : " + (err.message || err));
-    }
-  });
-
-  // ---------- Utilities ----------
-  function convertirDateEnFrancais(dateISO) {
-    if (!dateISO) return '';
-    const [annee, mois, jour] = dateISO.split("-");
-    return `${jour}/${mois}/${annee}`;
-  }
-
-  // Reset button
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    if(!confirm('Réinitialiser le formulaire ? Toutes les modifications non enregistrées seront perdues.')) return;
-    window.location.href = window.location.pathname; // recharge sans params
-  });
-
-  // auto totals recalc
-  document.getElementById('invoiceForm').addEventListener('input', updateTotals);
-  updateTotals();
-
-  // hide loading modal helper if needed
-  function showLoadingModal() {
-  document.getElementById("loadingModal").classList.add("show");
-}
-
-function hideLoadingModal() {
-  document.getElementById("loadingModal").classList.remove("show");
-}
-let appLocked = false;
-
-window.addEventListener("message", (event) => {
-
-  if (!event.data) return;
-
-  if (event.data.type === "APP_LOCK") {
-    appLocked = true;
-
-    // Stopper timers éventuels si besoin
-    document.body.style.filter = "grayscale(0.8)";
-  }
-
-  if (event.data.type === "APP_UNLOCK") {
-    appLocked = false;
-    document.body.style.filter = "none";
-  }
-});
-
-// Exemple protection bouton
-document.addEventListener("click", function(e){
-  if(appLocked){
-    e.stopPropagation();
-    e.preventDefault();
-  }
-}, true);
-  </script>
+  (async function init(){
+    await loadFacturables();
+    setupSearch();
+    await preloadPatient();
+    const params = new URLSearchParams(window.location.search);
+    const factureId = params.get('factureId');
+    addLine();
+    addPayment();
+    if (factureId) await loadInvoiceById(factureId);
+    recompute();
+  })();
+</script>
 </body>
 </html>

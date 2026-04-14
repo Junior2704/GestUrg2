@@ -507,11 +507,11 @@ const modal = document.getElementById("modal-no-access");
     }
   }
 });
-  function toggleSublist(listId){
+  window.toggleSublist = function(listId){
   const sublist = document.getElementById(listId);
   sublist.style.display = sublist.style.display === "block" ? "none" : "block";
 }
-window.toggleSublist=toggleSublist;
+
 function toggleExam(checkbox){
   const value = checkbox.value;
   const prescriptionList = document.getElementById("prescription-list");
@@ -563,66 +563,127 @@ window.masquerLoader = function() {
       loader.style.display = "none";
     }, 300); // délai pour l’animation
   }
-};
+};function construireORD() {
 
+  // 🔥 au lieu du textarea → examens
+  const prescriptionText = examensSelectionnes
+    .map(e => `${e.type}${e.commentaire ? " - " + e.commentaire : ""}`)
+    .join("\n");
+
+  const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+  const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+  const age = document.getElementById("patient-age")?.value.trim() || "";
+
+  const sexe = document.getElementById("sexe")?.value || "";
+
+  const lignes = prescriptionText.split("\n");
+
+  const contenu = [];
+
+  lignes.forEach(ligne => {
+
+    if (ligne.trim() === "---") {
+      contenu.push({ type: "separator" });
+
+    } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+      contenu.push({
+        type: "bold",
+        value: ligne.replace(/\*\*/g, "")
+      });
+
+    } else {
+      contenu.push({
+        type: "text",
+        value: ligne
+      });
+    }
+
+    contenu.push({ type: "newline" });
+
+  });
+
+  return {
+    version: "1.0",
+    type: "ordonnance",
+
+    titre: "Prescription d'examens",
+
+    date: new Date().toLocaleDateString("fr-FR"),
+    lieu: window.medecinLieu || "Lyon",
+
+    patient: {
+      nom: lastName,
+      prenom: firstName,
+      age: age,
+      sexe: sexe
+    },
+
+    medecin: {
+      nom: window.medecinNom || "Dr Non renseigné",
+      specialite: window.medecinSpecialite || ""
+    },
+
+    contenu: contenu,
+
+    signature: true
+  };
+}
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 async function validatePrescription() {
 
-  const prescriptionText = document.getElementById("prescription-text").value.trim();
-
-  const prenom = document.getElementById("patient-first-name").value.trim();
-  const nom = document.getElementById("patient-last-name").value.trim();
+  // 🔥 on transforme les examens en texte (comme avant)
+  const prescriptionText = examensSelectionnes
+    .map(e => `${e.type}${e.commentaire ? " - " + e.commentaire : ""}`)
+    .join("\n");
 
   if (!prescriptionText) {
-    afficherBulle("⛔ La prescription est vide !", "alerte");
+    afficherBulle("⛔ Aucun examen sélectionné !", "alerte");
     return;
   }
 
-  if (!prenom || !nom) {
-    afficherBulle("⛔ Nom / prénom requis", "alerte");
-    return;
-  }
-
-  // 🔒 UI lock
-  document.getElementById("prescription-text").setAttribute("readonly", "true");
   document.getElementById("validate-prescription-btn").style.display = "none";
   document.querySelector(".buttons-wrapper").style.display = "block";
 
-  const patientId = getIdFromURL();
-
-  // 🔹 Création .ord
+  // 🔹 Création du .ord EXACTEMENT comme toi
   const ord = construireORD();
 
-  try {
+  const patientId = getIdFromURL();
 
-    const idUnique = Math.random().toString(36).substring(2, 10);
-    const dateFormatted = formatDate(new Date());
+  if (patientId) {
 
+    try {
 
-    await setDoc(doc(db, "documents", idUnique), {
+      const idUnique = Math.random().toString(36).substring(2, 10);
+      const dateFormatted = formatDate(new Date());
 
-      patientId: patientId || null,
+      window.pdfIdExistante = idUnique;
 
-      nomFichier: `Prescription - ${prenom} ${nom}.pdf`,
-      dateCreation: dateFormatted,
+      await setDoc(
+        doc(db, "documents", idUnique),
+        {
+          patientId: patientId,
+          dateCreation: dateFormatted,
 
-      type: "Prescription d’examens",
+          type: "Prescription d'examens",
 
-      contenu: prescriptionText,
+          // 🔥 EXACTEMENT comme avant (texte)
+          contenu: prescriptionText,
 
+          // 🔥 EXACTEMENT comme avant (.ord)
+          ord: ord,
 
-      // 🔥 structure médicale propre
-      ord: ord
+        }
+      );
 
-    });
+      console.log("✅ Prescription enregistrée avec ID unique :", idUnique);
+      afficherBulle("✅ Prescription enregistrée !", "success");
 
-    console.log("✅ Prescription enregistrée :", idUnique);
-    afficherBulle("✅ Prescription enregistrée !", "success");
+    } catch (err) {
+      console.error(err);
+    }
 
-  } catch (err) {
-    console.error("❌ Firestore error :", err);
-    afficherBulle("❌ Erreur Firestore", "alerte");
   }
+
 }
 async function genererPrescription(telecharger = false) {
 

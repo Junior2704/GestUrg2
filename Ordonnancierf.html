@@ -884,6 +884,19 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
 }
+#prescription-editor {
+  min-height: 200px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-family: Arial;
+  outline: none;
+}
+
+.separator {
+  border-top: 2px solid #2a7fff;
+  margin: 10px 0;
+  cursor: grab;
+}
 </style>
 <div id="autocomplete-box"></div>
 
@@ -929,8 +942,9 @@ html, body {
  
  <div class="form-group" style="position: relative;">
   <label for="prescription-text">🖊️ Prescription :</label>
-  <textarea id="prescription-text" rows="8" placeholder="Tapez ici votre prescription..."></textarea>
-
+<div id="prescription-text" contenteditable="true"></div>
+<button type="button" onclick="insertBold()">G</button>
+<button type="button" onclick="insertSeparator()">〰️</button>
   
 </div>
 <div class="form-group">
@@ -1138,7 +1152,41 @@ if (!pages[pageKey]) {
 const envoyerMailBtn = document.getElementById("btnEnvoyerMail");
   
 
+function toggleBold() {
+  document.execCommand("bold");
+}
+function insertSeparator() {
+  const editor = document.getElementById("prescription-editor");
 
+  const separator = document.createElement("div");
+  separator.className = "separator";
+  separator.contentEditable = "false";
+  separator.draggable = true;
+
+  // drag simple
+  separator.ondragstart = (e) => {
+    e.dataTransfer.setData("text/plain", "");
+    window.draggedSeparator = separator;
+  };
+
+  editor.appendChild(separator);
+}
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+});
+
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+
+  const target = e.target;
+  const editor = document.getElementById("prescription-editor");
+
+  if (window.draggedSeparator && editor.contains(target)) {
+    editor.insertBefore(window.draggedSeparator, target);
+  }
+
+  window.draggedSeparator = null;
+});
   function calculerAge(dateNaissance) {
     const naissance = new Date(dateNaissance);
     const aujourdHui = new Date();
@@ -1280,45 +1328,53 @@ function formatDate(date) {
   const secondes = pad(date.getSeconds());
   return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
 }
+
 function construireORD() {
 
-  const prescriptionText = document.getElementById("prescription-text").value.trim();
+  const editor = document.getElementById("prescription-editor");
 
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
-const inputDate = document.getElementById("patient-birthdate");
 
-let dateNaissance = "";
+  const inputDate = document.getElementById("patient-birthdate");
 
-if (inputDate?.value) {
-  const date = new Date(inputDate.value);
-  dateNaissance = date.toLocaleDateString("fr-FR");
-}
+  let dateNaissance = "";
+
+  if (inputDate?.value) {
+    const date = new Date(inputDate.value);
+    dateNaissance = date.toLocaleDateString("fr-FR");
+  }
+
   const sexe = document.getElementById("sexe")?.value || "";
-
-  // 🔹 Transformation texte → blocs
-  const lignes = prescriptionText.split("\n");
 
   const contenu = [];
 
-  lignes.forEach(ligne => {
+  editor.childNodes.forEach(node => {
 
-    if (ligne.trim() === "---") {
-      contenu.push({ type: "separator" });
-    } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
-      contenu.push({
-        type: "bold",
-        value: ligne.replace(/\*\*/g, "")
-      });
-    } else {
-      contenu.push({
-        type: "text",
-        value: ligne
-      });
+    // texte normal
+    if (node.nodeType === 3) {
+      const text = node.textContent.trim();
+      if (text) {
+        contenu.push({ type: "text", value: text });
+        contenu.push({ type: "newline" });
+      }
     }
 
-    contenu.push({ type: "newline" });
+    // éléments HTML
+    if (node.nodeType === 1) {
 
+      if (node.tagName === "B" || node.tagName === "STRONG") {
+        contenu.push({ type: "bold", value: node.textContent });
+
+      } else if (node.classList.contains("separator")) {
+        contenu.push({ type: "separator" });
+
+      } else {
+        contenu.push({ type: "text", value: node.textContent });
+      }
+
+      contenu.push({ type: "newline" });
+    }
   });
 
   return {
@@ -1326,14 +1382,13 @@ if (inputDate?.value) {
     type: "ordonnance",
 
     titre: "Ordonnance médicale",
-
     date: new Date().toLocaleDateString("fr-FR"),
     lieu: window.medecinLieu || "Non renseigné",
 
     patient: {
       nom: lastName,
       prenom: firstName,
-      date_naissance : dateNaissance,
+      date_naissance: dateNaissance,
       sexe: sexe
     },
 
@@ -1343,7 +1398,6 @@ if (inputDate?.value) {
     },
 
     contenu: contenu,
-
     signature: true
   };
 }

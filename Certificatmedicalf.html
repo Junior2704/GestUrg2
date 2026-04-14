@@ -602,7 +602,47 @@ window.telechargerCertif =telechargerCertif;
     const secondes = pad(date.getSeconds());
     return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
   }
+function construireORDCertificat() {
 
+  const conditions = [
+    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
+    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
+    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
+    { id: 'condition4', inputId: 'input4', label: "Absence :", suffix: " jour(s)" }
+  ];
+
+  const contenu = [];
+
+  conditions.forEach((c, index) => {
+    const cb = document.getElementById(c.id);
+    if (cb && cb.checked) {
+      let valeur = (document.getElementById(c.inputId)?.value || "").trim();
+      if (index === 2 || index === 3) valeur += " jour(s)";
+
+      contenu.push({
+        label: c.label,
+        valeur: valeur
+      });
+    }
+  });
+
+  return {
+    type: "certificat",
+    patient: {
+      nom: document.getElementById('nom').value.trim(),
+      prenom: document.getElementById('prenom').value.trim(),
+      dateNaissance: document.getElementById('dateNaissance').value,
+      sexe: document.getElementById('sexe').value
+    },
+    medecin: {
+      nom: window.medecinNom,
+      specialite: window.medecinSpecialite,
+      lieu: window.medecinLieu
+    },
+    contenu: contenu,
+    dateCreation: new Date().toISOString()
+  };
+}
   // ========== Validation & enregistrement (documents) ==========
   async function validerCertificat() {
   const nom = document.getElementById('nom').value.trim();
@@ -613,8 +653,6 @@ window.telechargerCertif =telechargerCertif;
     return;
   }
 
-  // génère pdf base64
-  const pdfBase64 = await genererCertif(false);
 
   // création du contenu texte depuis cases cochées
   const conds = [
@@ -647,16 +685,14 @@ window.telechargerCertif =telechargerCertif;
     }
 
     window.pdfIdExistante = idUnique;
-
-    // ✅ Firestore v10
-    await setDoc(doc(db, "documents", idUnique), {
-      patientId: patientId,
-      nomFichier: fileName,
-      dateCreation: dateFormatted,
-      type: "Certificat médical",
-      contenu: contenuFinal,
-      pdfBase64: pdfBase64
-    });
+const ord = construireORDCertificat;
+ await setDoc(doc(db, "documents", idUnique), {
+  patientId: patientId,
+  dateCreation: dateFormatted,
+  type: "Certificat médical",
+  contenu: contenuFinal,
+  ord: ord
+});
 
     afficherBulle("✅ Certificat enregistré !", "success");
 
@@ -681,15 +717,14 @@ window.telechargerCertif =telechargerCertif;
 }
 window.validerCertificat=validerCertificat;
 
-  // ========== Envoi par email (pattern Ordonnancier) ==========
+  // ========== Envoi par email==========
   async function envoyerCertificatParEmail(destinataires = []) {
     if (!Array.isArray(destinataires) || destinataires.length === 0) {
       afficherBulle("Aucun destinataire", "alerte"); return;
     }
 
     try {
-      // Génère le PDF base64
-      const pdfBase64 = await genererCertif(false);
+  
 
       // crée idUnique pour liens_pdfs (évite collision)
       let idUnique, docSnap;
@@ -702,13 +737,13 @@ window.validerCertificat=validerCertificat;
       const nom = document.getElementById('nom').value.trim();
       const prenom = document.getElementById('prenom').value.trim();
       const fileName = `Certificat - ${prenom} ${nom}.pdf`;
-
-         await setDoc(doc(db, "liens_pdf", idUnique), {
-      base64: pdfBase64,
-        nomFichier: fileName,
-        dateCreation: serverTimestamp()
-    });
-
+const ord = construireORDCertificat();
+   
+await setDoc(doc(db, "liens_pdf", idUnique), {
+  ord: ord,
+  type: "certificat",
+  dateCreation: serverTimestamp()
+});
       const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
 
       // Template HTML (adapté au certificat)

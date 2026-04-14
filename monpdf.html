@@ -254,8 +254,68 @@ async function afficherPDF() {
     nomFichier = data.nomFichier || "document.pdf";
     document.title = nomFichier;
 
-    let base64 = data.base64;
+   // 🔀 MODE HYBRIDE : PDF OU ORD
 
+if (data.base64) {
+  // =====================
+  // MODE PDF CLASSIQUE
+  // =====================
+  let base64 = data.base64;
+
+  const commaIndex = base64.indexOf(',');
+  if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
+    base64 = base64.slice(commaIndex + 1);
+  }
+
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const loadingTask = pdfjsLib.getDocument({ data: bytes });
+  pdfDoc = await loadingTask.promise;
+
+  const viewer = document.getElementById("pdf-viewer");
+  viewer.innerHTML = "";
+
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const scale = window.innerWidth < 768 ? 0.9 : 1.5;
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: context, viewport }).promise;
+
+    viewer.appendChild(canvas);
+  }
+
+} else if (data.ord) {
+  // =====================
+  // 🔥 MODE ORD (NOUVEAU)
+  // =====================
+
+  const viewer = document.getElementById("pdf-viewer");
+  viewer.innerHTML = "";
+
+  const html = generateHTML(data.ord);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+
+  viewer.appendChild(iframe);
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+}
     // 🔧 nettoyage base64
     const commaIndex = base64.indexOf(',');
     if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
@@ -312,7 +372,20 @@ document.getElementById("download").addEventListener("click", async () => {
       return showError("Document introuvable.");
     }
 
-    const base64 = docSnap.data().base64;
+const data = docSnap.data();
+
+if (data.base64) {
+  const link = document.createElement("a");
+  link.href = "data:application/pdf;base64," + data.base64;
+  link.download = nomFichier;
+  link.click();
+
+} else if (data.ord) {
+  ordToPDF(data.ord); // 🔥 ton convertisseur
+}
+if (data.ord?.titre) {
+  document.title = data.ord.titre;
+}
 
     const link = document.createElement("a");
     link.href = "data:application/pdf;base64," + base64;

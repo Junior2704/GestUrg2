@@ -1964,12 +1964,14 @@ document.getElementById("btnEnvoyerMail").addEventListener("click", async () => 
 });
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
-    // Récupère les adresses sélectionnées dans la modale
+
+    // 📩 emails
     const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
     let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
 
     const otherChecked = document.getElementById("otherEmailCheck").checked;
     const otherEmail = document.getElementById("otherEmailInput").value.trim();
+
     if (otherChecked && otherEmail) destinataires.push(otherEmail);
 
     if (destinataires.length === 0) {
@@ -1980,42 +1982,47 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     closeEmailSelectModal();
     afficherLoader();
 
-    // --- 1) Génération du PDF via ta fonction existante creerPDF()
-    console.log("📄 Génération du PDF via genererordo()...");
-    const pdfBase64 = await genererOrdo(false); // renvoie le base64
+    // 📄 PDF
+    console.log("📄 Génération du PDF...");
+    const pdfBase64 = await genererOrdo(false);
     console.log("✅ PDF généré, taille base64:", pdfBase64.length);
 
-    // --- 2) Création d'un ID unique pour Firestore
+    // 🔑 ID unique Firestore
     let idUnique, docSnap;
+
     do {
-  idUnique = Math.random().toString(36).substring(2, 10);
+      idUnique = Math.random().toString(36).substring(2, 10);
+      const ref = doc(db, "liens_pdfs", idUnique);
+      docSnap = await getDoc(ref);
+    } while (docSnap.exists());
 
-  const ref = doc(db, "liens_pdfs", idUnique);
-  docSnap = await getDoc(ref);
+    // 👤 patient
+    const patientSnap = await patientRef.get();
 
-} while (docSnap.exists());
-
-    // --- 3) Récupération des infos patient pour nommer le fichier
-    const doc = await patientRef.get();
-    if (!doc.exists) {
+    if (!patientSnap.exists) {
       masquerLoader();
       afficherBulle("❌ Patient non trouvé", "alerte");
       return;
     }
-    const data = doc.data();
+
+    const data = patientSnap.data();
+
     const firstName = data.prenom || "";
     const lastName = data.nom || "";
-    const fileName =  `Ordonnance - ${firstName} ${lastName}.pdf`;
- const ord = construireORD();
-    // --- 4) Enregistrement dans Firestore
+
+    const fileName = `Ordonnance - ${firstName} ${lastName}.pdf`;
+
+    const ord = construireORD();
+
+    // 💾 Firestore save
     await setDoc(
-  doc(db, "liens_pdfs", idUnique),
-  {
-    ord: ord,
-    nomFichier: fileName,
-    dateCreation: serverTimestamp()
-  }
-);
+      doc(db, "liens_pdfs", idUnique),
+      {
+        ord: ord,
+        nomFichier: fileName,
+        dateCreation: serverTimestamp()
+      }
+    );
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
     console.log("✅ Lien Firestore :", lienPdf);

@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,6 +13,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- EmailJS (fallback d'envoi d'e-mails multi-comptes) -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
   <style>
     body {
@@ -179,295 +183,1021 @@
     .back-button:active {
       transform: translateY(1px);
     }
+    .hidden-field {
+    display: none !important;
+}
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.btn-id {
+  all: unset;
+  background: transparent;
+  color: #000;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(2px);
+}
+
+.btn-id:hover {
+  background: rgba(0, 120, 255, 0.12);
+  border-color: rgba(0, 120, 255, 0.6);
+  color: #0078ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+}
+
+.btn-id:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+}
+
+.btn-id:focus {
+  outline: none;
+  border-color: rgba(0, 120, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+}
+.btn-id-c:hover {
+  background: rgba(255, 0, 0, 0.10);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #e60000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+}
+
+.btn-id-c:focus {
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+.btn-id-v:hover {
+  background: rgba(0, 200, 80, 0.12);
+  border-color: rgba(0, 200, 80, 0.6);
+  color: #00b35a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+}
+
+.btn-id-v:focus {
+  border-color: rgba(0, 200, 80, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+}
+#searchExamen {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+#searchExamen:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+/* 📋 RESULTATS */
+#resultatsExamens {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 8px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+}
+
+/* Item */
+.result-item {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.result-item:hover {
+  background: #f1f6ff;
+}
+
+/* Badge emoji */
+.result-item span {
+  font-size: 16px;
+}
+
+/* Catégorie */
+.result-item small {
+  margin-left: auto;
+  font-size: 11px;
+  color: #888;
+}
+
+/* 🧾 EXAMENS SELECTIONNES */
+#examensSelectionnes {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 5px;
+}
+
+#resultatsExamens {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 120px;
+  max-height: none;
+}
+
+/* Ligne */
+#examensSelectionnes > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  background: #f9fafc;
+}
+
+/* Nom */
+#examensSelectionnes strong {
+  flex: 1;
+  font-size: 13px;
+}
+
+/* Input commentaire */
+#examensSelectionnes input {
+  flex: 2;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 12px;
+}
+
+#examensSelectionnes input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Bouton supprimer */
+#examensSelectionnes button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #e74c3c;
+  font-size: 14px;
+  transition: transform 0.1s;
+}
+
+#examensSelectionnes button:hover {
+  transform: scale(1.2);
+}
+
+/* 🔘 ACTIONS */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Boutons */
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
   </style>
 
 </head>
 <body>
 <div class="container">
   <h1>🧪 Prescripteur d'Examens</h1>
-   <button class="back-button" onclick="history.back()">⬅️ Retour</button>
+        
   <div class="form-group">
     <label>Prénom</label>
-    <input type="text" id="patient-first-name" oninput="updateOrdonnance()">
+    <input type="text" id="patient-first-name" >
   </div>
   <div class="form-group">
     <label>Nom</label>
-    <input type="text" id="patient-last-name" oninput="updateOrdonnance()">
+    <input type="text" id="patient-last-name" >
   </div>
   <div class="form-group">
     <label>Date de naissance</label>
-    <input type="date" id="patient-birthdate" onchange="updateOrdonnance()">
+    <input type="date" id="patient-birthdate" >
   </div>
   <div class="form-group">
     <label>Sexe</label>
-    <select id="sexe" onchange="updateOrdonnance()">
+    <select id="sexe" >
       <option value="M">M</option>
       <option value="Mme">Mme</option>
       <option value="L'enfant">L'enfant</option>
     </select>
   </div>
-
+</div>
   <!-- Boutons d'examens -->
-  <button class="exam-button" onclick="toggleSublist('prise-sang-list')">🩸 Prise de sang</button>
-  <div class="sub-list" id="prise-sang-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="NFS (Numération Formule Sanguine)"> NFS</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="CRP"> CRP</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Ionogramme"> Ionogramme</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Calcémie"> Calcémie</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan hépatique"> Bilan hépatique</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan rénal"> Bilan rénal</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="TSH, T3, T4"> TSH, T3, T4</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Hémoglobine glyquée (HbA1c)"> HbA1c</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan lipidique"> Bilan lipidique</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Troponine"> Troponine</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Groupage sanguin"> Groupage</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Sérologies virales (VIH, VHB, VHC)"> Sérologies VIH, VHB, VHC</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Bilan coagulation (TP, TCA)"> Coagulation (TP, TCA)</label>
-  </div>
+  <input type="text" id="searchExamen" placeholder="🔍 Rechercher un examen..." />
 
-  <button class="exam-button" onclick="toggleSublist('radio-list')">📸 Radiologie</button>
-  <div class="sub-list" id="radio-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du crâne"> Crâne</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du thorax"> Thorax</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie de l'abdomen"> Abdomen</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du bassin"> Bassin</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis cervical"> Rachis cervical</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis dorsal"> Rachis dorsal</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du rachis lombaire"> Rachis lombaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du genou"> Genou</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie de la cheville"> Cheville</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du poignet"> Poignet</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie du coude"> Coude</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie des mains"> Mains</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Radiographie des pieds"> Pieds</label>
-  </div>
+<div id="resultatsExamens"></div>
 
-  <button class="exam-button" onclick="toggleSublist('urine-list')">🧪 Examens urinaires</button>
-  <div class="sub-list" id="urine-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="ECBU (Examen cytobactériologique des urines)"> ECBU</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Protéinurie des 24h"> Protéinurie 24h</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Bandelette urinaire"> Bandelette urinaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Recherche de sang dans les urines"> Sang dans les urines</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Recherche de drogues urinaires"> Recherche de drogues</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Test de grossesse urinaire"> Test de grossesse</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Dosage créatinine urinaire"> Créatinine urinaire</label>
-  </div>
-
-  <button class="exam-button" onclick="toggleSublist('irm-list')">🧲 IRM</button>
-  <div class="sub-list" id="irm-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM cérébrale"> Cérébrale</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM hypophysaire"> Hypophysaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis cervical"> Rachis cervical</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis dorsal"> Rachis dorsal</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM rachis lombaire"> Rachis lombaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM abdominale"> Abdominale</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM pelvienne"> Pelvienne</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM genou"> Genou</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM épaule"> Épaule</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="IRM avec injection"> Avec injection</label>
-  </div>
-
-  <button class="exam-button" onclick="toggleSublist('scanner-list')">🖥️ Scanner</button>
-  <div class="sub-list" id="scanner-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner cérébral"> Cérébral</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner thoracique"> Thorax</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner abdomino-pelvien"> Abdomino-pelvien</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner rachis cervical"> Rachis cervical</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner rachis lombaire"> Rachis lombaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner des sinus"> Sinus</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Scanner genou"> Genou</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner cérébral"> Angioscanner cérébral</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner thoracique"> Angioscanner thoracique</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Angioscanner abdominal"> Angioscanner abdominal</label>
-  </div>
-
-  <button class="exam-button" onclick="toggleSublist('echo-list')">🧭 Échographie</button>
-  <div class="sub-list" id="echo-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie abdominale"> Abdominale</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie pelvienne"> Pelvienne</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie rénale"> Rénale</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie hépatique"> Hépatique</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie thyroïdienne"> Thyroïdienne</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie mammaire"> Mammaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie testiculaire"> Testiculaire</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Échographie cardiaque (ETT)"> Cardiaque (ETT)</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Doppler veineux des membres inférieurs"> Doppler veineux MI</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="Doppler artériel des membres inférieurs"> Doppler artériel MI</label>
-  </div>
-
-  <button class="exam-button" onclick="toggleSublist('eos-list')">🦴 EOS</button>
-  <div class="sub-list" id="eos-list">
-    <label><input type="checkbox" onchange="toggleExam(this)" value="EOS rachis complet"> Rachis complet</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="EOS membres inférieurs"> Membres inférieurs</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="EOS membres supérieurs"> Membres supérieurs</label>
-    <label><input type="checkbox" onchange="toggleExam(this)" value="EOS posture globale"> Posture globale</label>
-  </div>
-  <br><br>
-  <label for="commentaireExamen">💬 Commentaire</label><br>
-  <textarea id="commentaireExamen" placeholder="Détails supplémentaires..." oninput="updateOrdonnance()"></textarea>
-
-  <div id="prescription-list" class="prescription-list"></div>
- </div> 
-
-<div id="ordonnance" class="ordonnance" style="display:none;">
-  <h2>🧪 Prescription d’Examens</h2>
-  <div class="date-info">Date : <span id="current-date"></span></div>
-  <div class="doctor-info">
-    <span id="medecin-nom-display">Dr Nom</span><br />
-    <span id="medecin-specialite-display">Spécialité</span>
-  </div>
-  <div class="patient-info">
-    <span id="patient-name-display">Nom du patient</span>
-  </div>
-  <div class="prescription-list" id="examens-list-display"></div>
-  <div class="commentaire-display" id="commentaire-display" style="margin-top:10px;"></div>
-
-  <div class="buttons-wrapper" style="display:none;">
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
-    <button class="btn-download" onclick="telechargerExamens()">📥 Télécharger PDF</button>
-  </div>
+<h4>Examens sélectionnés :</h4>
+<div id="examensSelectionnes"></div>
+<!-- Bouton de validation -->
+<div class="d-grid mb-3" style="margin-top:20px; text-align:center;">
+  <button id="btnValiderPrescription" type="button" class="btn-id btn-is-v"
+          
+          onclick="validerPrescription()">
+    📝 Valider & enregistrer la prescription
+  </button>
 </div>
 
+<!-- Zone affichée après validation -->
+<div id="postValidationActions" style="display:none; margin-top:20px; text-align:center;">
+  <h3>✔ Prescription validée</h3>
+  <br>
+<button class="btn-id" onclick="imprimer()">
+     🖨️ Imprimer la prescription
+  </button>
+ 
+  <button class="btn-id" onclick="genererPrescription('True')">
+    📥 Télécharger la prescription
+  </button>
+
+  
+</div>
+ </div> 
+
+
+
+<div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
+
+
+
 <div id="bubble-container"></div>
+ <div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+        <p>Veuillez contacter un adminitrateur pour plus d'informations.</p>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
+  </div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",  
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL" 
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+    projectId: "urgences-a8ed4"
+  };
 
-let medecinNom = "";
-let medecinSpecialite = "";
-let medecinLieu = "";
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-firebase.auth().onAuthStateChanged(async user => {
-  if(user){
-    const doc = await db.collection('SAMU').doc(user.displayName).get();
-    if(doc.exists){
-      const data = doc.data();
-      medecinNom = data.nom || "";
-      medecinSpecialite = data.specialite || "";
-      medecinLieu = data.lieu || "";
-      updateOrdonnance();
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+  // 📌 RÉCUP PATIENT (V10)
+const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get("id");
+window.patientId=patientId;
+if (patientId) {
+  const docSnap = await getDoc(doc(db, "patients", patientId));
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+
+    document.getElementById("patient-first-name").value = data.prenom || "";
+    document.getElementById("patient-last-name").value = data.nom || "";
+    document.getElementById("sexe").value = data.sexe || "M";
+
+    if (data.dateNaissance?.seconds) {
+      document.getElementById("patient-birthdate").valueAsDate =
+        new Date(data.dateNaissance.seconds * 1000);
+    }
+
+    
+  }
+}
+if (!patientId) {
+  console.error("ID patient manquant");
+}
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+        const pageMapping = { "prescriptionexamensf": "prescriptionexamens" };
+        const pageKey = pageMapping[currentPage] || currentPage;
+
+        if (!pages[pageKey]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+      masquerLoader();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      console.error("Erreur chargement médecin :", error);
+      
     }
   }
 });
-
-// Pré-remplissage patient depuis URL
-const urlParams = new URLSearchParams(window.location.search);
-const patientId = urlParams.get("id");
-
-if(patientId){
-  db.collection("patients").doc(patientId).get().then(doc=>{
-    if(doc.exists){
-      const data = doc.data();
-      document.getElementById("patient-first-name").value = data.prenom || "";
-      document.getElementById("patient-last-name").value = data.nom || "";
-      document.getElementById("sexe").value = data.sexe || "M";
-      const naissance = data.dateNaissance;
-      if(naissance instanceof firebase.firestore.Timestamp){
-        document.getElementById("patient-birthdate").valueAsDate = naissance.toDate();
-      } else if(typeof naissance === "string"){
-        document.getElementById("patient-birthdate").value = naissance;
-      }
-      updateOrdonnance();
-    }
-  });
-}
-
-function toggleSublist(listId){
+  window.toggleSublist = function(listId){
   const sublist = document.getElementById(listId);
   sublist.style.display = sublist.style.display === "block" ? "none" : "block";
 }
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
 
-function toggleExam(checkbox){
-  const value = checkbox.value;
-  const prescriptionList = document.getElementById("prescription-list");
-  if(checkbox.checked){
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
+function construireORD() {
+
+  // 🔥 au lieu du textarea → examens
+const prescriptionText = construirePrescriptionText();
+
+  const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+  const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+const inputDate = document.getElementById("patient-birthdate");
+
+let dateNaissance = "";
+
+if (inputDate?.value) {
+  const date = new Date(inputDate.value);
+  dateNaissance = date.toLocaleDateString("fr-FR");
+}
+  const sexe = document.getElementById("sexe")?.value || "";
+
+  const lignes = prescriptionText.split("\n");
+
+  const contenu = [];
+contenu.push({type: "text",
+  value: "Faire réaliser :"
+})
+contenu.push({ type: "newline" });
+  lignes.forEach(ligne => {
+
+    if (ligne.trim() === "---") {
+      contenu.push({ type: "separator" });
+
+    } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+      contenu.push({
+        type: "bold",
+        value: "- "+ligne.replace(/\*\*/g, "")
+      });
+
+    } else {
+      contenu.push({
+        type: "text",
+        value: "- "+ligne
+      });
+    }
+
+    contenu.push({ type: "newline" });
+
+  });
+
+  return {
+    version: "1.0",
+    type: "ordonnance",
+
+    titre: "Prescription d'examens",
+
+    date: new Date().toLocaleDateString("fr-FR"),
+    lieu: window.medecinLieu || "Lyon",
+
+    patient: {
+      nom: lastName,
+      prenom: firstName,
+      date_naissance : dateNaissance,
+      sexe: sexe
+    },
+
+    medecin: {
+      nom: window.medecinNom || "Dr Non renseigné",
+      specialite: window.medecinSpecialite || ""
+    },
+
+    contenu: contenu,
+
+    signature: true
+  };
+}
+
+
+const examensDisponibles = [
+
+  // 🩸 BIOLOGIE
+  { type: "NFS (Numération Formule Sanguine)", categorie: "Biologie" },
+  { type: "CRP", categorie: "Biologie" },
+  { type: "Ionogramme", categorie: "Biologie" },
+  { type: "Calcémie", categorie: "Biologie" },
+  { type: "Bilan hépatique", categorie: "Biologie" },
+  { type: "Bilan rénal", categorie: "Biologie" },
+  { type: "TSH, T3, T4", categorie: "Biologie" },
+  { type: "Hémoglobine glyquée (HbA1c)", categorie: "Biologie" },
+  { type: "Bilan lipidique", categorie: "Biologie" },
+  { type: "Troponine", categorie: "Biologie" },
+  { type: "Groupage sanguin", categorie: "Biologie" },
+  { type: "Sérologies virales (VIH, VHB, VHC)", categorie: "Biologie" },
+  { type: "Bilan coagulation (TP, TCA)", categorie: "Biologie" },
+  { type: "Recherche Alcoolémie", categorie: "Biologie" },
+  { type: "Prise de sang autre", categorie: "Biologie" },
+
+  // 🧪 URINES
+  { type: "ECBU (Examen cytobactériologique des urines)", categorie: "Urines" },
+  { type: "Protéinurie des 24h", categorie: "Urines" },
+  { type: "Bandelette urinaire", categorie: "Urines" },
+  { type: "Recherche de sang dans les urines", categorie: "Urines" },
+  { type: "Recherche de drogues urinaires", categorie: "Urines" },
+  { type: "Test de grossesse urinaire", categorie: "Urines" },
+  { type: "Dosage créatinine urinaire", categorie: "Urines" },
+  { type: "Examens urinaires autre", categorie: "Urines" },
+
+  // 📸 RADIO
+  { type: "Radiographie du crâne", categorie: "Radiologie" },
+  { type: "Radiographie du thorax", categorie: "Radiologie" },
+  { type: "Radiographie de l'abdomen", categorie: "Radiologie" },
+  { type: "Radiographie du bassin", categorie: "Radiologie" },
+  { type: "Radiographie du rachis cervical", categorie: "Radiologie" },
+  { type: "Radiographie du rachis dorsal", categorie: "Radiologie" },
+  { type: "Radiographie du rachis lombaire", categorie: "Radiologie" },
+  { type: "Radiographie du genou", categorie: "Radiologie" },
+  { type: "Radiographie de la cheville", categorie: "Radiologie" },
+  { type: "Radiographie du poignet", categorie: "Radiologie" },
+  { type: "Radiographie du coude", categorie: "Radiologie" },
+  { type: "Radiographie des mains", categorie: "Radiologie" },
+  { type: "Radiographie des pieds", categorie: "Radiologie" },
+  { type: "Radiographie autre", categorie: "Radiologie" },
+
+  // 🧲 IRM
+  { type: "IRM cérébrale", categorie: "IRM" },
+  { type: "IRM hypophysaire", categorie: "IRM" },
+  { type: "IRM rachis cervical", categorie: "IRM" },
+  { type: "IRM rachis dorsal", categorie: "IRM" },
+  { type: "IRM rachis lombaire", categorie: "IRM" },
+  { type: "IRM abdominale", categorie: "IRM" },
+  { type: "IRM pelvienne", categorie: "IRM" },
+  { type: "IRM genou", categorie: "IRM" },
+  { type: "IRM épaule", categorie: "IRM" },
+  { type: "IRM avec injection", categorie: "IRM" },
+  { type: "IRM autre", categorie: "IRM" },
+
+  // 🖥️ SCANNER
+  { type: "Scanner cérébral", categorie: "Scanner" },
+  { type: "Scanner thoracique", categorie: "Scanner" },
+  { type: "Scanner abdomino-pelvien", categorie: "Scanner" },
+  { type: "Scanner rachis cervical", categorie: "Scanner" },
+  { type: "Scanner rachis lombaire", categorie: "Scanner" },
+  { type: "Scanner des sinus", categorie: "Scanner" },
+  { type: "Scanner genou", categorie: "Scanner" },
+  { type: "Angioscanner cérébral", categorie: "Scanner" },
+  { type: "Angioscanner thoracique", categorie: "Scanner" },
+  { type: "Angioscanner abdominal", categorie: "Scanner" },
+  { type: "Scanner autre", categorie: "Scanner" },
+
+  // 🧭 ECHO
+  { type: "Échographie abdominale", categorie: "Échographie" },
+  { type: "Échographie pelvienne", categorie: "Échographie" },
+  { type: "Échographie rénale", categorie: "Échographie" },
+  { type: "Échographie hépatique", categorie: "Échographie" },
+  { type: "Échographie thyroïdienne", categorie: "Échographie" },
+  { type: "Échographie mammaire", categorie: "Échographie" },
+  { type: "Échographie testiculaire", categorie: "Échographie" },
+  { type: "Échographie cardiaque (ETT)", categorie: "Échographie" },
+  { type: "Doppler veineux des membres inférieurs", categorie: "Échographie" },
+  { type: "Doppler artériel des membres inférieurs", categorie: "Échographie" },
+  { type: "Échographie autre", categorie: "Échographie" },
+
+  // 🦴 EOS
+  { type: "EOS rachis complet", categorie: "EOS" },
+  { type: "EOS membres inférieurs", categorie: "EOS" },
+  { type: "EOS membres supérieurs", categorie: "EOS" },
+  { type: "EOS posture globale", categorie: "EOS" },
+  { type: "EOS autre", categorie: "EOS" }
+];
+function getBadge(categorie) {
+  switch (categorie) {
+    case "Biologie": return "🩸";
+    case "Urines": return "🧪";
+    case "Radiologie": return "📸";
+    case "IRM": return "🧲";
+    case "Scanner": return "🖥️";
+    case "Échographie": return "🧭";
+    case "EOS": return "🦴";
+    default: return "📄";
+  }
+}
+
+const searchInput = document.getElementById("searchExamen");
+const resultatsDiv = document.getElementById("resultatsExamens");
+function matchExamen(examen, query) {
+  const motsQuery = normaliser(query).split(" ").filter(Boolean);
+
+  const texte = normaliser(examen.type + " " + examen.categorie);
+
+  return motsQuery.every(mot => {
+    return texte.includes(mot);
+  });
+}
+searchInput.addEventListener("input", () => {
+  const valeur = searchInput.value.trim();
+  resultatsDiv.innerHTML = "";
+
+  if (valeur.length < 2) return;
+
+  const resultats = examensDisponibles.filter(ex =>
+    matchExamen(ex, valeur)
+  );
+
+  resultats.forEach(examen => {
     const div = document.createElement("div");
-    div.className = "prescription-item";
-    div.dataset.exam = value;
-    div.innerHTML = `${value} <button class="btn-delete" onclick="removeExam(this)">✖</button>`;
-    prescriptionList.appendChild(div);
-  } else {
-    Array.from(prescriptionList.children).forEach(child=>{
-      if(child.dataset.exam === value) prescriptionList.removeChild(child);
+    div.classList.add("result-item");
+
+    div.innerHTML = `
+      <span>${getBadge(examen.categorie)}</span>
+      <strong>${examen.type}</strong>
+      <small>${examen.categorie}</small>
+    `;
+
+    div.onclick = () => ajouterExamen(examen.type);
+
+    resultatsDiv.appendChild(div);
+  });
+
+  if (resultats.length === 0) {
+    const div = document.createElement("div");
+    div.textContent = `➕ Ajouter "${valeur}"`;
+    div.onclick = () => ajouterExamen(valeur);
+    resultatsDiv.appendChild(div);
+  }
+});
+let examensSelectionnes = [];
+
+function ajouterExamen(type) {
+  const deja = examensSelectionnes.find(ex => ex.type === type);
+  if (deja) return;
+
+  examensSelectionnes.push({
+    type,
+    commentaire: ""
+  });
+document.getElementById("resultatsExamens").innerHTML = ""; 
+  document.getElementById("searchExamen").value = "";
+  afficherExamensSelectionnes();
+}
+function normaliser(texte) {
+  return texte
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+function afficherExamensSelectionnes() {
+  const container = document.getElementById("examensSelectionnes");
+  container.innerHTML = "";
+
+  examensSelectionnes.forEach((ex, index) => {
+    const div = document.createElement("div");
+
+    div.innerHTML = `
+      <strong>${ex.type}</strong>
+      <input type="text" placeholder="Commentaire..." 
+        value="${ex.commentaire}" 
+        onchange="modifierCommentaire(${index}, this.value)" />
+      <button class="delete-examen-btn" onclick="supprimerExamen(${index})">❌</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+ window.modifierCommentaire = function(index, value) {
+  examensSelectionnes[index].commentaire = value;
+}
+
+window.supprimerExamen = function(index) {
+  examensSelectionnes.splice(index, 1);
+  afficherExamensSelectionnes();
+}
+
+function construirePrescriptionText() {
+  return examensSelectionnes
+    .map(e => `${e.type}${e.commentaire ? " - " + e.commentaire : ""}`)
+    .join("\n");
+}
+function imprimer() {
+
+    const id = window.pdfIdExistante || localStorage.getItem("pdfIdExistante");
+
+    if (!id) {
+        afficherBulle("❌ Aucun document disponible pour impression", "error");
+        return;
+    }
+
+    window.parent.postMessage(
+        {
+            type: "OPEN_TAB",
+            title: "Certificat médical",
+            url: `viewer.html?docId=${id}`
+        },
+        "*"
+    );
+}
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
+
+
+
+function formatDate(date) {
+  const pad = (n) => n.toString().padStart(2, '0');
+  const jour = pad(date.getDate());
+  const mois = pad(date.getMonth() + 1); // Les mois vont de 0 à 11
+  const annee = date.getFullYear();
+  const heures = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const secondes = pad(date.getSeconds());
+  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+}
+
+window.imprimer=imprimer;
+// 💾 ENREGISTREMENT FIRESTORE (V10)
+window.validerPrescription = async function (){
+const btn = document.getElementById("btnValiderPrescription");
+  btn.disabled = true;
+  // 🔥 on transforme les examens en texte (comme avant)
+ const prescriptionText = construirePrescriptionText();
+
+  if (!prescriptionText) {
+    afficherBulle("⛔ Aucun examen sélectionné !", "alerte");
+    return;
+  }
+
+ 
+  // 🔹 Création du .ord EXACTEMENT comme toi
+  const ord = construireORD();
+
+
+  if (patientId) {
+
+    try {
+
+      const idUnique = Math.random().toString(36).substring(2, 10);
+      const dateFormatted = formatDate(new Date());
+
+      window.pdfIdExistante = idUnique;
+localStorage.setItem("pdfIdExistante", idUnique);
+
+      await setDoc(
+        doc(db, "documents", idUnique),
+        {
+          patientId: patientId,
+          dateCreation: dateFormatted,
+
+          type: "Prescription d'examens",
+
+          // 🔥 EXACTEMENT comme avant (texte)
+          contenu: prescriptionText,
+
+          // 🔥 EXACTEMENT comme avant (.ord)
+          ord: ord,
+
+        }
+      );
+ document.getElementById("btnValiderPrescription").style.display = "none";
+  document.getElementById("postValidationActions").style.display = "flex";
+
+      console.log("✅ Prescription enregistrée avec ID unique :", idUnique);
+      afficherBulle("✅ Prescription enregistrée !", "success");
+
+    } catch (err) {
+      console.error(err);
+    }
+
+  }
+
+}
+async function genererPrescription(telecharger = false) {
+
+  try {
+
+    // ==============================
+    // 🔹 1. Récupération données UI
+    // ==============================
+
+const prescriptionText = construirePrescriptionText();
+    const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+    const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+    const dateNaissance = document.getElementById("patient-birthdate")?.value.trim() || "";
+    const sexe = document.getElementById("sexe")?.value || "";
+
+    const date = new Date().toLocaleDateString("fr-FR");
+    const lieu = window.medecinLieu || "Lyon";
+
+    // ==============================
+    // 🔹 2. Conversion TEXTE → .ord
+    // ==============================
+
+    const lignes = prescriptionText.split("\n");
+
+    const contenu = [];
+contenu.push({type: "text",
+  value: "Faire réaliser :"
+})
+contenu.push({ type: "newline" });
+    lignes.forEach(ligne => {
+
+      if (ligne.trim() === "---") {
+        contenu.push({ type: "separator" });
+
+      } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+        contenu.push({
+          type: "bold",
+          value: "- "+ligne.replace(/\*\*/g, "")
+        });
+
+      } else {
+        contenu.push({
+          type: "text",
+          value: "- " +ligne
+        });
+      }
+
+      contenu.push({ type: "newline" });
+
     });
+
+    // ==============================
+    // 🔹 3. Création objet .ord
+    // ==============================
+
+    const ord = {
+
+      version: "1.0",
+      type: "ordonnance",
+
+      titre: "Ordonnance médicale",
+
+      date: date,
+      lieu: lieu,
+
+      patient: {
+        nom: lastName,
+        prenom: firstName,
+        date_naissance : dateNaissance,
+        sexe: sexe
+      },
+
+      medecin: {
+        nom: window.medecinNom || "Dr Non renseigné",
+        specialite: window.medecinSpecialite || ""
+      },
+
+      contenu: contenu,
+
+      signature: true,
+      logo: "logo.png"
+
+    };
+
+    // ==============================
+    // 🔹 4. Génération PDF via ton moteur
+    // ==============================
+
+    if (telecharger) {
+      // téléchargement direct
+      await ordToPDF(ord);
+      return "";
+    }
+
+    // ==============================
+    // 🔹 5. Génération BASE64 (Firestore)
+    // ==============================
+
+    const html = generateHTML(ord);
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const pdfBlob = await html2pdf()
+      .set({
+        margin: 0,
+        filename: `${ord.titre}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(container)
+      .outputPdf('blob');
+
+    // conversion blob → base64
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfBlob);
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    });
+
+    window.pdfBase64 = base64;
+
+    return base64;
+
+  } catch (error) {
+    console.error("❌ Erreur génération PDF :", error);
+    return "";
   }
-  checkIfPrescriptionsRemain();
-  updateOrdonnance();
 }
 
-function removeExam(btn){
-  const div = btn.parentElement;
-  const val = div.dataset.exam;
-  div.parentElement.removeChild(div);
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    if(cb.value === val) cb.checked = false;
-  });
-  checkIfPrescriptionsRemain();
-  updateOrdonnance();
-}
+window.genererPrescription=genererPrescription;
 
-function checkIfPrescriptionsRemain(){
-  const ordonnance = document.getElementById("ordonnance");
-  const buttonsWrapper = ordonnance.querySelector(".buttons-wrapper");
-  if(document.getElementById("prescription-list").children.length > 0){
-    ordonnance.style.display = "block";
-    buttonsWrapper.style.display = "block";
-  } else {
-    ordonnance.style.display = "none";
-    buttonsWrapper.style.display = "none";
-  }
-}
 
-function updateOrdonnance(){
-  const patientName = document.getElementById("patient-first-name").value + " " + document.getElementById("patient-last-name").value;
-  document.getElementById("patient-name-display").textContent = patientName;
-  document.getElementById("medecin-nom-display").textContent = medecinNom;
-  document.getElementById("medecin-specialite-display").textContent = medecinSpecialite;
-  const today = new Date();
-  document.getElementById("current-date").textContent = today.toLocaleDateString();
-  const examensList = document.getElementById("examens-list-display");
-  examensList.innerHTML = "";
-  Array.from(document.getElementById("prescription-list").children).forEach(item=>{
-    const div = document.createElement("div");
-    div.textContent = item.dataset.exam;
-    examensList.appendChild(div);
-  });
-  document.getElementById("commentaire-display").textContent = document.getElementById("commentaireExamen").value;
-}
-
-function telechargerExamens(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("🧪 Prescription d'Examens", 105, 20, null, null, "center");
-  doc.setFontSize(12);
-  doc.text(`Médecin: ${medecinNom} - ${medecinSpecialite}`, 10, 30);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 10, 40);
-  const patientName = document.getElementById("patient-first-name").value + " " + document.getElementById("patient-last-name").value;
-  doc.text(`Patient: ${patientName}`, 10, 50);
-  doc.text("Examens prescrits:", 10, 60);
-  let y = 70;
-  Array.from(document.getElementById("prescription-list").children).forEach(item=>{
-    doc.text("- " + item.dataset.exam, 15, y);
-    y += 10;
-  });
-  const commentaire = document.getElementById("commentaireExamen").value;
-  if(commentaire){
-    doc.text("Commentaire: " + commentaire, 10, y + 10);
-  }
-  doc.save("Prescription_Examens.pdf");
-}
 </script>
+
+
 </body>
 </html>
 

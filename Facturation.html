@@ -729,52 +729,38 @@
         </div>
       </div>
     `;
+ const container = document.createElement('div');
 
-const container = document.createElement('div');
+  container.style.width = '794px';
+  container.style.background = 'white';
+  container.style.position = 'fixed';
+  container.style.top = '0';
+  container.style.left = '0';
+  container.style.zIndex = '9999';
 
-container.style.width = '794px'; // IMPORTANT (A4 réel en px)
-container.style.minHeight = '1123px';
-container.style.background = 'white';
-container.style.position = 'fixed';
-container.style.top = '0';
-container.style.left = '0';
-container.style.opacity = '1'; // IMPORTANT (NE PAS METTRE 0)
-container.style.zIndex = '999999';
-container.style.overflow = 'visible';
-
-container.innerHTML = html;
-
+  container.innerHTML = html;
   document.body.appendChild(container);
-// attendre rendu complet
-await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-imgs.forEach(img => {
-  console.log("IMG:", img.src, {
-    complete: img.complete,
-    naturalWidth: img.naturalWidth
-  });
-});
 
-// test DOM réel rendu
-document.body.appendChild(container.cloneNode(true));
-await html2pdf().set({
-  margin: 10,
-  filename: `Facture_RPO_${factureId}.pdf`,
-  image: { type: 'jpeg', quality: 0.98 },
-  html2canvas: {
-    scale: 2,
-    useCORS: true,
-    scrollY: 0
-  },
-  jsPDF: {
-    unit: 'mm',
-    format: 'a4',
-    orientation: 'portrait'
-  }
-  
-}).from(container).save();
+  // attendre rendu
+  await new Promise(r => setTimeout(r, 300));
 
-container.remove();
-  }
+  await html2pdf().set({
+    margin: 10,
+    filename: `Facture_RPO_${factureId}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    }
+  }).from(container).save();
+
+  container.remove();
+}
 
   function resetForm() {
     state.currentInvoiceId = null;

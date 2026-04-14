@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -658,6 +660,55 @@ function imprimer() {
         },
         "*"
     );
+}
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
 }
 
 window.imprimer=imprimer;

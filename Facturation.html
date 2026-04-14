@@ -9,99 +9,187 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    :root { --bg:#f3f5f8; --card:#fff; --primary:#0d6efd; --ok:#198754; --warn:#fd7e14; --danger:#dc3545; --muted:#6c757d; }
-    body { margin:0; background:var(--bg); font-family:Segoe UI, Arial, sans-serif; color:#1f2937; }
-    .wrap { max-width:1200px; margin:24px auto; padding:0 16px; }
-    .card { background:var(--card); border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.08); padding:18px; margin-bottom:16px; }
-    h1,h2,h3 { margin:0 0 12px; }
-    h1 { text-align:center; margin-bottom:18px; }
+    :root {
+      --bg:#eef2f7;
+      --card:#fff;
+      --line:#dde3eb;
+      --text:#1f2937;
+      --primary:#0d6efd;
+      --success:#1f9d55;
+      --warning:#f59e0b;
+      --danger:#dc3545;
+      --muted:#6b7280;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Segoe UI, Arial, sans-serif; color:var(--text); background:linear-gradient(120deg,#eef2f7,#f7f9fc); }
+    .container { max-width:1300px; margin:20px auto; padding:0 14px; }
+    h1 { text-align:center; margin:8px 0 16px; }
+    h2 { margin:0 0 12px; font-size:1.15rem; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 5px 20px rgba(15,23,42,.06); padding:16px; margin-bottom:14px; }
     .grid { display:grid; gap:10px; }
-    .g-3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
-    .g-4 { grid-template-columns:repeat(4, minmax(0,1fr)); }
-    label { font-weight:600; font-size:.92rem; display:block; margin-bottom:5px; }
-    input,select,button { border:1px solid #d1d5db; border-radius:10px; padding:9px 10px; font-size:.95rem; }
-    input,select { width:100%; box-sizing:border-box; }
-    button { cursor:pointer; font-weight:600; }
-    .btn { background:var(--primary); color:#fff; border:none; }
-    .btn-ok { background:var(--ok); color:#fff; border:none; }
-    .btn-warn { background:var(--warn); color:#fff; border:none; }
-    .btn-danger { background:var(--danger); color:#fff; border:none; }
-    .btn-light { background:#e9ecef; }
-    .line { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th,td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
-    th { background:#f8fafc; }
+    .grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .grid-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .grid-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    label { display:block; font-size:.88rem; font-weight:700; margin-bottom:4px; }
+    input, select, button { font:inherit; }
+    input, select { width:100%; border:1px solid #cfd8e3; border-radius:10px; padding:9px; background:#fff; }
+    input:disabled { background:#f7f9fc; color:#475569; }
+    .line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .btn { border:none; border-radius:10px; padding:9px 12px; font-weight:700; cursor:pointer; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-warning { background:var(--warning); color:#fff; }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-light { background:#e5e7eb; color:#111827; }
+    .btn:disabled { opacity:.65; cursor:not-allowed; }
+    .muted { color:var(--muted); font-size:.85rem; }
+
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; vertical-align:middle; }
+    th { background:#f8fafc; font-size:.9rem; }
     td.left { text-align:left; }
-    .search-box { position:relative; }
-    .suggestions { position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #d1d5db; border-radius:8px; max-height:160px; overflow:auto; display:none; z-index:20; }
-    .suggestions div { padding:8px; cursor:pointer; }
-    .suggestions div:hover { background:#eef2ff; }
-    .totaux { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; margin-top:12px; }
-    .kpi { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
-    .kpi b { display:block; font-size:1.1rem; margin-top:6px; }
-    .small { color:var(--muted); font-size:.84rem; }
-    .status { font-weight:700; }
-    @media (max-width:900px){ .g-3,.g-4,.totaux { grid-template-columns:1fr; } }
+
+    .kpis { display:grid; gap:8px; grid-template-columns:repeat(5,minmax(0,1fr)); margin-top:10px; }
+    .kpi { border:1px solid #e5e7eb; border-radius:10px; background:#f8fafc; padding:8px; }
+    .kpi b { display:block; margin-top:4px; font-size:1rem; }
+
+    .service-cell { position:relative; }
+    .serviceSuggestions {
+      position:absolute; left:0; right:0; top:100%;
+      border:1px solid #d1d5db; border-radius:8px; background:#fff;
+      max-height:180px; overflow:auto; display:none; z-index:25;
+      box-shadow:0 8px 22px rgba(0,0,0,.08);
+    }
+    .serviceSuggestions div { padding:8px; cursor:pointer; }
+    .serviceSuggestions div:hover { background:#eff6ff; }
+
+    .history-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .history-table-wrap { max-height:280px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; }
+
+    @media (max-width:1000px) {
+      .grid-2,.grid-3,.grid-4,.kpis { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
   <h1>🧾 Facturation RPO</h1>
 
   <div class="card">
-    <h2>Patient / recherche facture</h2>
-    <div class="grid g-4">
-      <div><label>ID patient (URL ?id=...)</label><input id="patientId" disabled /></div>
-      <div><label>Nom</label><input id="nom" /></div>
-      <div><label>Prénom</label><input id="prenom" /></div>
-      <div><label>Date de naissance</label><input id="naissance" type="date" /></div>
-    </div>
-    <div class="line" style="margin-top:10px;">
-      <input id="searchInvoiceId" placeholder="ID facture à charger" style="max-width:260px;" />
-      <button id="loadInvoiceBtn" class="btn-light" type="button">🔎 Charger facture</button>
-      <span class="small">Une facture sauvegardée peut être retrouvée puis réimprimée en PDF.</span>
+    <h2>Patient</h2>
+    <div class="grid grid-4">
+      <div>
+        <label>ID patient (URL ?id=...)</label>
+        <input id="patientId" disabled />
+      </div>
+      <div>
+        <label>Nom</label>
+        <input id="nom" />
+      </div>
+      <div>
+        <label>Prénom</label>
+        <input id="prenom" />
+      </div>
+      <div>
+        <label>Date de naissance</label>
+        <input id="naissance" type="date" />
+      </div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Prestations</h2>
-    <div class="line">
-      <div class="search-box" style="min-width:330px; flex:1;">
-        <label>Ajouter une prestation (barre de recherche)</label>
-        <input id="prestationSearch" placeholder="Tapez une prestation..." />
-        <div id="suggestions" class="suggestions"></div>
-      </div>
-      <button type="button" id="addManualLine" class="btn-light">➕ Ligne manuelle</button>
+    <div class="history-header">
+      <h2>Retrouver une ancienne facture</h2>
+      <span class="muted">Chargement multiple + filtres rapides, puis clic pour ouvrir.</span>
     </div>
 
+    <div class="grid grid-4" style="margin-bottom:10px;">
+      <div>
+        <label>ID facture</label>
+        <input id="historyInvoiceId" placeholder="ex: AbCd1234" />
+      </div>
+      <div>
+        <label>Nom patient</label>
+        <input id="historyNom" placeholder="filtre nom" />
+      </div>
+      <div>
+        <label>Date mini</label>
+        <input id="historyDateMin" type="date" />
+      </div>
+      <div>
+        <label>Date maxi</label>
+        <input id="historyDateMax" type="date" />
+      </div>
+    </div>
+
+    <div class="line" style="margin-bottom:10px;">
+      <button id="searchInvoicesBtn" type="button" class="btn btn-light">🔎 Rechercher des factures</button>
+      <button id="loadInvoiceByIdBtn" type="button" class="btn btn-primary">📂 Charger l'ID saisi</button>
+      <span class="muted" id="historyInfo">Aucune recherche lancée.</span>
+    </div>
+
+    <div class="history-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date MAJ</th>
+            <th>Patient</th>
+            <th>Total (€)</th>
+            <th>Reste patient (€)</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="7" class="muted">Aucun résultat pour le moment.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Prestations (chargées depuis Firestore)</h2>
+    <div class="line" style="margin-bottom:8px;">
+      <button id="addLineBtn" type="button" class="btn btn-light">➕ Ajouter une ligne</button>
+      <span class="muted">Chaque ligne a sa propre recherche de prestation depuis <code>referentiels/Facturables</code>.</span>
+    </div>
     <table>
       <thead>
-      <tr>
-        <th>Prestation</th><th>Qté</th><th>Prix unitaire (€)</th><th>Total (€)</th><th></th>
-      </tr>
+        <tr>
+          <th style="width:46%;">Prestation</th>
+          <th>Qté</th>
+          <th>PU (€)</th>
+          <th>Total (€)</th>
+          <th></th>
+        </tr>
       </thead>
-      <tbody id="lignes"></tbody>
+      <tbody id="linesBody"></tbody>
       <tfoot>
-        <tr><td colspan="3" style="text-align:right; font-weight:700;">Total</td><td id="totalGlobal">0.00</td><td></td></tr>
+        <tr>
+          <td colspan="3" style="text-align:right;font-weight:700;">Total global</td>
+          <td id="totalGlobal">0.00</td>
+          <td></td>
+        </tr>
       </tfoot>
     </table>
   </div>
 
   <div class="card">
-    <h2>Répartition Secu / Mutuelle / Patient</h2>
-    <div class="grid g-4">
+    <h2>Calcul Secu / Mutuelle / Patient</h2>
+    <div class="grid grid-4">
       <div>
         <label>Régime sécu</label>
         <select id="regimeSecu">
           <option value="70">Régime général (70%)</option>
           <option value="90">Alsace-Moselle (90%)</option>
           <option value="100">100% (ALD/CMU/AME)</option>
-          <option value="0">Sans prise en charge</option>
+          <option value="0">Aucun remboursement</option>
         </select>
       </div>
       <div>
         <label>Taux mutuelle (%) sur le reste</label>
-        <input id="tauxMutuelle" type="number" min="0" max="100" value="100" />
+        <input id="mutuellePct" type="number" min="0" max="100" value="100" />
       </div>
       <div>
         <label>Part sécu (€)</label>
@@ -112,29 +200,31 @@
         <input id="partMutuelle" disabled />
       </div>
     </div>
-    <div class="totaux">
-      <div class="kpi">Part patient restante<b id="partPatient">0.00 €</b></div>
+
+    <div class="kpis">
+      <div class="kpi">Part patient<b id="partPatient">0.00 €</b></div>
       <div class="kpi">Déjà payé<b id="dejaPaye">0.00 €</b></div>
       <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
-      <div class="kpi">Statut paiement<b class="status" id="statutPaiement">INCOMPLET</b></div>
+      <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
+      <div class="kpi">Facture courante<b id="invoiceBadge">nouvelle</b></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Paiement en plusieurs fois</h2>
+    <h2>Paiements fractionnés</h2>
     <table>
       <thead><tr><th>Date</th><th>Mode</th><th>Montant (€)</th><th></th></tr></thead>
-      <tbody id="payments"></tbody>
+      <tbody id="paymentsBody"></tbody>
     </table>
-    <button id="addPayment" type="button" class="btn-light" style="margin-top:8px;">➕ Ajouter un paiement</button>
+    <button id="addPaymentBtn" type="button" class="btn btn-light" style="margin-top:8px;">➕ Ajouter un paiement</button>
   </div>
 
   <div class="card">
     <div class="line">
-      <button id="saveInvoiceBtn" type="button" class="btn-ok">💾 Enregistrer la facture</button>
-      <button id="downloadPdfBtn" type="button" class="btn">📄 Générer / télécharger PDF</button>
-      <button id="resetBtn" type="button" class="btn-danger">♻️ Réinitialiser</button>
-      <span class="small" id="saveMsg"></span>
+      <button id="saveBtn" type="button" class="btn btn-success">💾 Enregistrer la facture</button>
+      <button id="pdfBtn" type="button" class="btn btn-primary">📄 Générer le PDF</button>
+      <button id="resetBtn" type="button" class="btn btn-danger">♻️ Réinitialiser</button>
+      <span id="saveMsg" class="muted"></span>
     </div>
   </div>
 </div>
@@ -151,51 +241,123 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const state = { facturables:{}, currentInvoiceId:null };
-  const lignesBody = document.getElementById('lignes');
-  const paymentsBody = document.getElementById('payments');
+  const state = {
+    currentInvoiceId: null,
+    facturables: {},
+    historyDocs: []
+  };
 
-  const euros = v => (Number(v || 0)).toFixed(2);
+  const linesBody = document.getElementById('linesBody');
+  const paymentsBody = document.getElementById('paymentsBody');
 
-  function addLine(line = {description:'', quantity:1, unitPrice:0}) {
+  const euro = (v) => Number(v || 0).toFixed(2);
+
+  function setInvoiceBadge() {
+    document.getElementById('invoiceBadge').textContent = state.currentInvoiceId || 'nouvelle';
+  }
+
+  function createServiceSuggestions(input, box, onSelect) {
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      box.innerHTML = '';
+      if (!q) {
+        box.style.display = 'none';
+        return;
+      }
+      const keys = Object.keys(state.facturables)
+        .filter(k => k.toLowerCase().includes(q))
+        .slice(0, 20);
+
+      keys.forEach(name => {
+        const pu = Number(state.facturables[name] || 0);
+        const row = document.createElement('div');
+        row.textContent = `${name} — ${euro(pu)} €`;
+        row.addEventListener('click', () => {
+          onSelect(name, pu);
+          box.style.display = 'none';
+        });
+        box.appendChild(row);
+      });
+
+      box.style.display = keys.length ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!box.contains(e.target) && e.target !== input) {
+        box.style.display = 'none';
+      }
+    });
+  }
+
+  function addLine(line = { description:'', quantity:1, unitPrice:0 }) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="left"><input class="desc" value="${line.description || ''}" /></td>
+      <td class="left service-cell">
+        <input class="serviceInput" placeholder="Rechercher une prestation..." value="${line.description || ''}" />
+        <div class="serviceSuggestions"></div>
+      </td>
       <td><input class="qty" type="number" min="1" value="${line.quantity || 1}" /></td>
-      <td><input class="pu" type="number" step="0.01" min="0" value="${line.unitPrice || 0}" /></td>
-      <td class="lt">0.00</td>
-      <td><button type="button" class="btn-danger del">🗑</button></td>`;
-    lignesBody.appendChild(tr);
+      <td><input class="unitPrice" type="number" min="0" step="0.01" value="${line.unitPrice || 0}" /></td>
+      <td class="lineTotal">0.00</td>
+      <td><button type="button" class="btn btn-danger delLine">🗑</button></td>
+    `;
+
+    linesBody.appendChild(tr);
+
+    const serviceInput = tr.querySelector('.serviceInput');
+    const box = tr.querySelector('.serviceSuggestions');
+    const unitPriceInput = tr.querySelector('.unitPrice');
+
+    createServiceSuggestions(serviceInput, box, (name, pu) => {
+      serviceInput.value = name;
+      unitPriceInput.value = pu;
+      recompute();
+    });
+
     tr.querySelectorAll('input').forEach(i => i.addEventListener('input', recompute));
-    tr.querySelector('.del').addEventListener('click', () => { tr.remove(); recompute(); });
+    tr.querySelector('.delLine').addEventListener('click', () => {
+      tr.remove();
+      recompute();
+    });
+
     recompute();
   }
 
-  function addPayment(p = {}) {
-    const today = new Date().toISOString().slice(0,10);
+  function addPayment(payment = {}) {
+    const now = new Date().toISOString().slice(0,10);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input class="pdate" type="date" value="${p.date || today}" /></td>
+      <td><input class="pDate" type="date" value="${payment.date || now}" /></td>
       <td>
-        <select class="pmode">
-          <option>Espèces</option><option>Carte bancaire</option><option>Chèque</option><option>Virement</option><option>Autre</option>
+        <select class="pMode">
+          <option>Espèces</option>
+          <option>Carte bancaire</option>
+          <option>Chèque</option>
+          <option>Virement</option>
+          <option>Autre</option>
         </select>
       </td>
-      <td><input class="pamount" type="number" min="0" step="0.01" value="${p.amount || 0}" /></td>
-      <td><button type="button" class="btn-danger delpay">🗑</button></td>`;
+      <td><input class="pAmount" type="number" min="0" step="0.01" value="${payment.amount || 0}" /></td>
+      <td><button type="button" class="btn btn-danger delPayment">🗑</button></td>
+    `;
     paymentsBody.appendChild(tr);
-    if (p.mode) tr.querySelector('.pmode').value = p.mode;
+    if (payment.mode) tr.querySelector('.pMode').value = payment.mode;
+
     tr.querySelectorAll('input,select').forEach(i => i.addEventListener('input', recompute));
-    tr.querySelector('.delpay').addEventListener('click', () => { tr.remove(); recompute(); });
+    tr.querySelector('.delPayment').addEventListener('click', () => {
+      tr.remove();
+      recompute();
+    });
     recompute();
   }
 
-  function readLines() {
-    return [...lignesBody.querySelectorAll('tr')].map(tr => {
+  function readPrestations() {
+    return [...linesBody.querySelectorAll('tr')].map(tr => {
+      const description = tr.querySelector('.serviceInput').value.trim();
       const quantity = Number(tr.querySelector('.qty').value || 0);
-      const unitPrice = Number(tr.querySelector('.pu').value || 0);
+      const unitPrice = Number(tr.querySelector('.unitPrice').value || 0);
       return {
-        description: tr.querySelector('.desc').value.trim(),
+        description,
         quantity,
         unitPrice,
         lineTotal: Number((quantity * unitPrice).toFixed(2))
@@ -205,49 +367,86 @@
 
   function readPayments() {
     return [...paymentsBody.querySelectorAll('tr')].map(tr => ({
-      date: tr.querySelector('.pdate').value,
-      mode: tr.querySelector('.pmode').value,
-      amount: Number(tr.querySelector('.pamount').value || 0)
+      date: tr.querySelector('.pDate').value,
+      mode: tr.querySelector('.pMode').value,
+      amount: Number(tr.querySelector('.pAmount').value || 0)
     })).filter(x => x.amount > 0);
   }
 
   function recompute() {
     let total = 0;
-    [...lignesBody.querySelectorAll('tr')].forEach(tr => {
+
+    [...linesBody.querySelectorAll('tr')].forEach(tr => {
       const qty = Number(tr.querySelector('.qty').value || 0);
-      const pu = Number(tr.querySelector('.pu').value || 0);
-      const lt = qty * pu;
-      tr.querySelector('.lt').textContent = euros(lt);
+      const unitPrice = Number(tr.querySelector('.unitPrice').value || 0);
+      const lt = qty * unitPrice;
+      tr.querySelector('.lineTotal').textContent = euro(lt);
       total += lt;
     });
-    document.getElementById('totalGlobal').textContent = euros(total);
+
+    document.getElementById('totalGlobal').textContent = euro(total);
 
     const secuRate = Number(document.getElementById('regimeSecu').value || 0) / 100;
-    const mutuelleRate = Number(document.getElementById('tauxMutuelle').value || 0) / 100;
+    const mutuelleRate = Number(document.getElementById('mutuellePct').value || 0) / 100;
 
     const partSecu = total * secuRate;
-    const resteApresSecu = Math.max(total - partSecu, 0);
-    const partMutuelle = resteApresSecu * mutuelleRate;
+    const afterSecu = Math.max(total - partSecu, 0);
+    const partMutuelle = afterSecu * mutuelleRate;
     const partPatient = Math.max(total - partSecu - partMutuelle, 0);
 
-    const dejaPaye = readPayments().reduce((s,p) => s + p.amount, 0);
-    const restePayer = Math.max(partPatient - dejaPaye, 0);
+    const paid = readPayments().reduce((sum, p) => sum + p.amount, 0);
+    const remaining = Math.max(partPatient - paid, 0);
 
-    document.getElementById('partSecu').value = euros(partSecu);
-    document.getElementById('partMutuelle').value = euros(partMutuelle);
-    document.getElementById('partPatient').textContent = `${euros(partPatient)} €`;
-    document.getElementById('dejaPaye').textContent = `${euros(dejaPaye)} €`;
-    document.getElementById('restePayer').textContent = `${euros(restePayer)} €`;
-    document.getElementById('statutPaiement').textContent = restePayer <= 0.009 ? 'COMPLET' : 'INCOMPLET';
+    document.getElementById('partSecu').value = euro(partSecu);
+    document.getElementById('partMutuelle').value = euro(partMutuelle);
+    document.getElementById('partPatient').textContent = `${euro(partPatient)} €`;
+    document.getElementById('dejaPaye').textContent = `${euro(paid)} €`;
+    document.getElementById('restePayer').textContent = `${euro(remaining)} €`;
+    document.getElementById('statusP').textContent = remaining <= 0.009 ? 'COMPLET' : 'INCOMPLET';
   }
 
-  async function preloadPatient() {
+  function extractIsoDate(value) {
+    if (!value) return '';
+    return String(value).slice(0, 10);
+  }
+
+  function serializeInvoice() {
+    recompute();
+    const totals = {
+      total: Number(document.getElementById('totalGlobal').textContent || 0),
+      partSecu: Number(document.getElementById('partSecu').value || 0),
+      partMutuelle: Number(document.getElementById('partMutuelle').value || 0),
+      partPatient: Number(document.getElementById('partPatient').textContent.replace('€','') || 0),
+      dejaPaye: Number(document.getElementById('dejaPaye').textContent.replace('€','') || 0),
+      restePayer: Number(document.getElementById('restePayer').textContent.replace('€','') || 0)
+    };
+
+    return {
+      patientId: document.getElementById('patientId').value || null,
+      patient: {
+        nom: document.getElementById('nom').value.trim(),
+        prenom: document.getElementById('prenom').value.trim(),
+        naissance: document.getElementById('naissance').value
+      },
+      regimeSecuPct: Number(document.getElementById('regimeSecu').value || 0),
+      mutuellePct: Number(document.getElementById('mutuellePct').value || 0),
+      prestations: readPrestations(),
+      payments: readPayments(),
+      totals,
+      statutPaiement: totals.restePayer <= 0.009 ? 'complet' : 'incomplet',
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  async function loadPatientFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const patientId = params.get('id');
     if (!patientId) return;
+
     document.getElementById('patientId').value = patientId;
     const snap = await db.collection('patients').doc(patientId).get();
     if (!snap.exists) return;
+
     const p = snap.data();
     document.getElementById('nom').value = p.nom || '';
     document.getElementById('prenom').value = p.prenom || '';
@@ -258,65 +457,115 @@
   }
 
   async function loadFacturables() {
-    const snap = await db.collection('referentiels').doc('Facturables').get();
-    state.facturables = snap.exists ? snap.data() : {};
+    const doc = await db.collection('referentiels').doc('Facturables').get();
+    state.facturables = doc.exists ? doc.data() : {};
   }
 
-  function setupSearch() {
-    const input = document.getElementById('prestationSearch');
-    const box = document.getElementById('suggestions');
-    input.addEventListener('input', () => {
-      const q = input.value.trim().toLowerCase();
-      box.innerHTML = '';
-      if (!q) { box.style.display='none'; return; }
-      const results = Object.keys(state.facturables).filter(k => k.toLowerCase().includes(q)).slice(0,15);
-      results.forEach(name => {
-        const price = Number(state.facturables[name] || 0);
-        const div = document.createElement('div');
-        div.textContent = `${name} — ${euros(price)} €`;
-        div.onclick = () => { addLine({description:name, quantity:1, unitPrice:price}); input.value=''; box.style.display='none'; };
-        box.appendChild(div);
-      });
-      box.style.display = results.length ? 'block' : 'none';
+  function formatDateDisplay(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso).slice(0,19).replace('T',' ');
+    return d.toLocaleString('fr-FR');
+  }
+
+  function setHistoryRows(rows) {
+    const body = document.getElementById('historyBody');
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7" class="muted">Aucun résultat.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = rows.map(({ id, data }) => `
+      <tr>
+        <td>${id}</td>
+        <td>${formatDateDisplay(data.updatedAt || data.createdAt)}</td>
+        <td class="left">${(data.patient?.prenom || '')} ${(data.patient?.nom || '')}</td>
+        <td>${euro(data.totals?.total)}</td>
+        <td>${euro(data.totals?.restePayer)}</td>
+        <td>${(data.statutPaiement || '').toUpperCase()}</td>
+        <td><button type="button" class="btn btn-primary" onclick="window.__loadInvoice('${id}')">Charger</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function applyHistoryFilters(items) {
+    const filterNom = document.getElementById('historyNom').value.trim().toLowerCase();
+    const dateMin = document.getElementById('historyDateMin').value;
+    const dateMax = document.getElementById('historyDateMax').value;
+
+    return items.filter(({ data }) => {
+      const fullName = `${data.patient?.prenom || ''} ${data.patient?.nom || ''}`.toLowerCase();
+      if (filterNom && !fullName.includes(filterNom)) return false;
+
+      const invoiceDate = extractIsoDate(data.updatedAt || data.createdAt);
+      if (dateMin && invoiceDate < dateMin) return false;
+      if (dateMax && invoiceDate > dateMax) return false;
+
+      return true;
     });
-    document.addEventListener('click', e => { if (!box.contains(e.target) && e.target !== input) box.style.display='none'; });
   }
 
-  function serializeInvoice() {
+  async function searchInvoices() {
+    const historyInfo = document.getElementById('historyInfo');
+    historyInfo.textContent = 'Recherche en cours...';
+
+    const patientId = document.getElementById('patientId').value.trim();
+    let query = db.collection('facture').orderBy('updatedAt', 'desc').limit(120);
+    if (patientId) {
+      query = db.collection('facture').where('patientId', '==', patientId).limit(120);
+    }
+
+    const snap = await query.get();
+    state.historyDocs = snap.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+    const filtered = applyHistoryFilters(state.historyDocs);
+    setHistoryRows(filtered);
+
+    historyInfo.textContent = `${filtered.length} facture(s) affichée(s)${patientId ? ` (patient ${patientId})` : ''}.`;
+  }
+
+  async function loadInvoiceById(id) {
+    if (!id) return;
+    const snap = await db.collection('facture').doc(id).get();
+    if (!snap.exists) {
+      alert('Facture introuvable.');
+      return;
+    }
+
+    const f = snap.data();
+    state.currentInvoiceId = id;
+    setInvoiceBadge();
+
+    document.getElementById('patientId').value = f.patientId || document.getElementById('patientId').value;
+    document.getElementById('nom').value = f.patient?.nom || '';
+    document.getElementById('prenom').value = f.patient?.prenom || '';
+    document.getElementById('naissance').value = f.patient?.naissance || '';
+    document.getElementById('regimeSecu').value = String(f.regimeSecuPct ?? 70);
+    document.getElementById('mutuellePct').value = String(f.mutuellePct ?? 100);
+
+    linesBody.innerHTML = '';
+    paymentsBody.innerHTML = '';
+
+    (f.prestations || []).forEach(addLine);
+    (f.payments || []).forEach(addPayment);
+    if (!(f.prestations || []).length) addLine();
+    if (!(f.payments || []).length) addPayment();
+
     recompute();
-    const total = Number(document.getElementById('totalGlobal').textContent || 0);
-    const partSecu = Number(document.getElementById('partSecu').value || 0);
-    const partMutuelle = Number(document.getElementById('partMutuelle').value || 0);
-    const partPatient = Number(document.getElementById('partPatient').textContent.replace('€','') || 0);
-    const dejaPaye = Number(document.getElementById('dejaPaye').textContent.replace('€','') || 0);
-    const restePayer = Number(document.getElementById('restePayer').textContent.replace('€','') || 0);
-    return {
-      patientId: document.getElementById('patientId').value || null,
-      patient: {
-        nom: document.getElementById('nom').value.trim(),
-        prenom: document.getElementById('prenom').value.trim(),
-        naissance: document.getElementById('naissance').value
-      },
-      regimeSecuPct: Number(document.getElementById('regimeSecu').value || 0),
-      mutuellePct: Number(document.getElementById('tauxMutuelle').value || 0),
-      prestations: readLines(),
-      payments: readPayments(),
-      totals: { total, partSecu, partMutuelle, partPatient, dejaPaye, restePayer },
-      statutPaiement: restePayer <= 0.009 ? 'complet' : 'incomplet',
-      updatedAt: new Date().toISOString()
-    };
+    document.getElementById('saveMsg').textContent = `📂 Facture chargée : ${id}`;
   }
 
   async function saveInvoice() {
     const payload = serializeInvoice();
+
     if (!payload.patient.nom || !payload.patient.prenom || !payload.patient.naissance) {
-      alert('Complète les informations patient.');
+      alert('Merci de compléter les informations patient.');
       return;
     }
     if (!payload.prestations.length) {
       alert('Ajoute au moins une prestation.');
       return;
     }
+
     const col = db.collection('facture');
     if (state.currentInvoiceId) {
       await col.doc(state.currentInvoiceId).set(payload, { merge:true });
@@ -325,93 +574,168 @@
       const ref = await col.add(payload);
       state.currentInvoiceId = ref.id;
     }
-    document.getElementById('saveMsg').textContent = `✅ Facture enregistrée: ${state.currentInvoiceId}`;
-  }
 
-  async function loadInvoiceById(id) {
-    const snap = await db.collection('facture').doc(id).get();
-    if (!snap.exists) { alert('Facture introuvable.'); return; }
-    const f = snap.data();
-    state.currentInvoiceId = id;
-    document.getElementById('patientId').value = f.patientId || '';
-    document.getElementById('nom').value = f.patient?.nom || '';
-    document.getElementById('prenom').value = f.patient?.prenom || '';
-    document.getElementById('naissance').value = f.patient?.naissance || '';
-    document.getElementById('regimeSecu').value = String(f.regimeSecuPct ?? 70);
-    document.getElementById('tauxMutuelle').value = String(f.mutuellePct ?? 100);
-    lignesBody.innerHTML = '';
-    paymentsBody.innerHTML = '';
-    (f.prestations || []).forEach(addLine);
-    (f.payments || []).forEach(addPayment);
-    recompute();
-    document.getElementById('saveMsg').textContent = `📂 Facture chargée: ${id}`;
+    setInvoiceBadge();
+    document.getElementById('saveMsg').textContent = `✅ Facture enregistrée : ${state.currentInvoiceId}`;
+    await searchInvoices();
   }
 
   async function generatePdf() {
     const f = serializeInvoice();
-    const id = state.currentInvoiceId || 'temp-' + Date.now();
-    const today = new Date().toLocaleDateString('fr-FR');
+    const factureId = state.currentInvoiceId || `temp-${Date.now()}`;
+    const dateEdition = new Date().toLocaleString('fr-FR');
+
     const html = `
-      <div style="font-family:Arial,sans-serif;padding:28px;color:#111;">
-        <h2 style="margin:0 0 6px;color:#0d6efd;">Facture RPO #${id}</h2>
-        <div style="font-size:12px;color:#555;">Émise le ${today}</div>
-        <hr>
-        <p><b>Patient :</b> ${f.patient.prenom} ${f.patient.nom} — Né(e) le ${f.patient.naissance}</p>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr><th style="border:1px solid #ddd;padding:6px;">Prestation</th><th style="border:1px solid #ddd;padding:6px;">Qté</th><th style="border:1px solid #ddd;padding:6px;">PU</th><th style="border:1px solid #ddd;padding:6px;">Total</th></tr></thead>
-          <tbody>${f.prestations.map(p=>`<tr><td style="border:1px solid #ddd;padding:6px;">${p.description}</td><td style="border:1px solid #ddd;padding:6px;text-align:center;">${p.quantity}</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.unitPrice)} €</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.lineTotal)} €</td></tr>`).join('')}</tbody>
+      <div style="font-family:Segoe UI,Arial,sans-serif; color:#0f172a; padding:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #0d6efd; padding-bottom:12px;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <img src="logo.png" style="height:58px; width:auto;" alt="logo">
+            <div>
+              <div style="font-size:18px; font-weight:800; color:#0d6efd;">Facture RPO</div>
+              <div style="font-size:12px; color:#334155;">Service des urgences</div>
+            </div>
+          </div>
+          <div style="text-align:right; font-size:12px;">
+            <div><b>Facture n°</b> ${factureId}</div>
+            <div><b>Édition :</b> ${dateEdition}</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">
+          <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
+            <div style="font-size:12px; color:#64748b;">Patient</div>
+            <div style="font-size:15px; font-weight:700;">${f.patient.prenom} ${f.patient.nom}</div>
+            <div style="font-size:12px;">Né(e) le : ${f.patient.naissance || '-'}</div>
+            <div style="font-size:12px;">ID patient : ${f.patientId || '-'}</div>
+          </div>
+          <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
+            <div style="font-size:12px; color:#64748b;">Répartition</div>
+            <div style="font-size:12px;">Sécu (${f.regimeSecuPct}%) : <b>${euro(f.totals.partSecu)} €</b></div>
+            <div style="font-size:12px;">Mutuelle (${f.mutuellePct}%) : <b>${euro(f.totals.partMutuelle)} €</b></div>
+            <div style="font-size:12px;">Part patient : <b>${euro(f.totals.partPatient)} €</b></div>
+            <div style="font-size:12px;">Reste patient : <b>${euro(f.totals.restePayer)} €</b> (${f.statutPaiement.toUpperCase()})</div>
+          </div>
+        </div>
+
+        <h3 style="margin:18px 0 8px; color:#0d6efd;">Prestations</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="border:1px solid #dbe3ef; padding:7px; text-align:left;">Prestation</th>
+              <th style="border:1px solid #dbe3ef; padding:7px;">Qté</th>
+              <th style="border:1px solid #dbe3ef; padding:7px;">PU (€)</th>
+              <th style="border:1px solid #dbe3ef; padding:7px;">Total (€)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${f.prestations.map(p => `
+              <tr>
+                <td style="border:1px solid #dbe3ef; padding:7px;">${p.description}</td>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.quantity}</td>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.unitPrice)}</td>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.lineTotal)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#eff6ff; font-weight:700;">
+              <td colspan="3" style="border:1px solid #dbe3ef; padding:7px; text-align:right;">Total global</td>
+              <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(f.totals.total)} €</td>
+            </tr>
+          </tfoot>
         </table>
-        <h3>Répartition</h3>
-        <ul>
-          <li>Total: ${euros(f.totals.total)} €</li>
-          <li>Part Sécurité sociale: ${euros(f.totals.partSecu)} €</li>
-          <li>Part Mutuelle: ${euros(f.totals.partMutuelle)} €</li>
-          <li>Part Patient: ${euros(f.totals.partPatient)} €</li>
-          <li>Déjà payé: ${euros(f.totals.dejaPaye)} €</li>
-          <li>Reste à payer: ${euros(f.totals.restePayer)} € (${f.statutPaiement.toUpperCase()})</li>
-        </ul>
-        <h3>Paiements</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr><th style="border:1px solid #ddd;padding:6px;">Date</th><th style="border:1px solid #ddd;padding:6px;">Mode</th><th style="border:1px solid #ddd;padding:6px;">Montant</th></tr></thead>
-          <tbody>${(f.payments.length?f.payments:[{date:'-',mode:'-',amount:0}]).map(p=>`<tr><td style="border:1px solid #ddd;padding:6px;">${p.date}</td><td style="border:1px solid #ddd;padding:6px;">${p.mode}</td><td style="border:1px solid #ddd;padding:6px;text-align:right;">${euros(p.amount)} €</td></tr>`).join('')}</tbody>
+
+        <h3 style="margin:18px 0 8px; color:#0d6efd;">Paiements</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="border:1px solid #dbe3ef; padding:7px;">Date</th>
+              <th style="border:1px solid #dbe3ef; padding:7px;">Mode</th>
+              <th style="border:1px solid #dbe3ef; padding:7px;">Montant (€)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(f.payments.length ? f.payments : [{date:'-', mode:'-', amount:0}]).map(p => `
+              <tr>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.date}</td>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.mode}</td>
+                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.amount)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
         </table>
-      </div>`;
+
+        <div style="margin-top:24px; font-size:11px; color:#64748b; text-align:center; border-top:1px dashed #cbd5e1; padding-top:8px;">
+          Document généré à partir des données Firestore de la facture (PDF non stocké).
+        </div>
+      </div>
+    `;
+
     const container = document.createElement('div');
     container.innerHTML = html;
     document.body.appendChild(container);
+
     await html2pdf().set({
       margin: 0.35,
-      filename: `Facture_${f.patient.nom}_${today.replaceAll('/','-')}.pdf`,
+      filename: `Facture_RPO_${factureId}.pdf`,
       image: { type:'jpeg', quality:0.98 },
       html2canvas: { scale:2, useCORS:true },
       jsPDF: { unit:'in', format:'a4', orientation:'portrait' }
     }).from(container).save();
+
     container.remove();
   }
 
-  document.getElementById('addManualLine').onclick = () => addLine();
-  document.getElementById('addPayment').onclick = () => addPayment();
-  document.getElementById('regimeSecu').onchange = recompute;
-  document.getElementById('tauxMutuelle').oninput = recompute;
-  document.getElementById('saveInvoiceBtn').onclick = saveInvoice;
-  document.getElementById('downloadPdfBtn').onclick = generatePdf;
-  document.getElementById('loadInvoiceBtn').onclick = () => {
-    const id = document.getElementById('searchInvoiceId').value.trim();
-    if (!id) return;
-    loadInvoiceById(id);
-  };
-  document.getElementById('resetBtn').onclick = () => { state.currentInvoiceId=null; lignesBody.innerHTML=''; paymentsBody.innerHTML=''; addLine(); addPayment(); recompute(); document.getElementById('saveMsg').textContent=''; };
+  function resetForm() {
+    state.currentInvoiceId = null;
+    setInvoiceBadge();
 
-  (async function init(){
-    await loadFacturables();
-    setupSearch();
-    await preloadPatient();
-    const params = new URLSearchParams(window.location.search);
-    const factureId = params.get('factureId');
+    linesBody.innerHTML = '';
+    paymentsBody.innerHTML = '';
     addLine();
     addPayment();
-    if (factureId) await loadInvoiceById(factureId);
+
+    document.getElementById('regimeSecu').value = '70';
+    document.getElementById('mutuellePct').value = '100';
+    document.getElementById('saveMsg').textContent = '';
     recompute();
+  }
+
+  window.__loadInvoice = (id) => loadInvoiceById(id);
+
+  document.getElementById('addLineBtn').addEventListener('click', () => addLine());
+  document.getElementById('addPaymentBtn').addEventListener('click', () => addPayment());
+  document.getElementById('regimeSecu').addEventListener('change', recompute);
+  document.getElementById('mutuellePct').addEventListener('input', recompute);
+
+  document.getElementById('loadInvoiceByIdBtn').addEventListener('click', async () => {
+    const id = document.getElementById('historyInvoiceId').value.trim();
+    if (!id) {
+      alert('Renseigne un ID facture.');
+      return;
+    }
+    await loadInvoiceById(id);
+  });
+
+  document.getElementById('searchInvoicesBtn').addEventListener('click', searchInvoices);
+  document.getElementById('saveBtn').addEventListener('click', saveInvoice);
+  document.getElementById('pdfBtn').addEventListener('click', generatePdf);
+  document.getElementById('resetBtn').addEventListener('click', resetForm);
+
+  (async function init() {
+    await loadFacturables();
+    await loadPatientFromUrl();
+
+    addLine();
+    addPayment();
+    setInvoiceBadge();
+    recompute();
+
+    const params = new URLSearchParams(window.location.search);
+    const factureId = params.get('factureId');
+    if (factureId) await loadInvoiceById(factureId);
+
+    await searchInvoices();
   })();
 </script>
 </body>

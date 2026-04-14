@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
 <meta charset="UTF-8">
 <title>Document PDF</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -79,42 +81,66 @@ const params = new URLSearchParams(window.location.search);
 const docId = params.get("docId");
 const fileUrl = params.get("file");
 
-// 👉 CAS 1 : PDF généré dynamiquement
+
+// =============================
+// CAS 1 : URL DIRECT
+// =============================
 if (fileUrl) {
     document.getElementById("pdfFrame").src = decodeURIComponent(fileUrl);
-    const title = params.get("title");
-if (title) document.title = title;
 }
 
-// 👉 CAS 2 : PDF Firebase (ton système actuel)
+// =============================
+// CAS 2 : FIRESTORE v10
+// =============================
 else if (docId) {
 
-    db.collection("documents").doc(docId).get().then(snap => {
+    const ref = doc(db, "documents", docId);
+    const snap = await getDoc(ref);
 
-        if (!snap.exists) {
-            document.body.innerHTML = "<h2 style='padding:20px'>Document introuvable</h2>";
-            return;
-        }
+    if (!snap.exists()) {
+        document.body.innerHTML = "<h2 style='padding:20px'>Document introuvable</h2>";
+    } else {
 
         const data = snap.data();
 
-        if (!data.pdfBase64) {
-            document.body.innerHTML = "<h2 style='padding:20px'>PDF indisponible</h2>";
-            return;
+        // =========================
+        // 🔥 CAS ORD (ORDONNANCE)
+        // =========================
+        if (data.ord) {
+
+            if (!window.ordToPDF) {
+                document.body.innerHTML = "<h2 style='padding:20px'>Module ordonnance non chargé</h2>";
+            } else {
+                ordToPDF(data.ord);
+                document.body.innerHTML = "<h2 style='padding:20px'>Génération de l'ordonnance...</h2>";
+            }
+
         }
 
-        const blob = b64toBlob(data.pdfBase64, "application/pdf");
-        const url = URL.createObjectURL(blob);
+        // =========================
+        // 📄 CAS PDF BASE64
+        // =========================
+        else if (data.pdfBase64) {
 
-        document.getElementById("pdfFrame").src = url;
-    });
+            const blob = b64toBlob(data.pdfBase64, "application/pdf");
+            const url = URL.createObjectURL(blob);
+            document.getElementById("pdfFrame").src = url;
 
+        }
+
+        // =========================
+        // ❌ CAS VIDE
+        // =========================
+        else {
+            document.body.innerHTML = "<h2 style='padding:20px'>PDF indisponible</h2>";
+        }
+    }
 }
 
-// 👉 CAS 3 : rien fourni
 else {
     document.body.innerHTML = "<h2 style='padding:20px'>Aucun document fourni</h2>";
 }
+
 
 /* ===============================
    🔁 BASE64 → BLOB
@@ -128,29 +154,7 @@ function b64toBlob(b64, type) {
     return new Blob([arr], { type });
 }
 
-/* ===============================
-   📥 CHARGEMENT DOCUMENT
-   =============================== */
-db.collection("documents").doc(docId).get().then(snap => {
 
-    if (!snap.exists) {
-        document.body.innerHTML = "<h2 style='padding:20px'>Document introuvable</h2>";
-        return;
-    }
-
-    const data = snap.data();
-
-    if (!data.pdfBase64) {
-        document.body.innerHTML = "<h2 style='padding:20px'>PDF indisponible</h2>";
-        return;
-    }
-
-    const blob = b64toBlob(data.pdfBase64, "application/pdf");
-    const url = URL.createObjectURL(blob);
-
-    // 👉 Visionneuse PDF NATIVE du navigateur
-    document.getElementById("pdfFrame").src = url;
-});
 </script>
 
 </body>

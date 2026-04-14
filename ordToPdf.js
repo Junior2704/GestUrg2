@@ -15,7 +15,7 @@ function renderContenu(contenu) {
                 break;
 
             case "bold":
-                html += `<strong>${item.value}</strong>`;
+html += `<span style="font-weight: bold;">${item.value}</span>`;
                 break;
 
             case "newline":
@@ -93,7 +93,10 @@ function generateHTML(ord) {
                 margin-top: 30px;
                 text-align: right;
             }
-
+.separator {
+    border-top: 2px solid #2563eb;
+    margin: 12px 0;
+}
         </style>
     </head>
     <body>

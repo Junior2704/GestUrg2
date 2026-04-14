@@ -489,78 +489,15 @@ function imprimer() {
     );
 }
 window.imprimer=imprimer;
-  // ========== Génération PDF (renvoie base64 si telecharger=false) ==========
-  async function genererCertif(telecharger = false) {
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const nom = document.getElementById('nom').value.trim();
-      const prenom = document.getElementById('prenom').value.trim();
-      const rawDate = document.getElementById('dateNaissance').value;
-      const dateParts = rawDate ? rawDate.split('-') : [];
-      const dateNaissance = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : rawDate;
-      const sexe = document.getElementById('sexe').value;
 
-      doc.setFillColor(52, 152, 219);
-      doc.rect(0, 0, 210, 20, 'F');
-      doc.setFontSize(20);
-      doc.setTextColor(255,255,255);
-      doc.text("Certificat Médical", 105, 14, { align: "center" });
-      doc.setTextColor(0,0,0);
-      doc.setFontSize(14);
-      doc.text(`${window.medecinNom || "Dr [Nom]"}`, 20, 30);
-      doc.text(window.medecinSpecialite || "[Spécialité]", 20, 38);
-      const currentDate = new Date().toLocaleDateString("fr-FR");
-      doc.text(`Le ${currentDate},`, 150, 30);
-      doc.text(`À ${window.medecinLieu || "[Lieu]"}`, 150, 38);
+function telechargerCertif() {
 
-      doc.setFontSize(12);
-      doc.text(`Je soussigné, ${window.medecinNom || "Dr [Nom]"}, certifie sur l'honneur avoir ausculté ce jour ${sexe} ${prenom} ${nom},`, 20, 60);
-      doc.text(`né(e) le ${dateNaissance}, et je certifie que :`, 20, 70);
+  const ord = construireORDCertificat(); // ✅ ton modèle .ord
 
-      const conditions = [
-        { id: 'condition1', inputId: 'input1', label: "Le patient est apte à entrer en classe de" },
-        { id: 'condition2', inputId: 'input2', label: "Le patient ne présente aucune contre-indication à la pratique du" },
-        { id: 'condition3', inputId: 'input3', label: "L'état de santé du patient nécessite une dispense de sport pour une durée de" },
-        { id: 'condition4', inputId: 'input4', label: "L'état de santé du patient nécessite une absence de l'école / lycée / travail pour une durée de" },
-      ];
+  ordToPDF(ord); // ✅ conversion PDF avec ton template
 
-      let y = 90;
-      conditions.forEach((cond, index) => {
-        if (document.getElementById(cond.id).checked) {
-          let valeur = (document.getElementById(cond.inputId)?.value || "____").trim();
-          if (index === 2 || index === 3) valeur += " jour(s)";
-          const ligne = `- ${cond.label} ${valeur}`;
-          const splitText = doc.splitTextToSize(ligne, 170);
-          doc.text(splitText, 20, y);
-          y += splitText.length * 10;
-        }
-      });
-
-      const today = new Date();
-      const dateStr = today.toLocaleDateString("fr-FR");
-      doc.text(`Certificat remis en main propre à la demande de l'intéressé(e) le ${dateStr} pour faire valoir`, 20, y + 20);
-      doc.text(`ce que de droit.`, 20, y + 30);
-
-
-      const pdfData = doc.output("datauristring");
-      const base64 = pdfData.split(",")[1];
-      if (telecharger) {
-        const fileName = `Certificat - ${prenom || ""} ${nom || ""}.pdf`;
-        doc.save(fileName);
-      }
-      return base64;
-    } catch (err) {
-      console.error("Erreur génération certif :", err);
-      return "";
-    }
-  }
-
-  // téléchargement sans recharger la page
-  function telechargerCertif() {
-    genererCertif(true);
-    afficherBulle("📥 PDF téléchargé", "success");
-  }
+  afficherBulle("📥 PDF téléchargé", "success");
+}
 window.telechargerCertif =telechargerCertif;
   // utilitaire notifications
   function afficherBulle(msg, type = 'info') {

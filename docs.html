@@ -677,18 +677,50 @@ async function afficherDocuments() {
                 </div>
             `;
 
-            li.querySelector(".btn-loupe")?.addEventListener("click", () => {
+        li.querySelector(".btn-loupe")?.addEventListener("click", async () => {
 
-                window.parent.postMessage(
-                    {
-                        type: "OPEN_TAB",
-                        title: data.type || "Document",
-                        url: `viewer.html?docId=${data.id}`
-                    },
-                    "*"
-                );
+    // 🔥 CAS 1 : nouveau système .ord
+    if (data.ord) {
 
-            });
+        console.log("📄 Génération PDF depuis .ord");
+
+        try {
+
+         const html = generateHTML(data.ord);
+
+const container = document.createElement("div");
+container.innerHTML = html;
+
+const pdfBlob = await html2pdf()
+  .set({
+    margin: 0,
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  })
+  .from(container)
+  .outputPdf('blob');
+
+ouvrirModal(pdfBlob);
+
+        } catch (err) {
+            console.error("Erreur ordToPDF :", err);
+            afficherBulle("Erreur génération PDF", "error");
+        }
+
+        return;
+    }
+
+    // 🔹 CAS 2 : ancien système PDF base64
+    if (data.pdfBase64) {
+
+        const blob = b64toBlob(data.pdfBase64, "application/pdf");
+        ouvrirModal(blob);
+        return;
+    }
+
+    afficherBulle("Aucun document disponible", "warning");
+
+});
 
             li.querySelector(".btn-delete")?.addEventListener("click", e => {
                 ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);

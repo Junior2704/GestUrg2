@@ -629,11 +629,24 @@ function construireORD() {
     signature: true
   };
 }
+function getExamensSelectionnes() {
+  const examens = [];
+
+  document.querySelectorAll("#prescription-list .prescription-item")
+    .forEach(item => {
+      examens.push({
+        type: item.dataset.exam,
+        commentaire: "" // tu peux améliorer après
+      });
+    });
+
+  return examens;
+}
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 window.validerPrescription = async function (){
 
   // 🔥 on transforme les examens en texte (comme avant)
-  const prescriptionText = examensSelectionnes
+  const prescriptionText = getExamensSelectionnes();
     .map(e => `${e.type}${e.commentaire ? " - " + e.commentaire : ""}`)
     .join("\n");
 

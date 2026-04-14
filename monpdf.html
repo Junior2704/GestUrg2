@@ -7,6 +7,8 @@
       <link rel="icon" type="image/jpeg" href="logog.png">
 
   <!-- Firebase -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
@@ -236,7 +238,6 @@ const docId = urlParams.get("id");
 let pdfDoc = null;
 let nomFichier = "document.pdf";
 
-// 📄 AFFICHAGE PDF
 async function afficherPDF() {
   if (!docId) return showError("Lien invalide");
 
@@ -250,115 +251,69 @@ async function afficherPDF() {
     }
 
     const data = docSnap.data();
-
-    nomFichier = data.nomFichier || "document.pdf";
-    document.title = nomFichier;
-
-   // 🔀 MODE HYBRIDE : PDF OU ORD
-
-if (data.base64) {
-  // =====================
-  // MODE PDF CLASSIQUE
-  // =====================
-  let base64 = data.base64;
-
-  const commaIndex = base64.indexOf(',');
-  if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
-    base64 = base64.slice(commaIndex + 1);
-  }
-
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-
-  const loadingTask = pdfjsLib.getDocument({ data: bytes });
-  pdfDoc = await loadingTask.promise;
-
-  const viewer = document.getElementById("pdf-viewer");
-  viewer.innerHTML = "";
-
-  for (let i = 1; i <= pdfDoc.numPages; i++) {
-    const page = await pdfDoc.getPage(i);
-    const scale = window.innerWidth < 768 ? 0.9 : 1.5;
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({ canvasContext: context, viewport }).promise;
-
-    viewer.appendChild(canvas);
-  }
-
-} else if (data.ord) {
-  // =====================
-  // 🔥 MODE ORD (NOUVEAU)
-  // =====================
-
-  const viewer = document.getElementById("pdf-viewer");
-  viewer.innerHTML = "";
-
-  const html = generateHTML(data.ord);
-
-  const iframe = document.createElement("iframe");
-  iframe.style.width = "100%";
-  iframe.style.height = "100%";
-  iframe.style.border = "none";
-
-  viewer.appendChild(iframe);
-
-  iframe.contentDocument.open();
-  iframe.contentDocument.write(html);
-  iframe.contentDocument.close();
-}
-    // 🔧 nettoyage base64
-    const commaIndex = base64.indexOf(',');
-    if (commaIndex !== -1 && base64.slice(0, commaIndex).includes('base64')) {
-      base64 = base64.slice(commaIndex + 1);
-    }
-
-    // 🔄 conversion en bytes
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const loadingTask = pdfjsLib.getDocument({ data: bytes });
-    pdfDoc = await loadingTask.promise;
-console.log("PDF DOC =", pdfDoc);
-console.log("NB PAGES =", pdfDoc.numPages);
     const viewer = document.getElementById("pdf-viewer");
     viewer.innerHTML = "";
 
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const scale = window.innerWidth < 768 ? 0.9 : 1.5;
-      const viewport = page.getViewport({ scale });
+    // =====================
+    // 📄 MODE PDF
+    // =====================
+    if (data.base64) {
 
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
+      let base64 = data.base64;
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      const commaIndex = base64.indexOf(',');
+      if (commaIndex !== -1 && base64.includes('base64')) {
+        base64 = base64.slice(commaIndex + 1);
+      }
 
-      await page.render({
-        canvasContext: context,
-        viewport
-      }).promise;
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
 
-      viewer.appendChild(canvas);
+      const pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const scale = window.innerWidth < 768 ? 0.9 : 1.5;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+        viewer.appendChild(canvas);
+      }
+
+    }
+
+    // =====================
+    // 🧾 MODE ORD
+    // =====================
+    else if (data.ord) {
+
+      const html = generateHTML(data.ord);
+
+      const iframe = document.createElement("iframe");
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.style.border = "none";
+
+      viewer.appendChild(iframe);
+
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(html);
+      iframe.contentDocument.close();
     }
 
     hideLoading();
 
   } catch (error) {
-    console.error("Erreur chargement PDF :", error);
+    console.error(error);
     showError("Erreur lors du chargement du document.");
   }
 }
@@ -366,31 +321,26 @@ window.afficherPDF = afficherPDF;
 // ⬇️ DOWNLOAD
 document.getElementById("download").addEventListener("click", async () => {
   try {
-    const docSnap = await getDoc(doc(db, "liens_pdfs", docId));
+    const docSnap = await getDoc(doc(db, "liens_pdf", docId));
 
     if (!docSnap.exists()) {
       return showError("Document introuvable.");
     }
 
-const data = docSnap.data();
+    const data = docSnap.data();
 
-if (data.base64) {
-  const link = document.createElement("a");
-  link.href = "data:application/pdf;base64," + data.base64;
-  link.download = nomFichier;
-  link.click();
+    // PDF classique
+    if (data.base64) {
+      const link = document.createElement("a");
+      link.href = "data:application/pdf;base64," + data.base64;
+      link.download = data.nomFichier || "document.pdf";
+      link.click();
+    }
 
-} else if (data.ord) {
-  ordToPDF(data.ord); // 🔥 ton convertisseur
-}
-if (data.ord?.titre) {
-  document.title = data.ord.titre;
-}
-
-    const link = document.createElement("a");
-    link.href = "data:application/pdf;base64," + base64;
-    link.download = nomFichier;
-    link.click();
+    // ORD → PDF
+    else if (data.ord) {
+      ordToPDF(data.ord);
+    }
 
   } catch (err) {
     console.error(err);

@@ -403,9 +403,20 @@ document.getElementById("download").addEventListener("click", async () => {
     }
 
     // ORD → PDF
-    else if (data.ord) {
-      ordToPDF(data.ord);
-    }
+  else if (data.ord) {
+    ordToPDF(data.ord).then((pdfBlob) => {
+        const url = URL.createObjectURL(pdfBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ordonnance.pdf"; // nom du fichier
+        document.body.appendChild(a);
+        a.click();
+
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+}
 
   } catch (err) {
     console.error(err);

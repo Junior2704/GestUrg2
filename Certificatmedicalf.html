@@ -544,14 +544,22 @@ window.telechargerCertif =telechargerCertif;
 function construireORDCertificat() {
 
   const conditions = [
-    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
-    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
-    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
-    { id: 'condition4', inputId: 'input4', label: "Absence :", suffix: " jour(s)" }
+    { id: 'condition1', inputId: 'input1', label: "Le patient est apte, tant physiquement que psychologiquement à rentrer en classe de ", suffix: "" },
+    { id: 'condition2', inputId: 'input2', label: "L'état de santé du patient ne s'oppose en aucun point à la prtaique du ", suffix: "" },
+    { id: 'condition3', inputId: 'input3', label: "L'état de santé du patient nécessite une dispense de sport pour une durée de ", suffix: " jour(s) à compter de ce jour" },
+    { id: 'condition4', inputId: 'input4', label: "L'état de santé du patient nécessite une absence de l'école / du collèe / du lycée / du travail pour une durée de ", suffix: " jour(s) à compter de ce jour" }
   ];
 
   const contenu = [];
-
+  const nom = document.getElementById('nom').value.trim();
+      const prenom = document.getElementById('prenom').value.trim();
+      const naissance = document.getElementById('dateNaissance').value;
+contenu.push({
+  type: "text",
+  value: `Je soussigne ${window.medecinNom}, certifie sur l'honneur avoir ausculté ce jour ${prenom} ${nom}, né(e) le ${naissance} et certifie sur l'honneur que : `
+})
+contenu.push({ type: "newline" });
+contenu.push({ type: "newline" });
   conditions.forEach((c, index) => {
     const cb = document.getElementById(c.id);
     if (cb && cb.checked) {
@@ -559,12 +567,17 @@ function construireORDCertificat() {
       if (index === 2 || index === 3) valeur += " jour(s)";
 
       contenu.push({
-        label: c.label,
-        valeur: valeur
+        type: "text",
+        c.label,
+        value: valeur
       });
+      contenu.push({ type: "newline" });
     }
   });
-
+contenu.push({
+  type: "text",
+  value: `Certificat remis en main propre à la demande de l'intéressé(e) le ${new Date().toLocaleDateString("fr-FR")} pour faire valoir ce que de droit`
+})
   return {
     type: "certificat",
     patient: {

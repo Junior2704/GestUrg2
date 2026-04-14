@@ -3918,20 +3918,30 @@ const btnFacturer = document.getElementById("btnFacturer");
 
 btnAdmin.addEventListener("click", async () => {
   try {
-    const doc = await patientRef.get();
-    const data = doc.data();
+    const docSnap = await getDoc(patientRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document introuvable");
+      afficherBulle("❌ Patient introuvable", "error");
+      return;
+    }
+
+    const data = docSnap.data();
+
     document.getElementById("adminId").value = patientId;
-	document.getElementById("adminNom").value = data.nom || "";
+    document.getElementById("adminNom").value = data.nom || "";
     document.getElementById("adminPrenom").value = data.prenom || "";
     document.getElementById("adminSexe").value = data.sexe || "";
-document.getElementById("adminNaissance").value = data.dateNaissance || "";
+    document.getElementById("adminNaissance").value = data.dateNaissance || "";
     document.getElementById("adminAdresse").value = data.adresse || "";
     document.getElementById("adminTelephone").value = data.telephone || "";
     document.getElementById("adminEmail").value = data.email || "";
- modalAdmin.classList.add("show");
+
+    modalAdmin.classList.add("show");
+
   } catch (e) {
     console.error("Erreur ouverture admin :", e);
-    afficherBulle("❌Erreur chargement gestion dministrative", "error");
+    afficherBulle("❌ Erreur chargement gestion administrative", "error");
   }
 });
 

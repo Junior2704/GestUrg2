@@ -1190,8 +1190,8 @@ function displayCurrentDate() {
   });
 }
 displayCurrentDate();
-
 async function validatePrescription() {
+
   const prescriptionText = document.getElementById("prescription-text").value.trim();
 
   if (!prescriptionText) {
@@ -1199,52 +1199,49 @@ async function validatePrescription() {
     return;
   }
 
-  // 1️⃣ Verrouiller la zone de texte
   document.getElementById("prescription-text").setAttribute("readonly", "true");
-
-  // 2️⃣ Désactiver le bouton valider
   document.getElementById("validate-prescription-btn").style.display = "none";
-
-  // 3️⃣ Afficher les boutons mails / imprimer / télécharger
   document.querySelector(".buttons-wrapper").style.display = "block";
 
-  // 4️⃣ Création PDF
-  const pdfBase64 = await genererOrdo(false); // génère le PDF sans le télécharger
+  // 🔹 Création du .ord
+  const ord = construireORD();
 
-  // 5️⃣ Enregistrement dans Firestore
+  // 🔹 Génération PDF (optionnel)
+
   const patientId = getIdFromURL();
 
-if (patientId) {
+  if (patientId) {
 
-  try {
+    try {
 
-    const idUnique = Math.random().toString(36).substring(2, 10);
-    const dateFormatted = formatDate(new Date());
+      const idUnique = Math.random().toString(36).substring(2, 10);
+      const dateFormatted = formatDate(new Date());
 
-    console.log("📅 Date formatée envoyée :", dateFormatted);
+      window.pdfIdExistante = idUnique;
 
-    window.pdfIdExistante = idUnique;
+      await setDoc(
+        doc(db, "documents", idUnique),
+        {
+          patientId: patientId,
+          dateCreation: dateFormatted,
 
-    await setDoc(
-      doc(db, "documents", idUnique),
-      {
-        patientId: patientId,
-        dateCreation: dateFormatted,
-        type: "Ordonnance médicale",
-        contenu: prescriptionText,
-        pdfBase64: pdfBase64
-      }
-    );
+          type: "Ordonnance médicale",
+ contenu: prescriptionText,
+          // 🔥 NOUVEAU : stockage structuré
+          ord: ord,
 
-  } catch (err) {
-    console.error(err);
-  }
-
-}
+        }
+      );
 
       console.log("✅ Ordonnance enregistrée avec ID unique :", idUnique);
       afficherBulle("✅ Ordonnance enregistrée !", "success");
-    
+
+    } catch (err) {
+      console.error(err);
+    }
+
+  }
+
 }
 
 function formatDate(date) {
@@ -1257,87 +1254,196 @@ function formatDate(date) {
   const secondes = pad(date.getSeconds());
   return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
 }
+function construireORD() {
 
+  const prescriptionText = document.getElementById("prescription-text").value.trim();
+
+  const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+  const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+  const age = document.getElementById("patient-age")?.value.trim() || "";
+
+  const sexe = document.getElementById("sexe")?.value || "";
+
+  // 🔹 Transformation texte → blocs
+  const lignes = prescriptionText.split("\n");
+
+  const contenu = [];
+
+  lignes.forEach(ligne => {
+
+    if (ligne.trim() === "---") {
+      contenu.push({ type: "separator" });
+    } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+      contenu.push({
+        type: "bold",
+        value: ligne.replace(/\*\*/g, "")
+      });
+    } else {
+      contenu.push({
+        type: "text",
+        value: ligne
+      });
+    }
+
+    contenu.push({ type: "newline" });
+
+  });
+
+  return {
+    version: "1.0",
+    type: "ordonnance",
+
+    titre: "Ordonnance médicale",
+
+    date: new Date().toLocaleDateString("fr-FR"),
+    lieu: window.medecinLieu || "Lyon",
+
+    patient: {
+      nom: lastName,
+      prenom: firstName,
+      age: age,
+      sexe: sexe
+    },
+
+    medecin: {
+      nom: window.medecinNom || "Dr Non renseigné",
+      specialite: window.medecinSpecialite || ""
+    },
+
+    contenu: contenu,
+
+    signature: true
+  };
+}
 
 async function genererOrdo(telecharger = false) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const marginLeft = 20;
-  let y = 25;
-  const lineHeight = 8;
-  const pageHeight = doc.internal.pageSize.height;
-
-  const prescriptionText = document.getElementById("prescription-text")?.value.trim() || "";
 
   try {
-    // Entête
-    doc.setFillColor(52, 152, 219);
-    doc.rect(0, 0, 210, 20, "F");
-    doc.setFontSize(20);
-    doc.setTextColor(255, 255, 255);
-    doc.text("Ordonnance Médicale", 105, 14, { align: "center" });
 
-    // Médecin
-    doc.setFontSize(14);
-    doc.setTextColor(0,0,0);
-    doc.text(`${window.medecinNom || "Dr Non renseigné"}`, marginLeft, 35);
-    doc.text(`${window.medecinSpecialite || ""}`, marginLeft, 43);
+    // ==============================
+    // 🔹 1. Récupération données UI
+    // ==============================
 
-    // Date et lieu
-    const currentDate = new Date().toLocaleDateString("fr-FR");
-    doc.text(`Le ${currentDate}`, 150, 35);
-    doc.text(`À ${window.medecinLieu || "Lyon"}`, 150, 43);
+    const prescriptionText = document.getElementById("prescription-text")?.value.trim() || "";
 
-    // Patient
     const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
     const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
     const age = document.getElementById("patient-age")?.value.trim() || "";
     const sexe = document.getElementById("sexe")?.value || "";
-    const fullName = `${sexe} ${firstName} ${lastName}, ${age} ans`.trim();
-    y = 60;
-    doc.text(fullName, marginLeft, y);
-    const textWidth = doc.getTextWidth(fullName);
-    doc.setLineWidth(0.5);
-    doc.line(marginLeft, y + 2, marginLeft + textWidth, y + 2);
-    y += 20;
 
-    // Prescription libre
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    const splitText = doc.splitTextToSize(prescriptionText, 160);
-    splitText.forEach(line => {
-      if (y + lineHeight > pageHeight - 20) {
-        doc.addPage();
-        y = 20;
+    const date = new Date().toLocaleDateString("fr-FR");
+    const lieu = window.medecinLieu || "Lyon";
+
+    // ==============================
+    // 🔹 2. Conversion TEXTE → .ord
+    // ==============================
+
+    const lignes = prescriptionText.split("\n");
+
+    const contenu = [];
+
+    lignes.forEach(ligne => {
+
+      if (ligne.trim() === "---") {
+        contenu.push({ type: "separator" });
+
+      } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+        contenu.push({
+          type: "bold",
+          value: ligne.replace(/\*\*/g, "")
+        });
+
+      } else {
+        contenu.push({
+          type: "text",
+          value: ligne
+        });
       }
-      doc.text(line, marginLeft + 5, y);
-      y += lineHeight;
+
+      contenu.push({ type: "newline" });
+
     });
 
-    // Signature
-    y += 25;
-    const signatureText = `${window.medecinNom || "Dr Non renseigné"}\n${window.medecinSpecialite || ""}`;
-    const pageWidth = doc.internal.pageSize.width;
-    const splitSignature = doc.splitTextToSize(signatureText, 60);
-    doc.text(splitSignature, pageWidth - 75, pageHeight - 30);
+    // ==============================
+    // 🔹 3. Création objet .ord
+    // ==============================
 
-    // Export base64
-    const pdfData = doc.output("datauristring");
-    window.pdfBase64 = pdfData.split(",")[1];
+    const ord = {
+
+      version: "1.0",
+      type: "ordonnance",
+
+      titre: "Ordonnance médicale",
+
+      date: date,
+      lieu: lieu,
+
+      patient: {
+        nom: lastName,
+        prenom: firstName,
+        age: age,
+        sexe: sexe
+      },
+
+      medecin: {
+        nom: window.medecinNom || "Dr Non renseigné",
+        specialite: window.medecinSpecialite || ""
+      },
+
+      contenu: contenu,
+
+      signature: true,
+      logo: "logo.png"
+
+    };
+
+    // ==============================
+    // 🔹 4. Génération PDF via ton moteur
+    // ==============================
 
     if (telecharger) {
-      const fileName = `Ordonnance - ${firstName || ""} ${lastName || ""}.pdf`;
-      doc.save(fileName);
+      // téléchargement direct
+      await ordToPDF(ord);
+      return "";
     }
 
-    return window.pdfBase64;
+    // ==============================
+    // 🔹 5. Génération BASE64 (Firestore)
+    // ==============================
+
+    const html = generateHTML(ord);
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const pdfBlob = await html2pdf()
+      .set({
+        margin: 0,
+        filename: `${ord.titre}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(container)
+      .outputPdf('blob');
+
+    // conversion blob → base64
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfBlob);
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    });
+
+    window.pdfBase64 = base64;
+
+    return base64;
 
   } catch (error) {
     console.error("❌ Erreur génération PDF :", error);
     return "";
   }
 }
-window.genererOrdo=genererOrdo;
+
+window.genererOrdo = genererOrdo;
 
 document.getElementById("new-prescription-btn").addEventListener("click", function () {
 	// Réinitialise tous les champs de l'ordonnance

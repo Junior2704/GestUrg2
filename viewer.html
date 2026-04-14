@@ -112,8 +112,29 @@ const snap = await ref.get();
             if (!window.ordToPDF) {
                 document.body.innerHTML = "<h2 style='padding:20px'>Module ordonnance non chargé</h2>";
             } else {
-                ordToPDF(data.ord);
-                document.body.innerHTML = "<h2 style='padding:20px'>Génération de l'ordonnance...</h2>";
+               document.body.innerHTML = "<h2 style='padding:20px'>Chargement du document...</h2>";
+
+const html = generateHTML(data.ord);
+
+const container = document.createElement("div");
+container.innerHTML = html;
+
+const pdfBlob = await html2pdf()
+  .set({
+    margin: 0,
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  })
+  .from(container)
+  .outputPdf('blob');
+
+const url = URL.createObjectURL(pdfBlob);
+
+document.body.innerHTML = `
+  <iframe id="pdfFrame" style="width:100%;height:100vh;border:none;"></iframe>
+`;
+
+document.getElementById("pdfFrame").src = url;
             }
 
         }

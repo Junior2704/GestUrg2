@@ -365,7 +365,7 @@
      🖨️ Imprimer la prescription
   </button>
  
-  <button type="button" class="exam-button" style="background:#16a34a; margin:8px 6px;" onclick="genererPrescription(True)">
+  <button type="button" class="exam-button" style="background:#16a34a; margin:8px 6px;" onclick="genererPrescription('True')">
     📥 Télécharger la prescription
   </button>
 
@@ -642,6 +642,25 @@ function getExamensSelectionnes() {
 
   return examens;
 }
+function imprimer() {
+    // Vérifie que l'ID du document existe
+    if (!window.pdfIdExistante) {
+        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+        return;
+    }
+
+    // Envoie le message au parent pour ouvrir un nouvel onglet
+    window.parent.postMessage(
+        {
+            type: "OPEN_TAB",
+            title: "Certificat médical",
+            url: `viewer.html?docId=${window.pdfIdExistante}` // URL avec l'ID existant
+        },
+        "*"
+    );
+}
+
+window.imprimer=imprimer;
 // 💾 ENREGISTREMENT FIRESTORE (V10)
 window.validerPrescription = async function (){
 

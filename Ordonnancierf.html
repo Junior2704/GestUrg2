@@ -2189,19 +2189,63 @@ document.addEventListener("click", e => {
   }
 });
 
-
 function insertMedication(med, word) {
   const selection = window.getSelection();
   if (!selection.rangeCount) return;
 
-  const range = selection.getRangeAt(0);
+  let range = selection.getRangeAt(0);
 
-  range.setStart(range.endContainer, range.endOffset - word.length);
+  // 🔹 on récupère le texte avant curseur
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(document.getElementById("prescription-text"));
+  preRange.setEnd(range.endContainer, range.endOffset);
+
+  const text = preRange.toString();
+
+  // 🔹 position du début du mot
+  const startIndex = text.lastIndexOf(word);
+  if (startIndex === -1) return;
+
+  // 🔹 on recrée une range propre
+  let charCount = 0;
+  let foundStart = false;
+
+  const walker = document.createTreeWalker(
+    document.getElementById("prescription-text"),
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+
+  let startNode, startOffset;
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const nextCount = charCount + node.length;
+
+    if (!foundStart && startIndex >= charCount && startIndex <= nextCount) {
+      startNode = node;
+      startOffset = startIndex - charCount;
+      foundStart = true;
+    }
+
+    if (foundStart && nextCount >= text.length) {
+      range = document.createRange();
+      range.setStart(startNode, startOffset);
+      range.setEnd(node, text.length - charCount);
+      break;
+    }
+
+    charCount = nextCount;
+  }
+
+  // 🔹 suppression propre
   range.deleteContents();
 
+  // 🔹 insertion médicament
   const textNode = document.createTextNode(med + " ");
   range.insertNode(textNode);
 
+  // 🔹 reposition curseur
   range.setStartAfter(textNode);
   range.setEndAfter(textNode);
 

@@ -1775,9 +1775,12 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     // --- 2) Création d'un ID unique pour Firestore
     let idUnique, docSnap;
     do {
-      idUnique = Math.random().toString(36).substring(2, 10);
-      docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
-    } while (docSnap.exists);
+  idUnique = Math.random().toString(36).substring(2, 10);
+
+  const ref = doc(db, "liens_pdfs", idUnique);
+  docSnap = await getDoc(ref);
+
+} while (docSnap.exists());
 
     // --- 3) Récupération des infos patient pour nommer le fichier
     const doc = await patientRef.get();

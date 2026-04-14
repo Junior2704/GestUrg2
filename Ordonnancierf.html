@@ -1239,6 +1239,7 @@ if (!pages[pageKey]) {
 window.handleBold = function(e) {
   e.preventDefault(); // 🔥 empêche perte du focus
   toggleBold();
+  document.getElementById("prescription-editor").focus();
 }
 
 
@@ -1348,7 +1349,12 @@ const prescriptionText = document.getElementById("prescription-text").innerText.
     return;
   }
 
-  document.getElementById("prescription-text").setAttribute("readonly", "true");
+const editor = document.getElementById("prescription-text");
+
+// verrouillage édition
+editor.setAttribute("contenteditable", "false");
+editor.style.background = "#f3f4f6";
+editor.style.cursor = "not-allowed";
   document.getElementById("validate-prescription-btn").style.display = "none";
   document.querySelector(".buttons-wrapper").style.display = "block";
 
@@ -1748,8 +1754,10 @@ document.getElementById("patient-birthdate").addEventListener("input", function 
 });
 
 function updateBoldButton() {
-  const isBold = document.queryCommandState("bold");
   const btn = document.getElementById("btn-bold");
+  if (!btn) return;
+
+  const isBold = document.queryCommandState("bold");
 
   if (isBold) {
     btn.classList.add("active");
@@ -1758,9 +1766,11 @@ function updateBoldButton() {
   }
 }
 
-// mise à jour en temps réel
-document.getElementById("prescription-text").addEventListener("keyup", updateBoldButton);
-document.getElementById("prescription-text").addEventListener("mouseup", updateBoldButton);
+const editor = document.getElementById("prescription-text");
+
+editor.addEventListener("keyup", updateBoldButton);
+editor.addEventListener("mouseup", updateBoldButton);
+editor.addEventListener("input", updateBoldButton);
 
 async function remplirInfosPatientDepuisFirestore() {
   const id = getIdFromURL();

@@ -1607,6 +1607,7 @@ const docSnap = await getDoc(docRef);
 
       calculerAge(); 
       updatePatientDisplay();
+      masquerLoader();
     } else {
       console.warn("Aucun patient trouvé avec cet ID");
     }
@@ -1696,13 +1697,43 @@ function afficherBulle(msg, type = 'info') {
   }
   return new Blob([view], { type });
 }
-function showLoadingModal() {
-  document.getElementById("loadingModal").classList.add("show");
-}
 
-function hideLoadingModal() {
-  document.getElementById("loadingModal").classList.remove("show");
-}
+
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
+
 function openEmailSelectModal(emailsString) {
   const modal = document.getElementById("emailSelectModal");
   const container = document.getElementById("emailCheckboxes");
@@ -1765,7 +1796,7 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     }
 
     closeEmailSelectModal();
-    showLoadingModal();
+    afficherLoader();
 
     // --- 1) Génération du PDF via ta fonction existante creerPDF()
     console.log("📄 Génération du PDF via genererordo()...");
@@ -1913,7 +1944,7 @@ const htmlFinal = htmlMessage
       if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
     }
 
-    hideLoadingModal();
+    masquerLoader();
     afficherBulle("📨 Envois terminés !", "administratif");
     // recharge la page pour réinitialiser l'UI (optionnel)
     

@@ -365,35 +365,13 @@
      🖨️ Imprimer la prescription
   </button>
  
-  <button type="button" class="exam-button" style="background:#16a34a; margin:8px 6px;" onclick="telechargerPrescription()">
+  <button type="button" class="exam-button" style="background:#16a34a; margin:8px 6px;" onclick="genererPrescription(True)">
     📥 Télécharger la prescription
   </button>
 
-  <button type="button" class="exam-button" id="btnOpenEmailModal" style="background:#0ea5e9; margin:8px 6px;">
-    ✉ Envoyer par e-mail
-  </button>
+  
 </div>
  </div> 
-
-<div id="emailSelectModal" style="display:none; position: fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); justify-content:center; align-items:center; z-index:200;">
-  <div class="modal-content" style="width:380px; max-width:90%; background:white; border-radius:16px; padding:20px;">
-    <h3 style="text-align:center; margin-top:0;">📧 Choisissez les destinataires</h3>
-
-    <div id="emailCheckboxes" style="margin-top:12px; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow:auto; padding-right:6px;"></div>
-
-    <hr style="margin:12px 0;">
-
-    <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-      <input type="checkbox" id="otherEmailCheck"> Autre destinataire :
-    </label>
-    <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled style="margin-top:6px; width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1;">
-
-    <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end;">
-      <button onclick="closeEmailSelectModal()" style="background:#e2e8f0; padding:8px 12px; border-radius:8px; border:none;">Annuler</button>
-      <button id="confirmEmails" style="background:#2563eb; color:white; padding:8px 12px; border-radius:8px; border:none;">Envoyer</button>
-    </div>
-  </div>
-</div>
 
 
 
@@ -588,76 +566,193 @@ window.masquerLoader = function() {
 };
 
 // 💾 ENREGISTREMENT FIRESTORE (V10)
-window.validerPrescription = async function () {
+async function validatePrescription() {
+
+  const prescriptionText = document.getElementById("prescription-text").value.trim();
 
   const prenom = document.getElementById("patient-first-name").value.trim();
   const nom = document.getElementById("patient-last-name").value.trim();
 
-  if (!prenom || !nom) {
-    afficherBulle("Nom/prénom requis", "warning");
+  if (!prescriptionText) {
+    afficherBulle("⛔ La prescription est vide !", "alerte");
     return;
   }
 
-  const pdfBase64 = await genererPrescription(false);
+  if (!prenom || !nom) {
+    afficherBulle("⛔ Nom / prénom requis", "alerte");
+    return;
+  }
+
+  // 🔒 UI lock
+  document.getElementById("prescription-text").setAttribute("readonly", "true");
+  document.getElementById("validate-prescription-btn").style.display = "none";
+  document.querySelector(".buttons-wrapper").style.display = "block";
+
+  const patientId = getIdFromURL();
+
+  // 🔹 Création .ord
+  const ord = construireORD();
 
   try {
+
     const idUnique = Math.random().toString(36).substring(2, 10);
+    const dateFormatted = formatDate(new Date());
+
 
     await setDoc(doc(db, "documents", idUnique), {
+
       patientId: patientId || null,
+
       nomFichier: `Prescription - ${prenom} ${nom}.pdf`,
-      dateCreation: serverTimestamp(), // ✅ CORRIGÉ
+      dateCreation: dateFormatted,
+
       type: "Prescription d’examens",
-      pdfBase64: pdfBase64
+
+      contenu: prescriptionText,
+
+
+      // 🔥 structure médicale propre
+      ord: ord
+
     });
 
-    window.pdfIdExistante = idUnique;
-
-    afficherBulle("✅ Enregistré", "success");
+    console.log("✅ Prescription enregistrée :", idUnique);
+    afficherBulle("✅ Prescription enregistrée !", "success");
 
   } catch (err) {
-    console.error(err);
-    afficherBulle("Erreur Firestore", "alerte");
+    console.error("❌ Firestore error :", err);
+    afficherBulle("❌ Erreur Firestore", "alerte");
   }
-};
-
-
-// 📧 ENVOI EMAIL (V10 FIX)
-window.envoyerPrescriptionParEmail = async function (destinataires = []) {
-
-  if (!destinataires.length) return;
+}
+async function genererPrescription(telecharger = false) {
 
   try {
-    const pdfBase64 = await genererPrescription(false);
 
-    let idUnique, docSnap;
+    // ==============================
+    // 🔹 1. Récupération données UI
+    // ==============================
 
-    do {
-      idUnique = Math.random().toString(36).substring(2, 10);
-      docSnap = await getDoc(doc(db, "liens_pdfs", idUnique));
-    } while (docSnap.exists());
+    const prescriptionText = document.getElementById("prescription-text")?.value.trim() || "";
 
-    await setDoc(doc(db, "liens_pdfs", idUnique), {
-      base64: pdfBase64,
-      dateCreation: serverTimestamp() // ✅ CORRIGÉ
+    const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+    const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+    const age = document.getElementById("patient-age")?.value.trim() || "";
+    const sexe = document.getElementById("sexe")?.value || "";
+
+    const date = new Date().toLocaleDateString("fr-FR");
+    const lieu = window.medecinLieu || "Lyon";
+
+    // ==============================
+    // 🔹 2. Conversion TEXTE → .ord
+    // ==============================
+
+    const lignes = prescriptionText.split("\n");
+
+    const contenu = [];
+
+    lignes.forEach(ligne => {
+
+      if (ligne.trim() === "---") {
+        contenu.push({ type: "separator" });
+
+      } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
+        contenu.push({
+          type: "bold",
+          value: ligne.replace(/\*\*/g, "")
+        });
+
+      } else {
+        contenu.push({
+          type: "text",
+          value: ligne
+        });
+      }
+
+      contenu.push({ type: "newline" });
+
     });
 
-    const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
+    // ==============================
+    // 🔹 3. Création objet .ord
+    // ==============================
 
-    for (const email of destinataires) {
-      await emailjs.send("service_o07vuso", "template_vj03i4u", {
-        to_email: email,
-        lien: lienPdf
-      });
+    const ord = {
+
+      version: "1.0",
+      type: "ordonnance",
+
+      titre: "Ordonnance médicale",
+
+      date: date,
+      lieu: lieu,
+
+      patient: {
+        nom: lastName,
+        prenom: firstName,
+        age: age,
+        sexe: sexe
+      },
+
+      medecin: {
+        nom: window.medecinNom || "Dr Non renseigné",
+        specialite: window.medecinSpecialite || ""
+      },
+
+      contenu: contenu,
+
+      signature: true,
+      logo: "logo.png"
+
+    };
+
+    // ==============================
+    // 🔹 4. Génération PDF via ton moteur
+    // ==============================
+
+    if (telecharger) {
+      // téléchargement direct
+      await ordToPDF(ord);
+      return "";
     }
 
-    afficherBulle("📨 Envoyé", "success");
+    // ==============================
+    // 🔹 5. Génération BASE64 (Firestore)
+    // ==============================
 
-  } catch (err) {
-    console.error(err);
-    afficherBulle("Erreur envoi", "alerte");
+    const html = generateHTML(ord);
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const pdfBlob = await html2pdf()
+      .set({
+        margin: 0,
+        filename: `${ord.titre}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(container)
+      .outputPdf('blob');
+
+    // conversion blob → base64
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfBlob);
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    });
+
+    window.pdfBase64 = base64;
+
+    return base64;
+
+  } catch (error) {
+    console.error("❌ Erreur génération PDF :", error);
+    return "";
   }
-};
+}
+
+window.genererPrescription=genererPrescription;
+
 
 </script>
 

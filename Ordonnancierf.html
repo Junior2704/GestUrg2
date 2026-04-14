@@ -1248,7 +1248,25 @@ async function validatePrescription() {
   }
 
 }
+window.imprimer = function() {
 
+  const docId = window.pdfIdExistante;
+
+  if (!docId) {
+    afficherBulle("❌ Aucun document à ouvrir", "alerte");
+    return;
+  }
+
+  window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: "Ordonnance médicale",
+      url: `viewer.html?docId=${docId}`
+    },
+    "*"
+  );
+
+}
 function formatDate(date) {
   const pad = (n) => n.toString().padStart(2, '0');
   const jour = pad(date.getDate());

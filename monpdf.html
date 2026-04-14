@@ -256,6 +256,13 @@ canvas {
   border-color: rgba(0, 200, 80, 0.8);
   box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
 }
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #f4f7fb;
+}
   </style>
 </head>
 
@@ -363,17 +370,27 @@ async function afficherPDF() {
     else if (data.ord) {
 
       const html = generateHTML(data.ord);
+const wrapper = document.createElement("div");
+wrapper.style.display = "flex";
+wrapper.style.justifyContent = "center";
+wrapper.style.alignItems = "center";
+wrapper.style.width = "100%";
 
-      const iframe = document.createElement("iframe");
-      iframe.style.width = "100%";
-      iframe.style.height = "100%";
-      iframe.style.border = "none";
+const iframe = document.createElement("iframe");
 
-      viewer.appendChild(iframe);
+iframe.style.width = "210mm";
+iframe.style.height = "297mm";
+iframe.style.border = "none";
+iframe.style.boxShadow = "0 2px 10px rgba(0,0,0,0.15)";
+iframe.style.borderRadius = "8px";
+iframe.style.background = "white";
 
-      iframe.contentDocument.open();
-      iframe.contentDocument.write(html);
-      iframe.contentDocument.close();
+wrapper.appendChild(iframe);
+viewer.appendChild(wrapper);
+
+iframe.contentDocument.open();
+iframe.contentDocument.write(html);
+iframe.contentDocument.close();
     }
 
     hideLoading();

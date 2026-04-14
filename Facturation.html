@@ -729,34 +729,39 @@
       </div>
     `;
  const container = document.createElement('div');
+  container.innerHTML = html;
 
   container.style.width = '794px';
   container.style.background = 'white';
-container.style.position = 'absolute';
-container.style.top = '-9999px';
-container.style.left = '0';
+  container.style.padding = '20px';
 
-  container.innerHTML = html;
+
+  container.style.opacity = '0';
+  container.style.position = 'absolute';
+  container.style.top = '0';
+
   document.body.appendChild(container);
-  
 
-await new Promise(resolve => setTimeout(resolve, 300));
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  await html2pdf().set({
-    margin: 10,
-    filename: `Facture_RPO_${factureId}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    }
-  }).from(container).save();
-document.body.style.overflow = '';
+  await html2pdf()
+    .set({
+      margin: 10,
+      filename: `Facture_RPO_${factureId}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      }
+    })
+    .from(container)
+    .save();
+
   container.remove();
 }
 

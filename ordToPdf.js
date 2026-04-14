@@ -175,5 +175,5 @@ function ordToPDF(ord) {
 // ==============================
 // EXPORT
 // ==============================
-
-export { ordToPDF };
+window.ordToPDF = ordToPDF;
+window.generateHTML = generateHTML;

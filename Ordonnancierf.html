@@ -1250,23 +1250,26 @@ async function validatePrescription() {
 }
 window.imprimer = function() {
 
+
+
   const docId = window.pdfIdExistante;
 
   if (!docId) {
-    afficherBulle("❌ Aucun document à ouvrir", "alerte");
+    console.error("pdfIdExistante manquant");
+    afficherBulle("❌ Document introuvable", "alerte");
     return;
   }
 
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: "Ordonnance médicale",
-      url: `viewer.html?docId=${docId}`
-    },
-    "*"
-  );
+  const message = {
+    type: "OPEN_TAB",
+    title: "Ordonnance médicale",
+    url: `viewer.html?docId=${encodeURIComponent(docId)}`
+  };
 
+  window.parent.postMessage(message, "*");
 }
+
+
 function formatDate(date) {
   const pad = (n) => n.toString().padStart(2, '0');
   const jour = pad(date.getDate());

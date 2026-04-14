@@ -732,21 +732,39 @@
 
 const container = document.createElement('div');
 
-container.style.width = '210mm';
-container.style.minHeight = '297mm';
+container.style.width = '794px'; // IMPORTANT (A4 réel en px)
+container.style.minHeight = '1123px';
 container.style.background = 'white';
 container.style.position = 'fixed';
 container.style.top = '0';
 container.style.left = '0';
-container.style.opacity = '0';
+container.style.opacity = '1'; // IMPORTANT (NE PAS METTRE 0)
 container.style.zIndex = '999999';
+container.style.overflow = 'visible';
 
 container.innerHTML = html;
 document.body.appendChild(container);
 
 // attendre rendu complet
 await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+console.log("=== PDF FINAL CHECK ===");
 
+console.log("Container visible:", container.offsetHeight > 0);
+console.log("Width:", container.offsetWidth);
+console.log("Height:", container.offsetHeight);
+
+const imgs = container.querySelectorAll("img");
+console.log("Images:", imgs.length);
+
+imgs.forEach(img => {
+  console.log("IMG:", img.src, {
+    complete: img.complete,
+    naturalWidth: img.naturalWidth
+  });
+});
+
+// test DOM réel rendu
+document.body.appendChild(container.cloneNode(true));
 await html2pdf().set({
   margin: 10,
   filename: `Facture_RPO_${factureId}.pdf`,
@@ -761,6 +779,7 @@ await html2pdf().set({
     format: 'a4',
     orientation: 'portrait'
   }
+  
 }).from(container).save();
 
 container.remove();

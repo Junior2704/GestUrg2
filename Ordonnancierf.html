@@ -657,6 +657,11 @@
   border-color: rgba(0, 200, 80, 0.8);
   box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
 }
+.editor-toolbar button.active {
+  background: #2a7fff;
+  color: white;
+  border-color: #2a7fff;
+}
 		</style>
 	</head>
 	<body>
@@ -1334,8 +1339,7 @@ function displayCurrentDate() {
 displayCurrentDate();
 async function validatePrescription() {
 
-  const prescriptionText = document.getElementById("prescription-text").value.trim();
-
+const prescriptionText = document.getElementById("prescription-text").innerText.trim();
   if (!prescriptionText) {
     afficherBulle("⛔ La prescription est vide !", "alerte");
     return;
@@ -1732,7 +1736,20 @@ document.getElementById("patient-birthdate").addEventListener("input", function 
     }
 });
 
+function updateBoldButton() {
+  const isBold = document.queryCommandState("bold");
+  const btn = document.getElementById("btn-bold");
 
+  if (isBold) {
+    btn.classList.add("active");
+  } else {
+    btn.classList.remove("active");
+  }
+}
+
+// mise à jour en temps réel
+document.getElementById("prescription-text").addEventListener("keyup", updateBoldButton);
+document.getElementById("prescription-text").addEventListener("mouseup", updateBoldButton);
 
 async function remplirInfosPatientDepuisFirestore() {
   const id = getIdFromURL();
@@ -2176,8 +2193,10 @@ editor.addEventListener("input", function () {
     div.className = "autocomplete-item";
     div.textContent = med;
 
-    div.onclick = () => insertMedication(med, lastWord);
-
+   div.onmousedown = (e) => {
+  e.preventDefault(); // 🔥 empêche perte du focus
+  insertMedication(med, lastWord);
+};
     autoBox.appendChild(div);
   });
 
@@ -2309,7 +2328,8 @@ window.masquerLoader = function() {
    🔶 OUVERTURE DE LA MODALE DE CONFIRMATION
 -------------------------------------------------- */
 function openConfirmModal() {
-  const text = document.getElementById("prescription-text").value.trim();
+ 
+  const text = document.getElementById("prescription-text").innerText.trim();
 
   if (!text) {
     afficherBulle("⛔ La prescription est vide !", "alerte");

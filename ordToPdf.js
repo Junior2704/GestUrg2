@@ -51,10 +51,11 @@ function generateHTML(ord) {
 
 #ordonnance {
     width: 210mm;
-    height: 297mm;
+    min-height: 297mm;
     padding: 18mm;
     box-sizing: border-box;
     color: #1f2937;
+    overflow: hidden;
 }
 
 .header {
@@ -95,6 +96,7 @@ function generateHTML(ord) {
     font-size: 15px;
     line-height: 1.7;
     padding: 10px;
+    page-break-inside: avoid;
 }
 
 .separator {
@@ -179,7 +181,9 @@ function ordToPDF(ord) {
             format: 'a4',
             orientation: 'portrait'
         },
-        pagebreak: { mode: ['avoid-all'] }
+        pagebreak: {
+    mode: ['css', 'legacy']
+}
     })
     .from(container)
     .save();

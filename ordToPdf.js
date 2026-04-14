@@ -75,12 +75,14 @@ function generateHTML(ord) {
                 color: #2563eb;
             }
 
-            .patient {
-                background: #f3f4f6;
-                padding: 10px;
-                border-radius: 8px;
-                margin-bottom: 15px;
-            }
+        .patient {
+    background: #f3f4f6;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
 
             .contenu {
                 font-size: 15px;
@@ -105,9 +107,9 @@ function generateHTML(ord) {
 
             <div class="titre">${ord.titre}</div>
 
-            <div class="patient">
-                ${ord.patient.prenom} ${ord.patient.nom}<br>
-                ${ord.patient.date_naissance || ""}
+             <div class="patient">
+                <strong>Patient :</strong> ${ord.patient.prenom} ${ord.patient.nom}<br>
+                Né(e) le : ${ord.patient.date_naissance}
             </div>
 
             <div class="contenu">

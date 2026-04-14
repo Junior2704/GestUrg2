@@ -1421,7 +1421,6 @@ function formatDate(date) {
   const secondes = pad(date.getSeconds());
   return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
 }
-
 function construireORD() {
 
   const editor = document.getElementById("prescription-text");
@@ -1432,7 +1431,6 @@ function construireORD() {
   const inputDate = document.getElementById("patient-birthdate");
 
   let dateNaissance = "";
-
   if (inputDate?.value) {
     const date = new Date(inputDate.value);
     dateNaissance = date.toLocaleDateString("fr-FR");
@@ -1442,10 +1440,10 @@ function construireORD() {
 
   const contenu = [];
 
-  editor.childNodes.forEach(node => {
+  function parseNode(node) {
 
-    // texte normal
-    if (node.nodeType === 3) {
+    // 🔹 TEXTE
+    if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent.trim();
       if (text) {
         contenu.push({ type: "text", value: text });
@@ -1453,22 +1451,32 @@ function construireORD() {
       }
     }
 
-    // éléments HTML
-    if (node.nodeType === 1) {
+    // 🔹 ELEMENT HTML
+    if (node.nodeType === Node.ELEMENT_NODE) {
 
+      // BOLD
       if (node.tagName === "B" || node.tagName === "STRONG") {
-        contenu.push({ type: "bold", value: node.textContent });
-
-      } else if (node.classList.contains("separator")) {
-        contenu.push({ type: "separator" });
-
-      } else {
-        contenu.push({ type: "text", value: node.textContent });
+        contenu.push({
+          type: "bold",
+          value: node.textContent.trim()
+        });
+        contenu.push({ type: "newline" });
+        return;
       }
 
-      contenu.push({ type: "newline" });
+      // SEPARATOR
+      if (node.classList.contains("separator")) {
+        contenu.push({ type: "separator" });
+        contenu.push({ type: "newline" });
+        return;
+      }
+
+      // AUTRES (div, etc)
+      node.childNodes.forEach(child => parseNode(child));
     }
-  });
+  }
+
+  editor.childNodes.forEach(node => parseNode(node));
 
   return {
     version: "1.0",

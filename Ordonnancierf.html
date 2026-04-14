@@ -1241,20 +1241,24 @@ window.insertBold = function() {
   document.execCommand("bold");
 }
 window.insertSeparator = function() {
-  const editor = document.getElementById("prescription-text");
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
 
   const separator = document.createElement("div");
   separator.className = "separator";
   separator.contentEditable = "false";
-  separator.draggable = true;
 
-  // drag simple
-  separator.ondragstart = (e) => {
-    e.dataTransfer.setData("text/plain", "");
-    window.draggedSeparator = separator;
-  };
+  // insérer au curseur
+  range.insertNode(separator);
 
-  editor.appendChild(separator);
+  // déplacer curseur après
+  range.setStartAfter(separator);
+  range.setEndAfter(separator);
+
+  selection.removeAllRanges();
+  selection.addRange(range);
 }
 document.addEventListener("dragover", (e) => {
   e.preventDefault();

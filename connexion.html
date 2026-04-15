@@ -26,6 +26,13 @@
 window.allerAdmin = async function () {
     window.location.href = "connexionadmin.html";
   }
+  window.addEventListener("DOMContentLoaded", async () => {
+  const ok = await checkFonctionnement();
+
+  if (ok) {
+    detectUSB(); // 🔥 lancement auto USB
+  }
+});
   let detectedUSBUser = null;
   // --- Fonction de connexion ---
   window.seConnecter = async function () {
@@ -162,7 +169,6 @@ if (isMobileDevice()) {
     return false;
   }
 }
-
 async function detectUSB() {
 
   if (!window.electronAPI) return;
@@ -171,17 +177,27 @@ async function detectUSB() {
 
   for (const device of devices) {
 
-    const serial =
-      device.serialNumber ||
-      `${device.vendorId}-${device.productId}`;
+    const mountPath = device.mountPath;
+    if (!mountPath) continue;
 
-    // 🔥 cherche match Firestore
-    const q = await getDoc(doc(db, "medecins", serial));
+    // 🔥 lire fichier sur USB
+    const usbData = await window.electronAPI.readUSBToken(mountPath);
 
-    if (q.exists()) {
+    if (!usbData?.token) continue;
+
+    // 🔥 chercher dans Firestore (collection jetonsUSB)
+    const jetonsRef = doc(db, "jetonsUSB", usbData.token);
+    const snap = await getDoc(jetonsRef);
+
+    if (snap.exists()) {
+
+      const data = snap.data();
+
       detectedUSBUser = {
-        id: serial,
-        data: q.data()
+        uid: data.uid,
+        email: data.email,
+        nom: data.nom || "Médecin",
+        token: usbData.token
       };
 
       showUSBModal(detectedUSBUser);
@@ -195,13 +211,14 @@ function showUSBModal(user) {
   document.getElementById("usbLoginModal").style.display = "flex";
 
   document.getElementById("usbUserText").textContent =
-    "Utilisateur : " + (user.data.nom || "Médecin");
+    "Utilisateur : " + user.nom;
 
   setTimeout(() => {
-    document.getElementById("usbPassword").focus();
+    const input = document.getElementById("usbPassword");
+    input.value = "";
+    input.focus();
   }, 200);
 }
-
 window.validerUSBLogin = async function () {
 
   const password = document.getElementById("usbPassword").value;
@@ -210,37 +227,40 @@ window.validerUSBLogin = async function () {
 
   try {
 
-    const email = detectedUSBUser.data.email;
-
     const userCredential = await signInWithEmailAndPassword(
       auth,
-      email,
+      detectedUSBUser.email,
       password
     );
 
     const user = userCredential.user;
 
-    window.location.href = `shell.html`;
+    // 🔥 check sécurité Firestore
+    const ref = doc(db, "medecins", user.uid);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      const data = snap.data();
+
+      if (data.supprime) return;
+      if (data.doitChangerMDP) return;
+    }
+
+    // 🚀 redirection finale
+    if (window.innerWidth < 850) {
+      window.location.href = `fiche-mobile.html?uid=${user.uid}`;
+    } else {
+      window.location.href = `shell.html`;
+    }
 
   } catch (e) {
     alert("❌ Mot de passe incorrect");
   }
 };
-
 window.annulerUSBLogin = function () {
-
   document.getElementById("usbLoginModal").style.display = "none";
-
   detectedUSBUser = null;
 };
-
-window.annulerUSBLogin = function () {
-
-  document.getElementById("usbLoginModal").style.display = "none";
-
-  detectedUSBUser = null;
-};
-
 
 
 window.showSystemModal = function(title, text) {

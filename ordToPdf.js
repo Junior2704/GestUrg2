@@ -138,7 +138,7 @@ b {
             </div>
 
             <div class="signature">
-                ${ord.medecin.nom}
+                ${ord.medecin.nom}<br>
                 ${ord.medecin.specialite || ""}
             </div>
 

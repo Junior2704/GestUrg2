@@ -4,31 +4,33 @@
 // CONTENU RENDER
 // ==============================
 function renderContenu(contenu) {
-    let html = "";
+    let html = `<span class="line">`;
 
-    for (let i = 0; i < contenu.length; i++) {
-        const item = contenu[i];
+    contenu.forEach(item => {
 
-        if (item.type === "text") {
-            html += item.value;
+        switch (item.type) {
+
+            case "text":
+                html += `${item.value}`;
+                break;
+
+            case "bold":
+                html += `<b>${item.value}</b>`;
+                break;
+
+            case "newline":
+                html += `</span><br><span class="line">`;
+                break;
+
+            case "separator":
+                html += `</span><div class="separator"></div><span class="line">`;
+                break;
         }
+    });
 
-        else if (item.type === "bold") {
-            html += `<span class="bold">${item.value}</span>`;
-        }
-
-        else if (item.type === "newline") {
-            html += "<br>";
-        }
-
-        else if (item.type === "separator") {
-            html += `<div class="separator"></div>`;
-        }
-    }
-
+    html += `</span>`;
     return html;
 }
-
 
 // ==============================
 // HTML GENERATOR
@@ -82,11 +84,6 @@ function generateHTML(ord) {
 }
 
 
-            .contenu {
-                font-size: 15px;
-                line-height: 1.6;
-            }
-
             .signature {
                 margin-top: 30px;
                 text-align: right;
@@ -103,6 +100,20 @@ function generateHTML(ord) {
     font-weight: bold;
     display: inline;
     white-space: pre-wrap;
+}
+    .contenu {
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: normal;
+}
+
+.line {
+    display: inline;
+}
+
+b {
+    font-weight: bold;
+    display: inline;
 }
         </style>
     </head>
@@ -128,6 +139,7 @@ function generateHTML(ord) {
 
             <div class="signature">
                 ${ord.medecin.nom}
+                ${ord.medecin.specialite || ""}
             </div>
 
         </div>

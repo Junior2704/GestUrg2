@@ -3,30 +3,28 @@
 // ==============================
 // CONTENU RENDER
 // ==============================
-
 function renderContenu(contenu) {
     let html = "";
 
-    contenu.forEach(item => {
-        switch (item.type) {
+    for (let i = 0; i < contenu.length; i++) {
+        const item = contenu[i];
 
-            case "text":
-                html += `<span>${item.value}</span>`;
-                break;
-
-            case "bold":
-html += `<span style="font-weight: bold;">${item.value}</span>`;
-                break;
-
-            case "newline":
-                html += `<br>`;
-                break;
-
-            case "separator":
-                html += `<div class="separator"></div>`;
-                break;
+        if (item.type === "text") {
+            html += item.value;
         }
-    });
+
+        else if (item.type === "bold") {
+            html += `<span class="bold">${item.value}</span>`;
+        }
+
+        else if (item.type === "newline") {
+            html += "<br>";
+        }
+
+        else if (item.type === "separator") {
+            html += `<div class="separator"></div>`;
+        }
+    }
 
     return html;
 }
@@ -96,6 +94,15 @@ function generateHTML(ord) {
 .separator {
     border-top: 2px solid #2563eb;
     margin: 12px 0;
+}
+    .contenu span {
+    white-space: pre-wrap;
+    display: inline;
+}
+    .bold {
+    font-weight: bold;
+    display: inline;
+    white-space: pre-wrap;
 }
         </style>
     </head>

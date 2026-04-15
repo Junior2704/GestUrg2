@@ -11,9 +11,7 @@ body {
     padding: 20px;
 }
 
-h1 {
-    margin-bottom: 10px;
-}
+h1 { margin-bottom: 10px; }
 
 .section {
     background: white;
@@ -27,6 +25,7 @@ h1 {
     border: 1px solid #ddd;
     border-radius: 8px;
     margin-bottom: 10px;
+    cursor: pointer;
 }
 
 .usb-item.selected {
@@ -43,13 +42,29 @@ button {
 
 .add-btn { background: #28a745; color: white; }
 .delete-btn { background: #dc3545; color: white; }
+
+.blocked {
+    text-align:center;
+    color:red;
+    font-weight:bold;
+    margin-top:50px;
+}
 </style>
 </head>
 
 <body>
 
 <h1>Gestion des jetons USB</h1>
-  <button type="button" id="retourBtn" aria-label="Retour aux paramètres">← Retour</button>
+
+<button id="retourBtn">← Retour</button>
+
+<div id="blocked" class="blocked" style="display:none;">
+    ❌ Accès refusé<br><br>
+    Cette page est uniquement accessible via l’application desktop Electron.
+</div>
+
+<div id="app">
+
 <div class="section">
     <h2>Jetons enregistrés</h2>
     <div id="jetonsExistants">Chargement...</div>
@@ -61,31 +76,82 @@ button {
     <button class="add-btn" onclick="ajouterJeton()">Ajouter ce jeton</button>
 </div>
 
-<script>
-const { ipcRenderer } = require('electron');
+</div>
 
-// 🔥 Firebase (mets ton config)
+<script type="module">
+/* =========================================================
+   🔒 ELECTRON CHECK
+========================================================= */
+
+const isElectron = () =>
+    typeof window !== "undefined" &&
+    window.process &&
+    window.process.versions &&
+    window.process.versions.electron;
+
+if (!isElectron()) {
+    document.getElementById("app").style.display = "none";
+    document.getElementById("blocked").style.display = "block";
+    throw new Error("Electron requis");
+}
+
+/* =========================================================
+   🔌 IPC ELECTRON
+========================================================= */
+
+const { ipcRenderer } = window.require ? window.require('electron') : {};
+
+/* =========================================================
+   🔥 FIREBASE v10 (MODULAR)
+========================================================= */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* =========================================================
+   🔥 INIT FIREBASE
+========================================================= */
+
 const firebaseConfig = {
     apiKey: "XXX",
     authDomain: "XXX",
     projectId: "XXX"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// 📌 récupérer ID médecin depuis URL
+/* =========================================================
+   📌 PARAMS
+========================================================= */
+
 const params = new URLSearchParams(window.location.search);
 const medecinId = params.get("id");
 
 let selectedUSB = null;
 let jetons = [];
 
-// 🔄 Charger les jetons existants
-async function chargerJetons() {
-    const doc = await db.collection("medecins").doc(medecinId).get();
+/* =========================================================
+   🔄 CHARGER JETONS
+========================================================= */
 
-    jetons = doc.data().jetonsUSB || [];
+async function chargerJetons() {
+
+    const ref = doc(db, "medecins", medecinId);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+        document.getElementById("jetonsExistants").innerHTML =
+            "Médecin introuvable";
+        return;
+    }
+
+    jetons = snap.data().jetonsUSB || [];
 
     const container = document.getElementById("jetonsExistants");
     container.innerHTML = "";
@@ -96,48 +162,64 @@ async function chargerJetons() {
     }
 
     jetons.forEach((j, index) => {
+
         const div = document.createElement("div");
         div.className = "usb-item";
 
         div.innerHTML = `
-            <b>${j.description || "USB inconnu"}</b><br>
+            <b>${j.description || "USB"}</b><br>
             Serial: ${j.serialNumber || "N/A"}<br>
-            <button class="delete-btn" onclick="supprimerJeton(${index})">Supprimer</button>
+            <button class="delete-btn" onclick="supprimerJeton(${index})">
+                Supprimer
+            </button>
         `;
 
         container.appendChild(div);
     });
 }
 
-// ❌ Supprimer un jeton
+/* =========================================================
+   ❌ SUPPRIMER JETON
+========================================================= */
+
 async function supprimerJeton(index) {
+
+    const ref = doc(db, "medecins", medecinId);
+
     jetons.splice(index, 1);
 
-    await db.collection("medecins").doc(medecinId).update({
+    await updateDoc(ref, {
         jetonsUSB: jetons
     });
 
     chargerJetons();
 }
 
-// 📡 Charger les USB connectés
+/* =========================================================
+   📡 USB (Electron only)
+========================================================= */
+
 async function chargerUSB() {
-    const devices = await ipcRenderer.invoke('get-usb-devices');
+
+    const devices = await ipcRenderer.invoke('scan-usb');
 
     const container = document.getElementById("usbList");
     container.innerHTML = "";
 
     devices.forEach(d => {
+
         const div = document.createElement("div");
         div.className = "usb-item";
 
         div.innerHTML = `
-            <b>${d.description || "USB inconnu"}</b><br>
+            <b>${d.description || "USB"}</b><br>
             Serial: ${d.serialNumber || "N/A"}
         `;
 
         div.onclick = () => {
-            document.querySelectorAll('#usbList .usb-item').forEach(e => e.classList.remove('selected'));
+            document.querySelectorAll('.usb-item')
+                .forEach(e => e.classList.remove('selected'));
+
             div.classList.add('selected');
             selectedUSB = d;
         };
@@ -146,7 +228,10 @@ async function chargerUSB() {
     });
 }
 
-// ➕ Ajouter jeton
+/* =========================================================
+   ➕ AJOUT JETON
+========================================================= */
+
 async function ajouterJeton() {
 
     if (!selectedUSB) {
@@ -154,15 +239,27 @@ async function ajouterJeton() {
         return;
     }
 
+    const serial =
+        selectedUSB.serialNumber ||
+        `${selectedUSB.vendorId}-${selectedUSB.productId}`;
+
+    const exists = jetons.some(j => j.serialNumber === serial);
+
+    if (exists) {
+        alert("Ce jeton existe déjà");
+        return;
+    }
+
     const nouveau = {
-        serialNumber: selectedUSB.serialNumber || null,
-        description: selectedUSB.description || null,
-        device: selectedUSB.device || null
+        serialNumber: serial,
+        description: selectedUSB.description || "USB"
     };
 
     jetons.push(nouveau);
 
-    await db.collection("medecins").doc(medecinId).update({
+    const ref = doc(db, "medecins", medecinId);
+
+    await updateDoc(ref, {
         jetonsUSB: jetons
     });
 
@@ -172,7 +269,18 @@ async function ajouterJeton() {
     chargerUSB();
 }
 
-// 🚀 INIT
+/* =========================================================
+   ↩️ RETOUR
+========================================================= */
+
+document.getElementById("retourBtn").onclick = () => {
+    window.history.back();
+};
+
+/* =========================================================
+   🚀 INIT
+========================================================= */
+
 chargerJetons();
 chargerUSB();
 

@@ -2387,7 +2387,7 @@ nav:hover .nav-item span {
 <h4>Examens sélectionnés :</h4>
 <div id="examensSelectionnes"></div>
      <div class="modal-actions">
-  <button id="btnCancelExamen" class=btn-id-c>❌ Fermer</button>
+  <button id="btnCancelExamen" class=btn-id btn-id-c>❌ Fermer</button>
   <button id="btnSaveExamen" class="btn-id btn-id-v">✅ Valider</button>
 </div>
     </div>
@@ -4609,10 +4609,17 @@ const liste = data?.liste || [];
 window.remplirDepuisAncienneHospi = async function(champ) {
   try {
     const patientId = new URLSearchParams(window.location.search).get("id");
-    const patientRef = db.collection("patients").doc(patientId);
-    const patientSnap = await patientRef.get();
 
-    if (!patientSnap.exists) {
+    if (!patientId) {
+      alert("ID patient manquant");
+      return;
+    }
+
+    // 🔹 Référence patient
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
       alert("Patient introuvable");
       return;
     }
@@ -4620,12 +4627,14 @@ window.remplirDepuisAncienneHospi = async function(champ) {
     const patientData = patientSnap.data();
 
     // 🔹 Tableau des IDs d'hospitalisations
-    const hospitalisations = Array.isArray(patientData.hospitalisations) ? [...patientData.hospitalisations] : [];
+    const hospitalisations = Array.isArray(patientData.hospitalisations)
+      ? [...patientData.hospitalisations]
+      : [];
 
     // 🔹 Hospitalisation en cours (à exclure)
     const hospiEnCours = patientData.hospitalisationActiveId;
 
-    // 🔹 On prend la dernière hospitalisation avant celle en cours
+    // 🔹 On filtre les anciennes
     const anciennes = hospitalisations.filter(id => id !== hospiEnCours);
 
     if (anciennes.length === 0) {
@@ -4633,24 +4642,31 @@ window.remplirDepuisAncienneHospi = async function(champ) {
       return;
     }
 
+    // 🔹 Dernière hospitalisation
     const derniereHospiId = anciennes[anciennes.length - 1];
 
-    // 🔥 Récupération du document hospitalisation
-    const hospiDoc = await db.collection("hospitalisations").doc(derniereHospiId).get();
-    if (!hospiDoc.exists) {
+    // 🔥 Récupération doc hospitalisation
+    const hospiRef = doc(db, "hospitalisations", derniereHospiId);
+    const hospiSnap = await getDoc(hospiRef);
+
+    if (!hospiSnap.exists()) {
       alert("Hospitalisation introuvable");
       return;
     }
 
-    const hospiData = hospiDoc.data();
-const ancienne = hospiData.dossierMedical
+    const hospiData = hospiSnap.data();
+    const ancienne = hospiData.dossierMedical;
+
     if (!ancienne || !ancienne[champ]) {
       afficherBulle(`❌ Pas d'ancien contenu pour ${champ}`, "warning");
       return;
     }
 
     const contenu = ancienne[champ].trim();
+
     const textarea = document.getElementById(champ);
+    if (!textarea) return;
+
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
 
@@ -4670,9 +4686,7 @@ const ancienne = hospiData.dossierMedical
     console.error("Erreur récupération données précédentes :", err);
     afficherBulle("❌ Erreur de récupération", "error");
   }
-}
-
-
+};
 
 window.afficherLoader = function() {
   let loader = document.getElementById("loadingScreen");

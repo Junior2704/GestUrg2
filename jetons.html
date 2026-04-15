@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Jetons USB</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f4f6f9;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.section {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.usb-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.usb-item.selected {
+    border: 2px solid #007bff;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.add-btn { background: #28a745; color: white; }
+.delete-btn { background: #dc3545; color: white; }
+</style>
+</head>
+
+<body>
+
+<h1>Gestion des jetons USB</h1>
+
+<div class="section">
+    <h2>Jetons enregistrés</h2>
+    <div id="jetonsExistants">Chargement...</div>
+</div>
+
+<div class="section">
+    <h2>Ajouter un jeton</h2>
+    <div id="usbList">Chargement...</div>
+    <button class="add-btn" onclick="ajouterJeton()">Ajouter ce jeton</button>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+// 🔥 Firebase (mets ton config)
+const firebaseConfig = {
+    apiKey: "XXX",
+    authDomain: "XXX",
+    projectId: "XXX"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// 📌 récupérer ID médecin depuis URL
+const params = new URLSearchParams(window.location.search);
+const medecinId = params.get("id");
+
+let selectedUSB = null;
+let jetons = [];
+
+// 🔄 Charger les jetons existants
+async function chargerJetons() {
+    const doc = await db.collection("medecins").doc(medecinId).get();
+
+    jetons = doc.data().jetonsUSB || [];
+
+    const container = document.getElementById("jetonsExistants");
+    container.innerHTML = "";
+
+    if (jetons.length === 0) {
+        container.innerHTML = "Aucun jeton enregistré";
+        return;
+    }
+
+    jetons.forEach((j, index) => {
+        const div = document.createElement("div");
+        div.className = "usb-item";
+
+        div.innerHTML = `
+            <b>${j.description || "USB inconnu"}</b><br>
+            Serial: ${j.serialNumber || "N/A"}<br>
+            <button class="delete-btn" onclick="supprimerJeton(${index})">Supprimer</button>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+// ❌ Supprimer un jeton
+async function supprimerJeton(index) {
+    jetons.splice(index, 1);
+
+    await db.collection("medecins").doc(medecinId).update({
+        jetonsUSB: jetons
+    });
+
+    chargerJetons();
+}
+
+// 📡 Charger les USB connectés
+async function chargerUSB() {
+    const devices = await ipcRenderer.invoke('get-usb-devices');
+
+    const container = document.getElementById("usbList");
+    container.innerHTML = "";
+
+    devices.forEach(d => {
+        const div = document.createElement("div");
+        div.className = "usb-item";
+
+        div.innerHTML = `
+            <b>${d.description || "USB inconnu"}</b><br>
+            Serial: ${d.serialNumber || "N/A"}
+        `;
+
+        div.onclick = () => {
+            document.querySelectorAll('#usbList .usb-item').forEach(e => e.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedUSB = d;
+        };
+
+        container.appendChild(div);
+    });
+}
+
+// ➕ Ajouter jeton
+async function ajouterJeton() {
+
+    if (!selectedUSB) {
+        alert("Sélectionne une clé USB");
+        return;
+    }
+
+    const nouveau = {
+        serialNumber: selectedUSB.serialNumber || null,
+        description: selectedUSB.description || null,
+        device: selectedUSB.device || null
+    };
+
+    jetons.push(nouveau);
+
+    await db.collection("medecins").doc(medecinId).update({
+        jetonsUSB: jetons
+    });
+
+    selectedUSB = null;
+
+    chargerJetons();
+    chargerUSB();
+}
+
+// 🚀 INIT
+chargerJetons();
+chargerUSB();
+
+</script>
+
+</body>
+</html>

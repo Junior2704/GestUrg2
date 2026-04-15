@@ -1,0 +1,91 @@
+export const examensDisponibles = [
+
+  // 🩸 BIOLOGIE
+  { type: "NFS (Numération Formule Sanguine)", categorie: "Biologie" },
+  { type: "CRP", categorie: "Biologie" },
+  { type: "Ionogramme", categorie: "Biologie" },
+  { type: "Calcémie", categorie: "Biologie" },
+  { type: "Bilan hépatique", categorie: "Biologie" },
+  { type: "Bilan rénal", categorie: "Biologie" },
+  { type: "TSH, T3, T4", categorie: "Biologie" },
+  { type: "Hémoglobine glyquée (HbA1c)", categorie: "Biologie" },
+  { type: "Bilan lipidique", categorie: "Biologie" },
+  { type: "Troponine", categorie: "Biologie" },
+  { type: "Groupage sanguin", categorie: "Biologie" },
+  { type: "Sérologies virales (VIH, VHB, VHC)", categorie: "Biologie" },
+  { type: "Bilan coagulation (TP, TCA)", categorie: "Biologie" },
+  { type: "Recherche Alcoolémie", categorie: "Biologie" },
+  { type: "Prise de sang autre", categorie: "Biologie" },
+
+  // 🧪 URINES
+  { type: "ECBU (Examen cytobactériologique des urines)", categorie: "Urines" },
+  { type: "Protéinurie des 24h", categorie: "Urines" },
+  { type: "Bandelette urinaire", categorie: "Urines" },
+  { type: "Recherche de sang dans les urines", categorie: "Urines" },
+  { type: "Recherche de drogues urinaires", categorie: "Urines" },
+  { type: "Test de grossesse urinaire", categorie: "Urines" },
+  { type: "Dosage créatinine urinaire", categorie: "Urines" },
+  { type: "Examens urinaires autre", categorie: "Urines" },
+
+  // 📸 RADIO
+  { type: "Radiographie du crâne", categorie: "Radiologie" },
+  { type: "Radiographie du thorax", categorie: "Radiologie" },
+  { type: "Radiographie de l'abdomen", categorie: "Radiologie" },
+  { type: "Radiographie du bassin", categorie: "Radiologie" },
+  { type: "Radiographie du rachis cervical", categorie: "Radiologie" },
+  { type: "Radiographie du rachis dorsal", categorie: "Radiologie" },
+  { type: "Radiographie du rachis lombaire", categorie: "Radiologie" },
+  { type: "Radiographie du genou", categorie: "Radiologie" },
+  { type: "Radiographie de la cheville", categorie: "Radiologie" },
+  { type: "Radiographie du poignet", categorie: "Radiologie" },
+  { type: "Radiographie du coude", categorie: "Radiologie" },
+  { type: "Radiographie des mains", categorie: "Radiologie" },
+  { type: "Radiographie des pieds", categorie: "Radiologie" },
+  { type: "Radiographie autre", categorie: "Radiologie" },
+
+  // 🧲 IRM
+  { type: "IRM cérébrale", categorie: "IRM" },
+  { type: "IRM hypophysaire", categorie: "IRM" },
+  { type: "IRM rachis cervical", categorie: "IRM" },
+  { type: "IRM rachis dorsal", categorie: "IRM" },
+  { type: "IRM rachis lombaire", categorie: "IRM" },
+  { type: "IRM abdominale", categorie: "IRM" },
+  { type: "IRM pelvienne", categorie: "IRM" },
+  { type: "IRM genou", categorie: "IRM" },
+  { type: "IRM épaule", categorie: "IRM" },
+  { type: "IRM avec injection", categorie: "IRM" },
+  { type: "IRM autre", categorie: "IRM" },
+
+  // 🖥️ SCANNER
+  { type: "Scanner cérébral", categorie: "Scanner" },
+  { type: "Scanner thoracique", categorie: "Scanner" },
+  { type: "Scanner abdomino-pelvien", categorie: "Scanner" },
+  { type: "Scanner rachis cervical", categorie: "Scanner" },
+  { type: "Scanner rachis lombaire", categorie: "Scanner" },
+  { type: "Scanner des sinus", categorie: "Scanner" },
+  { type: "Scanner genou", categorie: "Scanner" },
+  { type: "Angioscanner cérébral", categorie: "Scanner" },
+  { type: "Angioscanner thoracique", categorie: "Scanner" },
+  { type: "Angioscanner abdominal", categorie: "Scanner" },
+  { type: "Scanner autre", categorie: "Scanner" },
+
+  // 🧭 ECHO
+  { type: "Échographie abdominale", categorie: "Échographie" },
+  { type: "Échographie pelvienne", categorie: "Échographie" },
+  { type: "Échographie rénale", categorie: "Échographie" },
+  { type: "Échographie hépatique", categorie: "Échographie" },
+  { type: "Échographie thyroïdienne", categorie: "Échographie" },
+  { type: "Échographie mammaire", categorie: "Échographie" },
+  { type: "Échographie testiculaire", categorie: "Échographie" },
+  { type: "Échographie cardiaque (ETT)", categorie: "Échographie" },
+  { type: "Doppler veineux des membres inférieurs", categorie: "Échographie" },
+  { type: "Doppler artériel des membres inférieurs", categorie: "Échographie" },
+  { type: "Échographie autre", categorie: "Échographie" },
+
+  // 🦴 EOS
+  { type: "EOS rachis complet", categorie: "EOS" },
+  { type: "EOS membres inférieurs", categorie: "EOS" },
+  { type: "EOS membres supérieurs", categorie: "EOS" },
+  { type: "EOS posture globale", categorie: "EOS" },
+  { type: "EOS autre", categorie: "EOS" }
+];

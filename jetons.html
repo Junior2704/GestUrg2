@@ -231,7 +231,6 @@ async function chargerUSB() {
 /* =========================================================
    ➕ AJOUT JETON
 ========================================================= */
-
 async function ajouterJeton() {
 
     if (!selectedUSB) {
@@ -239,22 +238,29 @@ async function ajouterJeton() {
         return;
     }
 
-    const serial =
-        selectedUSB.serialNumber ||
-        `${selectedUSB.vendorId}-${selectedUSB.productId}`;
+    const token = crypto.randomUUID();
 
-    const exists = jetons.some(j => j.serialNumber === serial);
+    const nouveau = {
+        token: token,
+        usbMeta: {
+            vendorId: selectedUSB.vendorId || null,
+            productId: selectedUSB.productId || null
+        },
+        createdAt: Date.now()
+    };
+
+    // 🔒 anti doublon
+    const exists = jetons.some(j =>
+        j.usbMeta?.vendorId === nouveau.usbMeta.vendorId &&
+        j.usbMeta?.productId === nouveau.usbMeta.productId
+    );
 
     if (exists) {
-        alert("Ce jeton existe déjà");
+        alert("Cette clé est déjà enregistrée");
         return;
     }
 
-    const nouveau = {
-        serialNumber: serial,
-        description: selectedUSB.description || "USB"
-    };
-
+    // 🔥 1. écrire dans Firestore
     jetons.push(nouveau);
 
     const ref = doc(db, "medecins", medecinId);
@@ -262,6 +268,15 @@ async function ajouterJeton() {
     await updateDoc(ref, {
         jetonsUSB: jetons
     });
+
+    // 🔥 2. écrire SUR LA CLÉ USB (IMPORTANT)
+    const mountPath = selectedUSB.mountPath; // ou récupéré via Electron scan
+
+    if (window.electronAPI?.writeUSBToken) {
+        await window.electronAPI.writeUSBToken(mountPath, token);
+    } else {
+        console.warn("Electron API non disponible");
+    }
 
     selectedUSB = null;
 

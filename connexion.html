@@ -26,14 +26,8 @@
 window.allerAdmin = async function () {
     window.location.href = "connexionadmin.html";
   }
-  window.addEventListener("DOMContentLoaded", async () => {
-  const ok = await checkFonctionnement();
 
-  if (ok) {
-    detectUSB(); // 🔥 lancement auto USB
-  }
-});
-  let detectedUSBUser = null;
+ 
   // --- Fonction de connexion ---
   window.seConnecter = async function () {
     await setPersistence(auth, browserSessionPersistence);
@@ -169,98 +163,8 @@ if (isMobileDevice()) {
     return false;
   }
 }
-async function detectUSB() {
 
-  if (!window.electronAPI) return;
-
-  const devices = await window.electronAPI.scanUSB();
-
-  for (const device of devices) {
-
-    const mountPath = device.mountPath;
-    if (!mountPath) continue;
-
-    // 🔥 lire fichier sur USB
-    const usbData = await window.electronAPI.readUSBToken(mountPath);
-
-    if (!usbData?.token) continue;
-
-    // 🔥 chercher dans Firestore (collection jetonsUSB)
-    const jetonsRef = doc(db, "jetonsUSB", usbData.token);
-    const snap = await getDoc(jetonsRef);
-
-    if (snap.exists()) {
-
-      const data = snap.data();
-
-      detectedUSBUser = {
-        uid: data.uid,
-        email: data.email,
-        nom: data.nom || "Médecin",
-        token: usbData.token
-      };
-
-      showUSBModal(detectedUSBUser);
-      break;
-    }
-  }
 }
-
-function showUSBModal(user) {
-
-  document.getElementById("usbLoginModal").style.display = "flex";
-
-  document.getElementById("usbUserText").textContent =
-    "Utilisateur : " + user.nom;
-
-  setTimeout(() => {
-    const input = document.getElementById("usbPassword");
-    input.value = "";
-    input.focus();
-  }, 200);
-}
-window.validerUSBLogin = async function () {
-
-  const password = document.getElementById("usbPassword").value;
-
-  if (!detectedUSBUser) return;
-
-  try {
-
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      detectedUSBUser.email,
-      password
-    );
-
-    const user = userCredential.user;
-
-    // 🔥 check sécurité Firestore
-    const ref = doc(db, "medecins", user.uid);
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-      const data = snap.data();
-
-      if (data.supprime) return;
-      if (data.doitChangerMDP) return;
-    }
-
-    // 🚀 redirection finale
-    if (window.innerWidth < 850) {
-      window.location.href = `fiche-mobile.html?uid=${user.uid}`;
-    } else {
-      window.location.href = `shell.html`;
-    }
-
-  } catch (e) {
-    alert("❌ Mot de passe incorrect");
-  }
-};
-window.annulerUSBLogin = function () {
-  document.getElementById("usbLoginModal").style.display = "none";
-  detectedUSBUser = null;
-};
 
 
 window.showSystemModal = function(title, text) {

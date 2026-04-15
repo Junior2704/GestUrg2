@@ -643,7 +643,7 @@ document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
 
       const id = Math.random().toString(36).substring(2, 10);
 
-      await db.collection("liens_pdfs").doc(id).set({
+      await db.collection("liens_pdf").doc(id).set({
         base64: pdfBase64,
         nomFichier: nomPdf || "Document_upload.pdf",
         dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
@@ -699,7 +699,7 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     let idUnique, docSnap;
     do {
       idUnique = Math.random().toString(36).substring(2, 10);
-      docSnap = await db.collection("liens_pdfs").doc(idUnique).get();
+      docSnap = await db.collection("liens_pdf").doc(idUnique).get();
     } while (docSnap.exists);
 
     // 2️⃣ Récupération infos patient
@@ -716,7 +716,7 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     const fileName = nomPdf || `Document - ${firstName} ${lastName}.pdf`;
 
     // 3️⃣ Enregistrement du PDF dans Firestore
-    await db.collection("liens_pdfs").doc(idUnique).set({
+    await db.collection("liens_pdf").doc(idUnique).set({
       base64: pdfBase64,
       nom: fileName,
       dateCreation: firebase.firestore.FieldValue.serverTimestamp(),

@@ -12,6 +12,8 @@ export const examensDisponibles = [
   { type: "T4", categorie: "Biologie" },
   { type: "HbA1c", categorie: "Biologie" },
   { type: "Glycémie à jeun", categorie: "Biologie" },
+    { type: "Glycémie", categorie: "Biologie" },
+  { type: "Glycémie - bandelette", categorie: "Biologie" },
   { type: "HGPO", categorie: "Biologie" },
   { type: "Bilan lipidique", categorie: "Biologie" },
   { type: "Troponine", categorie: "Biologie" },

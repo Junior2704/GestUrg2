@@ -768,6 +768,7 @@ function formatDate(d) {
     if (!hospiSnap.exists()) {
       console.error("❌ Hospitalisation introuvable");
       container.innerHTML = "<div class='muted'>Hospitalisation introuvable</div>";
+      masquerLoader();
       return;
     }
 
@@ -777,6 +778,7 @@ function formatDate(d) {
     if (meds.length === 0) {
       console.log("ℹ️ Aucun médicament enregistré");
       container.innerHTML = "<div class='muted'>Aucune demande</div>";
+      masquerLoader();
       return;
     }
 
@@ -837,13 +839,13 @@ function formatDate(d) {
 
       container.appendChild(item);
     });
-masquerLoader();
+
   } catch (err) {
     console.error("❌ ERREUR loadHistory():", err);
     container.innerHTML = "<div class='muted'>Erreur chargement</div>";
   }
 }
-
+masquerLoader();
 let currentDetailId = null;
 
 window.showDetails = async function(medIndex){
@@ -990,7 +992,7 @@ async function deleteFromModal() {
     const takeComment = document.getElementById('take-comment');
     let currentTakingDocId = null;
 
-    function openTakeModal(docId, name){ currentTakingDocId = docId; takeName.value = name; takeComment.value=''; modalTake.style.display='flex'; }
+    window.openTakeModal = function(docId, name){ currentTakingDocId = docId; takeName.value = name; takeComment.value=''; modalTake.style.display='flex'; }
     document.getElementById('take-cancel').onclick = ()=> modalTake.style.display='none';
 
  document.getElementById('take-save').onclick = async () => {

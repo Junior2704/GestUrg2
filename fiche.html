@@ -2987,6 +2987,9 @@ async function chargerPatient(patientId) {
     }
 
     const patient = patientSnap.data();
+// ===============================
+// 🚨 BLOQUAGE SI PAS D’HOSPITALISATION ACTIVE
+// ===============================
 
     // --- Infos patient ---
     document.getElementById("idPatient").textContent = patientId || "Non défini";
@@ -3037,7 +3040,14 @@ async function chargerPatient(patientId) {
       masquerLoader();
       return;
     }
-
+if (!patient.hospitalisationActiveId || patient.hospitalisationActiveId === "") {
+  const modal = document.getElementById("modal-error");
+  if (modal) {
+    masquerLoader();
+    modal.style.display = "flex";
+  }
+  return; // ⛔ STOP TOTAL ICI
+}
     // ==================================
     // 3️⃣ CHARGER L’HOSPITALISATION
     // ==================================

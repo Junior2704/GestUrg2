@@ -115,6 +115,9 @@ b {
     font-weight: bold;
     display: inline;
 }
+    .contenu * {
+    display: inline !important;
+}
         </style>
     </head>
     <body>

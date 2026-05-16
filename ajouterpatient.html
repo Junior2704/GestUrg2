@@ -131,6 +131,61 @@ button:hover { background: #005ea2; }
 #results {
   transition: opacity 0.15s ease;
 }
+#suggestionsadd{
+    position: absolute;
+    width: 100%;
+    max-width: 500px;
+
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.08),
+        0 2px 8px rgba(0,0,0,0.05);
+
+    overflow: hidden;
+
+    margin-top: 8px;
+
+    z-index: 9999;
+
+    border: 1px solid #ececec;
+
+    display: none;
+}
+
+/* Affiché seulement si il y a des suggestions */
+#suggestionsadd.active{
+    display: block;
+}
+
+#suggestionsadd div{
+    padding: 14px 18px;
+
+    cursor: pointer;
+
+    font-size: 15px;
+
+    color: #222;
+
+    transition:
+        background 0.18s ease,
+        padding-left 0.18s ease;
+
+    border-bottom: 1px solid #f3f3f3;
+}
+
+#suggestionsadd div:last-child{
+    border-bottom: none;
+}
+
+#suggestionsadd div:hover{
+    background: #f7f9fc;
+
+    padding-left: 24px;
+}
+
 
 </style>
 </head>
@@ -173,6 +228,7 @@ button:hover { background: #005ea2; }
     <input type="date" id="naissance">
 <label>Adresse</label>
 <input id="adresse">
+<div id="suggestionsadd"></div>
 
 <label>Téléphone</label>
 <input id="telephone">
@@ -641,6 +697,53 @@ validateIdentity.onclick = () => {
   updateNav();
   openTab(3);
 };
+
+
+const inputadd = document.getElementById("adresse");
+const suggestions = document.getElementById("suggestionsadd");
+
+inputadd.addEventListener("input", async () => {
+    const query = inputadd.value.trim();
+
+    if (query.length < 3) {
+        suggestions.innerHTML = "";
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`
+        );
+
+        const data = await response.json();
+ suggestions.classList.add("active");
+        suggestions.innerHTML = "";
+
+        data.features.forEach(feature => {
+            const div = document.createElement("div");
+
+            div.textContent = feature.properties.label;
+
+            div.style.padding = "8px";
+            div.style.cursor = "pointer";
+            div.style.borderBottom = "1px solid #ccc";
+
+            div.addEventListener("click", () => {
+                // Remplit le champ automatiquement
+                inputadd.value = feature.properties.label;
+
+                // Vide les suggestions
+                suggestions.innerHTML = "";
+            });
+
+            suggestions.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error(error);
+    }
+});
+
 
 validateAll.onclick = async () => {
   const circuitVal = document.getElementById("circuit").value;

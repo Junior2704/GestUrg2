@@ -364,7 +364,10 @@ width: 100%;
     <div class="card">
       <h3 id="modal-title">Nouvelle demande</h3>
       <label>Produit</label>
-      <input type="text" id="pres-name" readonly />
+      <input type="text" id="pres-name"/>
+      <div id="pres-warning" style="display:none; background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:10px; border-radius:8px; font-size:13px; margin-top:8px; text-align:left;">
+        ⚠️ <strong>Attention :</strong> Ce médicament n'est pas présent dans la base de données standard de l'établissement.
+      </div>
       <label>Commentaires</label>
       <textarea id="pres-comment" rows="3"></textarea>
 
@@ -595,15 +598,32 @@ async function loadMedicaments() {
   }
 }
 
-function renderMedicaments(list) {
+// --- Rendu de la liste des médicaments ---
+function renderMedicaments(list, searchQuery = "") {
   const container = document.getElementById("medicaments-list");
   container.innerHTML = "";
 
-  // Prescription libre (comme avant)
+  // Si la liste est vide ET qu'une recherche est en cours
+  if (list.length === 0 && searchQuery.trim() !== "") {
+    const freeBtn = document.createElement("div");
+    freeBtn.className = "medicament-item";
+    freeBtn.style.background = "#fff0f0";
+    freeBtn.style.borderColor = "#ffcccc";
+    freeBtn.style.color = "#c62828";
+    freeBtn.style.fontWeight = "600";
+    freeBtn.innerHTML = `✨ Prescription libre : <strong>"${searchQuery}"</strong>`;
+    
+    // Au double-clic ou clic simple pour plus d'accessibilité
+    freeBtn.onclick = () => addMedicamentToPrescription(searchQuery, true);
+    container.appendChild(freeBtn);
+    return;
+  }
+
+  // Prescription libre classique en haut de liste (si pas de recherche spécifique vide)
   const free = document.createElement("div");
   free.className = "medicament-item";
   free.textContent = "-- Prescription libre --";
-  free.ondblclick = () => addMedicamentToPrescription(" ");
+  free.ondblclick = () => addMedicamentToPrescription("", true);
   container.appendChild(free);
 
   // Médicaments depuis le JSON
@@ -611,9 +631,45 @@ function renderMedicaments(list) {
     const div = document.createElement("div");
     div.className = "medicament-item";
     div.textContent = med;
-    div.ondblclick = () => addMedicamentToPrescription(med);
+    div.ondblclick = () => addMedicamentToPrescription(med, false);
     container.appendChild(div);
   });
+}
+
+// --- Recherche instantanée mise à jour ---
+document.getElementById("search").addEventListener("input", e => {
+  const q = e.target.value;
+  const qLower = q.toLowerCase();
+  
+  // On filtre la liste globale
+  const filtered = medicaments.filter(m => m.toLowerCase().includes(qLower));
+  
+  // On passe la requête à renderMedicaments pour gérer le cas vide
+  renderMedicaments(filtered, q);
+});
+
+// --- Ouverture de la modale adaptée ---
+window.addMedicamentToPrescription = function(name, isFreeInput = false) {
+  const nameInput = document.getElementById('pres-name');
+  const warningDiv = document.getElementById('pres-warning');
+
+  nameInput.value = name;
+  presComment.value = '';
+  presEvery.value = '';
+  presRepeat.value = '';
+  presDatetime.value = '';
+
+  if (isFreeInput) {
+    nameInput.removeAttribute('readonly'); // On peut modifier le nom
+    nameInput.style.background = "#ffffff";
+    warningDiv.style.display = 'block';    // On affiche l'avertissement
+  } else {
+    nameInput.setAttribute('readonly', 'true'); // Verrouillé si vient du JSON
+    nameInput.style.background = "#f8fbff";
+    warningDiv.style.display = 'none';     // Masqué
+  }
+
+  modalPres.style.display = 'flex';
 }
 
 // Recherche instantanée (ton input #search existe déjà)

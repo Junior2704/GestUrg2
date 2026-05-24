@@ -1339,10 +1339,6 @@ position,
 pdc,
 startMs,
 temps,
-equipe:
-hosp.equipe ||
-data.equipe ||
-{},
 hash
 });
 
@@ -1530,7 +1526,9 @@ ${p.temps}
 
 <td>
 ${formatEquipe(
-p.equipe
+p.hosp?.equipe ||
+p.data?.equipe ||
+{}
 )}
 </td>
 
@@ -1668,22 +1666,56 @@ err
 
 };
 
-window.refreshTempsEcoule = function() {
-  const now = Date.now();
+window.refreshTempsEcoule = function () {
 
-  document.querySelectorAll('.temps-ecoule').forEach(td => {
-    const startSec = parseInt(td.dataset.start || 0);
-    if (!startSec) {
-      td.textContent = '—';
-      return;
-    }
+const now =
+Date.now();
 
-    const diffMs = now - startSec;
-    const h = Math.floor(diffMs / 3600000);
-    const m = Math.floor((diffMs % 3600000) / 60000);
+document
+.querySelectorAll(
+".temps-ecoule"
+)
+.forEach(td => {
 
-    td.textContent = `${h}h ${m}m`;
-  });
+const start =
+Number(
+td.dataset.start
+);
+
+if (
+!start
+) {
+
+td.textContent =
+"—";
+
+return;
+
+}
+
+const diff =
+now - start;
+
+const h =
+Math.floor(
+diff /
+3600000
+);
+
+const m =
+Math.floor(
+(
+diff %
+3600000
+)
+/60000
+);
+
+td.textContent =
+`${h}h ${m}m`;
+
+});
+
 }
 
 
@@ -1698,59 +1730,61 @@ function isPhaseAttente(pdcStatut) {
 }
 
 
-function formatEquipe(equipe) {
+function formatEquipe(equipe){
 
-if (
-!equipe ||
-typeof equipe !== "object"
-) {
+if(
+!equipe
+){
 return "—";
 }
 
-const lignes = [];
+const noms=[];
 
-if (
-equipe.medecinReferent?.nom
-) {
+[
+[
+"medecinReferent",
+"👨‍⚕️"
+],
 
-lignes.push(
-`👨‍⚕️ ${equipe.medecinReferent.nom}`
+[
+"infirmierReferent",
+"👩‍⚕️"
+],
+
+[
+"interneReferent",
+"🎓"
+],
+
+[
+"externeReferent",
+"📘"
+]
+
+]
+
+.forEach(
+([k,emoji])=>{
+
+const nom=
+equipe[k]
+?.nom;
+
+if(
+nom
+){
+
+noms.push(
+`${emoji} ${nom}`
 );
 
 }
 
-if (
-equipe.infirmierReferent?.nom
-) {
-
-lignes.push(
-`👩‍⚕️ ${equipe.infirmierReferent.nom}`
+}
 );
 
-}
-
-if (
-equipe.interneReferent?.nom
-) {
-
-lignes.push(
-`🎓 ${equipe.interneReferent.nom}`
-);
-
-}
-
-if (
-equipe.externeReferent?.nom
-) {
-
-lignes.push(
-`📘 ${equipe.externeReferent.nom}`
-);
-
-}
-
-return lignes.length
-? lignes.join("<br>")
+return noms.length
+? noms.join("<br>")
 : "—";
 
 }

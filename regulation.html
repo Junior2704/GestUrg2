@@ -1680,44 +1680,81 @@ err
 }
 
 };
-
 window.refreshTempsEcoule = function () {
+
+  console.clear();
+  console.log("⏱ refreshTempsEcoule lancé");
 
   const now = Date.now();
 
-  document.querySelectorAll(".temps-ecoule").forEach(td => {
+  document.querySelectorAll(".temps-ecoule").forEach((td, index) => {
 
+    console.log("--------------------------------------------------");
+    console.log(`🧍 Patient #${index + 1}`);
+
+    // récupération attribut HTML
     const rawStart = td.dataset.start;
 
-    // aucune date
+    console.log("📌 data-start brut =", rawStart);
+
+    // aucune donnée
     if (!rawStart || rawStart === "null" || rawStart === "undefined") {
+
+      console.warn("❌ aucune date trouvée");
+
       td.textContent = "—";
       return;
     }
 
     let startMs = null;
 
-    // timestamp numérique
+    /* =========================================
+       CAS 1 : timestamp numérique
+    ========================================= */
+
     if (!isNaN(rawStart)) {
 
       startMs = Number(rawStart);
 
+      console.log("✅ timestamp numérique détecté");
+      console.log("🕒 startMs =", startMs);
+
     }
 
-    // date string type "29/01/2026 11:20:31"
-    else if (typeof rawStart === "string") {
+    /* =========================================
+       CAS 2 : string date FR
+       ex : 29/01/2026 11:20:31
+    ========================================= */
+
+    else {
+
+      console.log("📅 tentative parsing date FR");
 
       try {
 
-        const [datePart, timePart] = rawStart.split(" ");
+        const [datePart, timePart] = rawStart.trim().split(" ");
+
+        console.log("datePart =", datePart);
+        console.log("timePart =", timePart);
 
         if (!datePart || !timePart) {
+
+          console.error("❌ format invalide");
+
           td.textContent = "—";
           return;
         }
 
         const [jour, mois, annee] = datePart.split("/");
         const [heure, minute, seconde] = timePart.split(":");
+
+        console.log("jour =", jour);
+        console.log("mois =", mois);
+        console.log("annee =", annee);
+
+        console.log("heure =", heure);
+        console.log("minute =", minute);
+        console.log("seconde =", seconde);
 
         const dateObj = new Date(
           Number(annee),
@@ -1728,24 +1765,45 @@ window.refreshTempsEcoule = function () {
           Number(seconde)
         );
 
+        console.log("📅 dateObj =", dateObj);
+
         startMs = dateObj.getTime();
 
-      } catch (e) {
+        console.log("🕒 startMs converti =", startMs);
+
+      } catch (err) {
+
+        console.error("❌ erreur parsing :", err);
+
         td.textContent = "—";
         return;
       }
     }
 
-    // sécurité
+    /* =========================================
+       VALIDATION
+    ========================================= */
+
     if (!startMs || isNaN(startMs)) {
+
+      console.error("❌ startMs invalide");
+
       td.textContent = "—";
       return;
     }
 
-    // calcul du temps écoulé
+    /* =========================================
+       CALCUL DIFF
+    ========================================= */
+
     const diff = now - startMs;
 
+    console.log("⌛ diff ms =", diff);
+
     if (diff < 0) {
+
+      console.warn("⚠ date future détectée");
+
       td.textContent = "—";
       return;
     }
@@ -1754,30 +1812,64 @@ window.refreshTempsEcoule = function () {
     const heures = Math.floor((diff % 86400000) / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
 
-    // affichage intelligent
+    console.log("📊 jours =", jours);
+    console.log("📊 heures =", heures);
+    console.log("📊 minutes =", minutes);
+
+    /* =========================================
+       AFFICHAGE
+    ========================================= */
+
+    let affichage = "";
+
     if (jours > 0) {
-      td.textContent = `${jours}j ${heures}h ${minutes}m`;
+
+      affichage = `${jours}j ${heures}h ${minutes}m`;
+
     } else {
-      td.textContent = `${heures}h ${minutes}m`;
+
+      affichage = `${heures}h ${minutes}m`;
+
     }
 
-    // couleurs selon ancienneté
+    td.textContent = affichage;
+
+    console.log("✅ affichage final =", affichage);
+
+    /* =========================================
+       COULEURS
+    ========================================= */
+
     td.style.fontWeight = "700";
 
-    if (heures >= 8 || jours >= 1) {
-      td.style.color = "#b71c1c"; // rouge
+    if (jours >= 1 || heures >= 8) {
+
+      td.style.color = "#b71c1c";
+      console.log("🔴 couleur rouge");
+
     }
     else if (heures >= 4) {
-      td.style.color = "#ef6c00"; // orange
+
+      td.style.color = "#ef6c00";
+      console.log("🟠 couleur orange");
+
     }
     else if (heures >= 2) {
-      td.style.color = "#f9a825"; // jaune
+
+      td.style.color = "#f9a825";
+      console.log("🟡 couleur jaune");
+
     }
     else {
-      td.style.color = "#2e7d32"; // vert
+
+      td.style.color = "#2e7d32";
+      console.log("🟢 couleur verte");
+
     }
 
   });
+
+  console.log("✅ refreshTempsEcoule terminé");
 
 };
 

@@ -1339,6 +1339,10 @@ position,
 pdc,
 startMs,
 temps,
+equipe:
+hosp.equipe ||
+data.equipe ||
+{},
 hash
 });
 
@@ -1479,12 +1483,8 @@ vigilance
 
 tr.setAttribute(
 "data-equipe",
-
 JSON.stringify(
-p.data
-.equipe
-||
-{}
+p.equipe || {}
 )
 );
 
@@ -1530,7 +1530,7 @@ ${p.temps}
 
 <td>
 ${formatEquipe(
-p.data.equipe
+p.equipe
 )}
 </td>
 
@@ -1698,29 +1698,61 @@ function isPhaseAttente(pdcStatut) {
 }
 
 
-
 function formatEquipe(equipe) {
-  if (!equipe) return '—';
 
-  const lignes = [];
+if (
+!equipe ||
+typeof equipe !== "object"
+) {
+return "—";
+}
 
-  if (equipe.medecinReferent?.nom) {
-    lignes.push(`👨‍⚕️ ${equipe.medecinReferent.nom}`);
-  }
+const lignes = [];
 
-  if (equipe.infirmierReferent?.nom) {
-    lignes.push(`👩‍⚕️ ${equipe.infirmierReferent.nom}`);
-  }
+if (
+equipe.medecinReferent?.nom
+) {
 
-  if (equipe.interneReferent?.nom) {
-    lignes.push(`🎓 ${equipe.interneReferent.nom}`);
-  }
+lignes.push(
+`👨‍⚕️ ${equipe.medecinReferent.nom}`
+);
 
-  if (equipe.externeReferent?.nom) {
-    lignes.push(`📘 ${equipe.externeReferent.nom}`);
-  }
+}
 
-  return lignes.join('<br>');
+if (
+equipe.infirmierReferent?.nom
+) {
+
+lignes.push(
+`👩‍⚕️ ${equipe.infirmierReferent.nom}`
+);
+
+}
+
+if (
+equipe.interneReferent?.nom
+) {
+
+lignes.push(
+`🎓 ${equipe.interneReferent.nom}`
+);
+
+}
+
+if (
+equipe.externeReferent?.nom
+) {
+
+lignes.push(
+`📘 ${equipe.externeReferent.nom}`
+);
+
+}
+
+return lignes.length
+? lignes.join("<br>")
+: "—";
+
 }
 function applyFilters() {
   const gravite = filterGravite.value.toLowerCase();

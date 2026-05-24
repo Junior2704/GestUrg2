@@ -911,144 +911,549 @@ window.masquerLoader = function() {
     if (el) el.textContent = val;
   }
 
+let patientsCache = new Map();
+function patientHash(data, hosp) {
+  return JSON.stringify({
+    nom: data.nom,
+    prenom: data.prenom,
+    position: data.position,
+    pdc: data.pdcStatut,
+    vigilances: data.vigilances,
+    equipe: data.equipe,
+    gravite: hosp.gravite,
+    motif: hosp.motif,
+    circuit: hosp.circuit
+  });
+}
 
- window.updateMedicalDashboard = async function() {
+function buildPatientRow(id, data, hosp, tempsEcoule, startMs) {
+  const tr = document.createElement("tr");
+
+  const gravite = hosp.gravite ?? "—";
+  const motif = hosp.motif ?? "—";
+  const circuit = hosp.circuit ?? "—";
+
+  const vigilance =
+    data.vigilances?.trim() || "aucune";
+
+  tr.dataset.id = id;
+
+  tr.innerHTML = `
+    <td>${data.nom || ''}</td>
+    <td>${data.prenom || ''}</td>
+    <td class="${
+      vigilance !== "aucune"
+        ? "vigilance-alert"
+        : "vigilance-none"
+    }">${vigilance}</td>
+
+    <td>${gravite}</td>
+    <td>${motif}</td>
+    <td>${circuit}</td>
+    <td>${data.pdcStatut || ''}</td>
+    <td>${data.position || ''}</td>
+
+    <td class="temps-ecoule"
+        data-start="${startMs || ''}">
+      ${tempsEcoule}
+    </td>
+
+    <td>${formatEquipe(data.equipe)}</td>
+  `;
+
+  tr.addEventListener("click", () => {
+    window.parent.postMessage({
+      type: "OPEN_TAB",
+      title: `Fiche Urgences ${data.nom} ${data.prenom}`,
+      url: `fiche.html?id=${id}&from=tableau`
+    }, "*");
+  });
+
+  return tr;
+}
+ window.updateMedicalDashboard = async function () {
   try {
-    afficherLoader();
-    const patientsRef = collection(db, 'patients');
-    const q = query(patientsRef, where('hospitalisationActive', '==', true));
+
+    const patientsRef = collection(db, "patients");
+    const q = query(
+      patientsRef,
+      where("hospitalisationActive", "==", true)
+    );
+
     const snapshot = await getDocs(q);
 
-    const counts = { total: 0, attente: 0, couche: 0, critique: 0, admin: 0 };
-    const circuits = { general: 0, pediatrie: 0, traumato: 0, ophtalmo: 0, gyn: 0, psy: 0 };
+    const tbody =
+      document.getElementById("patient-list");
 
-    const tbody = document.getElementById('patient-list');
-    tbody.innerHTML = '';
+    const newCache = new Map();
+
+    const counts = {
+      total: 0,
+      attente: 0,
+      couche: 0,
+      critique: 0,
+      admin: 0
+    };
+
+    const circuits = {
+      general: 0,
+      pediatrie: 0,
+      traumato: 0,
+      ophtalmo: 0,
+      gyn: 0,
+      psy: 0
+    };
+
+    const patientsToRender = [];
+
+    // -------------------
+    // Chargement données
+    // -------------------
 
     for (const docSnap of snapshot.docs) {
-      const data = docSnap.data() || {};
-      counts.total++;
 
       const id = docSnap.id;
-      const nom = data.nom || '';
-      const prenom = data.prenom || '';
-      const position = data.position || '';
-      const pdcStatut = data.pdcStatut || '';
+      const data = docSnap.data() || {};
+
+      counts.total++;
 
       let hosp = {};
+
       if (data.hospitalisationActiveId) {
-        const hospRef = doc(db, 'hospitalisations', data.hospitalisationActiveId);
-        const hospDoc = await getDoc(hospRef);
-        if (hospDoc.exists()) hosp = hospDoc.data();
+        try {
+
+          const hospRef = doc(
+            db,
+            "hospitalisations",
+            data.hospitalisationActiveId
+          );
+
+          const hospDoc =
+            await getDoc(hospRef);
+
+          if (hospDoc.exists()) {
+            hosp = hospDoc.data();
+          }
+
+        } catch {}
       }
 
-      const gravite = hosp.gravite ?? '—';
-      const motif   = hosp.motif   ?? '—';
-      const circuit = hosp.circuit ?? '—';
+      const gravite =
+        hosp.gravite ?? "—";
 
-      const gravLower = gravite.toLowerCase();
-      const circuitLower = circuit.toLowerCase();
+      const motif =
+        hosp.motif ?? "—";
 
-      if (position.toLowerCase().includes('attente')) counts.attente++;
-      if (gravLower.includes('admin')) counts.admin++;
-      if (gravLower.match(/p0|p1|p2/)) counts.couche++;
-      if (gravLower.includes('p3') || gravLower.includes('vital')) counts.critique++;
+      const circuit =
+        hosp.circuit ?? "—";
 
-      if (circuitLower.includes('ped')) circuits.pediatrie++;
-      else if (circuitLower.includes('trauma')) circuits.traumato++;
-      else if (circuitLower.includes('opht')) circuits.ophtalmo++;
-      else if (circuitLower.includes('gyn')) circuits.gyn++;
-      else if (circuitLower.includes('psy')) circuits.psy++;
-      else circuits.general++;
+      const gravLower =
+        gravite.toLowerCase();
 
-      /* ⏱ TEMPS ÉCOULÉ */
-      let tempsEcoule = '—';
+      const circuitLower =
+        circuit.toLowerCase();
+
+      const position =
+        data.position || "";
+
+      if (
+        position
+          .toLowerCase()
+          .includes("attente")
+      ) {
+        counts.attente++;
+      }
+
+      if (
+        gravLower.includes("admin")
+      ) {
+        counts.admin++;
+      }
+
+      if (
+        gravLower.match(/p0|p1|p2/)
+      ) {
+        counts.couche++;
+      }
+
+      if (
+        gravLower.includes("p3") ||
+        gravLower.includes("vital")
+      ) {
+        counts.critique++;
+      }
+
+      if (
+        circuitLower.includes("ped")
+      ) {
+        circuits.pediatrie++;
+      } else if (
+        circuitLower.includes("trauma")
+      ) {
+        circuits.traumato++;
+      } else if (
+        circuitLower.includes("opht")
+      ) {
+        circuits.ophtalmo++;
+      } else if (
+        circuitLower.includes("gyn")
+      ) {
+        circuits.gyn++;
+      } else if (
+        circuitLower.includes("psy")
+      ) {
+        circuits.psy++;
+      } else {
+        circuits.general++;
+      }
+
+      // Temps écoulé
+
       let startMs = null;
 
       if (hosp.dateDebut) {
-        if (hosp.dateDebut.seconds) {
-          // Firestore Timestamp
-          startMs = hosp.dateDebut.seconds * 1000;
-        } else if (typeof hosp.dateDebut === 'number') {
-          startMs = hosp.dateDebut;
-        } else if (typeof hosp.dateDebut === 'string') {
-          const parts = hosp.dateDebut.split(' ');
-          if (parts.length === 2) {
-            const [d, m, y] = parts[0].split('/');
-            const [hh, mm, ss] = parts[1].split(':');
-            startMs = new Date(y, m - 1, d, hh, mm, ss).getTime();
+
+        if (
+          hosp.dateDebut.seconds
+        ) {
+          startMs =
+            hosp.dateDebut.seconds *
+            1000;
+
+        } else if (
+          typeof hosp.dateDebut ===
+          "number"
+        ) {
+
+          startMs =
+            hosp.dateDebut;
+
+        } else if (
+          typeof hosp.dateDebut ===
+          "string"
+        ) {
+
+          const [
+            date,
+            heure
+          ] =
+            hosp.dateDebut.split(
+              " "
+            );
+
+          if (
+            date &&
+            heure
+          ) {
+
+            const [
+              d,
+              m,
+              y
+            ] =
+              date.split(
+                "/"
+              );
+
+            const [
+              hh,
+              mm,
+              ss
+            ] =
+              heure.split(
+                ":"
+              );
+
+            startMs =
+              new Date(
+                y,
+                m - 1,
+                d,
+                hh,
+                mm,
+                ss
+              ).getTime();
+
           }
+
         }
+
       }
+
+      let tempsEcoule = "—";
 
       if (startMs) {
-        const diffMs = Date.now() - startMs;
-        const h = Math.floor(diffMs / 3600000);
-        const m = Math.floor((diffMs % 3600000) / 60000);
-        tempsEcoule = `${h}h ${m}m`;
+
+        const diff =
+          Date.now() -
+          startMs;
+
+        const h =
+          Math.floor(
+            diff /
+            3600000
+          );
+
+        const m =
+          Math.floor(
+            (
+              diff %
+              3600000
+            ) /
+            60000
+          );
+
+        tempsEcoule =
+          `${h}h ${m}m`;
       }
 
-      /* VIGILANCES */
-      const vigilances = data.vigilances?.trim() || 'aucune';
-      const vigilanceClass = vigilances !== 'aucune' ? 'vigilance-alert' : 'vigilance-none';
+      const hash =
+        JSON.stringify({
+          nom:
+            data.nom,
+          prenom:
+            data.prenom,
+          position:
+            data.position,
+          pdc:
+            data.pdcStatut,
+          vigilances:
+            data.vigilances,
+          equipe:
+            data.equipe,
+          gravite,
+          motif,
+          circuit
+        });
 
-      const tr = document.createElement('tr');
+      newCache.set(
+        id,
+        hash
+      );
 
-      /* 🎨 Couleurs gravité */
-      if (gravLower.includes('p3') || gravLower.includes('vital')) tr.classList.add('grav-p3');
-      else if (gravLower.includes('p2')) tr.classList.add('grav-p2');
-      else if (gravLower.includes('p1')) tr.classList.add('grav-p1');
-      else if (gravLower.includes('p0') || gravLower.includes('admin') || gravLower.includes('relatif'))
-        tr.classList.add('grav-p0');
-
-      /* PDC */
-      if (pdcStatut.toLowerCase().includes('oui')) tr.classList.add('pdc-oui');
-      else if (pdcStatut.toLowerCase().includes('non')) tr.classList.add('pdc-non');
-
-      tr.innerHTML = `
-        <td>${nom}</td>
-        <td>${prenom}</td>
-        <td class="${vigilanceClass}">${vigilances}</td>
-        <td>${gravite}</td>
-        <td>${motif}</td>
-        <td>${circuit}</td>
-        <td>${pdcStatut}</td>
-        <td>${position}</td>
-        <td class="temps-ecoule" data-start="${startMs || ''}">${tempsEcoule}</td>
-        <td>${formatEquipe(data.equipe)}</td>
-      `;
-
-      tr.setAttribute('data-temps', Math.floor(startMs / 1000) || 0);
-      tr.setAttribute('data-equipe', JSON.stringify(data.equipe || {}));
-
-      tr.addEventListener('click', () => {
-        window.parent.postMessage({
-          type: "OPEN_TAB",
-          title: `Fiche Urgences ${nom} ${prenom}`,
-          url: `fiche.html?id=${id}&from=tableau`
-        }, "*");
+      patientsToRender.push({
+        id,
+        data,
+        hosp,
+        gravite,
+        motif,
+        circuit,
+        startMs,
+        tempsEcoule,
+        hash
       });
-
-      tbody.appendChild(tr);
     }
 
-    setVal('total', counts.total);
-    setVal('attente', counts.attente);
-    setVal('pec', Math.max(counts.total - counts.attente, 0));
-    setVal('critique', counts.critique);
-    setVal('couche', counts.couche);
-    setVal('admin', counts.admin);
+    // -------------------
+    // Mise à jour DOM
+    // -------------------
 
-    Object.keys(circuits).forEach(c =>
-      setVal(`circuit-${c}`, circuits[c])
+    for (
+      const p
+      of patientsToRender
+    ) {
+
+      const existing =
+        tbody.querySelector(
+          `[data-id="${p.id}"]`
+        );
+
+      const changed =
+        patientsCache.get(
+          p.id
+        ) !== p.hash;
+
+      if (
+        !existing ||
+        changed
+      ) {
+
+        const tr =
+          document.createElement(
+            "tr"
+          );
+
+        tr.dataset.id =
+          p.id;
+
+        const vigilance =
+          p.data
+            .vigilances
+            ?.trim() ||
+          "aucune";
+
+        if (
+          p.gravite
+            .toLowerCase()
+            .includes(
+              "p3"
+            )
+        )
+          tr.classList.add(
+            "grav-p3"
+          );
+
+        tr.innerHTML = `
+<td>${p.data.nom || ''}</td>
+<td>${p.data.prenom || ''}</td>
+<td class="${
+  vigilance !== "aucune"
+    ? "vigilance-alert"
+    : "vigilance-none"
+}">
+${vigilance}
+</td>
+
+<td>${p.gravite}</td>
+<td>${p.motif}</td>
+<td>${p.circuit}</td>
+
+<td>
+${p.data.pdcStatut || ''}
+</td>
+
+<td>
+${p.data.position || ''}
+</td>
+
+<td
+class="temps-ecoule"
+data-start="${p.startMs || ''}"
+>
+${p.tempsEcoule}
+</td>
+
+<td>
+${formatEquipe(
+  p.data.equipe
+)}
+</td>
+`;
+
+        tr.addEventListener(
+          "click",
+          () => {
+
+            window.parent.postMessage(
+              {
+                type:
+                  "OPEN_TAB",
+
+                title:
+                  `Fiche Urgences ${p.data.nom} ${p.data.prenom}`,
+
+                url:
+                  `fiche.html?id=${p.id}&from=tableau`
+              },
+              "*"
+            );
+
+          }
+        );
+
+        if (
+          existing
+        ) {
+          existing.replaceWith(
+            tr
+          );
+        } else {
+          tbody.appendChild(
+            tr
+          );
+        }
+
+      }
+
+    }
+
+    // Suppression patients sortis
+
+    for (
+      const [
+        oldId
+      ]
+      of patientsCache
+    ) {
+
+      if (
+        !newCache.has(
+          oldId
+        )
+      ) {
+
+        tbody
+          .querySelector(
+            `[data-id="${oldId}"]`
+          )
+          ?.remove();
+
+      }
+
+    }
+
+    patientsCache =
+      newCache;
+
+    // Dashboard
+
+    setVal(
+      "total",
+      counts.total
+    );
+
+    setVal(
+      "attente",
+      counts.attente
+    );
+
+    setVal(
+      "pec",
+      Math.max(
+        counts.total -
+        counts.attente,
+        0
+      )
+    );
+
+    setVal(
+      "critique",
+      counts.critique
+    );
+
+    setVal(
+      "couche",
+      counts.couche
+    );
+
+    setVal(
+      "admin",
+      counts.admin
+    );
+
+    Object.keys(
+      circuits
+    ).forEach(
+      c =>
+        setVal(
+          `circuit-${c}`,
+          circuits[c]
+        )
     );
 
     applyFilters();
-masquerLoader();
+
+    masquerLoader();
+
   } catch (err) {
-    console.error('❌ Erreur updateMedicalDashboard :', err);
+
+    console.error(
+      "Erreur dashboard",
+      err
+    );
+
   }
-}
+};
 
 window.refreshTempsEcoule = function() {
   const now = Date.now();

@@ -973,58 +973,63 @@ function patientHash(data, hosp) {
 }
 
 function buildPatientRow(id, data, hosp, tempsEcoule, startMs) {
-  const tr = document.createElement("tr");
 
-  const gravite = hosp.gravite ?? "—";
-  const motif = hosp.motif ?? "—";
-  const circuit = hosp.circuit ?? "—";
+const tr =
+document.createElement("tr");
 
-  const vigilance =
-    data.vigilances?.trim() || "aucune";
+const vigilance =
+data.vigilances?.trim()
+|| "aucune";
 
-  tr.dataset.id = id;
+tr.dataset.id=id;
 
-  tr.innerHTML = `
-    <td>${data.nom || ''}</td>
-    <td>${data.prenom || ''}</td>
-    <td class="${
-      vigilance !== "aucune"
-        ? "vigilance-alert"
-        : "vigilance-none"
-    }">${vigilance}</td>
+tr.innerHTML=`
 
-    <td>${gravite}</td>
-    <td>${motif}</td>
-    <td>${circuit}</td>
-    <td>${data.pdcStatut || ''}</td>
-    <td>${data.position || ''}</td>
+<td>${data.nom||""}</td>
 
-  <td
+<td>${data.prenom||""}</td>
+
+<td class="${
+vigilance!=="aucune"
+?
+"vigilance-alert"
+:
+"vigilance-none"
+}">
+${vigilance}
+</td>
+
+<td>${hosp?.gravite||"—"}</td>
+
+<td>${hosp?.motif||"—"}</td>
+
+<td>${hosp?.circuit||"—"}</td>
+
+<td>${data.pdcStatut||""}</td>
+
+<td>${data.position||""}</td>
+
+<td
 class="temps-ecoule"
-data-start="${p.startMs || ''}"
+data-start="${startMs||""}"
 >
-${p.startMs ? p.temps : "—"}
+${tempsEcoule||"—"}
 </td>
 
 <td>
 ${formatEquipe(
-p.hosp?.equipe ||
-p.data?.equipe ||
+hosp?.equipe
+||
 {}
 )}
 </td>
-  `;
 
-  tr.addEventListener("click", () => {
-    window.parent.postMessage({
-      type: "OPEN_TAB",
-      title: `Fiche Urgences ${data.nom} ${data.prenom}`,
-      url: `fiche.html?id=${id}&from=tableau`
-    }, "*");
-  });
+`;
 
-  return tr;
-}window.updateMedicalDashboard = async function () {
+return tr;
+
+}
+window.updateMedicalDashboard = async function () {
 
 try {
 

@@ -999,12 +999,20 @@ function buildPatientRow(id, data, hosp, tempsEcoule, startMs) {
     <td>${data.pdcStatut || ''}</td>
     <td>${data.position || ''}</td>
 
-    <td class="temps-ecoule"
-        data-start="${startMs || ''}">
-      ${tempsEcoule}
-    </td>
+  <td
+class="temps-ecoule"
+data-start="${p.startMs || ''}"
+>
+${p.startMs ? p.temps : "—"}
+</td>
 
-    <td>${formatEquipe(data.equipe)}</td>
+<td>
+${formatEquipe(
+p.hosp?.equipe ||
+p.data?.equipe ||
+{}
+)}
+</td>
   `;
 
   tr.addEventListener("click", () => {
@@ -1332,6 +1340,7 @@ hash
 rows.push({
 id,
 data,
+hosp,
 gravite,
 motif,
 circuit,
@@ -1519,9 +1528,9 @@ ${vigilance}
 
 <td
 class="temps-ecoule"
-data-start="${p.startMs||''}"
+data-start="${p.startMs || ''}"
 >
-${p.temps}
+${p.startMs ? p.temps : "—"}
 </td>
 
 <td>
@@ -1675,16 +1684,16 @@ document
 .querySelectorAll(
 ".temps-ecoule"
 )
-.forEach(td => {
+.forEach(td=>{
 
 const start =
 Number(
 td.dataset.start
 );
 
-if (
+if(
 !start
-) {
+){
 
 td.textContent =
 "—";
@@ -1694,31 +1703,31 @@ return;
 }
 
 const diff =
-now - start;
+now -
+start;
 
-const h =
+const heures =
 Math.floor(
 diff /
 3600000
 );
 
-const m =
+const minutes =
 Math.floor(
 (
 diff %
 3600000
 )
-/60000
+/
+60000
 );
 
 td.textContent =
-`${h}h ${m}m`;
+`${heures}h ${minutes}m`;
 
 });
 
-}
-
-
+};
 function isPhaseAttente(pdcStatut) {
   if (!pdcStatut) return true;
 

@@ -1115,16 +1115,7 @@ data.hospitalisationActiveId
 if (
 hospDoc.exists()
 ) {
-
 hosp = hospDoc.data();
-console.log("================================");
-  console.log("PATIENT :", data.nom, data.prenom);
-  console.log("HOSPITALISATION :", hosp);
-
-  console.log("dateDebut =", hosp.dateDebut);
-  console.log("type =", typeof hosp.dateDebut);
-
-
 }
 
 }
@@ -1267,9 +1258,6 @@ circuits.general++;
 
 let startMs = null;
 
-console.log("----- CALCUL TEMPS -----");
-console.log("hosp.dateDebut =", hosp.dateDebut);
-
 if (hosp?.dateDebut) {
 
   // Timestamp Firebase
@@ -1277,8 +1265,7 @@ if (hosp?.dateDebut) {
 
     startMs = hosp.dateDebut.seconds * 1000;
 
-    console.log("✅ timestamp firebase détecté");
-    console.log("startMs =", startMs);
+
 
   }
 
@@ -1287,23 +1274,19 @@ if (hosp?.dateDebut) {
 
     startMs = hosp.dateDebut;
 
-    console.log("✅ timestamp numérique détecté");
-    console.log("startMs =", startMs);
 
   }
 
   // string FR
   else if (typeof hosp.dateDebut === "string") {
 
-    console.log("📅 parsing string FR");
+  
 
     try {
 
       const [datePart, timePart] =
         hosp.dateDebut.trim().split(" ");
 
-      console.log("datePart =", datePart);
-      console.log("timePart =", timePart);
 
       if (datePart && timePart) {
 
@@ -1313,14 +1296,7 @@ if (hosp?.dateDebut) {
         const [heure, minute, seconde] =
           timePart.split(":");
 
-        console.log({
-          jour,
-          mois,
-          annee,
-          heure,
-          minute,
-          seconde
-        });
+      
 
         const dateObj = new Date(
           Number(annee),
@@ -1331,11 +1307,11 @@ if (hosp?.dateDebut) {
           Number(seconde)
         );
 
-        console.log("dateObj =", dateObj);
+       
 
         startMs = dateObj.getTime();
 
-        console.log("✅ startMs converti =", startMs);
+        
 
       }
 
@@ -1349,7 +1325,7 @@ if (hosp?.dateDebut) {
 
 }
 
-console.log("🚨 RESULTAT FINAL startMs =", startMs);
+
 
 let temps = "—";
 
@@ -1364,7 +1340,7 @@ if (startMs) {
 
 }
 
-console.log("temps =", temps);
+
 
 /* Cache */
 
@@ -1740,25 +1716,22 @@ err
 };
 window.refreshTempsEcoule = function () {
 
-  console.clear();
-  console.log("⏱ refreshTempsEcoule lancé");
+
 
   const now = Date.now();
 
   document.querySelectorAll(".temps-ecoule").forEach((td, index) => {
 
-    console.log("--------------------------------------------------");
-    console.log(`🧍 Patient #${index + 1}`);
+  
 
     // récupération attribut HTML
     const rawStart = td.dataset.start;
 
-    console.log("📌 data-start brut =", rawStart);
 
     // aucune donnée
     if (!rawStart || rawStart === "null" || rawStart === "undefined") {
 
-      console.warn("❌ aucune date trouvée");
+   
 
       td.textContent = "—";
       return;
@@ -1774,8 +1747,6 @@ window.refreshTempsEcoule = function () {
 
       startMs = Number(rawStart);
 
-      console.log("✅ timestamp numérique détecté");
-      console.log("🕒 startMs =", startMs);
 
     }
 
@@ -1786,14 +1757,12 @@ window.refreshTempsEcoule = function () {
 
     else {
 
-      console.log("📅 tentative parsing date FR");
 
       try {
 
         const [datePart, timePart] = rawStart.trim().split(" ");
 
-        console.log("datePart =", datePart);
-        console.log("timePart =", timePart);
+   
 
         if (!datePart || !timePart) {
 
@@ -1806,13 +1775,7 @@ window.refreshTempsEcoule = function () {
         const [jour, mois, annee] = datePart.split("/");
         const [heure, minute, seconde] = timePart.split(":");
 
-        console.log("jour =", jour);
-        console.log("mois =", mois);
-        console.log("annee =", annee);
-
-        console.log("heure =", heure);
-        console.log("minute =", minute);
-        console.log("seconde =", seconde);
+    
 
         const dateObj = new Date(
           Number(annee),
@@ -1823,11 +1786,11 @@ window.refreshTempsEcoule = function () {
           Number(seconde)
         );
 
-        console.log("📅 dateObj =", dateObj);
+   
 
         startMs = dateObj.getTime();
 
-        console.log("🕒 startMs converti =", startMs);
+       
 
       } catch (err) {
 
@@ -1856,8 +1819,6 @@ window.refreshTempsEcoule = function () {
 
     const diff = now - startMs;
 
-    console.log("⌛ diff ms =", diff);
-
     if (diff < 0) {
 
       console.warn("⚠ date future détectée");
@@ -1870,9 +1831,7 @@ window.refreshTempsEcoule = function () {
     const heures = Math.floor((diff % 86400000) / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
 
-    console.log("📊 jours =", jours);
-    console.log("📊 heures =", heures);
-    console.log("📊 minutes =", minutes);
+
 
     /* =========================================
        AFFICHAGE
@@ -1892,7 +1851,7 @@ window.refreshTempsEcoule = function () {
 
     td.textContent = affichage;
 
-    console.log("✅ affichage final =", affichage);
+
 
     /* =========================================
        COULEURS
@@ -1903,32 +1862,31 @@ window.refreshTempsEcoule = function () {
     if (jours >= 1 || heures >= 8) {
 
       td.style.color = "#b71c1c";
-      console.log("🔴 couleur rouge");
+      
 
     }
     else if (heures >= 4) {
 
       td.style.color = "#ef6c00";
-      console.log("🟠 couleur orange");
+     
 
     }
     else if (heures >= 2) {
 
       td.style.color = "#f9a825";
-      console.log("🟡 couleur jaune");
+     
 
     }
     else {
 
       td.style.color = "#2e7d32";
-      console.log("🟢 couleur verte");
+      
 
     }
 
   });
 
-  console.log("✅ refreshTempsEcoule terminé");
-
+ 
 };
 
 function isPhaseAttente(pdcStatut) {

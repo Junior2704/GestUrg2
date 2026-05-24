@@ -1116,8 +1116,14 @@ if (
 hospDoc.exists()
 ) {
 
-hosp =
-hospDoc.data();
+hosp = hospDoc.data();
+console.log("================================");
+  console.log("PATIENT :", data.nom, data.prenom);
+  console.log("HOSPITALISATION :", hosp);
+
+  console.log("dateDebut =", hosp.dateDebut);
+  console.log("type =", typeof hosp.dateDebut);
+
 
 }
 
@@ -1255,58 +1261,110 @@ circuits.general++;
 
 }
 
+/* ==========================
+   TEMPS ÉCOULÉ
+========================== */
 
-/* Temps */
+let startMs = null;
 
-let startMs =
-null;
+console.log("----- CALCUL TEMPS -----");
+console.log("hosp.dateDebut =", hosp.dateDebut);
 
-if (
-hosp.dateDebut
-) {
+if (hosp?.dateDebut) {
 
-if (
-hosp.dateDebut
-.seconds
-) {
+  // Timestamp Firebase
+  if (hosp.dateDebut.seconds) {
 
-startMs =
-hosp.dateDebut.seconds
-*
-1000;
+    startMs = hosp.dateDebut.seconds * 1000;
+
+    console.log("✅ timestamp firebase détecté");
+    console.log("startMs =", startMs);
+
+  }
+
+  // nombre
+  else if (typeof hosp.dateDebut === "number") {
+
+    startMs = hosp.dateDebut;
+
+    console.log("✅ timestamp numérique détecté");
+    console.log("startMs =", startMs);
+
+  }
+
+  // string FR
+  else if (typeof hosp.dateDebut === "string") {
+
+    console.log("📅 parsing string FR");
+
+    try {
+
+      const [datePart, timePart] =
+        hosp.dateDebut.trim().split(" ");
+
+      console.log("datePart =", datePart);
+      console.log("timePart =", timePart);
+
+      if (datePart && timePart) {
+
+        const [jour, mois, annee] =
+          datePart.split("/");
+
+        const [heure, minute, seconde] =
+          timePart.split(":");
+
+        console.log({
+          jour,
+          mois,
+          annee,
+          heure,
+          minute,
+          seconde
+        });
+
+        const dateObj = new Date(
+          Number(annee),
+          Number(mois) - 1,
+          Number(jour),
+          Number(heure),
+          Number(minute),
+          Number(seconde)
+        );
+
+        console.log("dateObj =", dateObj);
+
+        startMs = dateObj.getTime();
+
+        console.log("✅ startMs converti =", startMs);
+
+      }
+
+    } catch (err) {
+
+      console.error("❌ erreur parsing", err);
+
+    }
+
+  }
 
 }
-else if (
-typeof
-hosp.dateDebut
-===
-"number"
-) {
 
-startMs =
-hosp.dateDebut;
+console.log("🚨 RESULTAT FINAL startMs =", startMs);
 
-}
+let temps = "—";
 
-}
+if (startMs) {
 
-let temps =
-"—";
+  const diff = Date.now() - startMs;
 
-if (
-startMs
-) {
+  const heures = Math.floor(diff / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
 
-const diff =
-Date.now()
--
-startMs;
-
-temps =
-`${Math.floor(diff/3600000)}h ${Math.floor((diff%3600000)/60000)}m`;
+  temps = `${heures}h ${minutes}m`;
 
 }
 
+console.log("temps =", temps);
 
 /* Cache */
 

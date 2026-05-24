@@ -970,489 +970,656 @@ function buildPatientRow(id, data, hosp, tempsEcoule, startMs) {
   });
 
   return tr;
+}window.updateMedicalDashboard = async function () {
+
+try {
+
+const patientsRef =
+collection(db,"patients");
+
+const q =
+query(
+patientsRef,
+where(
+"hospitalisationActive",
+"==",
+true
+)
+);
+
+const snapshot =
+await getDocs(q);
+
+const tbody =
+document.getElementById(
+"patient-list"
+);
+
+const newCache =
+new Map();
+
+const counts = {
+total:0,
+attente:0,
+couche:0,
+critique:0,
+admin:0
+};
+
+const circuits = {
+general:0,
+pediatrie:0,
+traumato:0,
+ophtalmo:0,
+gyn:0,
+psy:0
+};
+
+const rows = [];
+
+
+/* ==========================
+Préparation données
+========================== */
+
+for (
+const docSnap
+of snapshot.docs
+) {
+
+const id =
+docSnap.id;
+
+const data =
+docSnap.data() ||
+{};
+
+counts.total++;
+
+let hosp = {};
+
+if (
+data.hospitalisationActiveId
+) {
+
+try {
+
+const hospDoc =
+await getDoc(
+doc(
+db,
+"hospitalisations",
+data.hospitalisationActiveId
+)
+);
+
+if (
+hospDoc.exists()
+) {
+
+hosp =
+hospDoc.data();
+
 }
- window.updateMedicalDashboard = async function () {
-  try {
 
-    const patientsRef = collection(db, "patients");
-    const q = query(
-      patientsRef,
-      where("hospitalisationActive", "==", true)
-    );
+}
+catch {}
 
-    const snapshot = await getDocs(q);
+}
 
-    const tbody =
-      document.getElementById("patient-list");
+const gravite =
+hosp.gravite
+?? "—";
 
-    const newCache = new Map();
+const motif =
+hosp.motif
+?? "—";
 
-    const counts = {
-      total: 0,
-      attente: 0,
-      couche: 0,
-      critique: 0,
-      admin: 0
-    };
+const circuit =
+hosp.circuit
+?? "—";
 
-    const circuits = {
-      general: 0,
-      pediatrie: 0,
-      traumato: 0,
-      ophtalmo: 0,
-      gyn: 0,
-      psy: 0
-    };
+const position =
+data.position
+|| "";
 
-    const patientsToRender = [];
+const pdc =
+data.pdcStatut
+|| "";
 
-    // -------------------
-    // Chargement données
-    // -------------------
+const gravLower =
+gravite
+.toLowerCase();
 
-    for (const docSnap of snapshot.docs) {
+const circuitLower =
+circuit
+.toLowerCase();
 
-      const id = docSnap.id;
-      const data = docSnap.data() || {};
 
-      counts.total++;
+/* Dashboard */
 
-      let hosp = {};
+if (
+position
+.toLowerCase()
+.includes(
+"attente"
+)
+) {
+counts.attente++;
+}
 
-      if (data.hospitalisationActiveId) {
-        try {
+if (
+gravLower
+.includes(
+"admin"
+)
+) {
+counts.admin++;
+}
 
-          const hospRef = doc(
-            db,
-            "hospitalisations",
-            data.hospitalisationActiveId
-          );
+if (
+gravLower.match(
+/p0|p1|p2/
+)
+) {
+counts.couche++;
+}
 
-          const hospDoc =
-            await getDoc(hospRef);
+if (
+gravLower.includes(
+"p3"
+)
+||
+gravLower.includes(
+"vital"
+)
+) {
+counts.critique++;
+}
 
-          if (hospDoc.exists()) {
-            hosp = hospDoc.data();
-          }
 
-        } catch {}
-      }
+/* Circuits */
 
-      const gravite =
-        hosp.gravite ?? "—";
+if (
+circuitLower
+.includes(
+"ped"
+)
+) {
 
-      const motif =
-        hosp.motif ?? "—";
+circuits.pediatrie++;
 
-      const circuit =
-        hosp.circuit ?? "—";
+}
+else if (
+circuitLower
+.includes(
+"trauma"
+)
+) {
 
-      const gravLower =
-        gravite.toLowerCase();
+circuits.traumato++;
 
-      const circuitLower =
-        circuit.toLowerCase();
+}
+else if (
+circuitLower
+.includes(
+"opht"
+)
+) {
 
-      const position =
-        data.position || "";
+circuits.ophtalmo++;
 
-      if (
-        position
-          .toLowerCase()
-          .includes("attente")
-      ) {
-        counts.attente++;
-      }
+}
+else if (
+circuitLower
+.includes(
+"gyn"
+)
+) {
 
-      if (
-        gravLower.includes("admin")
-      ) {
-        counts.admin++;
-      }
+circuits.gyn++;
 
-      if (
-        gravLower.match(/p0|p1|p2/)
-      ) {
-        counts.couche++;
-      }
+}
+else if (
+circuitLower
+.includes(
+"psy"
+)
+) {
 
-      if (
-        gravLower.includes("p3") ||
-        gravLower.includes("vital")
-      ) {
-        counts.critique++;
-      }
+circuits.psy++;
 
-      if (
-        circuitLower.includes("ped")
-      ) {
-        circuits.pediatrie++;
-      } else if (
-        circuitLower.includes("trauma")
-      ) {
-        circuits.traumato++;
-      } else if (
-        circuitLower.includes("opht")
-      ) {
-        circuits.ophtalmo++;
-      } else if (
-        circuitLower.includes("gyn")
-      ) {
-        circuits.gyn++;
-      } else if (
-        circuitLower.includes("psy")
-      ) {
-        circuits.psy++;
-      } else {
-        circuits.general++;
-      }
+}
+else {
 
-      // Temps écoulé
+circuits.general++;
 
-      let startMs = null;
+}
 
-      if (hosp.dateDebut) {
 
-        if (
-          hosp.dateDebut.seconds
-        ) {
-          startMs =
-            hosp.dateDebut.seconds *
-            1000;
+/* Temps */
 
-        } else if (
-          typeof hosp.dateDebut ===
-          "number"
-        ) {
+let startMs =
+null;
 
-          startMs =
-            hosp.dateDebut;
+if (
+hosp.dateDebut
+) {
 
-        } else if (
-          typeof hosp.dateDebut ===
-          "string"
-        ) {
+if (
+hosp.dateDebut
+.seconds
+) {
 
-          const [
-            date,
-            heure
-          ] =
-            hosp.dateDebut.split(
-              " "
-            );
+startMs =
+hosp.dateDebut.seconds
+*
+1000;
 
-          if (
-            date &&
-            heure
-          ) {
+}
+else if (
+typeof
+hosp.dateDebut
+===
+"number"
+) {
 
-            const [
-              d,
-              m,
-              y
-            ] =
-              date.split(
-                "/"
-              );
+startMs =
+hosp.dateDebut;
 
-            const [
-              hh,
-              mm,
-              ss
-            ] =
-              heure.split(
-                ":"
-              );
+}
 
-            startMs =
-              new Date(
-                y,
-                m - 1,
-                d,
-                hh,
-                mm,
-                ss
-              ).getTime();
+}
 
-          }
+let temps =
+"—";
 
-        }
+if (
+startMs
+) {
 
-      }
+const diff =
+Date.now()
+-
+startMs;
 
-      let tempsEcoule = "—";
+temps =
+`${Math.floor(diff/3600000)}h ${Math.floor((diff%3600000)/60000)}m`;
 
-      if (startMs) {
+}
 
-        const diff =
-          Date.now() -
-          startMs;
 
-        const h =
-          Math.floor(
-            diff /
-            3600000
-          );
+/* Cache */
 
-        const m =
-          Math.floor(
-            (
-              diff %
-              3600000
-            ) /
-            60000
-          );
+const hash =
+JSON.stringify({
 
-        tempsEcoule =
-          `${h}h ${m}m`;
-      }
+nom:
+data.nom,
 
-      const hash =
-        JSON.stringify({
-          nom:
-            data.nom,
-          prenom:
-            data.prenom,
-          position:
-            data.position,
-          pdc:
-            data.pdcStatut,
-          vigilances:
-            data.vigilances,
-          equipe:
-            data.equipe,
-          gravite,
-          motif,
-          circuit
-        });
+prenom:
+data.prenom,
 
-      newCache.set(
-        id,
-        hash
-      );
+position,
 
-      patientsToRender.push({
-        id,
-        data,
-        hosp,
-        gravite,
-        motif,
-        circuit,
-        startMs,
-        tempsEcoule,
-        hash
-      });
-    }
+pdc,
 
-    // -------------------
-    // Mise à jour DOM
-    // -------------------
+gravite,
 
-    for (
-      const p
-      of patientsToRender
-    ) {
+motif,
 
-      const existing =
-        tbody.querySelector(
-          `[data-id="${p.id}"]`
-        );
+circuit,
 
-      const changed =
-        patientsCache.get(
-          p.id
-        ) !== p.hash;
+vigilances:
+data.vigilances,
 
-      if (
-        !existing ||
-        changed
-      ) {
+equipe:
+data.equipe
 
-        const tr =
-          document.createElement(
-            "tr"
-          );
+});
 
-        tr.dataset.id =
-          p.id;
+newCache.set(
+id,
+hash
+);
 
-        const vigilance =
-          p.data
-            .vigilances
-            ?.trim() ||
-          "aucune";
+rows.push({
+id,
+data,
+gravite,
+motif,
+circuit,
+position,
+pdc,
+startMs,
+temps,
+hash
+});
 
-        if (
-          p.gravite
-            .toLowerCase()
-            .includes(
-              "p3"
-            )
-        )
-          tr.classList.add(
-            "grav-p3"
-          );
+}
 
-        tr.innerHTML = `
-<td>${p.data.nom || ''}</td>
-<td>${p.data.prenom || ''}</td>
-<td class="${
-  vigilance !== "aucune"
-    ? "vigilance-alert"
-    : "vigilance-none"
-}">
+
+/* ==========================
+MAJ DOM
+========================== */
+
+for (
+const p
+of rows
+) {
+
+const existing =
+tbody.querySelector(
+`[data-id="${p.id}"]`
+);
+
+const changed =
+patientsCache.get(
+p.id
+)
+!== p.hash;
+
+if (
+existing &&
+!changed
+) {
+continue;
+}
+
+const tr =
+document.createElement(
+"tr"
+);
+
+tr.dataset.id =
+p.id;
+
+const grav =
+p.gravite
+.toLowerCase();
+
+
+if (
+grav.includes("p3")
+||
+grav.includes("vital")
+)
+tr.classList.add(
+"grav-p3"
+);
+
+else if (
+grav.includes(
+"p2"
+)
+)
+tr.classList.add(
+"grav-p2"
+);
+
+else if (
+grav.includes(
+"p1"
+)
+)
+tr.classList.add(
+"grav-p1"
+);
+
+else if (
+grav.includes(
+"p0"
+)
+||
+grav.includes(
+"admin"
+)
+)
+tr.classList.add(
+"grav-p0"
+);
+
+
+/* PDC */
+
+if (
+p.pdc
+.toLowerCase()
+.includes(
+"oui"
+)
+)
+tr.classList.add(
+"pdc-oui"
+);
+
+else if (
+p.pdc
+.toLowerCase()
+.includes(
+"non"
+)
+)
+tr.classList.add(
+"pdc-non"
+);
+
+
+/* Vigilance */
+
+const vigilance =
+p.data
+.vigilances
+?.trim()
+||
+"aucune";
+
+const vigilanceClass =
+
+vigilance
+!==
+"aucune"
+
+?
+
+"vigilance-alert"
+
+:
+
+"vigilance-none";
+
+
+/* équipe */
+
+tr.setAttribute(
+"data-equipe",
+
+JSON.stringify(
+p.data
+.equipe
+||
+{}
+)
+);
+
+tr.setAttribute(
+"data-temps",
+
+Math.floor(
+(
+p.startMs
+||
+0
+)
+/1000
+)
+);
+
+tr.innerHTML = `
+
+<td>${p.data.nom||''}</td>
+
+<td>${p.data.prenom||''}</td>
+
+<td class="${vigilanceClass}">
 ${vigilance}
 </td>
 
 <td>${p.gravite}</td>
+
 <td>${p.motif}</td>
+
 <td>${p.circuit}</td>
 
-<td>
-${p.data.pdcStatut || ''}
-</td>
+<td>${p.pdc}</td>
 
-<td>
-${p.data.position || ''}
-</td>
+<td>${p.position}</td>
 
 <td
 class="temps-ecoule"
-data-start="${p.startMs || ''}"
+data-start="${p.startMs||''}"
 >
-${p.tempsEcoule}
+${p.temps}
 </td>
 
 <td>
 ${formatEquipe(
-  p.data.equipe
+p.data.equipe
 )}
 </td>
+
 `;
 
-        tr.addEventListener(
-          "click",
-          () => {
+tr.addEventListener(
+"click",
+() => {
 
-            window.parent.postMessage(
-              {
-                type:
-                  "OPEN_TAB",
+window.parent.postMessage({
 
-                title:
-                  `Fiche Urgences ${p.data.nom} ${p.data.prenom}`,
+type:
+"OPEN_TAB",
 
-                url:
-                  `fiche.html?id=${p.id}&from=tableau`
-              },
-              "*"
-            );
+title:
+`Fiche Urgences ${p.data.nom} ${p.data.prenom}`,
 
-          }
-        );
+url:
+`fiche.html?id=${p.id}&from=tableau`
 
-        if (
-          existing
-        ) {
-          existing.replaceWith(
-            tr
-          );
-        } else {
-          tbody.appendChild(
-            tr
-          );
-        }
+},"*");
 
-      }
+}
+);
 
-    }
+if (
+existing
+) {
 
-    // Suppression patients sortis
+existing.replaceWith(
+tr
+);
 
-    for (
-      const [
-        oldId
-      ]
-      of patientsCache
-    ) {
+}
+else {
 
-      if (
-        !newCache.has(
-          oldId
-        )
-      ) {
+tbody.appendChild(
+tr
+);
 
-        tbody
-          .querySelector(
-            `[data-id="${oldId}"]`
-          )
-          ?.remove();
+}
 
-      }
+}
 
-    }
 
-    patientsCache =
-      newCache;
+/* suppression */
 
-    // Dashboard
+for (
+const [
+oldId
+]
+of patientsCache
+) {
 
-    setVal(
-      "total",
-      counts.total
-    );
+if (
+!newCache.has(
+oldId
+)
+) {
 
-    setVal(
-      "attente",
-      counts.attente
-    );
+tbody
+.querySelector(
+`[data-id="${oldId}"]`
+)
+?.remove();
 
-    setVal(
-      "pec",
-      Math.max(
-        counts.total -
-        counts.attente,
-        0
-      )
-    );
+}
 
-    setVal(
-      "critique",
-      counts.critique
-    );
+}
 
-    setVal(
-      "couche",
-      counts.couche
-    );
 
-    setVal(
-      "admin",
-      counts.admin
-    );
+patientsCache =
+newCache;
 
-    Object.keys(
-      circuits
-    ).forEach(
-      c =>
-        setVal(
-          `circuit-${c}`,
-          circuits[c]
-        )
-    );
 
-    applyFilters();
+/* Dashboard */
 
-    masquerLoader();
+setVal(
+"total",
+counts.total
+);
 
-  } catch (err) {
+setVal(
+"attente",
+counts.attente
+);
 
-    console.error(
-      "Erreur dashboard",
-      err
-    );
+setVal(
+"pec",
+Math.max(
+counts.total
+-
+counts.attente,
+0
+)
+);
 
-  }
+setVal(
+"critique",
+counts.critique
+);
+
+setVal(
+"couche",
+counts.couche
+);
+
+setVal(
+"admin",
+counts.admin
+);
+
+Object.keys(
+circuits
+).forEach(
+c =>
+setVal(
+`circuit-${c}`,
+circuits[c]
+)
+);
+
+applyFilters();
+
+masquerLoader();
+
+}
+catch(err){
+
+console.error(
+err
+);
+
+}
+
 };
 
 window.refreshTempsEcoule = function() {

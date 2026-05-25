@@ -5085,20 +5085,22 @@ async function getHospitalisationEnCours(patientId) {
   }
 }
 
-
 const input = document.getElementById("rechercheHistorique");
 
-// 🔥 on supprime toute logique parasite
-input.replaceWith(input.cloneNode(true));
-const cleanInput = document.getElementById("rechercheHistorique");
+input.addEventListener("input", function () {
+    const recherche = this.value.toLowerCase().trim();
 
-cleanInput.addEventListener("input", function () {
-  const recherche = this.value.toLowerCase().trim();
+    const cartes = document.querySelectorAll(
+        "#hospitalisationsContent .card"
+    );
 
-  document.querySelectorAll("#hospitalisationsContent .card")
-    .forEach(card => {
-      const texte = card.textContent.toLowerCase();
-      card.style.display = texte.includes(recherche) ? "" : "none";
+    cartes.forEach(card => {
+        const texte = card.innerText.toLowerCase();
+
+        card.style.display =
+            recherche === "" || texte.includes(recherche)
+                ? ""
+                : "none";
     });
 });
 

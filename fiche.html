@@ -4502,7 +4502,7 @@ async function chargerHistoriqueComplet() {
       contenu.appendChild(card);
       card.style.display = "";
     }
-
+filtrerHistorique();
   } catch (err) {
     console.error("Erreur chargement historique :", err);
     contenu.innerHTML = "<p>❌ Erreur lors du chargement de l'historique.</p>";
@@ -5084,26 +5084,29 @@ async function getHospitalisationEnCours(patientId) {
     return null;
   }
 }
-
 const input = document.getElementById("rechercheHistorique");
 
-input.addEventListener("input", function () {
-    const recherche = this.value.toLowerCase().trim();
+if (input) {
+  input.addEventListener("input", filtrerHistorique);
+}
+function filtrerHistorique() {
+  const input = document.getElementById("rechercheHistorique");
 
-    const cartes = document.querySelectorAll(
-        "#hospitalisationsContent .card"
-    );
+  if (!input) return;
 
-    cartes.forEach(card => {
-        const texte = card.innerText.toLowerCase();
+  const recherche = input.value.toLowerCase().trim();
 
-        card.style.display =
-            recherche === "" || texte.includes(recherche)
-                ? ""
-                : "none";
+  document
+    .querySelectorAll("#hospitalisationsContent .card")
+    .forEach(card => {
+      const texte = card.innerText.toLowerCase();
+
+      card.style.display =
+        recherche === "" || texte.includes(recherche)
+          ? ""
+          : "none";
     });
-});
-
+}
 
 
 

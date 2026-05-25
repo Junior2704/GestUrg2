@@ -3406,54 +3406,9 @@ function afficherSortieListe(sortie) {
   if (sortie.traitementSortie)
     html += `<p><strong>💊 Traitement de sortie :</strong> ${sortie.traitementSortie}</p>`;
 
-  html += `
-    <button id="btnSupprimerSortie" class="btn-id btn-id-c" style="margin-top:10px;">
-      🗑️ Supprimer
-    </button>
-  `;
+ 
 
   sortieListe.innerHTML = html;
-
-  document
-    .getElementById("btnSupprimerSortie")
-    .addEventListener("click", async () => {
-  try {
-    if (!patientId) return;
-
-    // 1️⃣ Lecture patient (LECTURE SEULE)
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-    if (!patientSnap.exists()) return;
-
-    const patient = patientSnap.data();
-
-    // 2️⃣ Déterminer l'hospitalisation cible
-    let hospitalisationId = null;
-    if (patient.hospitalisationActiveId) {
-      hospitalisationId = patient.hospitalisationActiveId;
-    } else if (Array.isArray(patient.hospitalisations) && patient.hospitalisations.length > 0) {
-      hospitalisationId = patient.hospitalisations[patient.hospitalisations.length - 1];
-    } else {
-      console.warn("Aucune hospitalisation trouvée");
-      return;
-    }
-
-    // 3️⃣ Suppression de la sortie dans hospitalisations
-    const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-    await updateDoc(hospiRef, {
-      sortie: deleteField(),
-      traitementSortie: ""
-    });
-
-    sortieListe.innerHTML = "<p>Sortie supprimée.</p>";
-    afficherBulle("🗑️ Sortie supprimée", "success");
-
-  } catch (err) {
-    console.error("Erreur suppression sortie :", err);
-    afficherBulle("❌ Erreur suppression sortie", "error");
-  }
-});
-}             
 
 
 

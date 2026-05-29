@@ -133,7 +133,7 @@ b {
 
              <div class="patient">
                 <strong>Patient :</strong> ${ord.patient.prenom} ${ord.patient.nom}<br>
-                Né(e) le : ${ord.patient.date_naissance}
+                Né(e) le : ${ord.patient.date_Naissance}
             </div>
 
             <div class="contenu">

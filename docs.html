@@ -693,48 +693,19 @@ if (data.ord) {
 
         const html = generateHTML(ord);
 
-        const container = document.createElement("div");
-        container.className = "html2pdf-container";
-        container.style.position = "fixed";
-container.style.top = "0";
-container.style.left = "0";
-container.style.width = "210mm";
-container.style.visibility = "hidden";
-container.style.pointerEvents = "none";
-container.style.zIndex = "-1";
-       const parser = new DOMParser(); const docHTML = parser.parseFromString(html, "text/html");
-        container.innerHTML = docHTML.body.innerHTML;
-        const style = docHTML.head.querySelector("style");
-         if (style) { container.prepend(style.cloneNode(true)); }
+     
 
+const container = document.createElement("div");
+container.innerHTML = html;
 
-        // 🔥 IMPORTANT
-       document.body.appendChild(container);
-
-// attendre un vrai rendu DOM
-await new Promise(resolve => requestAnimationFrame(resolve));
-await new Promise(r => setTimeout(r, 300));
 const pdfBlob = await html2pdf()
   .set({
     margin: 0,
-    html2canvas: {
-      scale: 2,
-      scrollY: 0,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    },
-    pagebreak: {
-      mode: ['css']
-    }
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   })
   .from(container)
   .outputPdf('blob');
-
-container.remove();
 
 ouvrirModal(pdfBlob);
 

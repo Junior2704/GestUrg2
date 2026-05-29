@@ -680,35 +680,61 @@ async function afficherDocuments() {
         li.querySelector(".btn-loupe")?.addEventListener("click", async () => {
 
     // 🔥 CAS 1 : nouveau système .ord
-    if (data.ord) {
+if (data.ord) {
 
-        console.log("📄 Génération PDF depuis .ord");
+    console.log("📄 ORD COMPLETE :", data);
 
-        try {
+    try {
 
-         const html = generateHTML(data.ord);
+        // 🔥 on envoie directement l'objet Firestore complet
+        const ord = data.ord;
 
-const container = document.createElement("div");
-container.innerHTML = html;
+        // 🔥 debug utile
+        console.log("👤 PATIENT :", ord.patient);
 
-const pdfBlob = await html2pdf()
-  .set({
-    margin: 0,
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  })
-  .from(container)
-  .outputPdf('blob');
+        const html = generateHTML(ord);
 
-ouvrirModal(pdfBlob);
+        const container = document.createElement("div");
+        container.className = "html2pdf-container";
+        container.innerHTML = html;
 
-        } catch (err) {
-            console.error("Erreur ordToPDF :", err);
-            afficherBulle("Erreur génération PDF", "error");
-        }
+        // 🔥 IMPORTANT
+        document.body.appendChild(container);
 
-        return;
+        const pdfBlob = await html2pdf()
+          .set({
+            margin: 0,
+            html2canvas: {
+                scale: 2,
+                scrollY: 0,
+                useCORS: true
+            },
+            jsPDF: {
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            },
+            pagebreak: {
+                mode: ['css']
+            }
+          })
+          .from(container)
+          .outputPdf('blob');
+
+        // 🔥 nettoyage
+        container.remove();
+
+        ouvrirModal(pdfBlob);
+
+    } catch (err) {
+
+        console.error("Erreur PDF :", err);
+        afficherBulle("Erreur génération PDF", "error");
+
     }
+
+    return;
+}
 
     // 🔹 CAS 2 : ancien système PDF base64
     if (data.pdfBase64) {

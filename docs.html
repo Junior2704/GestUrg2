@@ -605,9 +605,9 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     return new Blob(byteArrays, { type: contentType });
 }
 
-function ouvrirModal(blob) {
+function ouvrirModal(blob, nom) {
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    window.open(url, "Docuemnt");
 }
 
 window.fermerModal = function() {
@@ -694,7 +694,7 @@ if (data.ord) {
         const html = generateHTML(ord);
 
      
-
+const nom = `${data.type || "Document"} ${data.patient.nom || ""} ${data.patient.prenom || ""}`;
 const container = document.createElement("div");
 container.innerHTML = html;
 
@@ -707,7 +707,7 @@ const pdfBlob = await html2pdf()
   .from(container)
   .outputPdf('blob');
 masquerLoader();
-ouvrirModal(pdfBlob);
+ouvrirModal(pdfBlob, nom);
 
     } catch (err) {
 
@@ -721,10 +721,10 @@ ouvrirModal(pdfBlob);
 
     // 🔹 CAS 2 : ancien système PDF base64
     if (data.pdfBase64) {
-
+const nom = `${data.type || "Document"} ${data.patient.nom || ""} ${data.patient.prenom || ""}`;
         const blob = b64toBlob(data.pdfBase64, "application/pdf");
         masquerLoader();
-        ouvrirModal(blob);
+        ouvrirModal(blob, nom);
         return;
     }
 

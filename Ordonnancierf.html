@@ -1391,13 +1391,20 @@ function displayCurrentDate() {
     day: "numeric",
   });
 }
+function getPrescriptionRawText() {
+  const el = document.getElementById("prescription-text");
+
+  if (!el) return "";
+
+  return (el.value ?? el.innerText ?? el.textContent ?? "").trim();
+}
+
 displayCurrentDate();
 async function validatePrescription() {
 
 const editor = document.getElementById("prescription-text");
+  const prescriptionText = getPrescriptionRawText();
 
-const prescriptionText = (editor?.value || "").trim();
-  
   if (!prescriptionText) {
     afficherBulle("⛔ La prescription est vide !", "alerte");
     return;
@@ -2346,14 +2353,12 @@ window.masquerLoader = function() {
 
 function openConfirmModal() {
 
-  const el = document.getElementById("prescription-text");
+ const text = getPrescriptionRawText();
 
-  const text = (el?.value || el?.innerText || "").trim();
-
-  if (!text) {
-    afficherBulle("⛔ La prescription est vide !", "alerte");
-    return;
-  }
+if (!text) {
+  afficherBulle("⛔ La prescription est vide !", "alerte");
+  return;
+}
 
   document.getElementById("preview-ordo").textContent = text;
   document.getElementById("confirmPrescriptionModal").style.display = "flex";

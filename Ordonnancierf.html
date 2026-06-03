@@ -1396,8 +1396,8 @@ async function validatePrescription() {
 
 const editor = document.getElementById("prescription-text");
 
-const prescriptionText =
-  (editor?.value || editor?.innerText || "").trim();
+const prescriptionText = (editor?.value || "").trim();
+  
   if (!prescriptionText) {
     afficherBulle("⛔ La prescription est vide !", "alerte");
     return;
@@ -1435,7 +1435,7 @@ editor.style.cursor = "not-allowed";
           dateCreation: dateFormatted,
 
           type: "Ordonnance médicale",
- contenu: ord.contenu,
+ contenu: prescriptionText,
           // 🔥 NOUVEAU : stockage structuré
           ord: ord,
 
@@ -1499,30 +1499,32 @@ function parsePrescription(text) {
 
   for (let i = 0; i < lignes.length; i++) {
 
-    const ligne = (lignes[i] || "").trim();
-    if (!ligne) continue;
+    const raw = lignes[i];
+    const clean = (raw || "").trim();
 
-    if (ligne === "---") {
+    if (!clean) continue;
+
+    if (clean === "---") {
       contenu.push({ type: "separator" });
       continue;
     }
 
-    if (ligne.startsWith("**") && ligne.endsWith("**")) {
+    if (clean.startsWith("**") && clean.endsWith("**")) {
       contenu.push({
         type: "bold",
-        value: ligne.replace(/\*\*/g, "")
+        value: clean.replace(/\*\*/g, "")
       });
       continue;
     }
 
     // 🔥 séparation avant nouveau médicament
-    if (isMedication(ligne) && i !== 0) {
+    if (isMedication(clean) && i !== 0) {
       contenu.push({ type: "newline" });
     }
 
     contenu.push({
       type: "text",
-      value: ligne
+      value: clean
     });
   }
 
@@ -1530,9 +1532,9 @@ function parsePrescription(text) {
 }
 function construireORD() {
 
-  const el = document.getElementById("prescription-text");
+const el = document.getElementById("prescription-text");
 
-  const prescriptionText = (el?.value || el?.innerText || "").trim();
+const prescriptionText = (el?.value || "").trim();
 
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
@@ -1569,7 +1571,7 @@ async function genererOrdo(telecharger = false) {
   try {
 
     const el = document.getElementById("prescription-text");
-    const prescriptionText = (el?.value || el?.innerText || "").trim();
+    const prescriptionText = (el?.value || el?.value || "").trim();
 
     const contenu = parsePrescription(prescriptionText);
 

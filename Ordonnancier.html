@@ -1316,49 +1316,44 @@ function construireORD() {
 
 const lignes = prescriptionText
   .replace(/\r\n/g, "\n")
-  .replace(/\r/g, "\n")
   .split("\n");
 
 const contenu = [];
 
+function isMedication(line) {
+  return /^[A-Za-zÀ-ÿ0-9]+:/.test(line.trim());
+}
+
 for (let i = 0; i < lignes.length; i++) {
 
-  const ligne = lignes[i];
-  const next = lignes[i + 1];
+  const ligne = lignes[i].trim();
+  const next = lignes[i + 1]?.trim();
 
-  const clean = ligne.trim();
-
-  if (clean === "") {
+  if (!ligne) {
     contenu.push({ type: "newline" });
     continue;
   }
 
-  if (clean === "---") {
+  // 🔥 IMPORTANT : si nouvelle prescription -> on force séparation AVANT
+  if (isMedication(ligne) && i !== 0) {
+    contenu.push({ type: "newline" });
+  }
+
+  if (ligne === "---") {
     contenu.push({ type: "separator" });
     continue;
   }
 
-  if (clean.startsWith("**") && clean.endsWith("**")) {
+  if (ligne.startsWith("**") && ligne.endsWith("**")) {
     contenu.push({
       type: "bold",
-      value: clean.replace(/\*\*/g, "")
+      value: ligne.replace(/\*\*/g, "")
     });
   } else {
     contenu.push({
       type: "text",
-      value: clean
+      value: ligne
     });
-  }
-
-  // 🔥 IMPORTANT : newline seulement si VRAIE séparation logique
-  if (next) {
-
-    const isNextEmpty = next.trim() === "";
-    const isNextHeader = /^[A-Za-zÀ-ÿ]+:/.test(next); // nouveau médicament
-
-    if (isNextEmpty || isNextHeader) {
-      contenu.push({ type: "newline" });
-    }
   }
 }
 

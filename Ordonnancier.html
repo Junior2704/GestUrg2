@@ -1314,28 +1314,53 @@ function construireORD() {
 
   const sexe = document.getElementById("sexe")?.value || "";
 
-  // 🔹 Transformation texte → blocs
-  const lignes = prescriptionText.split("\n");
+const lignes = prescriptionText
+  .replace(/\r\n/g, "\n")
+  .replace(/\r/g, "\n")
+  .split("\n");
 
-  const contenu = [];
+const contenu = [];
 
-  lignes.forEach(ligne => {
+for (let i = 0; i < lignes.length; i++) {
 
-    if (ligne.trim() === "---") {
-      contenu.push({ type: "separator" });
-    } else if (ligne.trim().startsWith("**") && ligne.trim().endsWith("**")) {
-      contenu.push({
-        type: "bold",
-        value: ligne.replace(/\*\*/g, "")
-      });
-    } else {
-      contenu.push({
-        type: "text",
-        value: ligne
-      });
-    }
+  const ligne = lignes[i];
+  const next = lignes[i + 1];
 
+  const clean = ligne.trim();
+
+  if (clean === "") {
     contenu.push({ type: "newline" });
+    continue;
+  }
+
+  if (clean === "---") {
+    contenu.push({ type: "separator" });
+    continue;
+  }
+
+  if (clean.startsWith("**") && clean.endsWith("**")) {
+    contenu.push({
+      type: "bold",
+      value: clean.replace(/\*\*/g, "")
+    });
+  } else {
+    contenu.push({
+      type: "text",
+      value: clean
+    });
+  }
+
+  // 🔥 IMPORTANT : newline seulement si VRAIE séparation logique
+  if (next) {
+
+    const isNextEmpty = next.trim() === "";
+    const isNextHeader = /^[A-Za-zÀ-ÿ]+:/.test(next); // nouveau médicament
+
+    if (isNextEmpty || isNextHeader) {
+      contenu.push({ type: "newline" });
+    }
+  }
+}
 
   });
     console.log(JSON.stringify(contenu, null, 2));

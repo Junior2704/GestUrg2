@@ -1403,7 +1403,7 @@ displayCurrentDate();
 async function validatePrescription() {
 
 const editor = document.getElementById("prescription-text");
-const prescriptionText = document.getElementById("prescription-text").textContent.trim();
+const prescriptionHTML = document.getElementById("prescription-text").innerHTML;
 
   if (!prescriptionText) {
     afficherBulle("⛔ La prescription est vide !", "alerte");
@@ -1491,47 +1491,69 @@ function formatDate(date) {
   const secondes = pad(date.getSeconds());
   return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
 }
+
 function parsePrescriptionFromEditor() {
 
   const editor = document.getElementById("prescription-text");
 
-  const temp = document.createElement("div");
-  temp.innerHTML = editor.innerHTML;
-
   const contenu = [];
 
-  temp.childNodes.forEach(node => {
+  function walk(node) {
 
-    // séparation
-    if (node.nodeType === 1 && node.classList.contains("separator")) {
+    // séparateur
+    if (
+      node.nodeType === 1 &&
+      node.classList.contains("separator")
+    ) {
       contenu.push({ type: "separator" });
       return;
     }
 
-    // newline
-    if (node.nodeType === 1 && node.classList.contains("newline")) {
+    // gras
+    if (
+      node.nodeType === 1 &&
+      (node.tagName === "B" || node.tagName === "STRONG")
+    ) {
+      contenu.push({
+        type: "bold",
+        value: node.innerText
+      });
+      return;
+    }
+
+    // BR = retour ligne
+    if (
+      node.nodeType === 1 &&
+      node.tagName === "BR"
+    ) {
       contenu.push({ type: "newline" });
       return;
     }
 
-    // bold
-    if (node.nodeType === 1 && node.tagName === "B") {
-      contenu.push({
-        type: "bold",
-        value: node.innerText.trim()
-      });
-      return;
-    }
-
-    // texte normal
-    const text = node.textContent?.trim();
-    if (text) {
+    // texte simple
+    if (
+      node.nodeType === 3 &&
+      node.textContent.trim()
+    ) {
       contenu.push({
         type: "text",
-        value: text
+        value: node.textContent
       });
     }
-  });
+
+    // parcours enfants
+    node.childNodes.forEach(walk);
+
+    // DIV/P = saut de ligne
+    if (
+      node.nodeType === 1 &&
+      (node.tagName === "DIV" || node.tagName === "P")
+    ) {
+      contenu.push({ type: "newline" });
+    }
+  }
+
+  editor.childNodes.forEach(walk);
 
   return contenu;
 }

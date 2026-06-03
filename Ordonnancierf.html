@@ -1494,92 +1494,48 @@ function formatDate(date) {
 function parsePrescriptionFromEditor() {
 
   const editor = document.getElementById("prescription-text");
-  const nodes = editor.childNodes;
+
+  const temp = document.createElement("div");
+  temp.innerHTML = editor.innerHTML;
 
   const contenu = [];
 
-  nodes.forEach(node => {
+  temp.childNodes.forEach(node => {
 
-    // TEXT NODE
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent.trim();
-      if (text) {
-        contenu.push({ type: "text", value: text });
-      }
+    // séparation
+    if (node.nodeType === 1 && node.classList.contains("separator")) {
+      contenu.push({ type: "separator" });
+      return;
     }
 
-    // DIV NODE (newline / separator / bold etc)
-    if (node.nodeType === Node.ELEMENT_NODE) {
+    // newline
+    if (node.nodeType === 1 && node.classList.contains("newline")) {
+      contenu.push({ type: "newline" });
+      return;
+    }
 
-      if (node.classList.contains("separator")) {
-        contenu.push({ type: "separator" });
-      }
+    // bold
+    if (node.nodeType === 1 && node.tagName === "B") {
+      contenu.push({
+        type: "bold",
+        value: node.innerText.trim()
+      });
+      return;
+    }
 
-      else if (node.classList.contains("newline")) {
-        contenu.push({ type: "newline" });
-      }
-
-      else if (node.tagName === "B") {
-        contenu.push({ type: "bold", value: node.innerText });
-      }
-
-      else {
-        const text = node.innerText.trim();
-        if (text) {
-          contenu.push({ type: "text", value: text });
-        }
-      }
+    // texte normal
+    const text = node.textContent?.trim();
+    if (text) {
+      contenu.push({
+        type: "text",
+        value: text
+      });
     }
   });
 
   return contenu;
 }
-function parsePrescription(text) {
 
-  const lignes = (text || "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n");
-
-  const contenu = [];
-
-  function isMedication(line) {
-    return /^[A-Za-zÀ-ÿ0-9]+:/.test(line.trim());
-  }
-
-  for (let i = 0; i < lignes.length; i++) {
-
-    const raw = lignes[i];
-    const clean = (raw || "").trim();
-
-    if (!clean) continue;
-
-    if (clean === "---") {
-      contenu.push({ type: "separator" });
-      continue;
-    }
-
-    if (clean.startsWith("**") && clean.endsWith("**")) {
-      contenu.push({
-        type: "bold",
-        value: clean.replace(/\*\*/g, "")
-      });
-      continue;
-    }
-
-    // 🔥 séparation avant nouveau médicament
-    if (isMedication(clean) && i !== 0) {
-      contenu.push({ type: "newline" });
-    }
-
-    contenu.push({
-      type: "text",
-      value: clean
-    });
-  }
-
-  return contenu;
-}
 function construireORD() {
 
   const editor = document.getElementById("prescription-text");
@@ -1614,7 +1570,7 @@ async function genererOrdo(telecharger = false) {
     const el = document.getElementById("prescription-text");
     const prescriptionText = (el?.value || el?.value || "").trim();
 
-    const contenu = parsePrescription(prescriptionText);
+    const contenu = parsePrescriptionfromEditor(prescriptionText);
 
     const ord = {
       version: "1.0",

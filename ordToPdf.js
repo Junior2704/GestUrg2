@@ -122,7 +122,10 @@ b {
 }
 
 .separator {
-    border-top: 2px solid #2563eb;
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: #2563eb;
     margin: 12px 0;
 }
         </style>

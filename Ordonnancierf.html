@@ -1403,7 +1403,7 @@ displayCurrentDate();
 async function validatePrescription() {
 
 const editor = document.getElementById("prescription-text");
-  const prescriptionText = getPrescriptionRawText();
+const prescriptionText = document.getElementById("prescription-text").textContent.trim();
 
   if (!prescriptionText) {
     afficherBulle("⛔ La prescription est vide !", "alerte");
@@ -1491,6 +1491,49 @@ function formatDate(date) {
   const secondes = pad(date.getSeconds());
   return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
 }
+function parsePrescriptionFromEditor() {
+
+  const editor = document.getElementById("prescription-text");
+  const nodes = editor.childNodes;
+
+  const contenu = [];
+
+  nodes.forEach(node => {
+
+    // TEXT NODE
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent.trim();
+      if (text) {
+        contenu.push({ type: "text", value: text });
+      }
+    }
+
+    // DIV NODE (newline / separator / bold etc)
+    if (node.nodeType === Node.ELEMENT_NODE) {
+
+      if (node.classList.contains("separator")) {
+        contenu.push({ type: "separator" });
+      }
+
+      else if (node.classList.contains("newline")) {
+        contenu.push({ type: "newline" });
+      }
+
+      else if (node.tagName === "B") {
+        contenu.push({ type: "bold", value: node.innerText });
+      }
+
+      else {
+        const text = node.innerText.trim();
+        if (text) {
+          contenu.push({ type: "text", value: text });
+        }
+      }
+    }
+  });
+
+  return contenu;
+}
 function parsePrescription(text) {
 
   const lignes = (text || "")
@@ -1539,16 +1582,12 @@ function parsePrescription(text) {
 }
 function construireORD() {
 
-const el = document.getElementById("prescription-text");
-
-const prescriptionText = (el?.value || "").trim();
+  const editor = document.getElementById("prescription-text");
 
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
   const age = document.getElementById("patient-age")?.value.trim() || "";
   const sexe = document.getElementById("sexe")?.value || "";
-
-  const contenu = parsePrescription(prescriptionText);
 
   return {
     version: "1.0",
@@ -1557,19 +1596,14 @@ const prescriptionText = (el?.value || "").trim();
     date: new Date().toLocaleDateString("fr-FR"),
     lieu: window.medecinLieu || "Lyon",
 
-    patient: {
-      nom: lastName,
-      prenom: firstName,
-      age,
-      sexe
-    },
+    patient: { nom: lastName, prenom: firstName, age, sexe },
 
     medecin: {
       nom: window.medecinNom || "Dr Non renseigné",
       specialite: window.medecinSpecialite || ""
     },
 
-    contenu,
+    contenu: parsePrescriptionFromEditor(),
     signature: true
   };
 }

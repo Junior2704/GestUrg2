@@ -18,13 +18,15 @@ function renderContenu(contenu) {
                 html += `<b>${item.value}</b>`;
                 break;
 
-            case "newline":
-                html += `</span><br><span class="line">`;
-                break;
+           case "newline":
+    html += `<div class="newline"></div>`;
+    break;
 
-            case "separator":
-                html += `</span><div class="separator"></div><span class="line">`;
-                break;
+case "separator":
+    html += `<div class="separator"></div>`;
+    break;
+
+            
         }
     });
 
@@ -115,8 +117,13 @@ b {
     font-weight: bold;
     display: inline;
 }
-    .contenu * {
-    display: inline !important;
+   .newline {
+    height: 1em;
+}
+
+.separator {
+    border-top: 2px solid #2563eb;
+    margin: 12px 0;
 }
         </style>
     </head>

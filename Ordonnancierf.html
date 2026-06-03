@@ -1483,87 +1483,72 @@ function formatDate(date) {
 }
 function construireORD() {
 
-  const editor = document.getElementById("prescription-text");
+  const prescriptionText = document.getElementById("prescription-text").value.trim();
 
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
-
-  const inputDate = document.getElementById("patient-birthdate");
-
-  let dateNaissance = "";
-  if (inputDate?.value) {
-    const date = new Date(inputDate.value);
-    dateNaissance = date.toLocaleDateString("fr-FR");
-  }
+  const age = document.getElementById("patient-age")?.value.trim() || "";
 
   const sexe = document.getElementById("sexe")?.value || "";
 
-  const contenu = [];
+const lignes = prescriptionText
+  .replace(/\r\n/g, "\n")
+  .split("\n");
 
-  function parseNode(node) {
+const contenu = [];
 
-  // 🔹 TEXTE
-  if (node.nodeType === Node.TEXT_NODE) {
-    const text = node.textContent;
-    if (text && text.trim()) {
-      contenu.push({ type: "text", value: text });
-    }
-    return;
-  }
+function isMedication(line) {
+  return /^[A-Za-zÀ-ÿ0-9]+:/.test(line.trim());
+}
 
-  // 🔹 ELEMENT HTML
-  if (node.nodeType === Node.ELEMENT_NODE) {
+for (let i = 0; i < lignes.length; i++) {
 
-    // BR
-    if (node.tagName === "BR") {
-      contenu.push({ type: "newline" });
-      return;
-    }
+  const ligne = lignes[i].trim();
+  const next = lignes[i + 1]?.trim();
 
-    // BOLD
-    if (node.tagName === "B" || node.tagName === "STRONG") {
-      contenu.push({
-        type: "bold",
-        value: node.textContent
-      });
-      return;
-    }
-
-    // SEPARATOR
-    if (node.classList.contains("separator")) {
-      contenu.push({ type: "separator" });
-      return;
-    }
-    if (
-    node.tagName === "DIV" ||
-    node.tagName === "P"
-) {
-
-    node.childNodes.forEach(child => parseNode(child));
-
+  if (!ligne) {
     contenu.push({ type: "newline" });
+    continue;
+  }
 
-    return;
-}
+  // 🔥 IMPORTANT : si nouvelle prescription -> on force séparation AVANT
+  if (isMedication(ligne) && i !== 0) {
+    contenu.push({ type: "newline" });
+  }
 
-    // AUTRES
-    node.childNodes.forEach(child => parseNode(child));
+  if (ligne === "---") {
+    contenu.push({ type: "separator" });
+    continue;
+  }
+
+  if (ligne.startsWith("**") && ligne.endsWith("**")) {
+    contenu.push({
+      type: "bold",
+      value: ligne.replace(/\*\*/g, "")
+    });
+  } else {
+    contenu.push({
+      type: "text",
+      value: ligne
+    });
   }
 }
-  editor.childNodes.forEach(node => parseNode(node));
 
+    console.log(JSON.stringify(contenu, null, 2));
   return {
+
     version: "1.0",
     type: "ordonnance",
 
     titre: "Ordonnance médicale",
+
     date: new Date().toLocaleDateString("fr-FR"),
-    lieu: window.medecinLieu || "Non renseigné",
+    lieu: window.medecinLieu || "Lyon",
 
     patient: {
       nom: lastName,
       prenom: firstName,
-      date_Naissance: dateNaissance,
+      age: age,
       sexe: sexe
     },
 
@@ -1573,10 +1558,10 @@ function construireORD() {
     },
 
     contenu: contenu,
+
     signature: true
   };
 }
-
 async function genererOrdo(telecharger = false) {
 
   try {

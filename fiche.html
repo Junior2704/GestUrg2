@@ -2636,10 +2636,10 @@ nav:hover .nav-item span {
     <div id="suggestionsadd"></div>
 
     <label for="adminTelephone">Téléphone</label>
-    <input type="text" id="adminTelephone" />
+    <input type="tel" id="adminTelephone" />
 
     <label for="adminEmail">Email</label>
-    <input type="text" id="adminEmail" />
+    <input type="email" id="adminEmail" />
 
     <div class="modal-buttons">
 	    <button  id="readVitaleBtn" class="btn-id" >🆔 Lecture Carte Vitale</button>
@@ -4050,7 +4050,19 @@ btnAdmin.addEventListener("click", async () => {
 btnFermerAdmin.addEventListener("click", () => {
   modalAdmin.classList.remove("show");
 });
+function emailsValides(chaineEmails) {
+    const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
 
+    const emails = chaineEmails
+        .split("//")
+        .map(email => email.trim())
+        .filter(email => email !== "");
+
+    return emails.every(email => regexEmail.test(email));
+}
+function telephoneValide(telephone) {
+    return /^\+?[0-9\s\-().]{8,20}$/.test(telephone);
+}
 btnEnregistrerAdmin.addEventListener("click", async () => {
   const adresse = document.getElementById("adminAdresse").value.trim();
   const telephone = document.getElementById("adminTelephone").value.trim();
@@ -4060,7 +4072,15 @@ const dateNaissance = document.getElementById("adminNaissance").value.trim();
 
 
 
+if (!emailsValides(email)) {
+    afficherBulle("❌ email saisi invalide", "error");
+    return;
+}
 
+if (!telephoneValide(telephone)) {
+        afficherBulle("❌ téléphone saisi invalide", "error");
+    return;
+}
  try {
   const patientRef = doc(db, "patients", patientId);
   await updateDoc(patientRef, { adresse, telephone, email, sexe, dateNaissance });

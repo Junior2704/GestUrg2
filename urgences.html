@@ -1512,6 +1512,25 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 });
+function calculerAge(dateNaissance) {
+  if (!dateNaissance) return NaN;
+
+  const naissance = new Date(dateNaissance);
+  if (isNaN(naissance.getTime())) return NaN;
+
+  const aujourdHui = new Date();
+
+  let age = aujourdHui.getFullYear() - naissance.getFullYear();
+
+  const m = aujourdHui.getMonth() - naissance.getMonth();
+
+  // si l'anniversaire n’est pas encore passé cette année
+  if (m < 0 || (m === 0 && aujourdHui.getDate() < naissance.getDate())) {
+    age--;
+  }
+
+  return age;
+}
 
 async function ajouterPatientVisuel(id, data, salleId) {
 
@@ -1560,10 +1579,19 @@ async function ajouterPatientVisuel(id, data, salleId) {
   card.dataset.id = id;
   card.draggable = true;
   card.style.borderLeft = `6px solid ${couleurs[gravite] || "#999"}`;
+let nomAffiche = `${data.nom} ${data.prenom}`;
 
-  card.innerHTML = `
+// ajout nounours si mineur
+if (data.dateNaissance) {
+  const age = calculerAge(data.dateNaissance);
+  if (!isNaN(age) && age < 18) {
+    nomAffiche += " 🧸";
+  }
+}
+
+card.innerHTML = `
 <strong class="patient-nom" title="${data.nom} ${data.prenom}">
-  ${data.nom} ${data.prenom}
+  ${nomAffiche}
 </strong>
 <div class="ligne">🚨|${tronque(gravite)}</div>
 <div class="ligne">🩺|${tronque(motif)}</div>

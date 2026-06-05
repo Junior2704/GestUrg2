@@ -820,8 +820,8 @@ body {
       <table class="medical-table">
         <thead>
           <tr>
-            <th>Nom</th>
-            <th>Prénom</th>
+          
+            <th>Identité</th>
 			<th>Vigilances</th>
 
             <th>Gravité</th>
@@ -1005,14 +1005,19 @@ const vigilance =
 data.vigilances?.trim()
 || "aucune";
 
+let nomAffiche = `${data.nom || ""} ${data.prenom || ""}`;
+
+if (data.dateNaissance) {
+  const age = calculerAge(data.dateNaissance);
+  if (!isNaN(age) && age < 18) {
+    nomAffiche += " 🧸";
+  }
+}
 tr.dataset.id=id;
 
 tr.innerHTML=`
 
-<td>${data.nom||""}</td>
-
-<td>${data.prenom||""}</td>
-
+<td>${nomAffiche}</td>
 <td class="${
 vigilance!=="aucune"
 ?
@@ -1053,6 +1058,7 @@ hosp?.equipe
 return tr;
 
 }
+
 window.updateMedicalDashboard = async function () {
 
 try {

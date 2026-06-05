@@ -3269,9 +3269,26 @@ async function chargerPatient(patientId) {
     document.getElementById("medtraitant").value = patient.medtraitant || "";
     document.getElementById("importanceAllergies").checked = patient.importanceAllergies === true;
     document.getElementById("positionPatient").value = hospi.positionPatient || "";
+const patientNameSpan = document.getElementById("patientName");
 
-    const patientNameSpan = document.getElementById("patientName");
-    patientNameSpan.textContent = `Fiche Urgences - ${patient.nom || ""} ${patient.prenom || ""}`;
+let nomComplet = `${patient.nom || ""} ${patient.prenom || ""}`;
+
+// Âge + détection mineur
+let isMineur = false;
+
+if (patient.dateNaissance) {
+  const age = calculerAge(patient.dateNaissance);
+  isMineur = !isNaN(age) && age < 18;
+
+  document.getElementById("age").textContent = !isNaN(age) ? `${age} ans` : "Inconnu";
+}
+
+// Ajout nounours si mineur
+if (isMineur) {
+  nomComplet += " 🧸";
+}
+
+patientNameSpan.textContent = `Fiche Urgences - ${nomComplet}`;
 
     // Bouton fermeture
     const closeBtn = document.createElement("span");

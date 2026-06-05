@@ -3366,7 +3366,12 @@ if (!patient.hospitalisationActiveId || patient.hospitalisationActiveId === "") 
     document.getElementById("moyen").value = hospi.moyen || "";
     document.getElementById("circuit").value = hospi.circuit || "";
     document.getElementById("pdcStatut").value = hospi.pdcStatut || "";
-    document.getElementById("positionPatient").value = hospi.positionPatient || "";
+    if (hospi.positionPatient) {
+  const radio = document.querySelector(
+    `input[name="positionPatient"][value="${hospi.positionPatient}"]`
+  );
+  if (radio) radio.checked = true;
+}
     
 
     // 🔹 Dossier médical
@@ -3716,8 +3721,11 @@ document.getElementById("motif").addEventListener("blur", e => {
 document.getElementById("moyen").addEventListener("blur", e => {
   updateHospitalisationField("moyen", e.target.value.trim());
 });
-document.getElementById("positionPatient").addEventListener("change", (e) => {
-  updateHospitalisationField("positionPatient", e.target.value);
+
+document.querySelectorAll('input[name="positionPatient"]').forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    updateHospitalisationField("positionPatient", e.target.value);
+  });
 });
 
 async function ajouterEntreeHistorique(texte) {

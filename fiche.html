@@ -2324,6 +2324,21 @@ nav:hover .nav-item span {
   <div id="suggestionsMoyen" class="suggestions-box"></div>
 </div>
 
+
+  <label for="service" >🏥 Service idéal</label>
+  <select id="service" class="text2"><option value="">Chargement...</option></select>
+<label for="circuit">🧭 Circuit particulier</label>
+<select id="circuit" class="text2">
+  <option value=""></option>
+  <option value="Pédiatrie">Pédiatrie</option>
+  <option value="Traumatologie">Traumatologie</option>
+  <option value="Gynécologie">Gynécologie</option>
+  <option value="Psychiatrie">Psychiatrie</option>
+  <option value="Ophtalmologie">Ophtalomologie</option>
+
+</select>
+ 
+
   <label for="gravite" >🚨 Gravité</label>
   <select id="gravite"class="text2" >
     <option value="P0">P0</option>
@@ -2362,21 +2377,13 @@ nav:hover .nav-item span {
       ">
   </ul>
 </div>
-
-
-  <label for="service" >🏥 Service idéal</label>
-  <select id="service" class="text2"><option value="">Chargement...</option></select>
-<label for="circuit">🧭 Circuit particulier</label>
-<select id="circuit" class="text2">
+<label for="positionPatient">🛏️ Position du patient</label>
+<select id="positionPatient" class="text2">
   <option value=""></option>
-  <option value="Pédiatrie">Pédiatrie</option>
-  <option value="Traumatologie">Traumatologie</option>
-  <option value="Gynécologie">Gynécologie</option>
-  <option value="Psychiatrie">Psychiatrie</option>
-  <option value="Ophtalmologie">Ophtalomologie</option>
-
+  <option value="allonge">Allongé</option>
+  <option value="debout">Debout</option>
+  <option value="chaise">Sur chaise</option>
 </select>
- 
     </section>
 
 
@@ -3261,6 +3268,7 @@ async function chargerPatient(patientId) {
     document.getElementById("vigilances").value = patient.vigilances || "aucune";
     document.getElementById("medtraitant").value = patient.medtraitant || "";
     document.getElementById("importanceAllergies").checked = patient.importanceAllergies === true;
+    document.getElementById("positionPatient").value = hospi.positionPatient || "";
 
     const patientNameSpan = document.getElementById("patientName");
     patientNameSpan.textContent = `Fiche Urgences - ${patient.nom || ""} ${patient.prenom || ""}`;
@@ -3676,6 +3684,9 @@ document.getElementById("motif").addEventListener("blur", e => {
 });
 document.getElementById("moyen").addEventListener("blur", e => {
   updateHospitalisationField("moyen", e.target.value.trim());
+});
+document.getElementById("positionPatient").addEventListener("change", (e) => {
+  updateHospitalisationField("positionPatient", e.target.value);
 });
 
 async function ajouterEntreeHistorique(texte) {

@@ -150,28 +150,6 @@
 
 
 
-    .salle:hover {
-      background-color: #e6f0fc;
-      box-shadow: 0 12px 30px rgba(0, 120, 212, 0.25);
-      transform: translateY(-6px);
-    }
-
-    .salle h3 {
-      margin: 0 0 10px 0;
-      font-weight: 600;
-      color: #005ea2;
-      user-select: text;
-    }
-
-    
-
-    /* Highlight drop zone */
-    .salle.dragover {
-      background-color: #cce0ff;
-      box-shadow: 0 16px 40px rgba(0, 120, 212, 0.4);
-      transform: translateY(-8px);
-    }
-
     #modalAddPatient {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -567,35 +545,6 @@ body, #mainContent {
 }
 
 
-.salle {
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.salle-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.salle-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: #005ea2;
-}
-
-.salle-patients {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 36px);
-  gap: 8px;
-  align-content: start;
-  min-height: 40px;
-}
 #modalSalle {
   position: fixed;
   inset: 0;
@@ -653,39 +602,6 @@ body, #mainContent {
   justify-content: start;
   align-content: start;
 }
-.salle {
-  position: relative; /* indispensable */
-}
-
-.btn-plus {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #0078d4;
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 50;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  user-select: none;
-}
-
-.btn-plus:hover {
-  background: #005ea2;
-  transform: scale(1.08);
-}
-
-.btn-plus:active {
-  transform: scale(0.95);
-}
-
 
 .patient-nom {
   display: block;
@@ -703,53 +619,6 @@ body, #mainContent {
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0.85;
-}
-.patient-card {
-  width: 140px;
-  height: 140px;
-
-  background: white;
-  border-radius: 14px;
-  padding: 10px 10px 10px 14px;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-
-  font-size: 13px;
-  line-height: 1.2;
-
-  border-left: 8px solid #4CAF50;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
-
-  cursor: grab;
-}
-
-.patient-card strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.patient-card .ligne {
-  opacity: 0.9;
-}
-#plan {
-  display:flex;
-  flex-direction:column;
-  gap:22px;
-}
-.patient-card {
-  width: 140px;
-  height: 140px;
-  overflow: hidden;
-}
-
-.patient-card .ligne {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 
@@ -862,36 +731,388 @@ body, #mainContent {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
 }
-.categorie {
-  border-radius: 24px;
-  padding: 24px;
-  background: #f8fafc;
-  border: 2px solid #dbe7f5;
-}
-.categorie h2 {
-  font-size: 1.5rem;
-  letter-spacing: .5px;
-  text-transform: uppercase;
+
+/* =========================
+   PLAN HOSPITALIER PRO
+========================= */
+
+#plan {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 10px 0 40px 0;
 }
 
-.categorie-contenu{
-    display:flex;
-    flex-wrap:wrap;
-    gap:20px;
+/* =========================
+   ZONES / CATEGORIES
+========================= */
+
+.categorie {
+  position: relative;
+
+  background: #f8fbff;
+  border: 1px solid #dbe7f5;
+
+  border-radius: 24px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+
+  overflow: hidden;
 }
+
+/* barre latérale médicale */
+.categorie::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 8px;
+  height: 100%;
+
+  background: linear-gradient(
+    180deg,
+    #1976d2,
+    #42a5f5
+  );
+}
+
+/* titre catégorie */
+
+.categorie h2 {
+  margin: 0 0 22px 0;
+
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+
+  color: #0f172a;
+
+  text-transform: uppercase;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* contenu catégorie */
+
 .categorie-contenu {
-  display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
 }
-.box-zone {
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
+
+/* =========================
+   ZONE CRITIQUE
+========================= */
+
+.categorie-critique {
+  background: linear-gradient(
+    180deg,
+    #fff5f5,
+    #fffafa
+  );
+
+  border: 1px solid #ffcdd2;
 }
-.categorie-critique{
-    border-left:6px solid #d32f2f;
-    background:#fff5f5;
-}</style>
+
+.categorie-critique::before {
+  background: linear-gradient(
+    180deg,
+    #d32f2f,
+    #f44336
+  );
+}
+
+.categorie-critique h2 {
+  color: #b71c1c;
+}
+
+/* =========================
+   SALLES
+========================= */
+
+.salle {
+  position: relative;
+
+  background: white;
+
+  border-radius: 20px;
+
+  border: 1px solid #e2e8f0;
+
+  padding: 16px;
+
+  min-width: 220px;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.05);
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+
+  overflow: hidden;
+}
+
+.salle:hover {
+  transform: translateY(-2px);
+
+  border-color: #90caf9;
+
+  box-shadow:
+    0 10px 24px rgba(33, 150, 243, 0.12);
+}
+
+/* =========================
+   HEADER SALLE
+========================= */
+
+.salle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.salle-header h3 {
+  margin: 0;
+
+  font-size: .95rem;
+  font-weight: 700;
+
+  color: #0f172a;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* badge capacité */
+
+.badge-capacite {
+  background: #eef4ff;
+
+  color: #1565c0;
+
+  font-size: .78rem;
+  font-weight: 700;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+}
+
+/* =========================
+   PATIENTS
+========================= */
+
+.salle-patients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  align-content: flex-start;
+
+  min-height: 70px;
+}
+
+/* =========================
+   PATIENT CARD
+========================= */
+
+.patient-card {
+  width: 170px;
+  min-height: 84px;
+
+  background: linear-gradient(
+    180deg,
+    #ffffff,
+    #f9fbfd
+  );
+
+  border-radius: 14px;
+
+  border-left: 8px solid #4CAF50;
+
+  padding: 10px 12px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  gap: 4px;
+
+  cursor: grab;
+
+  box-shadow:
+    0 3px 10px rgba(15,23,42,.08);
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease;
+}
+
+.patient-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 8px 18px rgba(15,23,42,.12);
+}
+
+.patient-card strong {
+  font-size: .88rem;
+  font-weight: 800;
+
+  color: #0f172a;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-card .ligne {
+  font-size: .76rem;
+
+  color: #475569;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   DRAG OVER
+========================= */
+
+.salle.dragover {
+  border-color: #42a5f5;
+
+  background: #f0f8ff;
+
+  box-shadow:
+    0 0 0 4px rgba(33,150,243,.12);
+}
+
+/* =========================
+   BOUTON ...
+========================= */
+
+.btn-plus {
+  position: absolute;
+
+  right: 12px;
+  bottom: 12px;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+
+  background: #1976d2;
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 10px rgba(25,118,210,.25);
+
+  transition:
+    transform .15s ease,
+    background .15s ease;
+}
+
+.btn-plus:hover {
+  background: #1565c0;
+  transform: scale(1.06);
+}
+
+/* =========================
+   ZONES SPÉCIALES
+========================= */
+
+/* SAUV / DECHOC */
+
+#dechoc {
+  min-width: 360px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fff5f5,
+      #ffffff
+    );
+
+  border: 2px solid #ef9a9a;
+}
+
+#dechoc .salle-header h3 {
+  color: #c62828;
+  font-size: 1.05rem;
+}
+
+/* BOX */
+
+[id^="box"] {
+  min-width: 190px;
+}
+
+/* TRAUMA */
+
+[id^="boxTrauma"] {
+  background:
+    linear-gradient(
+      180deg,
+      #fffaf3,
+      #ffffff
+    );
+}
+
+/* SORTIE */
+
+#sortie {
+  background:
+    linear-gradient(
+      180deg,
+      #f1fff5,
+      #ffffff
+    );
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1100px) {
+
+  .categorie-contenu {
+    flex-direction: column;
+  }
+
+  .salle {
+    width: 100%;
+  }
+
+}
+</style>
 </head>
 <body>
 <div id="mainContent">
@@ -928,148 +1149,181 @@ body, #mainContent {
 <br>
 
 <br>
-<div id="plan" aria-label="Plan des salles du service d'urgences">
-<div class="categorie">
-    <h2>⏳ Accueil et orientation</h2>
+<div id="plan" aria-label="Plan des urgences">
+
+  <!-- ===================== -->
+  <!-- ACCUEIL -->
+  <!-- ===================== -->
+
+  <div class="categorie">
+
+    <h2>🏥 Accueil & Orientation</h2>
 
     <div class="categorie-contenu">
-  <div class="salle" id="salle-attente" aria-label="Salle Attente">
-  <div class="salle-header">
-    <h3>🪑Salle d'attente valides</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
 
+      <div class="salle" id="salle-attente">
+        <div class="salle-header">
+          <h3>🪑 Salle d'attente</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
 
+      <div class="salle" id="iao">
+        <div class="salle-header">
+          <h3>👨‍⚕️ IAO</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
 
-<div class="salle" id="nv-couche" aria-label="Non vus couchés">
-  <div class="salle-header">
-    <h3>🛌 Non vus couchés</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
+      <div class="salle" id="nv-couche">
+        <div class="salle-header">
+          <h3>🛏️ Non vus couchés</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
 
-   <div class="salle" id="iao" aria-label="IAO">
-  <div class="salle-header">
-    <h3>👨‍⚕️ IAO</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-</div>
-</div>
-<div class="categorie">
-    <h2>🏥 PEC</h2>
-
-    <div class="categorie-contenu">
-<div class="salle" id="PEC-valide" aria-label="PEC Valide">
-  <div class="salle-header">
-    <h3>🧍🩺 PEC Valide</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-
-<div class="salle" id="PEC-couche" aria-label="PEC couchés">
-  <div class="salle-header">
-    <h3>🛌🩺 PEC couchés</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-</div>
-</div>
-<div class="categorie categorie-critique">
-        <h2>⛑️ Soins critiques</h2>
-
-    <div class="categorie-contenu">
-<div class="salle" id="dechoc" aria-label="Déchoquage">
-  <div class="salle-header">
-    <h3>🚨 Déchoquage (SAUV)</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-
-</div>
-</div>
-
-<div class="categorie">
-    <h2>⚕️ Filières spécifiques</h2>
-
-    <div class="categorie-contenu">
- 
-
-
-<div class="salle" id="imagerie">
-  <div class="salle-header">
-    <h3>☢️ Imagerie</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-
-<div class="salle" id="psy">
-  <div class="salle-header">
-    <h3>👥 Psy</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-</div>
-</div>
-<div class="categorie">
-    <h2>⬜ Boxs médecine</h2>
-
-    <div class="categorie-contenu">
-<!-- BOXES -->
-<div class="salle" id="box1"><div class="salle-header"><h3>⬜ Box 1</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box2"><div class="salle-header"><h3>⬜ Box 2</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box3"><div class="salle-header"><h3>⬜ Box 3</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box4"><div class="salle-header"><h3>⬜ Box 4</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box5"><div class="salle-header"><h3>⬜ Box 5</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box6"><div class="salle-header"><h3>⬜ Box 6</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box7"><div class="salle-header"><h3>⬜ Box 7</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box8"><div class="salle-header"><h3>⬜ Box 8</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box9"><div class="salle-header"><h3>⬜ Box 9</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="box10"><div class="salle-header"><h3>⬜ Box 10</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
     </div>
+
+  </div>
+
+  <!-- ===================== -->
+  <!-- PEC -->
+  <!-- ===================== -->
+
+  <div class="categorie">
+
+    <h2>🩺 Prise en charge</h2>
+
+    <div class="categorie-contenu">
+
+      <div class="salle" id="PEC-valide">
+        <div class="salle-header">
+          <h3>🧍 PEC Valide</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
+
+      <div class="salle" id="PEC-couche">
+        <div class="salle-header">
+          <h3>🛌 PEC Couché</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
+
+      <div class="salle" id="imagerie">
+        <div class="salle-header">
+          <h3>☢️ Imagerie</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
+
+      <div class="salle" id="psy">
+        <div class="salle-header">
+          <h3>👥 Filière Psy</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
+
     </div>
-  
-      <div class="categorie">
-    <h2>🩼 Boxs trauma</h2>
+
+  </div>
+
+  <!-- ===================== -->
+  <!-- SAUV -->
+  <!-- ===================== -->
+
+  <div class="categorie categorie-critique">
+
+    <h2>🚨 Soins Critiques</h2>
 
     <div class="categorie-contenu">
 
+      <div class="salle" id="dechoc">
+        <div class="salle-header">
+          <h3>🚨 Déchoquage / SAUV</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
 
-<div class="salle" id="boxTrauma1"><div class="salle-header"><h3>🩼 Box Trauma 1</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="boxTrauma2"><div class="salle-header"><h3>🩼 Box Trauma 2</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="boxTrauma3"><div class="salle-header"><h3>🩼 Box Trauma 3</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="boxTrauma4"><div class="salle-header"><h3>🩼 Box Trauma 4</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
-<div class="salle" id="boxTrauma5"><div class="salle-header"><h3>🩼 Box Trauma 5</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+    </div>
 
-</div>
-</div>
-<div class="categorie">
-    <h2>🚪Sortie</h2>
+  </div>
+
+  <!-- ===================== -->
+  <!-- BOX MEDECINE -->
+  <!-- ===================== -->
+
+  <div class="categorie">
+
+    <h2>⬜ Box Médecine</h2>
 
     <div class="categorie-contenu">
-<div class="salle" id="sortie">
-  <div class="salle-header">
-    <h3>🚪 Sortie</h3>
-    <span class="badge-capacite"></span>
-  </div>
-  <div class="salle-patients"></div>
-</div>
-</div>
-</div>
 
-</div>
+      <div class="salle" id="box1"><div class="salle-header"><h3>Box 1</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box2"><div class="salle-header"><h3>Box 2</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box3"><div class="salle-header"><h3>Box 3</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box4"><div class="salle-header"><h3>Box 4</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box5"><div class="salle-header"><h3>Box 5</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box6"><div class="salle-header"><h3>Box 6</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box7"><div class="salle-header"><h3>Box 7</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box8"><div class="salle-header"><h3>Box 8</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box9"><div class="salle-header"><h3>Box 9</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="box10"><div class="salle-header"><h3>Box 10</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+
+    </div>
 
   </div>
-</div>
+
+  <!-- ===================== -->
+  <!-- TRAUMA -->
+  <!-- ===================== -->
+
+  <div class="categorie">
+
+    <h2>🩼 Trauma</h2>
+
+    <div class="categorie-contenu">
+
+      <div class="salle" id="boxTrauma1"><div class="salle-header"><h3>Trauma 1</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="boxTrauma2"><div class="salle-header"><h3>Trauma 2</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="boxTrauma3"><div class="salle-header"><h3>Trauma 3</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="boxTrauma4"><div class="salle-header"><h3>Trauma 4</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+      <div class="salle" id="boxTrauma5"><div class="salle-header"><h3>Trauma 5</h3><span class="badge-capacite"></span></div><div class="salle-patients"></div></div>
+
+    </div>
+
+  </div>
+
+  <!-- ===================== -->
+  <!-- SORTIE -->
+  <!-- ===================== -->
+
+  <div class="categorie">
+
+    <h2>🚪 Sortie</h2>
+
+    <div class="categorie-contenu">
+
+      <div class="salle" id="sortie">
+        <div class="salle-header">
+          <h3>🚪 Sortie</h3>
+          <span class="badge-capacite"></span>
+        </div>
+        <div class="salle-patients"></div>
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
 <div id="vitaleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10005; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">

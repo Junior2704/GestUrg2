@@ -1522,7 +1522,7 @@ function initialiserApp(){
   nettoyerPDFs();
 
 }
-
+let salleOuverteId = null;
 // Conteneur global pour les bulles
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
@@ -1807,8 +1807,10 @@ function setupModalSalle() {
   const closeBtn = document.getElementById("closeModalSalle");
   const backdrop = document.querySelector(".modal-salle-backdrop");
 
-  if (closeBtn) closeBtn.addEventListener("click", () => modal.style.display = "none");
-  if (backdrop) backdrop.addEventListener("click", () => modal.style.display = "none");
+  if (closeBtn) closeBtn.addEventListener("click", () => {salleOuverteId = null;
+  modal.style.display = "none";});
+  if (backdrop) backdrop.addEventListener("click", () => {salleOuverteId = null;
+  modal.style.display = "none";});
 }
 
 // Appeler après que le DOM est chargé
@@ -2026,7 +2028,10 @@ async function rechargerPlan() {
   document.querySelectorAll(".patient-card").forEach(p => p.remove());
   ajusterTailleSalles();
   await chargerPatients();
-
+  if (salleOuverteId &&
+    document.getElementById("modalSalle").style.display !== "none") {
+  await ouvrirSalleEnGrand(salleOuverteId);
+}
   Object.keys(sallesConfig).forEach(mettreAJourSalle);
 }
 window.rechargerPlan = rechargerPlan;
@@ -2355,7 +2360,7 @@ async function ouvrirSalleEnGrand(salleId) {
   const modal = document.getElementById("modalSalle");
   const titre = document.getElementById("modalSalleTitre");
   const zone = document.getElementById("modalSalleZone");
-
+salleOuverteId = salleId;
   modal.style.display = "block";
   titre.textContent = document.querySelector(`#${salleId} h3`).textContent;
   zone.innerHTML = "";

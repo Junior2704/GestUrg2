@@ -1012,33 +1012,49 @@ html, body {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
 }
-:root{
-  --hauteur-cadres: 500px;
-}
-
-.ordonnance-wrapper{
-  display: flex;
-  gap: 20px;
-}
-
-.zone-prescription,
 .historique-ordos{
-  flex: 1;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
 }
 
-.editor-container,
-.historique-ordos{
-  height: var(--hauteur-cadres);
+.historique-ordos h3{
+  margin: 0;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafafa;
 }
 
-#prescription-text{
-  height: calc(var(--hauteur-cadres) - 60px);
-  overflow-y: auto;
+.ordo-row{
+  padding: 12px 15px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.historique-ordos{
-  overflow-y: auto;
-  position: static;
+.ordo-row:last-child{
+  border-bottom: none;
+}
+
+.ordo-row:hover{
+  background: #f5f9ff;
+}
+
+.ordo-date{
+  font-weight: 600;
+  color: #222;
+}
+
+.ordo-preview{
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
 
@@ -1143,10 +1159,13 @@ html, body {
   </div>
 
   <!-- COLONNE DROITE -->
-  <aside class="historique-ordos">
-    <h3>📜 Anciennes ordonnances</h3>
-    <div id="listeOrdonnances"></div>
-  </aside>
+ <aside class="historique-ordos">
+  <h3>📜 Anciennes ordonnances</h3>
+
+  <div id="listeOrdonnances">
+    <!-- généré en JS -->
+  </div>
+</aside>
 
 </div>
 
@@ -2524,71 +2543,68 @@ async function chargerAnciennesOrdonnances() {
             return;
         }
 
-        ordonnances.forEach(data => {
+     ordonnances.forEach(data => {
 
-            const contenu =
-                (data.contenu || "")
-                .replace(/\n/g," ")
-                .substring(0,150);
+    const contenu = (data.contenu || "")
+        .replace(/\n/g, " ")
+        .substring(0, 100);
 
-            const card = document.createElement("div");
+    const row = document.createElement("div");
 
-            card.className = "ordo-card";
+    row.className = "ordo-row";
 
-            card.innerHTML = `
-                <div class="ordo-date">
-                    📅 ${data.dateCreation || ""}
-                </div>
+    row.innerHTML = `
+        <div class="ordo-date">
+            📅 ${data.dateCreation || ""}
+        </div>
 
-                <div class="ordo-preview">
-                    ${contenu}...
-                </div>
+        <div class="ordo-preview">
+            ${contenu}...
+        </div>
+    `;
 
-                <div class="ordo-actions">
-                    <button class="btn-id btnVoir">
-                        🔎 Voir
-                    </button>
-                </div>
-            `;
+    row.title = "Double-cliquez pour ouvrir l'ordonnance";
 
-            card.querySelector(".btnVoir")
-            .addEventListener("click", async (e)=>{
+    row.addEventListener("dblclick", async () => {
 
-                e.stopPropagation();
+        try {
 
-                if (data.ord) {
+            if (!data.ord) return;
 
-                    const html = generateHTML(data.ord);
+            const html = generateHTML(data.ord);
 
-                    const containerPdf =
-                        document.createElement("div");
+            const containerPdf = document.createElement("div");
+            containerPdf.innerHTML = html;
 
-                    containerPdf.innerHTML = html;
+            const pdfBlob = await html2pdf()
+                .set({
+                    margin: 0,
+                    html2canvas: {
+                        scale: 2
+                    },
+                    jsPDF: {
+                        unit: "mm",
+                        format: "a4",
+                        orientation: "portrait"
+                    }
+                })
+                .from(containerPdf)
+                .outputPdf("blob");
 
-                    const pdfBlob = await html2pdf()
-                      .set({
-                        margin:0,
-                        html2canvas:{scale:2},
-                        jsPDF:{
-                            unit:'mm',
-                            format:'a4',
-                            orientation:'portrait'
-                        }
-                      })
-                      .from(containerPdf)
-                      .outputPdf('blob');
+            ouvrirModal(pdfBlob, "Ordonnance");
 
-                    ouvrirModal(
-                        pdfBlob,
-                        "Ordonnance"
-                    );
-                }
+        } catch (err) {
 
-            });
+            console.error(err);
+            alert("Impossible d'ouvrir l'ordonnance");
 
-            container.appendChild(card);
+        }
 
-        });
+    });
+
+    container.appendChild(row);
+
+});
 
     } catch(err){
 

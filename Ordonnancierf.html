@@ -2603,34 +2603,45 @@ async function chargerAnciennesOrdonnances() {
 
     row.addEventListener("dblclick", async () => {
 
-
+afficherLoader();
                 if (data.ord) {
 
-                    const html = generateHTML(data.ord);
+                    const ord = data.ord;
 
-                    const containerPdf =
-                        document.createElement("div");
+       
 
-                    containerPdf.innerHTML = html;
+        const html = generateHTML(ord);
 
-                    const pdfBlob = await html2pdf()
-                      .set({
-                        margin:0,
-                        html2canvas:{scale:2},
-                        jsPDF:{
-                            unit:'mm',
-                            format:'a4',
-                            orientation:'portrait'
-                        }
-                      })
-                      .from(containerPdf)
-                      .outputPdf('blob');
+     
+const patient = data.patient || {};
 
-                    ouvrirModal(
-                        pdfBlob,
-                        "Ordonnance"
-                    );
-                }
+const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
+const container = document.createElement("div");
+container.innerHTML = html;
+
+const pdfBlob = await html2pdf()
+  .set({
+    margin: 0,
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  })
+  .from(container)
+  .outputPdf('blob');
+
+masquerLoader();
+ouvrirModal(pdfBlob, nom);
+    return;
+}
+
+   
+                    if (data.pdfBase64) {
+const patient = data.patient || {};
+const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
+        const blob = b64toBlob(data.pdfBase64, "application/pdf");
+        masquerLoader();
+        ouvrirModal(blob, nom);
+     return;
+    }
 
             });
 

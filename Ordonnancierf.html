@@ -1080,6 +1080,17 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.historique-ordos{
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    height: 500px;      /* hauteur fixe */
+    overflow-y: auto;   /* ascenseur interne */
+
+    display: flex;
+    flex-direction: column;
+}
 
 </style>
 
@@ -2591,41 +2602,35 @@ async function chargerAnciennesOrdonnances() {
     row.title = "Double-cliquez pour ouvrir l'ordonnance";
 
     row.addEventListener("dblclick", async () => {
-console.log("DOUBLE CLICK");
-        try {
 
-            if (!data.ord) return;
+    console.log("DOUBLE CLICK");
+    console.log(data);
 
-            const html = generateHTML(data.ord);
+    try {
 
-            const containerPdf = document.createElement("div");
-            containerPdf.innerHTML = html;
+        const html = generateHTML(data.ord);
+        console.log("HTML généré");
 
-            const pdfBlob = await html2pdf()
-                .set({
-                    margin: 0,
-                    html2canvas: {
-                        scale: 2
-                    },
-                    jsPDF: {
-                        unit: "mm",
-                        format: "a4",
-                        orientation: "portrait"
-                    }
-                })
-                .from(containerPdf)
-                .outputPdf("blob");
+        const containerPdf = document.createElement("div");
+        containerPdf.innerHTML = html;
 
-            ouvrirModal(pdfBlob, "Ordonnance");
+        const pdfBlob = await html2pdf()
+            .from(containerPdf)
+            .outputPdf("blob");
 
-        } catch (err) {
+        console.log("PDF généré");
 
-            console.error(err);
-            alert("Impossible d'ouvrir l'ordonnance");
+        ouvrirModal(pdfBlob, "Ordonnance");
 
-        }
+        console.log("Modal ouverte");
 
-    });
+    } catch(err) {
+
+        console.error("ERREUR :", err);
+
+    }
+
+});
 
     container.appendChild(row);
 

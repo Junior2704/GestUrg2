@@ -997,12 +997,34 @@ html, body {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
 }
-/* ===== LAYOUT GLOBAL ===== */
+/* ===== PAGE ===== */
 
+html,
+body {
+  height: 100%;
+  margin: 0;
+
+  overflow: hidden; /* PAS de scroll global */
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* wrapper principal */
 .ordonnance-wrapper {
   display: flex;
   gap: 20px;
-  align-items: stretch; /* hauts ET bas alignés */
+
+  flex: 1;
+
+  min-height: 0; /* IMPORTANT */
+  overflow: hidden;
+
+  align-items: stretch;
 }
 
 /* ===== COLONNES ===== */
@@ -1010,16 +1032,14 @@ html, body {
 .zone-prescription,
 .historique-ordos {
   flex: 1;
-  height: 650px; /* même hauteur exacte */
-  box-sizing: border-box;
-}
 
-/* ===== CADRE PRESCRIPTION ===== */
-
-.zone-prescription {
   display: flex;
   flex-direction: column;
+
+  min-height: 0;
 }
+
+/* ===== PRESCRIPTION ===== */
 
 .editor-container {
   flex: 1;
@@ -1029,43 +1049,59 @@ html, body {
 
   border: 1px solid #d0d7de;
   border-radius: 12px;
-  overflow: hidden;
 
+  overflow: hidden;
   background: white;
+
+  min-height: 0;
 }
 
-/* label */
+/* label fixe */
 .editor-container > label {
-  padding: 14px 15px 8px;
+  padding: 12px 15px;
   margin: 0;
-  font-weight: 600;
+
   background: #fafafa;
   border-bottom: 1px solid #e5e7eb;
+
+  flex-shrink: 0;
 }
 
-/* toolbar */
+/* toolbar fixe */
 .editor-toolbar {
   flex-shrink: 0;
+
+  padding: 10px;
+
+  background: #f6f8fa;
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* zone texte */
+/* zone écriture scrollable */
 #prescription-text {
   flex: 1;
-  overflow-y: auto;
 
-  min-height: 0; /* IMPORTANT */
+  overflow-y: auto;
+  overflow-x: hidden;
+
   padding: 15px;
 
+  min-height: 0;
+
   box-sizing: border-box;
+}
+
+/* ===== BOUTONS ACTIONS ===== */
+
+.buttons-wrapper,
+#validate-prescription-btn {
+  flex-shrink: 0;
+  margin-top: 15px;
 }
 
 /* ===== HISTORIQUE ===== */
 
 .historique-ordos {
-  display: flex;
-  flex-direction: column;
-
   border: 1px solid #e5e7eb;
   border-radius: 12px;
 
@@ -1084,18 +1120,47 @@ html, body {
   flex-shrink: 0;
 }
 
-/* LISTE SCROLLABLE */
+/* liste scrollable */
 #listeOrdonnances {
   flex: 1;
 
   overflow-y: auto;
+  overflow-x: hidden;
+
   min-height: 0;
 }
 
-/* SUPPRIME LE SCROLL GLOBAL */
-html,
-body {
+/* lignes */
+.ordo-row {
+  padding: 14px 15px;
+  border-bottom: 1px solid #e5e7eb;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  background: white;
+}
+
+.ordo-row:hover {
+  background: #f5f9ff;
+}
+
+.ordo-row:last-child {
+  border-bottom: none;
+}
+
+.ordo-date {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.ordo-preview {
+  font-size: 13px;
+  color: #666;
+
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
 

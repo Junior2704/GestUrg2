@@ -1016,7 +1016,69 @@ html, body {
 * {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
-}</style>
+}
+.ordo-layout{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+}
+
+.editor-container{
+    flex:1;
+}
+
+.historique-ordos{
+    width:350px;
+    max-height:700px;
+    overflow-y:auto;
+
+    background:#fff;
+    border-radius:12px;
+    padding:15px;
+
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    border:1px solid #e5e7eb;
+}
+
+.historique-ordos h3{
+    margin-top:0;
+    color:#2563eb;
+}
+
+.ordo-card{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-left:4px solid #2563eb;
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:12px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.ordo-card:hover{
+    background:#eef6ff;
+    transform:translateY(-2px);
+}
+
+.ordo-date{
+    font-weight:600;
+    color:#2563eb;
+    margin-bottom:6px;
+}
+
+.ordo-preview{
+    font-size:13px;
+    color:#444;
+    line-height:1.4;
+}
+
+.ordo-actions{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+}
+</style>
 
 
   <!-- <div class="container">-->
@@ -1110,7 +1172,19 @@ html, body {
   </div>
 </div>
 
-	
+	<div class="ordo-layout">
+
+    <div class="editor-container">
+        ...
+    </div>
+
+    <div class="historique-ordos">
+        <h3>📜 Anciennes ordonnances</h3>
+
+        <div id="listeOrdonnances"></div>
+    </div>
+
+</div>
   
 
 <!-- Modale de sélection des e-mails -->
@@ -1804,6 +1878,7 @@ const docSnap = await getDoc(docRef);
       calculerAge(); 
       updatePatientDisplay();
       masquerLoader();
+      await chargerAnciennesOrdonnances();
     } else {
       console.warn("Aucun patient trouvé avec cet ID");
     }
@@ -2389,7 +2464,139 @@ function confirmValidation() {
   validatePrescription(); // 🔥 Appelle TA vraie fonction déjà en place
 }
 window.confirmValidation=confirmValidation;
+async function chargerAnciennesOrdonnances() {
 
+    const patientId = getIdFromURL();
+    if (!patientId) return;
+
+    const container = document.getElementById("listeOrdonnances");
+
+    container.innerHTML = `
+        <div style="text-align:center;padding:20px">
+            Chargement...
+        </div>
+    `;
+
+    try {
+
+        const q = query(
+            collection(db, "documents"),
+            where("patientId", "==", patientId)
+        );
+
+        const snapshot = await getDocs(q);
+
+        const ordonnances = [];
+
+        snapshot.forEach(docSnap => {
+
+            const data = docSnap.data();
+
+            if (data.type !== "Ordonnance médicale") return;
+
+            ordonnances.push({
+                id: docSnap.id,
+                ...data
+            });
+
+        });
+
+        ordonnances.sort((a,b)=>{
+
+            const da = parseDateFR(a.dateCreation);
+            const dbb = parseDateFR(b.dateCreation);
+
+            return dbb - da;
+
+        });
+
+        container.innerHTML = "";
+
+        if (ordonnances.length === 0) {
+
+            container.innerHTML = `
+                <div style="padding:15px;color:#777">
+                    Aucune ordonnance
+                </div>
+            `;
+
+            return;
+        }
+
+        ordonnances.forEach(data => {
+
+            const contenu =
+                (data.contenu || "")
+                .replace(/\n/g," ")
+                .substring(0,150);
+
+            const card = document.createElement("div");
+
+            card.className = "ordo-card";
+
+            card.innerHTML = `
+                <div class="ordo-date">
+                    📅 ${data.dateCreation || ""}
+                </div>
+
+                <div class="ordo-preview">
+                    ${contenu}...
+                </div>
+
+                <div class="ordo-actions">
+                    <button class="btn-id btnVoir">
+                        🔎 Voir
+                    </button>
+                </div>
+            `;
+
+            card.querySelector(".btnVoir")
+            .addEventListener("click", async (e)=>{
+
+                e.stopPropagation();
+
+                if (data.ord) {
+
+                    const html = generateHTML(data.ord);
+
+                    const containerPdf =
+                        document.createElement("div");
+
+                    containerPdf.innerHTML = html;
+
+                    const pdfBlob = await html2pdf()
+                      .set({
+                        margin:0,
+                        html2canvas:{scale:2},
+                        jsPDF:{
+                            unit:'mm',
+                            format:'a4',
+                            orientation:'portrait'
+                        }
+                      })
+                      .from(containerPdf)
+                      .outputPdf('blob');
+
+                    ouvrirModal(
+                        pdfBlob,
+                        "Ordonnance"
+                    );
+                }
+
+            });
+
+            container.appendChild(card);
+
+        });
+
+    } catch(err){
+
+        console.error(err);
+
+        container.innerHTML =
+            "<div>Erreur de chargement</div>";
+    }
+}
 
 (function(){ 
     var properties = [

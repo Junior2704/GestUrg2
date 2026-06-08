@@ -1109,24 +1109,6 @@ html, body {
 
   <h2>Ordonnancier</h2>
 
-
-   <div class="editor-container">
-  <label for="prescription-text">🖊️ Prescription :</label>
-
-  <div class="editor-toolbar">
-<button class="btn-id" id="btn-bold" onmousedown="handleBold(event)"><b>G</b></button>
-    <button class="btn-id" onclick="insertSeparator()">〰️</button>
-  </div>
-
-  <div id="prescription-text" contenteditable="true"spellcheck="true"
-          lang="fr"></div>
-
-  <div id="autocomplete-box"></div>
-
-</div>
-
-  
-
 <div class="form-group">
 			<form class="vidal-search" action="https://www.vidal.fr/recherche.html" method="get" target="_blank">
   <input type="text" name="query" placeholder="Rechercher sur le Vidal">
@@ -2457,6 +2439,35 @@ function confirmValidation() {
   validatePrescription(); // 🔥 Appelle TA vraie fonction déjà en place
 }
 window.confirmValidation=confirmValidation;
+
+function parseDateFR(dateStr) {
+    if (!dateStr) return new Date(0);
+
+    // Nettoyage
+    const cleaned = dateStr.trim();
+
+    // Format attendu : JJ/MM/AAAA ou JJ-MM-AAAA (+ heure optionnelle)
+    const match = cleaned.match(
+        /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+    );
+
+    if (!match) {
+        // fallback si format inconnu
+        return new Date(cleaned);
+    }
+
+    const [, d, m, y, hh = "0", mm = "0", ss = "0"] = match;
+
+    return new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+        Number(hh),
+        Number(mm),
+        Number(ss)
+    );
+}
+
 async function chargerAnciennesOrdonnances() {
 
     const patientId = getIdFromURL();

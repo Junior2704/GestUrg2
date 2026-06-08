@@ -212,7 +212,46 @@ button:hover { background: #005ea2; }
 * {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
-}</style>
+}
+.radio-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* carte radio */
+.radio-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  background: white;
+}
+
+/* cacher le vrai radio */
+.radio-card input {
+  accent-color: #0b5ed7;
+  transform: scale(1.1);
+}
+
+/* hover */
+.radio-card:hover {
+  border-color: #0b5ed7;
+  background: #f0f4ff;
+}
+
+/* effet sélection */
+.radio-card input:checked + span {
+  font-weight: 600;
+  color: #0b5ed7;
+}
+
+</style>
 </head>
 
 <body>
@@ -308,7 +347,26 @@ button:hover { background: #005ea2; }
 
   <label for="service">🏥 Service idéal</label>
   <select id="service"><option value="">Chargement...</option></select>
+<label>🛏️ Position du patient</label>
 
+<div class="radio-grid" id="positionPatient">
+
+
+
+  <label class="radio-card">
+    <input type="radio" name="positionPatient" value="debout">
+    <span>🧍Debout</span>
+  </label>
+
+  <label class="radio-card">
+    <input type="radio" name="positionPatient" value="chaise">
+    <span>🦽 Sur chaise</span>
+  </label>
+  <label class="radio-card">
+    <input type="radio" name="positionPatient" value="allonge">
+    <span>🛌 Allongé</span>
+  </label>
+</div>
   <button id="validateAll">✅ Valider hospitalisation</button>
 </div>
 
@@ -774,7 +832,8 @@ inputadd.addEventListener("input", async () => {
 validateAll.onclick = async () => {
   const circuitVal = document.getElementById("circuit").value;
   const serviceVal = document.getElementById("service").value;
-
+const positionPatientVal =
+  document.querySelector('input[name="positionPatient"]:checked')?.value || "";
   const adresseVal = adresse.value.trim();
   const telephoneVal = telephone.value.trim();
   const emailVal = email.value.trim();
@@ -792,7 +851,10 @@ validateAll.onclick = async () => {
     showInfoModal("🚨 Identité incomplète", false);
     return;
   }
-
+if (!positionPatientVal) {
+  showInfoModal("🚨 Veuillez sélectionner la position du patient", false);
+  return;
+}
   const patientId = nom.dataset.id || null;
 
   try {
@@ -825,6 +887,7 @@ if (patientId) {
         moyen: moyenVal,
         circuit: circuitVal || "",
         service: serviceVal || "",
+        positionPatient: positionPatientVal,
         historique: [],
         evolutionTexte: {},
         constantes: {},
@@ -886,6 +949,7 @@ if (patientId) {
         moyen: moyenVal,
         circuit: circuitVal || "",
         service: serviceVal || "",
+        positionPatient: positionPatientVal,
         historique: [],
         evolutionTexte: {},
         constantes: {},

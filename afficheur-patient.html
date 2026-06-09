@@ -197,21 +197,21 @@
 
     /* --- ANIMATION INFO PATIENTS --- */
   .info-animation {
-  margin: 50px auto 0 auto; /* 🔹 centre horizontalement */
-  width: 85%;              /* 🔹 largeur fluide mais contenue */
-  max-width: 900px;        /* 🔹 limite maximale */
+  margin: 50px auto 0 auto; 
+  width: 95%;              /* 🔹 largeur fluide mais contenue */
+  max-width: 1200px;        /* 🔹 limite maximale */
   text-align: center;
   background: rgba(255,255,255,0.95);
   border-radius: 20px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.1);
   padding: 40px 20px 60px;
   position: relative;
-  min-height: 280px;
+  max-height: 340px;
   overflow: hidden;
   z-index: 10;
 }
     .info-title {
-      font-size: 1.6rem;
+      font-size: 2rem;
       font-weight: 700;
       color: #004b8d;
       margin-bottom: 25px;
@@ -244,22 +244,22 @@
     }
 
     .step-anim .title {
-      font-size: 1.3rem;
+      font-size: 2.5rem;
       font-weight: 600;
       margin-bottom: 6px;
       color: #0b2240;
     }
 
     .step-anim .text {
-      font-size: 1rem;
+      font-size: 2rem;
       color: #364152;
-      max-width: 700px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
     .note {
-      margin-top: 220px;
-      font-size: 1rem;
+      margin-top: 320px;
+      font-size: 1.2rem;
       color: #1f3b70;
       font-weight: 500;
       position: relative;
@@ -541,6 +541,32 @@
 * {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
+}
+#infoPlus {
+  width: 100%;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+#infoIcon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+#infoTitre {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003366;
+  margin-bottom: 8px;
+}
+
+#infoTexte {
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #1f3b70;
 }</style>
 </head>
 <body>
@@ -583,7 +609,9 @@
 
     <!-- ANIMATION ÉTAPES -->
     <div class="info-animation">
-      <div class="info-title">Les étapes de votre prise en charge</div>
+      <div class="info-title" id="infoTitle">
+    Les étapes de votre prise en charge
+</div>
 
       <div id="step1" class="step-anim active">
         <div class="icon">📝</div>
@@ -641,6 +669,38 @@
 		N'hésitez-pas à nous écrire pour faire une suggestion ou signaler une anomalie à urgences.hopj@gmail.com
       </div>
 	  </div>
+	<div id="quiz1" class="step-anim">
+  <div class="icon">❓</div>
+
+
+  <div class="title" id="quiz1Texte"></div>
+
+  <div
+      class="text"
+      id="quizReponse1"
+      style="margin-top:20px;font-weight:bold;opacity:0;transition:opacity .8s;">
+  </div>
+</div>
+
+<div id="saviez1" class="step-anim">
+  <div class="icon" id="saviez1Icon">💡</div>
+  <div class="title" id="saviez1Texte"></div>
+</div>
+
+<div id="quiz2" class="step-anim">
+  <div class="icon" id="quiz2Icon">❓</div>
+  <div class="title" id="quiz2Texte"></div>
+  <div
+    class="text"
+    id="quizReponse2"
+    style="margin-top:20px;font-weight:bold;opacity:0;transition:opacity .8s;">
+</div>
+</div>
+
+<div id="saviez2" class="step-anim">
+  <div class="icon" id="saviez2Icon">💡</div>
+  <div class="title" id="saviez2Texte"></div>
+</div>
       <div class="note">
         🚨 La rapidité du traitement dépend de la gravité médicale.  
         Merci de votre compréhension et de votre patience.
@@ -675,12 +735,10 @@
     title="Prévisions Paris par Météo-France">
   </iframe>
 </div>
-
-<div class="meteo actu">
-  <div class="rss-title">📰 Informations santé</div>
-  <ul id="rss-list">
-    <li>Chargement des informations…</li>
-  </ul>
+<div id="infoPlus">
+  <div class="icon" id="infoIcon">💡</div>
+  <div class="title" id="infoTitre">Le saviez-vous ?</div>
+  <div class="text" id="infoTexte"></div>
 </div>
 
 
@@ -738,6 +796,136 @@ function listenPatientsPresents() {
     });
 }
 
+
+  
+  const leSaviezVous = [
+{
+  icon: "❤️",
+  titre: "Le saviez-vous ?",
+  texte: "Votre cœur bat environ 100 000 fois par jour."
+},
+{
+  icon: "🧠",
+  titre: "Le saviez-vous ?",
+  texte: "Le cerveau représente 2 % du poids du corps mais consomme près de 20 % de son énergie."
+},
+{
+  icon: "🚶",
+  titre: "Le saviez-vous ?",
+  texte: "30 minutes de marche par jour réduisent le risque de pathologies cardiovasculaires."
+},
+{
+  icon: "🫁",
+  titre: "Le saviez-vous ?",
+  texte: "Arrêter de fumer améliore la circulation sanguine en quelques semaines."
+},
+{
+  icon: "💧",
+  titre: "Le saviez-vous ?",
+  texte: "Le corps humain est constitué d'environ 60 % d'eau."
+},
+{
+  icon: "😴",
+  titre: "Le saviez-vous ?",
+  texte: "Dormir moins de 6 heures régulièrement augmente le risque de maladies chroniques."
+},
+{
+  icon: "🦴",
+  titre: "Le saviez-vous ?",
+  texte: "Après 50 ans, une chute sur trois peut entraîner une complication nécessitant des soins."
+},
+{
+  icon: "🧼",
+  titre: "Le saviez-vous ?",
+  texte: "Une bonne hygiène des mains réduit fortement la transmission des infections."
+}
+];
+
+const quiz = [
+{
+  question: "🤲 Combien de temps faut-il se laver les mains ?",
+  reponse: "✅ Environ 30 secondes."
+},
+{
+  question: "🚑 Quel est le numéro pour les urgences médicales ?",
+  reponse: "✅ Le 15."
+},
+{
+  question: "🧠 Quel symptôme doit faire suspecter un AVC ?",
+  reponse: "✅ Paralysie brutale d'un membre, difficultés à parler, ..."
+},
+{
+  question: "☀️ En période de forte chaleur, faut-il attendre d'avoir soif pour boire ?",
+  reponse: "❌ Non. Il faut boire régulièrement."
+},
+{
+  question: "🚭 Après l'arrêt du tabac, les bénéfices apparaissent-ils rapidement ?",
+  reponse: "✅ Oui, dès les premières semaines."
+},
+{
+  question: "💊 Faut-il apporter sa liste de traitements aux urgences ?",
+  reponse: "✅ Oui, c'est très utile pour votre prise en charge."
+},
+{
+  question: "👶 Une forte fièvre chez un nourrisson doit-elle être surveillée ?",
+  reponse: "✅ Oui, elle nécessite souvent un avis médical."
+},
+{
+  question: "🧴 Le gel hydroalcoolique remplace-t-il le lavage des mains ?",
+  reponse: "✅ Oui si les mains ne sont pas visiblement sales, sinon, il faut utiliser du savon🫧 !"
+}
+];
+  
+  
+ function melanger(array) {
+  const copie = [...array];
+
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [copie[i], copie[j]] = [copie[j], copie[i]];
+  }
+
+  return copie;
+}
+
+function genererContenusPedagogiques() {
+
+  const quizSelectionnes = melanger(quiz).slice(0, 2);
+  const infosSelectionnees = melanger(leSaviezVous).slice(0, 2);
+
+  // Quiz 1
+document.getElementById("quiz1Texte").innerHTML =
+    quizSelectionnes[0].question;
+
+document.getElementById("quizReponse1").innerHTML =
+    quizSelectionnes[0].reponse;
+
+document.getElementById("quizReponse1").style.opacity = 0;
+
+// Quiz 2
+document.getElementById("quiz2Texte").innerHTML =
+    quizSelectionnes[1].question;
+
+document.getElementById("quizReponse2").innerHTML =
+    quizSelectionnes[1].reponse;
+
+document.getElementById("quizReponse2").style.opacity = 0;
+
+  // Saviez-vous 1
+  document.getElementById("saviez1Icon").textContent =
+      infosSelectionnees[0].icon;
+
+  document.getElementById("saviez1Texte").textContent =
+      infosSelectionnees[0].texte;
+
+  // Saviez-vous 2
+  document.getElementById("saviez2Icon").textContent =
+      infosSelectionnees[1].icon;
+
+  document.getElementById("saviez2Texte").textContent =
+      infosSelectionnees[1].texte;
+}
 async function majCompteursDepuisHospitalisations() {
   try {
     // 1️⃣ Patients présents
@@ -843,13 +1031,63 @@ async function majCompteursDepuisHospitalisations() {
 
     const steps = document.querySelectorAll(".step-anim");
     let current = 0;
-    function showStep(i) {
-      steps.forEach((s, idx) => s.classList.toggle("active", idx === i));
+   function showStep(i) {
+
+    steps.forEach((s, idx) =>
+        s.classList.toggle("active", idx === i)
+    );
+
+    const activeStep = steps[i];
+    const titre = document.getElementById("infoTitle");
+
+    if (
+        activeStep.id === "quiz1" ||
+        activeStep.id === "quiz2"
+    ) {
+        titre.textContent = "🧠 Quiz Santé";
     }
-    setInterval(() => {
-      current = (current + 1) % steps.length;
-      showStep(current);
-    }, 7000 );
+    else if (
+        activeStep.id === "saviez1" ||
+        activeStep.id === "saviez2"
+    ) {
+        titre.textContent = "💡 Le saviez-vous ?";
+    }
+    else {
+        titre.textContent = "Les étapes de votre prise en charge";
+    }
+	if (activeStep.id === "quiz1") {
+
+    document.getElementById("quizReponse1").style.opacity = 0;
+
+    setTimeout(() => {
+        document.getElementById("quizReponse1").style.opacity = 1;
+    }, 4000);
+}
+
+if (activeStep.id === "quiz2") {
+
+    document.getElementById("quizReponse2").style.opacity = 0;
+
+    setTimeout(() => {
+        document.getElementById("quizReponse2").style.opacity = 1;
+    }, 4000);
+}
+}
+   genererContenusPedagogiques();
+
+setInterval(() => {
+
+    current = (current + 1) % steps.length;
+
+    showStep(current);
+
+    if(current === 0){
+        setTimeout(() => {
+            genererContenusPedagogiques();
+        }, 1000);
+    }
+
+}, 7000);
 	 function goFullScreen() {
     const doc = document.documentElement;
     if (doc.requestFullscreen) doc.requestFullscreen();
@@ -1009,17 +1247,19 @@ function appelerPatient(numero, destination) {
         texteDestination = "au poste infirmier";
     } 
     else if (destination === "Zone de Soins") {
-        texteDestination = "en zone de soins";
+        texteDestination = "en  zone de soins";
     } 
     else {
-        texteDestination = "au " + destination;
+        texteDestination = "au, " + destination;
     }
 
     const message = new SpeechSynthesisUtterance(
         "Le numéro " + numero +
         ", est attendu " + texteDestination
     );
-
+message.voice = speechSynthesis.getVoices().find(v =>
+    v.name === "Google français"
+);
     message.lang = "fr-FR";
 
     message.voice = voix.find(v =>
@@ -1070,30 +1310,8 @@ setInterval(updateHorlogeGauche, 1000);
 majCompteursDepuisHospitalisations();          // au chargement
 setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
 
-</script>
-<script>
-const RSS_URL = "https://www.santepubliquefrance.fr/rss/actualites.xml";
-const API = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(RSS_URL);
 
-fetch(API)
-  .then(res => res.json())
-  .then(data => {
-    const list = document.getElementById("rss-list");
-    list.innerHTML = "";
-
-    data.items.slice(0, 4).forEach(item => {
-      const li = document.createElement("li");
-      li.textContent = item.title;
-      list.appendChild(li);
-    });
-  })
-  .catch(err => {
-    document.getElementById("rss-list").innerHTML =
-      "<li>Informations indisponibles</li>";
-    console.error("RSS error:", err);
-  });
 </script>
 
   </body>
 </html>
->

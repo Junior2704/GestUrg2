@@ -465,6 +465,8 @@
   border-radius: 12px;
   width: 100%;
   justify-content: center;
+    display: flex;
+  flex-direction: column;
 }
 
 .meteo-icone {
@@ -567,7 +569,67 @@
   font-size: 1rem;
   line-height: 1.4;
   color: #1f3b70;
-}</style>
+}
+#relaxBox {
+  width: 100%;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+#relaxCircle {
+  width: 90px;
+  height: 90px;
+  margin: 10px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7ec8ff, #3d8bfd);
+  box-shadow: 0 0 20px rgba(61,139,253,.4);
+  transition: transform 4s ease-in-out;
+}
+
+#respirationTexte {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: 25px;
+}
+#titlerespiration {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: -15px;
+  margin-bottom: 28px;
+}
+#titlemeteo {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: -10px;
+  margin-bottom: -10px;
+}
+
+#natureInfo {
+  margin-top: 15px;
+  font-size: 1rem;
+  color: #1f3b70;
+  line-height: 1.4;
+  min-height: 60px;
+}
+#feteTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003366;
+  margin-bottom: 6px;
+}
+
+#feteTexte {
+  font-size: 1rem;
+  color: #1f3b70;
+  font-weight: 500;
+}
+</style>
 </head>
 <body>
 
@@ -727,6 +789,8 @@
 <!-- === MÉTÉO + ACTU (Franceinfo) === -->
 
 <div class="meteo">
+<div id="titlemeteo">Votre météo :</div>
+
   <iframe
     width="100%"
     height="150"
@@ -734,13 +798,21 @@
     src="https://meteofrance.com/widget/prevision/751140##3D6AA2"
     title="Prévisions Paris par Météo-France">
   </iframe>
-</div>
-<div id="infoPlus">
-  <div class="icon" id="infoIcon">💡</div>
-  <div class="title" id="infoTitre">Le saviez-vous ?</div>
-  <div class="text" id="infoTexte"></div>
+<div id="feteTexte">--</div>
 </div>
 
+<div id="relaxBox">
+<div id="titlerespiration">🧘 Pour se relaxer...</div>
+  <div id="relaxCircle"></div>
+
+  <div id="respirationTexte">
+    Inspirez
+  </div>
+
+  <div id="natureInfo" style="display:none">
+    🌿 Les arbres communiquent entre eux grâce à leurs racines.
+  </div>
+</div>
 
 </section>
 
@@ -1310,6 +1382,138 @@ setInterval(updateHorlogeGauche, 1000);
 majCompteursDepuisHospitalisations();          // au chargement
 setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
 
+const cercle = document.getElementById("relaxCircle");
+const texteRespiration = document.getElementById("respirationTexte");
+const natureInfo = document.getElementById("natureInfo");
+
+const infosNature = [
+  "🌳 Un arbre adulte peut produire l'oxygène nécessaire à deux personnes.",
+  "🦉 Les chouettes peuvent tourner leur tête jusqu'à 270°.",
+  "🐝 Une abeille visite plusieurs milliers de fleurs chaque jour.",
+  "🌊 Le bruit des vagues favorise naturellement la relaxation.",
+  "🍃 Regarder la nature quelques minutes réduit le stress.",
+  "🦋 Les papillons goûtent avec leurs pattes.",
+  "🐬 Les dauphins dorment avec une moitié de leur cerveau éveillée.",
+  "🌲 Une promenade en forêt diminue la tension artérielle."
+];
+
+let indexInfo = 0;
+
+function cycleRespiration() {
+
+  // Inspiration
+  texteRespiration.textContent = "🌬️ Inspirez lentement";
+  cercle.style.transform = "scale(1.4)";
+
+  setTimeout(() => {
+
+    // Pause
+    texteRespiration.textContent = "⏸️ Retenez";
+    cercle.style.transform = "scale(1.4)";
+
+    setTimeout(() => {
+
+      // Expiration
+      texteRespiration.textContent = "🍃 Expirez doucement";
+      cercle.style.transform = "scale(0.8)";
+
+    },3000);
+
+  }, 5000);
+}
+
+cycleRespiration();
+setInterval(cycleRespiration, 12000);
+
+function getFeteNationale() {
+
+  const d = new Date();
+  const key = `${d.getDate()}-${d.getMonth() + 1}`;
+
+  const fetes = {
+    "1-1": "Jour de l’An 🎉",
+    "1-5": "Fête du Travail",
+    "8-5": "Victoire 1945 ",
+    "14-7": "Fête nationale ",
+    "11-11": "Armistice 1918",
+    "25-12": "Noël 🎄"
+  };
+
+  return fetes[key] || null;
+}
+function getJourneeMondiale() {
+ const d = new Date();
+  const key = `${d.getDate()}-${d.getMonth() + 1}`;
+
+  const jours = {
+    "4-2": " la lutte contre le cancer",
+    "8-3": "s droits des femmes",
+    "7-4": " la santé",
+    "5-6": " l'environnement",
+    "10-10": " la santé mentale"
+  };
+
+  return jours[key] || null;
+}
+async function getSaintDuJour() {
+  try {
+    const res = await fetch("https://nominis.cef.fr/json/nominis.php");
+    const data = await res.json();
+
+    const majeurs = data?.response?.saints?.majeurs;
+
+    if (!majeurs) return "Saint indisponible";
+
+    const liste = Object.values(majeurs)
+      .map(s => s.valeur)
+      .filter(Boolean);
+
+    return liste.join(" • ");
+
+  } catch (e) {
+    console.error(e);
+    return "Saint indisponible";
+  }
+}
+async function updateEphemeride() {
+  const el = document.getElementById("feteTexte");
+
+  const feteNationale = getFeteNationale();
+  const journee = getJourneeMondiale();
+  const saint = await getSaintDuJour();
+
+  let texte = "";
+
+  // 1️⃣ Fête nationale PRIORITAIRE
+  if (feteNationale) {
+    texte = `${feteNationale} 🇫🇷`;
+  }
+
+  // 2️⃣ Journée mondiale + saint
+  else if (journee) {
+    texte = `${saint} • 🌍 Journée mondiale de${journee}`;
+  }
+
+  // 3️⃣ Sinon saint seul
+  else {
+    texte = `${saint}`;
+  }
+
+  el.textContent = texte;
+}
+function scheduleMidnightUpdate() {
+  const now = new Date();
+  const next = new Date();
+  next.setHours(24, 0, 5, 0);
+
+  setTimeout(async () => {
+    await updateEphemeride();
+    scheduleMidnightUpdate();
+  }, next - now);
+}
+
+updateEphemeride();
+scheduleMidnightUpdate();
 
 </script>
 

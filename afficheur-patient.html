@@ -720,8 +720,7 @@ let unsubscribeHospitalisations = null;
       }
     }
 
-    // --- FIRESTORE : COMPTES PATIENTS ---
-// --- FIRESTORE : COMPTES PATIENTS ---
+  
 let hospitalisationIdsActives = [];
 function listenPatientsPresents() {
   db.collection("patients")
@@ -842,11 +841,6 @@ async function majCompteursDepuisHospitalisations() {
   }
 }
 
-
-
-
-
-    // --- ANIMATION DES ÉTAPES ---
     const steps = document.querySelectorAll(".step-anim");
     let current = 0;
     function showStep(i) {
@@ -935,7 +929,7 @@ function afficherBulle(msg, type = 'info') {
   afficherBulle("💡 Cliquez une fois dans la page pour passer en plein écran", "default");
 
 
-/* ===== CONFIGURATION ===== */
+
 const MAX_APPELS = 4;
 const DUREE_AFFICHAGE = 2 * 60 * 1000; // 2 minutes
 
@@ -991,6 +985,9 @@ if (age > DUREE_AFFICHAGE) continue;
     sonBulle.volume = 0.5;
     sonBulle.currentTime = 0;
     sonBulle.play().catch(err => console.log("Erreur lecture son :", err));
+	setTimeout(() => {
+    appelerPatient(d.numero, d.bureau);
+}, 2000);
 }
 
     }
@@ -998,6 +995,41 @@ if (age > DUREE_AFFICHAGE) continue;
     /* État vide */
     vide.style.display = affiches === 0 ? "block" : "none";
   });
+
+function appelerPatient(numero, destination) {
+
+    const voix = speechSynthesis.getVoices();
+
+    let texteDestination = "";
+
+    if (destination.startsWith("guichet")) {
+        texteDestination = "au, " + destination;
+    } 
+    else if (destination === "IAO") {
+        texteDestination = "au, poste infirmier";
+    } 
+    else if (destination === "Zone de Soins") {
+        texteDestination = "en, zone de soins";
+    } 
+    else {
+        texteDestination = "au, " + destination;
+    }
+
+    const message = new SpeechSynthesisUtterance(
+        "Le numéro " + numero +
+        ", est attendu " + texteDestination
+    );
+
+    message.lang = "fr-FR";
+
+    message.voice = voix.find(v =>
+        v.lang && v.lang.startsWith("fr")
+    );
+message.rate = 0.8;   
+message.pitch = 1;   
+message.volume = 1;
+    speechSynthesis.speak(message);
+}
 
 async function verifierActivationBureaux() {
   try {

@@ -300,23 +300,30 @@ input:focus {
     img {
       margin-top: 15px;
     }
-   #shell-topbar {
+#shell-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px 6px 16px; /* padding à droite augmenté */
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  padding: 6px 20px 6px 16px;
   width: 100%;
+  height: 56px;
+
   position: fixed;
   top: 0;
   left: 0;
-  height: 48px;
-  font-family: Inter, Arial, sans-serif;
-  z-index: 1000;
-  box-sizing: border-box; /* pour inclure le padding dans la largeur */
-}
 
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+
+  box-shadow: none;
+
+  z-index: 1000;
+  box-sizing: border-box;
+}
 #topbar-right {
   display: flex;
   flex-direction: column;
@@ -348,7 +355,11 @@ input:focus {
   font-weight: 500;
 }
 
-
+#topbar-left,
+#topbar-center,
+#datetime {
+  color: white;
+}
 
 #window-controls button {
   background: #e6f0fc;
@@ -460,7 +471,82 @@ img {
   50% {
     transform: translateY(-10px);
   }
-}</style>
+}
+#emergency-lane {
+    background: rgba(255,255,255,.05);
+    backdrop-filter: blur(4px);
+}
+
+#emergency-lane::after {
+    content:"";
+    position:absolute;
+    top:10px;
+    width:100%;
+    height:2px;
+    background:
+      repeating-linear-gradient(
+        to right,
+        white 0 20px,
+        transparent 20px 40px
+      );
+    opacity:.25;
+}
+
+.lane-line {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255,255,255,.25);
+}
+.emergency-vehicle {
+    position: absolute;
+    left: -100px;
+    top: -2px;
+    font-size: 22px;
+    animation: drive 10s linear forwards;
+}
+
+.gyro-red,
+.gyro-blue {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    top: 2px;
+}
+
+.gyro-red {
+    left: 8px;
+    background: red;
+    animation: flashRed .25s infinite;
+}
+
+.gyro-blue {
+    right: 8px;
+    background: #2196f3;
+    animation: flashBlue .25s infinite;
+}
+
+@keyframes flashRed {
+    0%,100% {opacity:.2}
+    50% {opacity:1}
+}
+
+@keyframes flashBlue {
+    0%,100% {opacity:1}
+    50% {opacity:.2}
+}
+
+@keyframes drive {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(calc(100vw + 200px));
+    }
+}
+</style>
 </head>
 <body>
 <div id="shell-topbar">
@@ -480,7 +566,9 @@ img {
     <span id="datetime"></span>
   </div>
 </div>
-
+<div id="emergency-lane">
+  <div class="lane-line"></div>
+</div>
 
 <div id="loginBox" style="text-align:center; background:white; padding:25px; border-radius:12px; width:350px; margin:auto; box-shadow:0 0 10px rgba(0,0,0,0.1);">
   <h2>🔐 Connexion</h2>
@@ -593,7 +681,49 @@ function updateDateTime() {
 // Mise à jour toutes les secondes
 setInterval(updateDateTime, 1000);
 updateDateTime();
+const vehicles = [
+  "🚑",
+  "🚒",
+  "🚓",
+  "🚁"
+];
 
+function spawnVehicle() {
+
+    const lane = document.getElementById("emergency-lane");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "emergency-vehicle";
+
+    const emoji =
+      vehicles[Math.floor(Math.random() * vehicles.length)];
+
+    wrapper.innerHTML = `
+        ${emoji}
+        <div class="gyro-red"></div>
+        <div class="gyro-blue"></div>
+    `;
+
+    if (emoji === "🚁") {
+        wrapper.style.top = "-8px";
+        wrapper.style.fontSize = "24px";
+        wrapper.style.animationDuration = "14s";
+    }
+
+    lane.appendChild(wrapper);
+
+    wrapper.addEventListener("animationend", () => {
+        wrapper.remove();
+    });
+}
+
+setInterval(() => {
+
+    if (Math.random() < 0.7) {
+        spawnVehicle();
+    }
+
+}, 6000);
 
 </script>
 

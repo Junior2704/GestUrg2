@@ -33,7 +33,7 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:#f0f4f8;height:100vh
 
 /* ===== ONGLET TYPE CHROME ===== */
 #tabs{
-  display:flex;gap:4px;overflow-x:auto;margin-top:6px
+  display:flex;gap:4px;overflow-x:auto;margin-top:6px;
 }
 .tab{
   background:#e5e7eb;border-radius:10px 10px 0 0;
@@ -494,7 +494,7 @@ iframe{
   align-items: center;
 }
 #tabs {
-  z-index: 10001; /* au-dessus des iframes */
+  z-index: 10001;
 }
 
 #shell-topbar {
@@ -880,7 +880,212 @@ iframe {
 * {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
-}</style>
+}
+/* ===== MENU DROPDOWN STYLE BTN-ID ===== */
+
+.dropdown-content{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+
+  min-width:360px;
+  padding:10px;
+
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);
+
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:16px;
+
+  box-shadow:
+    0 15px 35px rgba(0,0,0,.12),
+    0 4px 10px rgba(0,0,0,.06);
+
+  display:none;
+  z-index:10001;
+}
+
+.dropdown-content.open{
+  display:block;
+}
+
+/* Ligne */
+.dropdown-item{
+  position:relative;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+
+  padding:10px 12px;
+  margin-bottom:4px;
+
+  border-radius:12px;
+
+  transition:all .25s ease;
+}
+
+.dropdown-item:hover{
+  background:rgba(0,120,255,.06);
+  transform:translateX(3px);
+}
+
+/* Texte */
+.dropdown-item{
+  font-size:14px;
+  color:#374151;
+}
+
+/* Bouton ouvrir */
+.dropdown-item span{
+  background:transparent;
+
+  color:#000;
+
+  border:1.5px solid rgba(0,0,0,.15);
+
+  padding:7px 12px;
+
+  border-radius:10px;
+
+  cursor:pointer;
+
+  font-size:13px;
+  font-weight:500;
+
+  transition:all .25s ease;
+
+  backdrop-filter:blur(2px);
+}
+
+/* Hover identique à btn-id */
+.dropdown-item span:hover{
+  background:rgba(0,120,255,.12);
+  border-color:rgba(0,120,255,.6);
+  color:#0078ff;
+
+  transform:translateY(-1px);
+
+  box-shadow:0 6px 15px rgba(0,120,255,.15);
+}
+
+/* Focus */
+.dropdown-item span:focus{
+  outline:none;
+
+  border-color:rgba(0,120,255,.8);
+
+  box-shadow:
+    0 0 0 3px rgba(0,120,255,.15);
+}
+
+/* Séparateur subtil */
+.dropdown-item:not(:last-child){
+  border-bottom:1px solid rgba(0,0,0,.05);
+}
+.dropdown-item::after{
+  content: attr(data-desc);
+
+  position:absolute;
+  left:105%;
+  top:0;
+transform:none;
+
+  width:260px;
+
+  padding:10px 12px;
+
+  background:#111827;
+  color:white;
+
+  border-radius:10px;
+
+  font-size:13px;
+  line-height:1.4;
+
+  opacity:0;
+  visibility:hidden;
+
+  transition:.25s;
+
+  pointer-events:none;
+  z-index:99999;
+}
+
+.dropdown-item:hover::after{
+  opacity:1;
+  visibility:visible;
+}
+.dropdown-item{
+  position:relative;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  min-height:42px; /* important */
+
+  padding:10px 12px;
+  z-index:100100;
+}
+.dropdown-content{
+  z-index:100100;
+}
+
+#tabs{
+  pointer-events:none !important;
+}
+
+.tab{
+  pointer-events:auto !important;
+}
+#tabs{
+  overflow:visible !important;
+}
+#shell-topbar{
+  overflow:visible !important;
+}
+.dropdown{
+  position:relative;
+  z-index:100000;
+}
+
+.dropdown-content{
+  z-index:100001;
+}
+.dropdown{
+  position:relative;
+}
+
+.dropdown-content{
+  position:absolute;
+
+  top:calc(100% + 8px);
+  left:0;
+
+  z-index:999999;
+
+  isolation:isolate;
+}
+#actions{
+  overflow:visible;
+}
+
+#shell-topbar{
+  overflow:visible;
+}
+#topbar-main{
+    position:relative;
+    z-index:10;
+}
+
+#tabs{
+    position:relative;
+    z-index:1;
+}
+
+</style>
 </head>
 <body>
 
@@ -889,10 +1094,10 @@ iframe {
     <span id="app-title">🚑 GestUrg2</span>
 
     <div id="actions">
-      <button class="action-btn" onclick="openTab('Urgences','urgences.html')">🚑 Urgences</button>
-      <button class="action-btn" onclick="openTab('Tableau','regulation.html')">📊 Tableau</button>
+      <button class="btn-id" onclick="openTab('Urgences','urgences.html')">🚑 Urgences</button>
+      <button class="btn-id" onclick="openTab('Tableau','regulation.html')">📊 Tableau</button>
 <div class="dropdown" id="dropdownOutils">
-  <button class="action-btn" id="btnOutils">🧰 Outils ▾</button>
+  <button class="btn-id" id="btnOutils">🧰 Outils ▾</button>
 
   <div class="dropdown-content" id="menuOutils">
 
@@ -949,9 +1154,9 @@ iframe {
 
   </div>
 </div>
-	  <button class="action-btn" onclick="closeAllTabs()">🧹 Tout Fermer</button>
-<button class="action-btn" onclick="lockSession()">🔐 Vérrouiller</button>
-      <button class ="action-btn" id="btnLogout">➜] Se déconnecter</button>
+	  <button class="btn-id" onclick="closeAllTabs()">🧹 Tout Fermer</button>
+<button class="btn-id" onclick="lockSession()">🔐 Vérrouiller</button>
+      <button class ="btn-id" id="btnLogout">➜] Se déconnecter</button>
 
     </div>
 
@@ -1204,7 +1409,8 @@ function openTab(title, url){
   const iframe=document.createElement('iframe');
   iframe.src=url;iframe.dataset.id=id;
   document.getElementById('content').appendChild(iframe);
-
+  pinnedOpen = false;
+document.getElementById('menuOutils').classList.remove("open");
   document.getElementById('home').style.display='none';
   setActive(id);
 }
@@ -1434,7 +1640,7 @@ document.getElementById("unlockPassword").addEventListener("keydown", function(e
  onAuthStateChanged(auth, async (user) => {
   if (!user) {
     console.log("Aucun utilisateur connecté");
-   window.location.href = "index.html";
+   //window.location.href = "index.html";
     return;
   }
 

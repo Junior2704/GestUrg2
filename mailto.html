@@ -345,58 +345,80 @@
     function closeMessageModal() { hide("messageModal"); }
 
   // --- Recherche patients insensible à la casse (sans modifier Firestore) ---
-async function searchPatients(query) {
+async function searchPatients(query = "") {
   const resultsContainer = document.getElementById("results");
-  resultsContainer.innerHTML = "<li style='padding:8px;color:#555;'>⏳ Recherche en cours...</li>";
-
-  if (!query.trim()) {
-    resultsContainer.innerHTML = "<li style='padding:8px;color:#777;'>Entrez un nom ou prénom...</li>";
-    return;
-  }
+  resultsContainer.innerHTML = "<li style='padding:8px;color:#555;'>⏳ Chargement...</li>";
 
   try {
-    const lowerQuery = query.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
 
-    // 1️⃣ Récupération de tous les patients (ou limite raisonnable)
-    const snapshot = await db.collection("patients").limit(200).get();
+    const snapshot = await db.collection("patients")
+      .orderBy("nom")
+      .limit(500)
+      .get();
 
     const patients = [];
+
     snapshot.forEach(doc => {
       const data = doc.data();
-      const nom = data.nom || "";
-      const prenom = data.prenom || "";
-      const fullName = `${prenom} ${nom}`.toLowerCase();
 
-      if (fullName.includes(lowerQuery)) {
-        patients.push({ id: doc.id, data });
+      const nom = (data.nom || "").toLowerCase();
+      const prenom = (data.prenom || "").toLowerCase();
+      const fullName = `${prenom} ${nom}`;
+
+      // Si recherche vide => afficher tout
+      if (
+        lowerQuery === "" ||
+        nom.includes(lowerQuery) ||
+        prenom.includes(lowerQuery) ||
+        fullName.includes(lowerQuery)
+      ) {
+        patients.push({
+          id: doc.id,
+          data
+        });
       }
     });
 
-    // 2️⃣ Affichage des résultats
     resultsContainer.innerHTML = "";
+
     if (patients.length === 0) {
-      resultsContainer.innerHTML = "<li style='padding:8px;color:#777;'>Aucun patient trouvé.</li>";
+      resultsContainer.innerHTML =
+        "<li style='padding:8px;color:#777;'>Aucun patient trouvé.</li>";
       return;
     }
 
     patients.forEach(({ id, data }) => {
       const li = document.createElement("li");
-      li.textContent = `${data.prenom || ""} ${data.nom || ""}`;
+
+      li.innerHTML = `
+        <strong>${data.prenom || ""} ${data.nom || ""}</strong>
+      `;
+
       li.style.cursor = "pointer";
-      li.style.padding = "8px";
+      li.style.padding = "10px";
       li.style.borderBottom = "1px solid #eee";
-      li.addEventListener("mouseenter", () => li.style.background = "#f4f6f9");
-      li.addEventListener("mouseleave", () => li.style.background = "white");
+
+      li.addEventListener("mouseenter", () => {
+        li.style.background = "#f4f6f9";
+      });
+
+      li.addEventListener("mouseleave", () => {
+        li.style.background = "white";
+      });
+
       li.onclick = () => {
         currentPatient = { id, data };
         openEmailSelectModal(data.email || "");
       };
+
       resultsContainer.appendChild(li);
     });
 
   } catch (err) {
-    console.error("Erreur recherche Firestore :", err);
-    resultsContainer.innerHTML = "<li style='padding:8px;color:#f00;'>Erreur de recherche.</li>";
+    console.error(err);
+    resultsContainer.innerHTML =
+      "<li style='padding:8px;color:red;'>Erreur de chargement.</li>";
   }
 }
 

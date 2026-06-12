@@ -155,7 +155,18 @@ document.addEventListener("DOMContentLoaded", () => {
       evaluerSecurite(this.value);
     });
 });
-  </script>
+ window.fermerModal = function () {
+  document.getElementById("forceModal").style.display = "none";
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const from = params.get("from");
+
+  if (from === "obligatoire") {
+    document.getElementById("forceModal").style.display = "flex";
+  }
+}); </script>
 
   <style>
     body {
@@ -258,7 +269,49 @@ document.addEventListener("DOMContentLoaded", () => {
 button:disabled {
   background: #aaa;
   cursor: not-allowed;
-}</style>
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: white;
+  width: 420px;
+  max-width: 90%;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+  text-align: center;
+  animation: popup 0.25s ease;
+}
+
+.modal-box h3 {
+  color: #d32f2f;
+  margin-top: 0;
+}
+
+.modal-box p {
+  color: #444;
+  line-height: 1.5;
+}
+
+@keyframes popup {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -277,5 +330,15 @@ button:disabled {
 
     <div id="message"></div>
   </div>
+  <div id="forceModal" class="modal">
+  <div class="modal-box">
+    <h3>🔐 Changement obligatoire du mot de passe</h3>
+    <p>Pour des raisons de sécurité, vous devez modifier votre mot de passeavant de pouvoir vous reconnecter à l'application.</p>
+    <p>Ce changement à été imposé par un administrateur, vous ne pouvez donc plus vous connecter avant d'avoir changé de mot de passe.</p>
+    <p>N'hésitez-pas à contacter un administrateur en cas de problèmes liés à ce changement.</p>
+
+    <button onclick="fermerModal()">J'ai compris</button>
+  </div>
+</div>
 </body>
 </html>

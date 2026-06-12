@@ -2384,6 +2384,20 @@ window.unlockSession = async function() {
 
     if (lockAttempts >= 3) {
       await signOut(auth);
+      isLocked = false;
+    lockAttempts = 0;
+
+    sessionStorage.removeItem("appLocked");
+
+    document.body.classList.remove("locked");
+    document.getElementById("lockOverlay").classList.remove("active");
+
+    document.removeEventListener("keydown", preventDevTools);
+
+    document.querySelectorAll("iframe").forEach(iframe => {
+      iframe.style.pointerEvents = "auto";
+      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
+    });
       window.location.href = "index.html";
     }
   }

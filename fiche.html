@@ -4161,7 +4161,7 @@ async function ouvrirModalSignature(url, signatureId){
   surveillerSignature(url, signatureId);
 }
 function surveillerSignature(url, signatureId){
-
+window.signatureId=signatureId;
   const ref =
     doc(db,"signatures-patient",signatureId);
 
@@ -4230,7 +4230,7 @@ btnValiderCode.addEventListener("click", async () => {
     // ✅ Code correct → démarrer la clôture
     modalCode.style.display = "none";
     document.getElementById("modalCloture").style.display = "flex";
-
+const signature = window.signatureId;
     const bar = document.getElementById("clotureBar");
     bar.style.width = "0%";
     let progress = 0;
@@ -4271,6 +4271,7 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
         await updateDoc(hospiRef, {
           dateFin: now,
           historique,
+          signature: signature,
           rapport: `Rapport d'hospitalisation pour ${patientData.nom} ${patientData.prenom} clôturé le ${now}.`
         });
 

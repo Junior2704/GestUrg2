@@ -4098,12 +4098,24 @@ const btnValiderCode = document.getElementById("btnValiderCode");
 document.getElementById("btnCloturer").addEventListener("click", async () => {
 
   try {
+const docSnap = await getDoc(patientRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document introuvable");
+      afficherBulle("❌ Patient introuvable", "error");
+      return;
+    }
+
+    const patientData = docSnap.data();
 
     const signatureRef =
       await addDoc(collection(db, "signatures-patient"), {
 
         patientId,
         dateCreation: serverTimestamp(),
+nom: patientData.nom || "",
+    prenom: patientData.prenom || "",
+    dateNaissance: patientData.dateNaissance || "",
 
         signee: false,
 

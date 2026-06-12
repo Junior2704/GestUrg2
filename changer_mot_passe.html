@@ -62,7 +62,6 @@
         msg.textContent = "Les deux nouveaux mots de passe ne correspondent pas.";
         return;
       }
-
 try {
   const user = auth.currentUser;
   if (!user) {
@@ -70,31 +69,31 @@ try {
     return;
   }
 
-  // 🔐 Vérification du nouvel ancien ≠ nouveau AVANT Firebase
   if (ancien === nouveau) {
     msg.textContent = "Vous ne pouvez pas réutiliser le même mot de passe.";
     return;
   }
 
-  // 🔐 Tentative de re-authentification
   const credential = EmailAuthProvider.credential(user.email, ancien);
 
-  await reauthenticateWithCredential(user, credential)
-    .catch((error) => {
-      // 👉 Listener spécifique erreur ancien mot de passe
-      if (
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/invalid-login-credentials"
-      ) {
-        msg.textContent = "Ancien mot de passe incorrect.";
-      } else {
-        msg.textContent = "Erreur d'authentification.";
-      }
-      throw error; // stop la suite
-    });
+  try {
+    await reauthenticateWithCredential(user, credential);
+  } catch (error) {
+    console.log(error);
 
-  // ✅ Mise à jour mot de passe si OK
+    if (
+      error.code === "auth/wrong-password" ||
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/invalid-login-credentials"
+    ) {
+      msg.textContent = "Ancien mot de passe incorrect.";
+      return;
+    }
+
+    msg.textContent = "Erreur d'authentification.";
+    return;
+  }
+
   await updatePassword(user, nouveau);
 
   await updateDoc(doc(db, "medecins", user.uid), {
@@ -111,11 +110,7 @@ try {
 
 } catch (error) {
   console.error(error);
-
-  // fallback sécurité
-  if (!msg.textContent) {
-    msg.textContent = "Erreur : " + error.message;
-  }
+  msg.textContent = "Erreur : " + error.message;
 }
     };
     function evaluerSecurite(mdp) {

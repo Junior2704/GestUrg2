@@ -63,41 +63,60 @@
         return;
       }
 
-      try {
-        const user = auth.currentUser;
-        if (!user) {
-          msg.textContent = "Aucun utilisateur connecté.";
-          return;
-        }
+try {
+  const user = auth.currentUser;
+  if (!user) {
+    msg.textContent = "Aucun utilisateur connecté.";
+    return;
+  }
 
-        // 🔐 Vérification de l’ancien mot de passe
-        const credential = EmailAuthProvider.credential(user.email, ancien);
-        await reauthenticateWithCredential(user, credential);
-if (ancien == nouveau){
-       msg.textContent = "Vous ne pouvez pas ré-utiliser le même mot depasse";
-        return;
-}
-        // ✅ Si l'ancien mot de passe est correct, on met à jour
-        await updatePassword(user, nouveau);
+  // 🔐 Vérification du nouvel ancien ≠ nouveau AVANT Firebase
+  if (ancien === nouveau) {
+    msg.textContent = "Vous ne pouvez pas réutiliser le même mot de passe.";
+    return;
+  }
 
-        // (Optionnel) Met à jour Firestore
-        await updateDoc(doc(db, "medecins", user.uid), { doitChangerMDP: false });
+  // 🔐 Tentative de re-authentification
+  const credential = EmailAuthProvider.credential(user.email, ancien);
 
-        msg.style.color = "green";
-        msg.textContent = "✅ Mot de passe modifié avec succès ! Déconnexion...";
-
-        setTimeout(async () => {
-          await signOut(auth);
-          window.location.href = "index.html";
-        }, 2000);
-      } catch (error) {
-        console.error(error);
-        if (error.code === "auth/wrong-password") {
-          msg.textContent = "Ancien mot de passe incorrect.";
-        } else {
-          msg.textContent = "Erreur : " + error.message;
-        }
+  await reauthenticateWithCredential(user, credential)
+    .catch((error) => {
+      // 👉 Listener spécifique erreur ancien mot de passe
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-login-credentials"
+      ) {
+        msg.textContent = "Ancien mot de passe incorrect.";
+      } else {
+        msg.textContent = "Erreur d'authentification.";
       }
+      throw error; // stop la suite
+    });
+
+  // ✅ Mise à jour mot de passe si OK
+  await updatePassword(user, nouveau);
+
+  await updateDoc(doc(db, "medecins", user.uid), {
+    doitChangerMDP: false,
+  });
+
+  msg.style.color = "green";
+  msg.textContent = "✅ Mot de passe modifié avec succès ! Déconnexion...";
+
+  setTimeout(async () => {
+    await signOut(auth);
+    window.location.href = "index.html";
+  }, 2000);
+
+} catch (error) {
+  console.error(error);
+
+  // fallback sécurité
+  if (!msg.textContent) {
+    msg.textContent = "Erreur : " + error.message;
+  }
+}
     };
     function evaluerSecurite(mdp) {
   let score = 0;

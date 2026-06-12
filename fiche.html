@@ -2697,7 +2697,28 @@ nav:hover .nav-item span {
 
     <label for="adminEmail">Email</label>
     <input type="email" id="adminEmail" />
+<hr>
 
+<h3>🪪 Vérification de l'identité</h3>
+
+<button id="btnAjouterVerification" class="btn-id">
+  ➕ Ajouter une vérification
+</button>
+
+<div id="historiqueVerifications">
+  <h4>Dernières vérifications</h4>
+
+  <table style="width:100%">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Pièce</th>
+      <th>Vérifié par</th>
+    </tr>
+  </thead>
+  <tbody id="listeVerifications"></tbody>
+</table>
+</div>
     <div class="modal-buttons">
 	    <button  id="readVitaleBtn" class="btn-id" >🆔 Lecture Carte Vitale</button>
       <button id="btnFacturer" class="btn-id">💶 Facturer</button>
@@ -2709,7 +2730,45 @@ nav:hover .nav-item span {
     </div>
   </div>
 </div>
- 
+ <div id="modalVerificationIdentite" class="modal-overlay">
+  <div class="modal">
+    <h3>🪪 Vérification de l'identité</h3>
+
+    <label>Type de pièce présentée</label>
+    <select id="typePieceIdentite">
+      <option value="">-- Choisir --</option>
+      <option value="Carte Nationale d'Identité">Carte Nationale d'Identité</option>
+      <option value="Passeport">Passeport</option>
+      <option value="Permis de conduire">Permis de conduire</option>
+      <option value="Titre de séjour">Titre de séjour</option>
+      <option value="Carte Vitale avec photo">Carte Vitale avec photo</option>
+      <option value="Autre">Autre</option>
+    </select>
+
+    <hr>
+
+    <h4>Informations contrôlées</h4>
+
+    <p><strong>Nom :</strong> <span id="verifNom"></span></p>
+    <p><strong>Prénom :</strong> <span id="verifPrenom"></span></p>
+    <p><strong>Date de naissance :</strong> <span id="verifDdn"></span></p>
+
+    <label style="margin-top:15px;">
+      <input type="checkbox" id="certificationVerif">
+      Je certifie sur l'honneur avoir contrôlé l'identité du patient à partir du document présenté.
+    </label>
+
+    <div class="modal-buttons">
+      <button onclick="fermerVerificationIdentite()" class="btn-id btn-id-c">
+        ❌ Annuler
+      </button>
+
+      <button onclick="enregistrerVerificationIdentite()" class="btn-id btn-id-v">
+        ✔️ Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
 <!-- 🏁 Modale de saisie du code de clôture -->
 <div class="modal-overlay" id="modalCodeCloture" style="display:none;">
   <div class="modal">
@@ -5271,7 +5330,70 @@ setupClearButton("infirmierReferent", "clearInfirmier", "infirmierReferent");
 setupClearButton("interneReferent", "clearInterne", "interneReferent");
 setupClearButton("externeReferent", "clearExterne", "externeReferent");
 
+async function enregistrerVerificationIdentite() {
 
+  const typePiece =
+    document.getElementById("typePieceIdentite").value;
+
+  const certifie =
+    document.getElementById("certificationVerif").checked;
+
+  if (!typePiece) {
+    alert("Veuillez sélectionner une pièce d'identité.");
+    return;
+  }
+
+  if (!certifie) {
+    alert("Vous devez certifier la vérification.");
+    return;
+  }
+
+  const verification = {
+    date: firebase.firestore.Timestamp.now(),
+    typePiece,
+    nom: patient.nom || "",
+    prenom: patient.prenom || "",
+    dateNaissance: patient.dateNaissance || "",
+    verifiePar: utilisateur.nomComplet,
+    uidVerificateur: utilisateur.uid
+  };
+
+  await db
+    .collection("patients")
+    .doc(patientId)
+    .update({
+      identiteVerifications:
+        firebase.firestore.FieldValue.arrayUnion(
+          verification
+        )
+    });
+
+  fermerVerificationIdentite();
+  chargerHistoriqueVerifications();
+}
+function afficherVerifications(verifications = []) {
+
+  const tbody =
+    document.getElementById("listeVerifications");
+
+  tbody.innerHTML = "";
+
+  verifications
+    .sort((a,b) => b.date.seconds - a.date.seconds)
+    .slice(0,10)
+    .forEach(v => {
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${formatDate(v.date.toDate())}</td>
+        <td>${v.typePiece}</td>
+        <td>${v.verifiePar}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+}
 
 async function getHospitalisationEnCours(patientId) {
   if (!patientId) throw "Patient ID non fourni";
@@ -5621,6 +5743,30 @@ document.addEventListener("click", function(e){
     e.preventDefault();
   }
 }, true);
+function afficherVerifications(verifications = []) {
+
+  const tbody =
+    document.getElementById("listeVerifications");
+
+  tbody.innerHTML = "";
+
+  verifications
+    .sort((a,b) => b.date.seconds - a.date.seconds)
+    .slice(0,10)
+    .forEach(v => {
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${formatDate(v.date.toDate())}</td>
+        <td>${v.typePiece}</td>
+        <td>${v.verifiePar}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+}
+
 </script>
 
 </body>

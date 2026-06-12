@@ -4168,7 +4168,7 @@ btnAdmin.addEventListener("click", async () => {
     document.getElementById("adminAdresse").value = data.adresse || "";
     document.getElementById("adminTelephone").value = data.telephone || "";
     document.getElementById("adminEmail").value = data.email || "";
-
+await chargerHistoriqueVerifications();
     modalAdmin.classList.add("show");
 
   } catch (e) {
@@ -4577,17 +4577,7 @@ function reinitialiserFormulaireActe() {
   champAutreActe.style.display = "none";
 }
 
-function formatDateHeure(dateString) {
-  const date = new Date(dateString);
-  const pad = (n) => n.toString().padStart(2, '0');
-  const jour = pad(date.getDate());
-  const mois = pad(date.getMonth() + 1);
-  const annee = date.getFullYear();
-  const heures = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const secondes = pad(date.getSeconds());
-  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
-}
+
 
 document.getElementById('readVitaleBtn').addEventListener('click', () => {
   const modal = document.getElementById('vitaleModal');
@@ -5330,68 +5320,254 @@ setupClearButton("infirmierReferent", "clearInfirmier", "infirmierReferent");
 setupClearButton("interneReferent", "clearInterne", "interneReferent");
 setupClearButton("externeReferent", "clearExterne", "externeReferent");
 
+
+document
+  .getElementById("btnAjouterVerification")
+  .addEventListener("click", ouvrirVerificationIdentite);
+
+function ouvrirVerificationIdentite() {
+
+  const patient = window.patientAdminData || {};
+
+  document.getElementById("typePieceIdentite").value = "";
+  document.getElementById("certificationVerif").checked = false;
+
+  document.getElementById("verifNom").textContent =
+    patient.nom || "-";
+
+  document.getElementById("verifPrenom").textContent =
+    patient.prenom || "-";
+
+  document.getElementById("verifDdn").textContent =
+    patient.dateNaissance || "-";
+
+  document.getElementById("modalVerificationIdentite")
+    .style.display = "flex";
+}
+function fermerVerificationIdentite() {
+
+  document.getElementById(
+    "modalVerificationIdentite"
+  ).style.display = "none";
+}
 async function enregistrerVerificationIdentite() {
 
-  const typePiece =
-    document.getElementById("typePieceIdentite").value;
+  try {
 
-  const certifie =
-    document.getElementById("certificationVerif").checked;
+    const typePiece =
+      document.getElementById("typePieceIdentite").value;
 
-  if (!typePiece) {
-    alert("Veuillez sélectionner une pièce d'identité.");
-    return;
+    const certification =
+      document.getElementById("certificationVerif").checked;
+
+    if (!typePiece) {
+      alert(
+        "Veuillez sélectionner une pièce d'identité."
+      );
+      return;
+    }
+
+    if (!certification) {
+      alert(
+        "Vous devez certifier avoir effectué la vérification."
+      );
+      return;
+    }
+
+    const verification = {
+
+      date:
+        firebase.firestore.Timestamp.now(),
+
+      typePiece,
+
+      nom:
+        document.getElementById("nom").textContent || "",
+
+      prenom:
+        document.getElementById("prenom").textContent || "",
+
+      dateNaissance:
+        document.getElementById("verifDdn").textContent || "",
+
+      verifiePar:
+        utilisateurConnecte.nom,
+
+      uidVerificateur:
+        utilisateurConnecte.uid
+    };
+
+    await db
+      .collection("patients")
+      .doc(patientId)
+      .update({
+
+        identiteVerifications:
+          firebase.firestore.FieldValue.arrayUnion(
+            verification
+          )
+      });
+
+    fermerVerificationIdentite();
+
+    await chargerHistoriqueVerifications();
+
+    alert(
+      "Vérification enregistrée avec succès."
+    );
+
   }
+  catch (error) {
 
-  if (!certifie) {
-    alert("Vous devez certifier la vérification.");
-    return;
+    console.error(
+      "Erreur vérification identité :",
+      error
+    );
+
+    alert(
+      "Impossible d'enregistrer la vérification."
+    );
   }
-
-  const verification = {
-    date: firebase.firestore.Timestamp.now(),
-    typePiece,
-    nom: patient.nom || "",
-    prenom: patient.prenom || "",
-    dateNaissance: patient.dateNaissance || "",
-    verifiePar: utilisateur.nomComplet,
-    uidVerificateur: utilisateur.uid
-  };
-
-  await db
-    .collection("patients")
-    .doc(patientId)
-    .update({
-      identiteVerifications:
-        firebase.firestore.FieldValue.arrayUnion(
-          verification
-        )
-    });
-
-  fermerVerificationIdentite();
-  chargerHistoriqueVerifications();
 }
-function afficherVerifications(verifications = []) {
+async function chargerHistoriqueVerifications() {
 
   const tbody =
     document.getElementById("listeVerifications");
 
-  tbody.innerHTML = "";
+  try {
 
-  verifications
-    .sort((a,b) => b.date.seconds - a.date.seconds)
-    .slice(0,10)
-    .forEach(v => {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3">Chargement...</td>
+      </tr>
+    `;
+
+    const docSnap = await getDoc(patientRef);
+
+    if (!docSnap.exists()) {
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3">
+            Aucune vérification enregistrée
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    const data = docSnap.data();
+
+    const verifications =
+      data.identiteVerifications || [];
+
+    tbody.innerHTML = "";
+
+    if (verifications.length === 0) {
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3"
+              style="
+                text-align:center;
+                color:#777;
+                font-style:italic;
+              ">
+            Aucune vérification enregistrée
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    verifications.sort((a,b) => {
+
+      const da = a.date?.seconds || 0;
+      const db = b.date?.seconds || 0;
+
+      return db - da;
+
+    });
+
+    verifications.forEach(v => {
 
       const tr = document.createElement("tr");
 
+      const date =
+        v.date?.toDate
+          ? v.date.toDate()
+          : new Date();
+
       tr.innerHTML = `
-        <td>${formatDate(v.date.toDate())}</td>
-        <td>${v.typePiece}</td>
-        <td>${v.verifiePar}</td>
+        <td>${formatDateHeure(date)}</td>
+        <td>${v.typePiece || "-"}</td>
+        <td>${v.verifiePar || "-"}</td>
       `;
 
       tbody.appendChild(tr);
+
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3"
+            style="color:red;">
+          Erreur de chargement
+        </td>
+      </tr>
+    `;
+  }
+}
+function afficherHistoriqueVerifications(verifications) {
+
+    const tbody = document.getElementById("listeVerifications");
+
+    tbody.innerHTML = "";
+
+    if (!verifications || verifications.length === 0) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3"
+                    style="text-align:center;color:#777;font-style:italic;padding:10px;">
+                    Aucune vérification enregistrée
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    verifications.sort((a, b) => {
+
+        const dateA = a.date?.seconds || 0;
+        const dateB = b.date?.seconds || 0;
+
+        return dateB - dateA;
+    });
+
+    verifications.forEach(v => {
+
+        const tr = document.createElement("tr");
+
+        const date =
+            v.date?.toDate
+                ? v.date.toDate()
+                : new Date();
+
+        tr.innerHTML = `
+            <td>${formatDateHeure(date)}</td>
+            <td>${v.typePiece || "-"}</td>
+            <td>${v.verifiePar || "-"}</td>
+        `;
+
+        tbody.appendChild(tr);
     });
 }
 

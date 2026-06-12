@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 html, body {
   height: 100%;
@@ -2804,7 +2805,34 @@ z-index: 3000;
     </div>
   </div>
 </div>
+<div id="modalSignaturePatient" class="modal-overlay">
 
+  <div class="modal">
+
+    <h3>Signature patient</h3>
+
+    <div id="qrcodeSignature"></div>
+
+    <p>
+      Faites scanner ce QR Code au patient.
+    </p>
+
+    <div id="etatSignature">
+      ⏳ En attente de signature...
+    </div>
+
+    <button
+      id="btnContinuerCloture"
+      style="display:none"
+      class="btn btn-success">
+
+      Valider la clôture
+
+    </button>
+
+  </div>
+
+</div>
 <div id="vitaleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
     <div class="spinner" style="margin-bottom:15px;"></div>
@@ -4061,12 +4089,94 @@ const btnAnnulerCode = document.getElementById("btnAnnulerCode");
 const btnValiderCode = document.getElementById("btnValiderCode");
 
 // 🔹 Ouvrir la modale quand on clique sur "Clôturer"
-document.getElementById("btnCloturer").addEventListener("click", () => {
-  inputCode.value = "";
-  modalCode.style.display = "flex";
-  inputCode.focus();
-});
+document.getElementById("btnCloturer").addEventListener("click", async () => {
 
+  try {
+
+    const signatureRef =
+      await addDoc(collection(db, "signatures-patient"), {
+
+        patientId,
+        dateCreation: serverTimestamp(),
+
+        signee: false,
+
+        signatureImage: null,
+        signatureDate: null
+      });
+
+    ouvrirModalSignature(signatureRef.id);
+
+  } catch(err){
+
+    console.error(err);
+    afficherBulle("Erreur création signature","error");
+
+  }
+
+});
+async function ouvrirModalSignature(signatureId){
+
+  document.getElementById(
+    "modalSignaturePatient"
+  ).style.display = "flex";
+
+  const qrDiv =
+    document.getElementById("qrcodeSignature");
+
+  qrDiv.innerHTML = "";
+
+  new QRCode(qrDiv,{
+      text: signatureId,
+      width:250,
+      height:250
+  });
+
+  surveillerSignature(signatureId);
+}
+function surveillerSignature(signatureId){
+
+  const ref =
+    doc(db,"signatures-patient",signatureId);
+
+  onSnapshot(ref,(snap)=>{
+
+    if(!snap.exists()) return;
+
+    const data = snap.data();
+
+    if(data.signee){
+
+      document.getElementById(
+        "etatSignature"
+      ).innerHTML =
+      "✅ Signature enregistrée";
+
+      document.getElementById(
+        "btnContinuerCloture"
+      ).style.display = "block";
+
+    }
+
+  });
+
+}
+
+document
+.getElementById("btnContinuerCloture")
+.addEventListener("click",()=>{
+
+    document.getElementById(
+      "modalSignaturePatient"
+    ).style.display = "none";
+
+    inputCode.value = "";
+
+    modalCode.style.display = "flex";
+
+    inputCode.focus();
+
+});
 // 🔹 Annuler → fermer la modale
 btnAnnulerCode.addEventListener("click", () => {
   modalCode.style.display = "none";

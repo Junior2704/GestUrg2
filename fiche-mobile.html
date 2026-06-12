@@ -1012,7 +1012,9 @@ input:focus {
 <div id="menuAppels" class="sidebar-item" onclick="goAppels()">
   📞 Appels
 </div>
-
+<div class="sidebar-item" onclick="goSignature()">
+ ✍️ Signature patient
+</div>
   <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
 </div>
 
@@ -1099,7 +1101,41 @@ input:focus {
 </div>
   </div>
 </div>
+<div id="pageSignature" class="page">
 
+  <h2>✍️ Signature patient</h2>
+
+  <button class="btn btn-green" onclick="startQrScan()">
+    📷 Scanner QR Code
+  </button>
+
+  <div id="reader" style="margin-top:15px;"></div>
+
+  <div id="signatureInfos" style="margin-top:15px;"></div>
+
+  <canvas
+      id="signatureCanvas"
+      width="350"
+      height="200"
+      style="
+        border:2px solid #ccc;
+        border-radius:12px;
+        background:white;
+        margin-top:15px;
+        display:none;">
+  </canvas>
+
+  <div style="margin-top:10px;">
+    <button class="btn btn-grey" onclick="clearSignature()">
+      Effacer
+    </button>
+
+    <button class="btn btn-green" onclick="saveSignature()">
+      Enregistrer
+    </button>
+  </div>
+
+</div>
 
 </div>
 
@@ -1220,7 +1256,7 @@ input:focus {
 <!-- Firebase compat (comme dans tes fichiers existants) -->
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
 /* ----------------------
    Config Firebase (identique à tes fichiers)
@@ -1772,8 +1808,25 @@ async function openExam(patientId, examIndex) {
 /* ----------------------
    Refresh / init
    ---------------------- */
-refreshBtn.addEventListener('click', fetchPatients);
-window.addEventListener('load', fetchPatients);
+refreshBtn.addEventListener('click', () => {
+    fetchPatients();
+
+    const canvas = document.getElementById("signatureCanvas");
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: "white"
+    });
+});
+
+window.addEventListener('load', () => {
+    fetchPatients();
+
+    const canvas = document.getElementById("signatureCanvas");
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: "white"
+    });
+});
 
 // close modal by clicking overlay
 modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) hideModal(); });
@@ -1979,7 +2032,9 @@ function goAppels() {
   updateAttenteStats();
 
 }
-
+function goSignature() {
+  showPage('pageSignature');
+}
 
 
 
@@ -2133,7 +2188,9 @@ db.collection("referentiels").doc("bureau")
 let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
-
+let currentSignatureId = null;
+let qrScanner = null;
+let signaturePad = null;
   onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -2177,7 +2234,93 @@ const menuAppels = document.getElementById("menuAppels");
   }
 });
 
+function startQrScan() {
 
+    const reader = document.getElementById("reader");
+
+    reader.innerHTML = "";
+
+    qrScanner = new Html5Qrcode("reader");
+
+    qrScanner.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        async (decodedText) => {
+
+            await qrScanner.stop();
+
+            loadSignatureDocument(decodedText);
+
+        }
+    );
+}
+
+async function loadSignatureDocument(id) {
+
+    currentSignatureId = id;
+
+    const docSnap =
+      await db.collection("signatures-patient")
+              .doc(id)
+              .get();
+
+    if(!docSnap.exists){
+
+        alert("Document introuvable");
+        return;
+    }
+
+    const data = docSnap.data();
+
+    document.getElementById("signatureInfos").innerHTML = `
+        <b>${data.nom || ""}</b><br>
+        ${data.prenom || ""}
+    `;
+
+    document.getElementById("signatureCanvas")
+        .style.display = "block";
+}
+function clearSignature() {
+
+    if(signaturePad){
+        signaturePad.clear();
+    }
+
+}
+async function saveSignature() {
+
+    if(!currentSignatureId){
+        alert("Aucun document chargé");
+        return;
+    }
+
+    if(signaturePad.isEmpty()){
+        alert("Le patient doit signer");
+        return;
+    }
+
+    const image =
+        signaturePad.toDataURL("image/png");
+
+    await db.collection("signatures-patient")
+        .doc(currentSignatureId)
+        .update({
+
+            signatureImage: image,
+
+            signatureDate:
+                firebase.firestore.FieldValue.serverTimestamp(),
+
+            signee: true
+        });
+
+    alert("Signature enregistrée");
+
+    signaturePad.clear();
+}
 </script>
 <script>
 const sb = document.getElementById("sidebar");

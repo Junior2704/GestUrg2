@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Signature Patient</title>
+
+<style>
+
+body{
+    margin:0;
+    padding:20px;
+    background:#f4f6f9;
+    font-family:Arial,sans-serif;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 2px 12px rgba(0,0,0,.12);
+}
+
+h1{
+    text-align:center;
+    color:#1f2937;
+}
+
+.patient{
+    text-align:center;
+    margin-bottom:20px;
+    font-size:18px;
+}
+
+.info{
+    text-align:center;
+    color:#666;
+    margin-bottom:20px;
+}
+
+canvas{
+    width:100%;
+    height:250px;
+    border:2px solid #d1d5db;
+    border-radius:12px;
+    background:white;
+    touch-action:none;
+}
+
+.actions{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:20px;
+}
+
+button{
+    border:none;
+    border-radius:10px;
+    padding:12px 20px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.btn-clear{
+    background:#e5e7eb;
+}
+
+.btn-save{
+    background:#16a34a;
+    color:white;
+}
+
+.success{
+    display:none;
+    text-align:center;
+    color:#16a34a;
+    font-size:20px;
+    font-weight:bold;
+    padding:30px;
+}
+
+.error{
+    text-align:center;
+    color:#dc2626;
+    font-weight:bold;
+    padding:20px;
+}
+
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Signature de sortie</h1>
+
+<div id="patient" class="patient">
+Chargement...
+</div>
+
+<div id="formulaire">
+
+<div class="info">
+Veuillez signer dans le cadre ci-dessous.
+</div>
+
+<canvas id="signatureCanvas"></canvas>
+
+<div class="actions">
+
+<button
+class="btn-clear"
+onclick="effacerSignature()">
+Effacer </button>
+
+<button
+class="btn-save"
+onclick="enregistrerSignature()">
+Enregistrer </button>
+
+</div>
+
+</div>
+
+<div id="success" class="success">
+✅ Signature enregistrée.<br><br>
+Vous pouvez maintenant fermer cette page.
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ==========================
+   FIREBASE
+========================== */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ==========================
+   VARIABLES
+========================== */
+
+let signaturePad;
+let signatureId;
+
+/* ==========================
+   CANVAS
+========================== */
+
+function resizeCanvas() {
+
+    const canvas =
+      document.getElementById("signatureCanvas");
+
+    const ratio =
+      Math.max(window.devicePixelRatio || 1,1);
+
+    canvas.width =
+      canvas.offsetWidth * ratio;
+
+    canvas.height =
+      canvas.offsetHeight * ratio;
+
+    canvas.getContext("2d").scale(ratio, ratio);
+
+}
+
+window.addEventListener("load", async () => {
+
+    try{
+
+        const params =
+          new URLSearchParams(window.location.search);
+
+        signatureId = params.get("id");
+
+        if(!signatureId){
+
+            document.getElementById("patient").innerHTML =
+            "❌ Identifiant manquant";
+
+            return;
+        }
+
+        const ref =
+          doc(db,"signatures-patient",signatureId);
+
+        const snap =
+          await getDoc(ref);
+
+        if(!snap.exists()){
+
+            document.getElementById("patient").innerHTML =
+            "❌ Document introuvable";
+
+            return;
+        }
+
+        const data = snap.data();
+
+        if(data.signee){
+
+            document.getElementById("formulaire")
+              .style.display = "none";
+
+            document.getElementById("success")
+              .style.display = "block";
+
+            document.getElementById("success")
+              .innerHTML =
+              "✅ Cette signature a déjà été enregistrée.";
+
+            return;
+        }
+
+        document.getElementById("patient").innerHTML = `
+            <strong>${data.nom || ""}</strong><br>
+            ${data.prenom || ""}
+        `;
+
+        resizeCanvas();
+
+        const canvas =
+          document.getElementById("signatureCanvas");
+
+        signaturePad =
+          new SignaturePad(canvas,{
+            backgroundColor:"white"
+          });
+
+        window.addEventListener(
+          "resize",
+          resizeCanvas
+        );
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        document.getElementById("patient").innerHTML =
+        "❌ Erreur de chargement";
+
+    }
+
+});
+
+/* ==========================
+   SIGNATURE
+========================== */
+
+window.effacerSignature = () => {
+
+    signaturePad.clear();
+
+};
+
+window.enregistrerSignature = async () => {
+
+    try{
+
+        if(signaturePad.isEmpty()){
+
+            alert("Veuillez signer");
+
+            return;
+        }
+
+        const image =
+          signaturePad.toDataURL("image/png");
+
+        await updateDoc(
+          doc(db,"signatures-patient",signatureId),
+          {
+
+            signee:true,
+
+            signatureDate:
+              serverTimestamp(),
+
+            signatureImage:image
+
+          }
+        );
+
+        document.getElementById("formulaire")
+          .style.display = "none";
+
+        document.getElementById("success")
+          .style.display = "block";
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        alert(
+          "Erreur lors de l'enregistrement"
+        );
+
+    }
+
+};
+
+</script>
+
+</body>
+</html>

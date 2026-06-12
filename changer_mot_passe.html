@@ -35,84 +35,111 @@
       }
     });
 
-    // --- Fonction de changement de mot de passe ---
-    window.changerMotDePasse = async function () {
-      const ancien = document.getElementById("oldPassword").value;
-      const nouveau = document.getElementById("newPassword").value;
-      const confirmation = document.getElementById("confirmPassword").value;
-      const msg = document.getElementById("message");
-      msg.textContent = "";
-      msg.style.color = "red";
+  window.changerMotDePasse = async function () {
+  const ancien = document.getElementById("oldPassword").value;
+  const nouveau = document.getElementById("newPassword").value;
+  const confirmation = document.getElementById("confirmPassword").value;
+  const msg = document.getElementById("message");
 
-      if (!ancien || !nouveau || !confirmation) {
-        msg.textContent = "Veuillez remplir tous les champs.";
-        return;
-      }
-     if (
-    nouveau.length < 8 ||
-    !/[A-Z]/.test(nouveau) ||
-    !/[a-z]/.test(nouveau) ||
-    !/[0-9]/.test(nouveau) ||
-    !/[^A-Za-z0-9]/.test(nouveau)
-) {
-        msg.textContent = "Le mot de passe est trop faible.";
-        return;
-      }
-      if (nouveau !== confirmation) {
-        msg.textContent = "Les deux nouveaux mots de passe ne correspondent pas.";
-        return;
-      }
-try {
+  msg.textContent = "";
+  msg.style.color = "red";
+
+  // 🔴 Vérification champs
+  if (!ancien || !nouveau || !confirmation) {
+    msg.textContent = "Veuillez remplir tous les champs.";
+    return;
+  }
+
+  // 🔴 Sécurité mot de passe
+  const passwordStrong =
+    nouveau.length >= 8 &&
+    /[A-Z]/.test(nouveau) &&
+    /[a-z]/.test(nouveau) &&
+    /[0-9]/.test(nouveau) &&
+    /[^A-Za-z0-9]/.test(nouveau);
+
+  if (!passwordStrong) {
+    msg.textContent = "Le mot de passe est trop faible.";
+    return;
+  }
+
+  // 🔴 Confirmation
+  if (nouveau !== confirmation) {
+    msg.textContent = "Les deux nouveaux mots de passe ne correspondent pas.";
+    return;
+  }
+
   const user = auth.currentUser;
   if (!user) {
     msg.textContent = "Aucun utilisateur connecté.";
     return;
   }
 
+  // 🔴 Interdiction réutilisation même mot de passe
   if (ancien === nouveau) {
     msg.textContent = "Vous ne pouvez pas réutiliser le même mot de passe.";
     return;
   }
 
-  const credential = EmailAuthProvider.credential(user.email, ancien);
-
   try {
-    await reauthenticateWithCredential(user, credential);
-  } catch (error) {
-    console.log(error);
+    const credential = EmailAuthProvider.credential(user.email, ancien);
 
-    if (
-      error.code === "auth/wrong-password" ||
-      error.code === "Firebase: Error (auth/invalid-credential)." ||
-      error.code === "auth/invalid-login-credentials"
-    ) {
-      msg.textContent = "Ancien mot de passe incorrect.";
+    // 🔐 Re-authentification
+    try {
+      await reauthenticateWithCredential(user, credential);
+    } catch (error) {
+      console.log("AUTH ERROR:", error.code);
+
+      const badCredErrors = [
+        "auth/wrong-password",
+        "auth/invalid-credential",
+        "auth/invalid-login-credentials"
+      ];
+
+      if (badCredErrors.includes(error.code)) {
+        msg.textContent = "Ancien mot de passe incorrect.";
+        return;
+      }
+
+      msg.textContent = "Erreur d'authentification.";
       return;
     }
 
-    msg.textContent = "Erreur d'authentification.";
-    return;
+    // 🔐 Mise à jour mot de passe
+    try {
+      await updatePassword(user, nouveau);
+    } catch (error) {
+      console.log("UPDATE ERROR:", error.code);
+
+      if (error.code === "auth/requires-recent-login") {
+        msg.textContent =
+          "Veuillez vous reconnecter avant de changer le mot de passe.";
+        return;
+      }
+
+      msg.textContent = "Erreur lors de la mise à jour du mot de passe.";
+      return;
+    }
+
+    // 🔥 Firestore update
+    await updateDoc(doc(db, "medecins", user.uid), {
+      doitChangerMDP: false,
+    });
+
+    msg.style.color = "green";
+    msg.textContent =
+      "✅ Mot de passe modifié avec succès ! Déconnexion en cours...";
+
+    setTimeout(async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    }, 2000);
+
+  } catch (error) {
+    console.error("GLOBAL ERROR:", error);
+    msg.textContent = "Erreur : " + error.message;
   }
-
-  await updatePassword(user, nouveau);
-
-  await updateDoc(doc(db, "medecins", user.uid), {
-    doitChangerMDP: false,
-  });
-
-  msg.style.color = "green";
-  msg.textContent = "✅ Mot de passe modifié avec succès ! Déconnexion...";
-
-  setTimeout(async () => {
-    await signOut(auth);
-    window.location.href = "index.html";
-  }, 2000);
-
-} catch (error) {
-  console.error(error);
-  msg.textContent = "Erreur : " + error.message;
-}
-    };
+};
     function evaluerSecurite(mdp) {
   let score = 0;
 

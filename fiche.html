@@ -2899,6 +2899,7 @@ import {
   query,
   where,
   deleteField,
+   arrayUnion,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
@@ -5372,71 +5373,68 @@ window.enregistrerVerificationIdentite = async function () {
       document.getElementById("certificationVerif").checked;
 
     if (!typePiece) {
-      alert(
-        "Veuillez sélectionner une pièce d'identité."
+      afficherBulle(
+        "Sélectionnez une pièce d'identité",
+        "warning"
       );
       return;
     }
 
     if (!certification) {
-      alert(
-        "Vous devez certifier avoir effectué la vérification."
+      afficherBulle(
+        "Vous devez certifier la vérification",
+        "warning"
       );
       return;
     }
 
     const verification = {
 
-      date:
-        firebase.firestore.Timestamp.now(),
+      date: Timestamp.now(),
 
       typePiece,
 
       nom:
-        document.getElementById("nom").textContent || "",
+        document.getElementById("adminNom").value || "",
 
       prenom:
-        document.getElementById("prenom").textContent || "",
+        document.getElementById("adminPrenom").value || "",
 
       dateNaissance:
-        document.getElementById("verifDdn").textContent || "",
+        document.getElementById("adminNaissance").value || "",
 
       verifiePar:
-        utilisateurConnecte.nom,
+        window.medecinNom || "",
+
+      specialiteVerificateur:
+        window.medecinSpecialite || "",
 
       uidVerificateur:
-        utilisateurConnecte.uid
+        auth.currentUser?.uid || ""
+
     };
 
-    await db
-      .collection("patients")
-      .doc(patientId)
-      .update({
-
-        identiteVerifications:
-          firebase.firestore.FieldValue.arrayUnion(
-            verification
-          )
-      });
+    await updateDoc(patientRef, {
+      identiteVerifications:
+        arrayUnion(verification)
+    });
 
     fermerVerificationIdentite();
 
     await chargerHistoriqueVerifications();
 
-    alert(
-      "Vérification enregistrée avec succès."
+    afficherBulle(
+      "✅ Vérification enregistrée",
+      "success"
     );
 
-  }
-  catch (error) {
+  } catch (err) {
 
-    console.error(
-      "Erreur vérification identité :",
-      error
-    );
+    console.error(err);
 
-    alert(
-      "Impossible d'enregistrer la vérification."
+    afficherBulle(
+      "❌ Erreur lors de l'enregistrement",
+      "error"
     );
   }
 }

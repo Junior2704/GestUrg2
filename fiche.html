@@ -2128,6 +2128,23 @@ nav:hover .nav-item span {
 }
 #modalVerificationIdentite{
 z-index: 3000;
+}
+.historique-verifications {
+  margin-top: 10px;
+}
+
+.verification-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.verification-item:last-child {
+  border-bottom: none;
+}
+
+.verification-vide {
+  color: #777;
+  font-style: italic;
 }</style>
 </head>
 <body>
@@ -2718,19 +2735,13 @@ z-index: 3000;
 </button>
 
 <div id="historiqueVerifications">
-  <h4>Dernières vérifications</h4>
+  <h4>Dernières vérifications :</h4>
 
-  <table style="width:100%">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Pièce</th>
-      <th>Vérifié par</th>
-    </tr>
-  </thead>
-  <tbody id="listeVerifications"></tbody>
-</table>
+  <div id="listeVerifications" class="historique-verifications">
+  </div>
 </div>
+<br><br>
+<hr>
     <div class="modal-buttons">
 	    <button  id="readVitaleBtn" class="btn-id" >🆔 Lecture Carte Vitale</button>
       <button id="btnFacturer" class="btn-id">💶 Facturer</button>
@@ -5545,49 +5556,52 @@ async function chargerHistoriqueVerifications() {
 }
 function afficherHistoriqueVerifications(verifications) {
 
-    const tbody = document.getElementById("listeVerifications");
+  const container =
+    document.getElementById("listeVerifications");
 
-    tbody.innerHTML = "";
+  container.innerHTML = "";
 
-    if (!verifications || verifications.length === 0) {
+  if (!verifications || verifications.length === 0) {
 
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="3"
-                    style="text-align:center;color:#777;font-style:italic;padding:10px;">
-                    Aucune vérification enregistrée
-                </td>
-            </tr>
-        `;
+    container.innerHTML = `
+      <div class="verification-vide">
+        Aucune vérification enregistrée
+      </div>
+    `;
 
-        return;
-    }
+    return;
+  }
 
-    verifications.sort((a, b) => {
+  verifications.sort((a, b) => {
 
-        const dateA = a.date?.seconds || 0;
-        const dateB = b.date?.seconds || 0;
+    const da = a.date?.seconds || 0;
+    const db = b.date?.seconds || 0;
 
-        return dateB - dateA;
-    });
+    return db - da;
 
-    verifications.forEach(v => {
+  });
 
-        const tr = document.createElement("tr");
+  verifications.slice(0, 10).forEach(v => {
 
-        const date =
-            v.date?.toDate
-                ? v.date.toDate()
-                : new Date();
+    const date =
+      v.date?.toDate
+        ? v.date.toDate()
+        : new Date();
 
-        tr.innerHTML = `
-            <td>${formatDateHeure(date)}</td>
-            <td>${v.typePiece || "-"}</td>
-            <td>${v.verifiePar || "-"}</td>
-        `;
+    const ligne =
+      document.createElement("div");
 
-        tbody.appendChild(tr);
-    });
+    ligne.className = "verification-item";
+
+    ligne.innerHTML = `
+      • ${formatDateHeure(date)},
+      vérifiée par <strong>${v.verifiePar || "Inconnu"}</strong>,
+      avec <strong>${v.typePiece || "Non renseigné"}</strong>
+    `;
+
+    container.appendChild(ligne);
+
+  });
 }
 
 async function getHospitalisationEnCours(patientId) {

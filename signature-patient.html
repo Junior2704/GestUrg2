@@ -3,17 +3,18 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Signature Patient</title>
+<title>Signature patient</title>
 
 <style>
 
 body{
     margin:0;
     padding:20px;
+    font-family:Arial, sans-serif;
     background:#f4f6f9;
-    font-family:Arial,sans-serif;
+    color:#333;
 }
 
 .container{
@@ -24,25 +25,64 @@ body{
 .card{
     background:white;
     border-radius:16px;
-    padding:20px;
-    box-shadow:0 2px 12px rgba(0,0,0,.12);
+    padding:25px;
+    box-shadow:0 3px 12px rgba(0,0,0,.1);
 }
 
 h1{
     text-align:center;
-    color:#1f2937;
+    color:#0f4c81;
+    margin-top:0;
+}
+
+.etape{
+    display:none;
+}
+
+.etape.active{
+    display:block;
+}
+
+.info-box{
+    background:#eef6ff;
+    border-left:4px solid #0f4c81;
+    padding:15px;
+    border-radius:8px;
+    margin:15px 0;
 }
 
 .patient{
-    text-align:center;
-    margin-bottom:20px;
-    font-size:18px;
+    margin-top:15px;
+    line-height:1.8;
 }
 
-.info{
-    text-align:center;
-    color:#666;
-    margin-bottom:20px;
+button{
+    border:none;
+    border-radius:10px;
+    padding:12px 20px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.btn-primary{
+    background:#0f4c81;
+    color:white;
+}
+
+.btn-success{
+    background:#16a34a;
+    color:white;
+}
+
+.btn-secondary{
+    background:#d1d5db;
+}
+
+.actions{
+    margin-top:20px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
 }
 
 canvas{
@@ -54,44 +94,25 @@ canvas{
     touch-action:none;
 }
 
-.actions{
-    display:flex;
-    justify-content:center;
-    gap:10px;
-    margin-top:20px;
-}
-
-button{
-    border:none;
-    border-radius:10px;
-    padding:12px 20px;
-    font-size:16px;
-    cursor:pointer;
-}
-
-.btn-clear{
-    background:#e5e7eb;
-}
-
-.btn-save{
-    background:#16a34a;
-    color:white;
+.center{
+    text-align:center;
 }
 
 .success{
-    display:none;
-    text-align:center;
     color:#16a34a;
-    font-size:20px;
+    font-size:22px;
     font-weight:bold;
-    padding:30px;
 }
 
 .error{
-    text-align:center;
     color:#dc2626;
+    text-align:center;
     font-weight:bold;
-    padding:20px;
+}
+
+.loader{
+    text-align:center;
+    font-size:18px;
 }
 
 </style>
@@ -108,14 +129,43 @@ button{
 
 <h1>Signature de sortie</h1>
 
-<div id="patient" class="patient">
+<div id="loading" class="loader">
 Chargement...
 </div>
 
-<div id="formulaire">
+<div id="error" class="error" style="display:none;"></div>
 
-<div class="info">
-Veuillez signer dans le cadre ci-dessous.
+<!-- ETAPE 1 -->
+
+<div id="etape1" class="etape">
+
+<div class="info-box">
+Veuillez vérifier attentivement les informations ci-dessous.
+
+Si elles sont exactes, appuyez sur <b>Continuer</b>.
+
+</div>
+
+<div id="infosPatient" class="patient"></div>
+
+<div class="actions">
+<button class="btn-primary" onclick="continuer()">
+Continuer
+</button>
+</div>
+
+</div>
+
+<!-- ETAPE 2 -->
+
+<div id="etape2" class="etape">
+
+<div class="info-box">
+
+Je reconnais avoir pris connaissance des informations et documents qui m'ont été remis lors de ma sortie.
+
+Veuillez signer dans le cadre ci-dessous puis appuyer sur <b>Enregistrer</b>.
+
 </div>
 
 <canvas id="signatureCanvas"></canvas>
@@ -123,12 +173,12 @@ Veuillez signer dans le cadre ci-dessous.
 <div class="actions">
 
 <button
-class="btn-clear"
+class="btn-secondary"
 onclick="effacerSignature()">
 Effacer </button>
 
 <button
-class="btn-save"
+class="btn-success"
 onclick="enregistrerSignature()">
 Enregistrer </button>
 
@@ -136,9 +186,32 @@ Enregistrer </button>
 
 </div>
 
-<div id="success" class="success">
-✅ Signature enregistrée.<br><br>
-Vous pouvez maintenant fermer cette page.
+<!-- ETAPE 3 -->
+
+<div id="etape3" class="etape">
+
+<div class="loader">
+Enregistrement de votre signature...
+</div>
+
+</div>
+
+<!-- ETAPE 4 -->
+
+<div id="etape4" class="etape center">
+
+<div class="success">
+✓ Merci
+</div>
+
+<br>
+
+Votre signature a bien été enregistrée.
+
+<br><br>
+
+Vous pouvez désormais fermer cette page.
+
 </div>
 
 </div>
@@ -159,10 +232,6 @@ import {
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ==========================
-   FIREBASE
-========================== */
-
 const firebaseConfig = {
   apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
   authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -172,18 +241,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ==========================
-   VARIABLES
-========================== */
-
-let signaturePad;
 let signatureId;
+let signaturePad;
 
-/* ==========================
-   CANVAS
-========================== */
+function afficherEtape(id){
 
-function resizeCanvas() {
+    document
+      .querySelectorAll(".etape")
+      .forEach(e => e.classList.remove("active"));
+
+    document
+      .getElementById(id)
+      .classList.add("active");
+}
+
+function resizeCanvas(){
 
     const canvas =
       document.getElementById("signatureCanvas");
@@ -197,62 +269,15 @@ function resizeCanvas() {
     canvas.height =
       canvas.offsetHeight * ratio;
 
-    canvas.getContext("2d").scale(ratio, ratio);
+    canvas.getContext("2d").scale(ratio,ratio);
 
 }
 
-window.addEventListener("load", async () => {
+window.continuer = () => {
 
-    try{
+    afficherEtape("etape2");
 
-        const params =
-          new URLSearchParams(window.location.search);
-
-        signatureId = params.get("id");
-
-        if(!signatureId){
-
-            document.getElementById("patient").innerHTML =
-            "❌ Identifiant manquant";
-
-            return;
-        }
-
-        const ref =
-          doc(db,"signatures-patient",signatureId);
-
-        const snap =
-          await getDoc(ref);
-
-        if(!snap.exists()){
-
-            document.getElementById("patient").innerHTML =
-            "❌ Document introuvable";
-
-            return;
-        }
-
-        const data = snap.data();
-
-        if(data.signee){
-
-            document.getElementById("formulaire")
-              .style.display = "none";
-
-            document.getElementById("success")
-              .style.display = "block";
-
-            document.getElementById("success")
-              .innerHTML =
-              "✅ Cette signature a déjà été enregistrée.";
-
-            return;
-        }
-
-        document.getElementById("patient").innerHTML = `
-            <strong>${data.nom || ""}</strong><br>
-            ${data.prenom || ""}
-        `;
+    setTimeout(() => {
 
         resizeCanvas();
 
@@ -264,26 +289,9 @@ window.addEventListener("load", async () => {
             backgroundColor:"white"
           });
 
-        window.addEventListener(
-          "resize",
-          resizeCanvas
-        );
+    },100);
 
-    }
-    catch(err){
-
-        console.error(err);
-
-        document.getElementById("patient").innerHTML =
-        "❌ Erreur de chargement";
-
-    }
-
-});
-
-/* ==========================
-   SIGNATURE
-========================== */
+};
 
 window.effacerSignature = () => {
 
@@ -293,20 +301,28 @@ window.effacerSignature = () => {
 
 window.enregistrerSignature = async () => {
 
+    if(signaturePad.isEmpty()){
+
+        alert(
+          "Veuillez signer avant d'enregistrer."
+        );
+
+        return;
+    }
+
+    afficherEtape("etape3");
+
     try{
-
-        if(signaturePad.isEmpty()){
-
-            alert("Veuillez signer");
-
-            return;
-        }
 
         const image =
           signaturePad.toDataURL("image/png");
 
         await updateDoc(
-          doc(db,"signatures-patient",signatureId),
+          doc(
+            db,
+            "signatures-patient",
+            signatureId
+          ),
           {
 
             signee:true,
@@ -319,24 +335,119 @@ window.enregistrerSignature = async () => {
           }
         );
 
-        document.getElementById("formulaire")
-          .style.display = "none";
-
-        document.getElementById("success")
-          .style.display = "block";
+        afficherEtape("etape4");
 
     }
-    catch(err){
+    catch(error){
 
-        console.error(err);
+        console.error(error);
 
         alert(
-          "Erreur lors de l'enregistrement"
+          "Erreur lors de l'enregistrement."
         );
+
+        afficherEtape("etape2");
 
     }
 
 };
+
+async function charger(){
+
+    try{
+
+        const params =
+          new URLSearchParams(
+            window.location.search
+          );
+
+        signatureId =
+          params.get("id");
+
+        if(!signatureId){
+
+            throw new Error(
+              "Identifiant manquant"
+            );
+        }
+
+        const snap =
+          await getDoc(
+            doc(
+              db,
+              "signatures-patient",
+              signatureId
+            )
+          );
+
+        if(!snap.exists()){
+
+            throw new Error(
+              "Document introuvable"
+            );
+        }
+
+        const data =
+          snap.data();
+
+        if(data.signee){
+
+            document
+              .getElementById("loading")
+              .style.display = "none";
+
+            afficherEtape("etape4");
+
+            return;
+        }
+
+        document
+          .getElementById("infosPatient")
+          .innerHTML = `
+
+          <b>Nom :</b>
+          ${data.nom || ""}
+
+          <br>
+
+          <b>Prénom :</b>
+          ${data.prenom || ""}
+
+          <br>
+
+          <b>Date de naissance :</b>
+          ${data.dateNaissance || "Non renseignée"}
+
+        `;
+
+        document
+          .getElementById("loading")
+          .style.display = "none";
+
+        afficherEtape("etape1");
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        document
+          .getElementById("loading")
+          .style.display = "none";
+
+        const e =
+          document.getElementById("error");
+
+        e.style.display = "block";
+
+        e.innerHTML =
+          error.message;
+
+    }
+
+}
+
+charger();
 
 </script>
 

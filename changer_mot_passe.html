@@ -48,8 +48,14 @@
         msg.textContent = "Veuillez remplir tous les champs.";
         return;
       }
-      if (nouveau.length < 6) {
-        msg.textContent = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
+     if (
+    nouveau.length < 8 ||
+    !/[A-Z]/.test(nouveau) ||
+    !/[a-z]/.test(nouveau) ||
+    !/[0-9]/.test(nouveau) ||
+    !/[^A-Za-z0-9]/.test(nouveau)
+) {
+        msg.textContent = "Le mot de passe est trop faible.";
         return;
       }
       if (nouveau !== confirmation) {
@@ -90,6 +96,65 @@
         }
       }
     };
+    function evaluerSecurite(mdp) {
+  let score = 0;
+
+  if (mdp.length >= 8) score++;
+  if (/[A-Z]/.test(mdp)) score++;
+  if (/[a-z]/.test(mdp)) score++;
+  if (/[0-9]/.test(mdp)) score++;
+  if (/[^A-Za-z0-9]/.test(mdp)) score++;
+
+  const bar = document.getElementById("securityBar");
+  const text = document.getElementById("securityText");
+  const btn = document.getElementById("validateBtn");
+
+  switch (score) {
+    case 0:
+    case 1:
+      bar.style.width = "20%";
+      bar.style.background = "#d32f2f";
+      text.textContent = "Sécurité : Très faible";
+      btn.disabled = true;
+      break;
+
+    case 2:
+      bar.style.width = "40%";
+      bar.style.background = "#f57c00";
+      text.textContent = "Sécurité : Faible";
+      btn.disabled = true;
+      break;
+
+    case 3:
+      bar.style.width = "60%";
+      bar.style.background = "#fbc02d";
+      text.textContent = "Sécurité : Moyenne";
+      btn.disabled = true;
+      break;
+
+    case 4:
+      bar.style.width = "80%";
+      bar.style.background = "#7cb342";
+      text.textContent = "Sécurité : Bonne";
+      btn.disabled = false;
+      break;
+
+    case 5:
+      bar.style.width = "100%";
+      bar.style.background = "#2e7d32";
+      text.textContent = "Sécurité : Excellente";
+      btn.disabled = false;
+      break;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .getElementById("newPassword")
+    .addEventListener("input", function () {
+      evaluerSecurite(this.value);
+    });
+});
   </script>
 
   <style>
@@ -167,6 +232,32 @@
 * {
     scrollbar-width: thin;
     scrollbar-color: #2196f3 #eef3ff;
+}
+#securityContainer {
+  width: 100%;
+  height: 12px;
+  background: #ddd;
+  border-radius: 30px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+#securityBar {
+  width: 0%;
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 30px;
+}
+
+#securityText {
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+button:disabled {
+  background: #aaa;
+  cursor: not-allowed;
 }</style>
 </head>
 
@@ -177,8 +268,12 @@
 
     <input type="password" id="oldPassword" placeholder="Ancien mot de passe" required />
     <input type="password" id="newPassword" placeholder="Nouveau mot de passe" required />
+<div id="securityContainer">
+  <div id="securityBar"></div>
+</div>
+<div id="securityText">Sécurité : Très faible</div>
     <input type="password" id="confirmPassword" placeholder="Confirmer le nouveau mot de passe" required />
-    <button onclick="changerMotDePasse()">Valider</button>
+    <button id="validateBtn" onclick="changerMotDePasse()" disabled>Valider</button>
 
     <div id="message"></div>
   </div>

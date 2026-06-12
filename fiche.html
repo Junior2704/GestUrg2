@@ -5328,21 +5328,29 @@ document
   .getElementById("btnAjouterVerification")
   .addEventListener("click", ouvrirVerificationIdentite);
 
-function ouvrirVerificationIdentite() {
+async function ouvrirVerificationIdentite() {
 
-  const patient = window.patientAdminData || {};
+  const docSnap = await getDoc(patientRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document introuvable");
+      afficherBulle("❌ Patient introuvable", "error");
+      return;
+    }
+
+    const data = docSnap.data();
 
   document.getElementById("typePieceIdentite").value = "";
   document.getElementById("certificationVerif").checked = false;
 
   document.getElementById("verifNom").textContent =
-    patient.nom || "-";
+    data.nom || "-";
 
   document.getElementById("verifPrenom").textContent =
-    patient.prenom || "-";
+    data.prenom || "-";
 
   document.getElementById("verifDdn").textContent =
-    patient.dateNaissance || "-";
+    data.dateNaissance || "-";
 
   document.getElementById("modalVerificationIdentite")
     .style.display = "flex";

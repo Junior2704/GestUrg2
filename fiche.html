@@ -2824,7 +2824,9 @@ z-index: 3000;
     <div id="etatSignature">
       ⏳ En attente de signature...
     </div>
-
+<button id="btnRefusSignature" class="btn-danger">
+  ⛔ Refus de signer
+</button>
     <button
       id="btnContinuerCloture"
       style="display:none"
@@ -4141,6 +4143,55 @@ const url =
   }
 
 });
+document
+  .getElementById("btnRefusSignature")
+  .addEventListener("click", async () => {
+
+    const confirmation = confirm(
+      "Le patient refuse de signer.\n\n" +
+      "Cela implique :\n" +
+      "- clôture sans signature manuscrite\n" +
+      "- mention légale 'Refus de signer' dans le dossier\n" +
+      "- impossibilité de récupérer une signature plus tard\n\n" +
+      "Voulez-vous continuer ?"
+    );
+
+    if (!confirmation) return;
+
+    try {
+      const signatureId = window.signatureId;
+
+      if (!signatureId) {
+        afficherBulle("Signature introuvable", "error");
+        return;
+      }
+
+      const signatureRef = doc(
+        db,
+        "signatures-patient",
+        signatureId
+      );
+
+      await updateDoc(signatureRef, {
+        signee: true,
+        refusSignature: true,
+        signatureImage: "REFUS DE SIGNER",
+        signatureDate: serverTimestamp()
+      });
+
+      document.getElementById("etatSignature")
+        .innerHTML = "⚠️ Patient : refus de signer";
+
+      document.getElementById("btnContinuerCloture")
+        .style.display = "block";
+
+      afficherBulle("Refus de signature enregistré", "warning");
+
+    } catch (err) {
+      console.error(err);
+      afficherBulle("Erreur enregistrement refus", "error");
+    }
+});
 async function ouvrirModalSignature(url, signatureId){
 
   document.getElementById(
@@ -4173,17 +4224,19 @@ window.signatureId=signatureId;
 
     console.log(data);
 
-    if(data.signee){
+   if (data.signee) {
 
-      console.log("SIGNATURE DETECTEE");
+  if (data.refusSignature) {
+    document.getElementById("etatSignature")
+      .innerHTML = "⚠️ Refus de signer";
+  } else {
+    document.getElementById("etatSignature")
+      .innerHTML = "✅ Signature enregistrée";
+  }
 
-      document.getElementById("etatSignature")
-        .innerHTML = "✅ Signature enregistrée";
-
-      document.getElementById("btnContinuerCloture")
-        .style.display = "block";
-    }
-
+  document.getElementById("btnContinuerCloture")
+    .style.display = "block";
+}
   });
 
 }
@@ -4231,6 +4284,12 @@ btnValiderCode.addEventListener("click", async () => {
     modalCode.style.display = "none";
     document.getElementById("modalCloture").style.display = "flex";
 const signature = window.signatureId;
+
+const signatureSnap = await getDoc(
+  doc(db, "signatures-patient", signature)
+);
+
+const signatureData = signatureSnap.data();
     const bar = document.getElementById("clotureBar");
     bar.style.width = "0%";
     let progress = 0;
@@ -4272,7 +4331,14 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
           dateFin: now,
           historique,
           signature: signature,
-          rapport: `Rapport d'hospitalisation pour ${patientData.nom} ${patientData.prenom} clôturé le ${now}.`
+            signatureStatut: signatureData?.refusSignature
+    ? "Refus de signer"
+    : "Signé",
+  rapport: `Rapport d'hospitalisation pour ${patientData.nom} ${patientData.prenom} clôturé le ${now}. ${
+    signatureData?.refusSignature
+      ? "Patient : refus de signer."
+      : "Document signé par le patient."
+  }`
         });
 
         // 🔄 Mise à jour automatique du statut PDC sur le patient

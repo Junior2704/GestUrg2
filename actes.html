@@ -1,0 +1,1214 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <link rel="icon" type="image/jpeg" href="logo.png" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<style>
+   body{
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    margin: 12px;
+    background:#ffffff;
+    color:#1d2d50;
+  }
+
+  h1{
+    font-size:22px;
+    font-weight:700;
+    color:#0b5ed7;
+    margin-bottom:14px;
+  }
+
+  .container{max-width:1200px;margin:0 auto}
+
+  .row{display:flex;gap:16px}
+
+  .col{
+    background:#ffffff;
+    border-radius:12px;
+    padding:16px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.08);
+    border:1px solid #e3e9f2;
+  }
+
+  .col.small{flex:0 0 360px}
+  .col.big{flex:1}
+
+  #search{
+width: 100%;
+    box-sizing: border-box;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccd6e0;
+    background:#f8fbff;
+   
+
+}
+
+  #actes-list{
+    max-height:480px;
+    overflow:auto;
+    margin-top:8px;
+    padding:4px;
+  }
+
+  .medicament-item{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #e0e6ef;
+    margin-bottom:8px;
+    background:white;
+    cursor:pointer;
+    transition:0.15s;
+  }
+  .medicament-item:hover{
+    background:#eaf3ff;
+    border-color:#bcd4ff;
+  }
+
+  /* --- HISTORIQUE --- */
+  .history-list{max-height:480px;overflow:auto;margin-top:12px;}
+
+  .history-item{
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:10px;
+    background:#f7f9fc;
+    border-left:5px solid #b8c7e8;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  /* couleurs selon statut */
+  .history-item[data-status="realise"]{
+    border-left-color:#0d6efd;
+  }
+  .history-item[data-status="en-retard"]{
+    border-left-color:#ff6b6b;
+    background:#ffecec;
+  }
+  .history-item[data-status="a-faire"]{
+    border-left-color:#32c671;
+    background:#e8fff1;
+  }
+
+  .badge{
+    padding:4px 8px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+  }
+
+  /* couleur badge statut */
+  .badge[data-status="realise"]{
+    background:#dceaff;
+    color:#0d6efd;
+  }
+  .badge[data-status="en-retard"]{
+    background:#ffdada;
+    color:#c62828;
+  }
+  .badge[data-status="a-faire"]{
+    background:#cbf7d5;
+    color:#146c2e;
+  }
+
+  .btn{
+    padding:6px 12px;
+    border-radius:6px;
+    border:1px solid #aac2dd;
+    background:#f4f8ff;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .btn:hover{
+    background:#e2ecff;
+  }
+  .btn.primary{
+    background:#0b5ed7;
+    color:white;
+    border-color:#0b5ed7;
+  }
+  .btn.primary:hover{
+    background:#0948a8;
+  }
+
+  /* --- MODALES --- */
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter: blur(3px);
+  }
+  .modal .card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    min-width:360px;
+    max-width:720px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
+    border:1px solid #e3e9f2;
+  }
+
+  label{
+    margin-top:10px;
+    font-size:14px;
+    font-weight:600;
+    color:#1d2d50;
+  }
+
+  input[type=text],textarea,select,
+  input[type=datetime-local],input[type=number]{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccd6e0;
+    background:#f8fbff;
+    margin-top:4px;
+  }
+
+  .flex{display:flex;gap:12px;align-items:center}
+  .muted{color:#627089;font-size:13px;margin-top:4px}
+/* Badge d'état du médicament */
+.badge {
+    font-size: 1.1rem;          /* plus gros */
+    font-weight: 700;           /* bien visible */
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #dceaff;        /* bleu clair lisible */
+    color: #0d47a1;             /* bleu foncé médical */
+    display: inline-block;
+}
+.modal {
+    position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modal .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modal h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modal p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modal .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.history-item {
+    display: grid;
+    grid-template-columns: 1fr 100px 40px 110px 110px; 
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #f7f9fc;
+    border-left: 5px solid #b8c7e8;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.history-center {
+    justify-self: center;
+}
+
+.history-right {
+    justify-self: end;
+}
+
+.container {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.btn-id {
+  all: unset;
+  background: transparent;
+  color: #000;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(2px);
+}
+
+.btn-id:hover {
+  background: rgba(0, 120, 255, 0.12);
+  border-color: rgba(0, 120, 255, 0.6);
+  color: #0078ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+}
+
+.btn-id:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+}
+
+.btn-id:focus {
+  outline: none;
+  border-color: rgba(0, 120, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+}
+.btn-id-c:hover {
+  background: rgba(255, 0, 0, 0.10);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #e60000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+}
+
+.btn-id-c:focus {
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+.btn-id-v:hover {
+  background: rgba(0, 200, 80, 0.12);
+  border-color: rgba(0, 200, 80, 0.6);
+  color: #00b35a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+}
+
+.btn-id-v:focus {
+  border-color: rgba(0, 200, 80, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+}
+
+/* Chrome, Edge, Opera */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eef3ff;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2196f3, #1565c0);
+    border-radius: 10px;
+    border: 2px solid #eef3ff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #42a5f5, #1976d2);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2196f3 #eef3ff;
+}
+
+.row{
+  display:flex;
+  gap:16px;
+  align-items:stretch; /* important : force même hauteur */
+}
+
+/* Hauteur commune des deux blocs */
+.col{
+  height: 90vh; /* ajuste si besoin */
+  display:flex;
+  flex-direction:column;
+}
+
+/* zones scrollables */
+#actes-list,
+#history{
+  flex:1;
+  overflow:auto;
+  max-height:none; /* on enlève l'ancien comportement */
+}
+.container{
+  max-width: 100%;
+}
+
+.row{
+  display: grid;
+  grid-template-columns: 500px 1fr;
+  gap: 16px;
+}
+</style>
+
+</head>
+<body>
+  <!--<div class="container">!-->
+    
+    <div class="row">
+      <div class="col small">
+        <input id="search" placeholder="Rechercher un médicament..." />
+        <div id="actes-list"> 
+        </div>
+      </div>
+
+      <div class="col big">
+        <h3>Historique & demandes</h3>
+        <div class="muted">Liste des demandes enregistrées pour le patient.</div>
+        <div id="history" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pour créer demande -->
+  <div id="modal-prescription" class="modal">
+    <div class="card">
+      <h3 id="modal-title">Nouvelle demande</h3>
+      <label>Acte</label>
+      <input type="text" id="pres-name"/>
+      <div id="pres-warning" style="display:none; background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:10px; border-radius:8px; font-size:13px; margin-top:8px; text-align:left;">
+        🚨 <strong>Attention :</strong> Cet actes n'est pas présent dans la base de données des actes. Ceuillez vérifier sa validité avec le réalisateur.
+      </div>
+      <label>Commentaires</label>
+      <textarea id="pres-comment" rows="3"></textarea>
+
+      <label>Moment</label>
+      <div class="flex">
+        <label><input type="radio" name="when" value="now" checked/> Maintenant</label>
+        <label><input type="radio" name="when" value="at"/> A une date/heure</label>
+      </div>
+      <input type="datetime-local" id="pres-datetime" style="margin-top:6px;" />
+
+      
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn-id btn-id-c" id="pres-cancel">❌ Annuler</button>
+        <button class="btn-id btn-id-v" id="pres-save">✔️ Valider & enregistrer</button>
+      </div>
+    </div>
+  </div>
+<div id="modal-details" class="modal">
+  <div class="card" style="max-width:480px">
+    <h3>Détails de l'acte</h3>
+    <div id="detail-content"></div>
+
+    <div style="display:flex; justify-content:space-between; margin-top:18px;">
+      <button class="btn" id="btnDeleteDetail" style="background:#ffdddd; color:#a00; border-color:#ffb3b3;">
+        Supprimer
+      </button>
+      <button class="btn-id btn-id-c" onclick="closeDetails()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Modal prise -->
+  <div id="modal-take" class="modal">
+    <div class="card">
+      <h3>Réalisation de l'acte</h3>
+      <label>Acte</label>
+      <input type="text" id="take-name" readonly />
+      <label>Commentaire réalisation</label>
+      <textarea id="take-comment" rows="3"></textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn-id btn-id-c" id="take-cancel">❌ Annuler</button>
+        <button class="btn-id btn-id-v" id="take-save">✔️ Valider onnere</button>
+      </div>
+    </div>
+  </div>
+<!-- Modale d'accès refusé -->
+<div id="modal-no-access" class="modal">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+  </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un adminitrateur</p>
+
+  </div>
+</div>
+ 
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+   let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+    onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);
+        }
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+    loadHistory();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+          if (modal) masquerLoader();
+          modal.style.display = "flex"; 
+      
+      
+    }
+  }
+});
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true"; 
+    loader.style.position = "fixed";
+    loader.style.top = "0";
+    loader.style.left = "0";
+    loader.style.width = "100%";
+    loader.style.height = "100%";
+    loader.style.border = "none";
+    loader.style.zIndex = "9999";
+    loader.style.background = "transparent";
+    loader.style.pointerEvents = "none"; 
+    document.body.appendChild(loader);
+  }
+
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+
+// --- Masque l’écran de chargement ---
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 300); // délai pour l’animation
+  }
+};
+
+    // Récupérer l'ID du patient depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientId = urlParams.get("id");
+  if (!patientId) {
+  const modal = document.getElementById("modal-error");
+  if (modal) {
+    masquerLoader();
+    modal.style.display = "flex";
+  }
+}
+   const patientRef = doc(db, "patients", patientId);
+
+document.addEventListener("DOMContentLoaded", () => {
+    const selectNow = document.getElementById("moment-now");
+    const selectOther = document.getElementById("moment-other");
+    const dateField = document.getElementById("date-time-field");
+    
+    const radios = document.querySelectorAll('input[name="when"]');
+    const dateInput = document.getElementById("pres-datetime");
+
+    function updateDateVisibility() {
+        const selected = document.querySelector('input[name="when"]:checked').value;
+        if (selected === "at") {
+            dateInput.style.display = "block";
+        } else {
+            dateInput.style.display = "none";
+        }
+    }
+
+    radios.forEach(r => r.addEventListener("change", updateDateVisibility));
+});
+
+function renderActes(list, searchQuery = "") {
+  const container = document.getElementById("actes-list");
+  container.innerHTML = "";
+
+  if (list.length === 0 && searchQuery.trim() !== "") {
+
+    const freeBtn = document.createElement("div");
+    freeBtn.className = "medicament-item";
+    freeBtn.style.background = "#fff0f0";
+    freeBtn.style.borderColor = "#ffcccc";
+    freeBtn.style.color = "#c62828";
+    freeBtn.style.fontWeight = "600";
+
+    freeBtn.innerHTML =
+      `✨ Acte libre : <strong>"${searchQuery}"</strong>`;
+
+    freeBtn.onclick = () => addActe(searchQuery, true);
+
+    container.appendChild(freeBtn);
+    return;
+  }
+
+  const free = document.createElement("div");
+  free.className = "medicament-item";
+  free.textContent = "-- Acte libre --";
+  free.ondblclick = () => addActe("", true);
+
+  container.appendChild(free);
+
+  list.forEach(acte => {
+    const div = document.createElement("div");
+    div.className = "medicament-item";
+    div.textContent = acte;
+
+    div.ondblclick = () => addActe(acte, false);
+
+    container.appendChild(div);
+  });
+}
+
+// --- Ouverture de la modale adaptée ---
+window.addActe = function(name, isFreeInput = false) {
+  const nameInput = document.getElementById('pres-name');
+  const warningDiv = document.getElementById('pres-warning');
+
+  nameInput.value = name;
+  presComment.value = '';
+ 
+  presDatetime.value = '';
+
+  if (isFreeInput) {
+    nameInput.removeAttribute('readonly'); // On peut modifier le nom
+    nameInput.style.background = "#ffffff";
+    warningDiv.style.display = 'block';    // On affiche l'avertissement
+  } else {
+    nameInput.setAttribute('readonly', 'true'); // Verrouillé si vient du JSON
+    nameInput.style.background = "#f8fbff";
+    warningDiv.style.display = 'none';     // Masqué
+  }
+
+  modalPres.style.display = 'flex';
+}
+
+
+document.addEventListener("DOMContentLoaded", loadActes);
+function formatDate(d) {
+  const pad = n => n.toString().padStart(2, '0');
+  const jour = pad(d.getDate());
+  const mois = pad(d.getMonth() + 1);
+  const annee = d.getFullYear();
+  const heures = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  const secondes = pad(d.getSeconds());
+  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+}
+;
+
+let actes = [];
+
+async function loadActes() {
+  try {
+    const ref = doc(db, "référentiels", "actes");
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      console.error("Document actes introuvable");
+      return;
+    }
+
+    const data = snap.data();
+
+    actes = Array.isArray(data.liste)
+      ? data.liste
+      : [];
+
+    renderActes(actes);
+
+  } catch (e) {
+    console.error("Erreur chargement actes", e);
+  }
+}
+
+    // --- modals handling ---
+    const modalPres = document.getElementById('modal-prescription');
+    const presName = document.getElementById('pres-name');
+    const presComment = document.getElementById('pres-comment');
+    const presNowRadio = () => document.querySelector('input[name="when"]:checked').value;
+    const presDatetime = document.getElementById('pres-datetime');
+
+
+
+    document.getElementById('pres-cancel').onclick = ()=> modalPres.style.display='none';
+
+    document.getElementById('pres-save').onclick = async () => {
+  modalPres.style.display = 'none';
+  const name = presName.value;
+  const comment = presComment.value || '';
+  const whenChoice = presNowRadio();
+
+
+  const now = new Date();
+  const scheduled = (whenChoice === 'now') ? now : (presDatetime.value ? new Date(presDatetime.value) : now);
+
+  const events = [];
+const acte = {
+  product: name,
+  comment: comment,
+  createdAt: formatDate(new Date()),
+  dueAt: formatDate(scheduled),
+  status: "a-faire",
+  realiseAt: null,
+  realiseComment: null
+};
+  try {
+    // 🔹 Récupérer le patient
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+    if (!patientSnap.exists()) { 
+      alert('Patient introuvable'); 
+      return; 
+    }
+    const patientData = patientSnap.data();
+
+    // 🔹 Récupérer l'hospitalisation active
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) {
+      alert('Aucune hospitalisation active trouvée');
+      return;
+    }
+
+    const hospiRef = doc(db, 'hospitalisations', hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists()) {
+      alert('Hospitalisation introuvable');
+      return;
+    }
+const hospiData = hospiSnap.data();
+    hospiData.actes = Array.isArray(hospiData.actes)
+  ? hospiData.actes
+  : [];
+
+hospiData.actes.push(acte);
+
+await updateDoc(hospiRef, {
+  actes: hospiData.actes
+});
+    afficherBulle('✔️ Demande enregistrée', 'success');
+    loadHistory();
+
+  } catch (err) {
+    console.error(err);
+    alert('Erreur enregistrement: ' + err.message);
+  }
+};
+
+  async function loadHistory() {
+  const container = document.getElementById("history");
+  container.innerHTML = "<div class='muted'>Chargement...</div>";
+  console.log("➡️ loadHistory() lancé");
+
+  try {
+    // 🔹 Récupérer le patient
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
+      console.error("❌ Patient introuvable");
+      container.innerHTML = "<div class='muted'>Patient introuvable</div>";
+      return;
+    }
+
+    const patientData = patientSnap.data();
+    console.log("📌 Données patient :", patientData);
+
+    // 🔹 Récupérer l'hospitalisation active
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) {
+      console.error("❌ Aucune hospitalisation active");
+      container.innerHTML = "<div class='muted'>Aucune hospitalisation active</div>";
+      return;
+    }
+
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+
+    if (!hospiSnap.exists()) {
+      console.error("❌ Hospitalisation introuvable");
+      container.innerHTML = "<div class='muted'>Hospitalisation introuvable</div>";
+      masquerLoader();
+      return;
+    }
+
+    const hosp = hospiSnap.data();
+    const actes = hosp.actes || [];
+
+    if (actes.length === 0) {
+      console.log("ℹ️ Aucun médicament enregistré");
+      container.innerHTML = "<div class='muted'>Aucune demande</div>";
+      masquerLoader();
+      return;
+    }
+
+    // 🔹 Fonction utilitaire parseDate
+    const parseDate = (str) => {
+      if (!str) return null;
+      try {
+        const [d, h] = str.split(" ");
+        const [jj, mm, aaaa] = d.split("/");
+        const [HH, MM, SS] = h.split(":");
+        return new Date(aaaa, mm - 1, jj, HH, MM, SS);
+      } catch (e) {
+        console.error("❌ Erreur parseDate:", e, str);
+        return null;
+      }
+    };
+
+    // 🔹 Trier par createdAt décroissant
+    const sorted = actes
+      .map((m, originalIndex) => ({ ...m, originalIndex }))
+      .sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
+
+    container.innerHTML = "";
+
+    sorted.forEach((d, i) => {
+      const item = document.createElement("div");
+      item.className = "history-item";
+
+      // Calcul du statut
+      let status = d.status;
+      if (status !== "a-faire") {
+        const now = new Date();
+        const due = parseDate(d.dueAt);
+        if (due) {
+          const diff = (now - due) / 60000;
+          if (Math.abs(diff) <= 10) status = "realise";
+          else if (diff < -10) status = "prevu";
+          else status = "en-retard";
+        }
+      }
+      d.status = status;
+      item.dataset.status = status;
+
+      const badge = `<span class="badge" data-status="${status}">${status}</span>`;
+      const loupe = `<button class="btn" onclick="showDetails(${d.originalIndex})">🔎</button>`;
+      const takeBtn = status !== "a-faire"
+        ? `<button class="btn" onclick="openTakeModal(${d.originalIndex}, '${d.product}')">Administrer</button>`
+        : "";
+
+      item.innerHTML = `
+        <div><strong>${d.product}</strong></div>
+        <div class="history-center">${loupe}</div>
+        <div class="history-center">${badge}</div>
+        <div class="history-right">${takeBtn}</div>
+      `;
+
+      container.appendChild(item);
+    });
+masquerLoader();
+  } catch (err) {
+    console.error("❌ ERREUR loadHistory():", err);
+    container.innerHTML = "<div class='muted'>Erreur chargement</div>";
+  }
+}
+
+let currentDetailId = null;
+
+window.showDetails = async function(medIndex){
+  currentDetailId = medIndex;
+
+  try {
+    // 🔹 Récupérer le patient
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
+    if (!snap.exists) return;
+
+    const patientData = snap.data();
+
+    // 🔹 Récupérer l'hospitalisation active
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) return;
+
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists) return;
+
+    const hosp = hospiSnap.data();
+    const actes = hosp.actes || [];
+
+    const d = actes[medIndex];
+    if (!d) return;
+
+    // 🔹 Convertisseur "JJ/MM/AAAA HH:MM:SS" → Date
+    const parseDate = (str) => {
+      if (!str) return null;
+      try {
+        const [datePart, timePart] = str.split(" ");
+        const [dd, mm, yyyy] = datePart.split("/");
+        const [h, m, s] = timePart.split(":");
+        return new Date(yyyy, mm - 1, dd, h, m, s);
+      } catch (e) {
+        console.error("Erreur parseDate:", str, e);
+        return null;
+      }
+    };
+
+    const created = d.createdAt ? parseDate(d.createdAt).toLocaleString() : "—";
+    const due = d.dueAt ? parseDate(d.dueAt).toLocaleString() : "—";
+    const taken = d.realiseAt ? parseDate(d.realiseAt).toLocaleString() : "—";
+
+    const html = `
+      <p><strong>Acte :</strong> ${d.product}</p>
+      <p><strong>Commentaire demande :</strong><br>${d.comment || "—"}</p>
+      <p><strong>Créé le :</strong> ${created}</p>
+      <p><strong>Pour le :</strong> ${due}</p>
+      <p><strong>Statut :</strong> ${d.status}</p>
+      <p><strong>Commentaire réalisation :</strong><br>${d.realiseComment || "—"}</p>
+      <p><strong>Réalisé le :</strong> ${taken}</p>
+    `;
+
+    document.getElementById("detail-content").innerHTML = html;
+    document.getElementById("modal-details").style.display = "flex";
+
+    document.getElementById("btnDeleteDetail").onclick = deleteFromModal;
+
+  } catch (err) {
+    console.error("Erreur showDetails():", err);
+  }
+}
+
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+
+    const modalDetails = document.getElementById("modal-details");
+    const modalTake = document.getElementById("modal-take");
+
+    if (modalDetails && modalDetails.style.display !== "none") {
+      closeDetails();
+    }
+
+    if (modalTake && modalTake.style.display !== "none") {
+      modalTake.style.display = "none";
+    }
+  }
+});
+window.closeDetails = function() {
+    document.getElementById("modal-details").style.display = "none";
+}
+async function deleteFromModal() {
+  if (currentDetailId == null) return;
+
+  if (!confirm("Supprimer cette demande ?")) return;
+
+  try {
+    // 🔹 Récupérer le patient
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
+    if (!snap.exists) {
+      alert("Patient introuvable.");
+      return;
+    }
+
+    const patientData = snap.data();
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) {
+      alert("Aucune hospitalisation active.");
+      return;
+    }
+
+    // 🔹 Récupérer l'hospitalisation active
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists) {
+      alert("Hospitalisation introuvable.");
+      return;
+    }
+
+    const hospData = hospiSnap.data();
+    const actes = hospData.actes || [];
+
+    if (currentDetailId >= actes.length) {
+      alert("Demande introuvable.");
+      return;
+    }
+
+    // 🔹 Supprimer la demande
+    actes.splice(currentDetailId, 1);
+
+    // 🔹 Mettre à jour Firestore
+    await updateDoc(hospiRef, { actes });
+
+    afficherBulle("✔️ Demande supprimée", "success");
+
+    closeDetails();
+    loadHistory();
+
+  } catch (err) {
+    console.error(err);
+    alert("Erreur : " + err.message);
+  }
+}
+
+
+
+    // --- modal prise ---
+    const modalTake = document.getElementById('modal-take');
+    const takeName = document.getElementById('take-name');
+    const realiseComment = document.getElementById('take-comment');
+    let currentTakingDocId = null;
+
+window.openTakeModal = (docId, name) => {
+  currentTakingDocId = docId;
+  takeName.value = name;
+  realiseComment.value = '';
+  modalTake.style.display = 'flex';
+};
+    document.getElementById('take-cancel').onclick = ()=> modalTake.style.display='none';
+
+ document.getElementById('take-save').onclick = async () => {
+  modalTake.style.display = 'none';
+
+  if (currentTakingDocId == null) return;
+
+  try {
+    const realiseAt = new Date();
+
+    // 🔹 Récupérer le patient et hospitalisation
+    const patientRef = doc(db, "patients", patientId);
+    const snap = await getDoc(patientRef);
+    if (!snap.exists) {
+      alert("Patient introuvable.");
+      return;
+    }
+
+    const patientData = snap.data();
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) {
+      alert("Aucune hospitalisation active.");
+      return;
+    }
+
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+    if (!hospiSnap.exists) {
+      alert("Hospitalisation introuvable.");
+      return;
+    }
+
+    const hospData = hospiSnap.data();
+    const actes = hospData.actes || [];
+
+    if (currentTakingDocId >= actes.length) {
+      alert("Entrée introuvable.");
+      return;
+    }
+
+    // 🔹 Mettre à jour la médication
+    actes[currentTakingDocId] = {
+      ...actes[currentTakingDocId],
+      status: "a-faire",
+      realiseAt: realiseAt.toLocaleString("fr-FR"),
+      realiseComment: realiseComment.value || ""
+    };
+
+    await updateDoc(hospiRef, { actes });
+
+    afficherBulle("✔️ Administration enregistrée");
+    loadHistory();
+
+  } catch (err) {
+    console.error(err);
+    alert("Erreur: " + err.message);
+  } 
+}; 
+
+
+    // --- helper pour notifications simples ---
+// Conteneur global pour les bulles
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
+
+// Fonction pour afficher une bulle
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
+
+ 
+
+    // fermer modals si on clique en dehors
+    window.addEventListener('click', (e)=>{
+      if(e.target===modalPres) modalPres.style.display='none';
+      if(e.target===modalTake) modalTake.style.display='none';
+    });
+
+ 
+
+</script>
+</body>
+</html>

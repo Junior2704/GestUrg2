@@ -171,7 +171,6 @@ html, body {
 }
 
 
-
 textarea {
   width: 100%;
   box-sizing: border-box;
@@ -2285,6 +2284,44 @@ z-index: 3000;
 .btn-delete-acte:hover{
     color:#991b1b;
 }
+
+.examen-encart {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  border-left: 5px solid;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* À réaliser */
+.examen-encart.a-faire {
+  background: #f5faff;
+  border-left-color: #0d6efd;
+}
+
+/* Réalisé */
+.examen-encart.realise {
+  background: #e8fff1;
+  border-left-color: #32c671;
+}
+
+.examen-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.examen-badge.a-faire {
+  background: #dceaff;
+  color: #0d6efd;
+}
+
+.examen-badge.realise {
+  background: #cbf7d5;
+  color: #146c2e;
+}
 </style>
 </head>
 <body>
@@ -2731,6 +2768,22 @@ z-index: 3000;
   <button id="btnSaveExamen" class="btn-id btn-id-v">✅ Valider</button>
 </div>
     </div>
+</div>
+<div id="modal-examen-details" class="modal">
+  <div class="card" style="max-width:600px">
+
+    <h3>Détails de l'examen</h3>
+
+    <div id="examen-detail-content"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:15px;">
+      <button class="btn-id btn-id-c"
+              onclick="closeExamenDetails()">
+        Fermer
+      </button>
+    </div>
+
+  </div>
 </div>
 <section id="panel-sortie" class="panel" style="display:none;">
   
@@ -4901,19 +4954,41 @@ async function chargerExamens() {
       document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
       return;
     }
-
+window.examensCourants = hosp.examens || [];
     // 4️⃣ Construire la liste HTML
-    const liste = hosp.examens.map(ex => `
-      <div class="examen-encart" style="margin-bottom:8px; padding:10px; border-radius:8px; background:${ex.realise ? '#eaf9ea' : '#f5faff'};">
-        <p><b>☢️ Type :</b> ${ex.type || "N/A"}</p>
-        <p><b>💬 Commentaire :</b> ${ex.commentaire || ""}</p>
-        <p><b>📅 Date demande :</b> ${ex.dateDemande || "?"}</p>
-        ${ex.realise 
-          ? `<p><b>✅ Réalisé le :</b> ${ex.dateRealisation || "?"}</p>
-             <p><b>📄 Compte rendu :</b> ${ex.compteRendu || ""}</p>`
-          : ""}
+    const liste = hosp.examens.map((ex, index) => {
+
+  const statut = ex.realise ? "realise" : "a-faire";
+
+  return `
+    <div class="examen-encart ${statut}">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        
+        <div>
+          <strong>☢️ ${ex.type || "N/A"}</strong>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;">
+
+          <span class="examen-badge ${statut}">
+            ${ex.realise ? "Réalisé" : "À réaliser"}
+          </span>
+
+          <button
+            class="btn"
+            onclick="showExamenDetails(${index})">
+            🔎
+          </button>
+
+        </div>
+
       </div>
-    `).join("");
+
+    </div>
+  `;
+
+}).join("");
 
     document.getElementById("examensListe").innerHTML = liste || "<i>Aucun examen enregistré.</i>";
 
@@ -4923,7 +4998,73 @@ async function chargerExamens() {
   }
 }
 
+window.showExamenDetails = function(index){
 
+  const ex = window.examensCourants[index];
+
+  if (!ex) return;
+
+  document.getElementById("examen-detail-content").innerHTML = `
+  
+    <p><b>☢️ Type :</b> ${ex.type || "N/A"}</p>
+
+    <p><b>📅 Date demande :</b>
+      ${ex.dateDemande || "Non renseignée"}
+    </p>
+
+    <p><b>📊 Statut :</b>
+      ${ex.realise ? "Réalisé" : "À réaliser"}
+    </p>
+
+    ${
+      ex.realise
+      ? `
+          <p><b>✅ Date réalisation :</b>
+            ${ex.dateRealisation || "Non renseignée"}
+          </p>
+
+          <p><b>📄 Compte-rendu :</b></p>
+
+          <div style="
+            background:#f7f9fc;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #e0e6ef;
+            white-space:pre-wrap;
+          ">
+            ${ex.compteRendu || "Aucun compte-rendu"}
+          </div>
+        `
+      : `
+          <div style="
+            background:#fff3cd;
+            color:#664d03;
+            border:1px solid #ffecb5;
+            padding:12px;
+            border-radius:8px;
+          ">
+            Examen non réalisé.
+          </div>
+        `
+    }
+
+  `;
+
+  document.getElementById("modal-examen-details").style.display = "flex";
+};
+window.closeExamenDetails = function() {
+  document.getElementById("modal-examen-details").style.display = "none";
+};
+window.addEventListener("click", (e) => {
+
+  const modalExamen =
+    document.getElementById("modal-examen-details");
+
+  if (e.target === modalExamen) {
+    modalExamen.style.display = "none";
+  }
+
+});
 const originalOpenTab = window.openTab;
 window.openTab = function(tabName, evt) {
   originalOpenTab(tabName, evt);

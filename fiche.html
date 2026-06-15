@@ -2796,6 +2796,12 @@ z-index: 3000;
     <div id="examen-detail-content"></div>
 
     <div style="display:flex;justify-content:flex-end;margin-top:15px;">
+        <button
+    id="btnDeleteExamen"
+    class="btn-id btn-id-c"
+    style="display:none;">
+    🗑️ Annuler la demande
+  </button>
       <button class="btn-id btn-id-c"
               onclick="closeExamenDetails()">
         ❌ Fermer
@@ -5016,11 +5022,11 @@ window.examensCourants = hosp.examens || [];
     document.getElementById("examensListe").innerHTML = "<i>Erreur de chargement.</i>";
   }
 }
-
+let currentExamenIndex = null;  
 window.showExamenDetails = function(index){
 
   const ex = window.examensCourants[index];
-
+currentExamenIndex = index;
   if (!ex) return;
 
   document.getElementById("examen-detail-content").innerHTML = `
@@ -5068,9 +5074,79 @@ window.showExamenDetails = function(index){
     }
 
   `;
+const deleteBtn = document.getElementById("btnDeleteExamen");
 
+if(ex.realise){
+  deleteBtn.style.display = "none";
+}else{
+  deleteBtn.style.display = "inline-flex";
+}
+document.getElementById("btnDeleteExamen").onclick = deleteExamen;
   document.getElementById("modal-examen-details").style.display = "flex";
 };
+async function deleteExamen(){
+
+  if(currentExamenIndex === null) return;
+
+  if(!confirm("Annuler cette demande d'examen ?")){
+    return;
+  }
+
+  try{
+
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if(!patientSnap.exists()){
+      throw new Error("Patient introuvable");
+    }
+
+    const patientData = patientSnap.data();
+
+    const hospiId =
+      patientData.hospitalisationActiveId ||
+      patientData.hospitalisations?.slice(-1)[0];
+
+    if(!hospiId){
+      throw new Error("Hospitalisation introuvable");
+    }
+
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+    const hospiSnap = await getDoc(hospiRef);
+
+    if(!hospiSnap.exists()){
+      throw new Error("Hospitalisation introuvable");
+    }
+
+    const hospiData = hospiSnap.data();
+
+    const examens = hospiData.examens || [];
+
+    examens.splice(currentExamenIndex, 1);
+
+    await updateDoc(hospiRef, {
+      examens: examens
+    });
+
+    closeExamenDetails();
+
+    afficherBulle(
+      "✔️ Demande d'examen annulée",
+      "success"
+    );
+
+    chargerExamens();
+
+  }catch(err){
+
+    console.error(err);
+
+    afficherBulle(
+      "❌ Erreur lors de la suppression",
+      "error"
+    );
+  }
+}
 window.closeExamenDetails = function() {
   document.getElementById("modal-examen-details").style.display = "none";
 };

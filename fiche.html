@@ -3865,51 +3865,7 @@ function formaterDate(dateStr) {
   return "";
 }
     
-// --- Recherche et suggestions d'actes ---
-const inputActe = document.getElementById("rechercherActe");
-const suggestionsActes = document.getElementById("suggestionsActes");
 
-inputActe.addEventListener("input", async (e) => {
-  const recherche = e.target.value.trim().toLowerCase();
-  suggestionsActes.innerHTML = "";
-
-  // attendre au moins 2 caractères
-  if (recherche.length < 2) return;
-
-  try {
-    // 🔹 Récupère la liste des actes depuis Firestore v10
-    const ref = doc(db, "referentiels", "actes");
-    const snap = await getDoc(ref);
-    const data = snap.data();
-    const actes = data?.liste || [];
-
-    // 🔹 Filtrage des résultats
-    const filtres = actes.filter(a => a.toLowerCase().includes(recherche));
-
-    if (filtres.length === 0) {
-      suggestionsActes.innerHTML = "<li style='color:#999;'>Aucun résultat</li>";
-      return;
-    }
-
-    // 🔹 Affichage des suggestions
-    filtres.forEach(acte => {
-      const li = document.createElement("li");
-      li.textContent = acte;
-      li.style.cursor = "pointer";
-      li.style.padding = "5px";
-      li.addEventListener("mouseover", () => li.style.background = "#eee");
-      li.addEventListener("mouseout", () => li.style.background = "transparent");
-      li.addEventListener("click", () => {
-        inputActe.value = acte;            // remplir la barre avec l’acte choisi
-        suggestionsActes.innerHTML = "";   // vider les suggestions
-      });
-      suggestionsActes.appendChild(li);
-    });
-  } catch (err) {
-    console.error("Erreur recherche actes :", err);
-    suggestionsActes.innerHTML = "<li style='color:red;'>🚨 Erreur de chargement</li>";
-  }
-});
 
 
 document.getElementById("gravite").addEventListener("change", e => {
@@ -4557,124 +4513,6 @@ inputadd.addEventListener("input", async () => {
 let tousLesActesRealises = [];
 
 
-const btnFermerActe = document.getElementById("btnFermerActe");
-const btnEnregistrerActe = document.getElementById("btnEnregistrerActe");
-const selectActe = document.getElementById("selectActe");
-const champAutreActe = document.createElement("input");
-champAutreActe.type = "text";
-champAutreActe.id = "champAutreActe";
-champAutreActe.placeholder = "Préciser le type d’acte";
-champAutreActe.style.display = "none";
-champAutreActe.style.marginTop = "8px";
-
-document.getElementById("btnFermerActe").addEventListener("click", () => {
-  afficherBulle("ℹ️ Fermeture sans enregistrement", "default");
-});
-
-
-
-let tousLesActesDispos = [];
-
-async function chargerEtInitialiserRechercheActe() {
-  try {
-    const docRef = doc(db, "referentiels", "actes");
-    const docSnap = await getDoc(docRef);
-    const data = docSnap.data();
-    tousLesActesDispos = Array.isArray(data?.liste) ? data.liste : [];
-  } catch (e) {
-    console.error("Erreur chargement actes :", e);
-    tousLesActesDispos = [];
-  }
-
-  const champ = document.getElementById("rechercherActe");
-  const suggestions = document.getElementById("suggestionsActes");
-
-  champ.addEventListener("input", () => {
-    const texte = champ.value.toLowerCase().trim();
-    suggestions.innerHTML = "";
-
-    if (!texte) {
-      suggestions.style.display = "none";
-      return;
-    }
-
-    const filtres = tousLesActesDispos.filter(nom =>
-      nom.toLowerCase().includes(texte)
-    );
-
-    filtres.forEach(nom => {
-      const li = document.createElement("li");
-      li.textContent = nom;
-      li.style.padding = "6px 10px";
-      li.style.cursor = "pointer";
-      li.addEventListener("click", () => {
-        champ.value = nom;
-        suggestions.style.display = "none";
-      });
-      suggestions.appendChild(li);
-    });
-
-    suggestions.style.display = filtres.length ? "block" : "none";
-  });
-
-  document.addEventListener("click", e => {
-    if (!champ.contains(e.target) && !suggestions.contains(e.target)) {
-      suggestions.style.display = "none";
-    }
-  });
-}
-
-
-function mettreAJourListeActes(filtre) {
-  const selectActe = document.getElementById("selectActe");
-  selectActe.innerHTML = "";
-
-  const actesFiltres = tousLesActesDispos.filter(acte =>
-    acte.toLowerCase().includes(filtre)
-  );
-
-  actesFiltres.forEach(nom => {
-    const opt = document.createElement("option");
-    opt.value = nom;
-    opt.textContent = nom;
-    selectActe.appendChild(opt);
-  });
-
-  const optAutre = document.createElement("option");
-  optAutre.value = "autre";
-  optAutre.textContent = "🔤 Autre (à préciser)";
-  selectActe.appendChild(optAutre);
-}
-
-
-
-
-
-function ajouterFiltreTypeActe() {
-  const select = document.createElement("select");
-  select.id = "filtreTypeActe";
-  select.innerHTML = `<option value="tous">Tous les types</option>`;
-  document.getElementById("actesListe").before(select);
-
-  const typesUniques = [...new Set(tousLesActesRealises.map(a => a.type))];
-  typesUniques.forEach(type => {
-    const opt = document.createElement("option");
-    opt.value = type;
-    opt.textContent = type;
-    select.appendChild(opt);
-  });
-
-  select.addEventListener("change", (e) => {
-    chargerActes();
-  });
-}
-window.toggleSublist = function(id) {
-    const list = document.getElementById(id);
-    list.style.display = list.style.display === "block" ? "none" : "block";
-  }
-
-
-
 async function supprimerActeRealise(index) {
   if (!confirm("Supprimer cet acte ?")) return;
 
@@ -4698,8 +4536,9 @@ async function supprimerActeRealise(index) {
     if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
 
     const hospiData = hospiSnap.data();
-    const actes = [...(hospiData.actes_realises || [])];
-    const acteSupprime = actes[index];
+const actes = [...(hospiData.actes || [])];
+actes.splice(index, 1);
+updateDoc(hospiRef, { actes })
 
     // 4️⃣ Supprimer l'acte
     actes.splice(index, 1);

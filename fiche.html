@@ -2150,7 +2150,26 @@ z-index: 3000;
 .verification-vide {
   color: #777;
   font-style: italic;
-}</style>
+}
+.acte-card{
+    padding:15px;
+    margin:10px 0;
+    border-radius:12px;
+    color:white;
+}
+
+.acte-a-faire{
+    background:#f39c12;
+}
+
+.acte-retard{
+    background:#e74c3c;
+}
+
+.acte-realise{
+    background:#27ae60;
+}
+</style>
 </head>
 <body>
 
@@ -2578,6 +2597,39 @@ z-index: 3000;
   
   <div id="actesListe"></div>
 
+  <div id="modalActe" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>💉 Demander un acte</h2>
+
+    <label>Acte :</label>
+    <input type="text" id="acteType" placeholder="Ex : Pose VVP">
+
+    <label>Date demande :</label>
+    <input type="date" id="acteDate">
+
+    <label>Heure demande :</label>
+    <input type="time" id="acteHeure">
+
+    <label>Commentaire demande :</label>
+    <textarea id="acteCommentaireDemande"></textarea>
+
+    <div class="modal-buttons">
+      <button onclick="fermerModalActe()">❌ Annuler</button>
+      <button onclick="demanderActe()">📩 Demander</button>
+      <button onclick="demanderEtRealiser()">⚡ Demander et réaliser</button>
+    </div>
+  </div>
+</div>
+<div id="modalRealisation" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>✔ Réaliser acte</h2>
+
+    <label>Commentaire réalisation</label>
+    <textarea id="commentaireRealisation"></textarea>
+
+    <button onclick="confirmerRealisation()">Confirmer</button>
+  </div>
+</div>
 </section>
 <section id="panel-examens" class="panel" style="display:none;">
 
@@ -4674,68 +4726,141 @@ async function supprimerActeRealise(index) {
   }
 }
 
-document.getElementById("btnEnregistrerActe").addEventListener("click", async () => {
-  const type = document.getElementById("rechercherActe").value.trim();
-  const realisateur = document.getElementById("selectRealisateur").value;
-  const remarque = document.getElementById("remarqueActe").value.trim();
+async function sauvegarderActe(realiserDirectement=false) {
+    try {
+        const patientDocSnap = await getDoc(doc(db, "patients", patientId));
+        const patientData = patientDocSnap.data();
 
-  if (!type) {
-    afficherBulle("❌ Veuillez saisir un type d’acte", "warning");
-    return;
-  }
+        const hospitalisationId =
+            patientData.hospitalisationActiveId ||
+            patientData.hospitalisations?.slice(-1)[0];
 
-  const acte = {
-    type,
-    realisateur,
-    remarque,
-    date: new Date().toLocaleString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    })
-  };
+        if (!hospitalisationId) {
+            afficherBulle("Aucune hospitalisation active", "warning");
+            return;
+        }
 
-  try {
-    // 1️⃣ Récupérer le patient
+        const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+        const hospiSnap = await getDoc(hospiRef);
+        const hospiData = hospiSnap.data();
+
+        const actes = hospiData.actes || [];
+
+        const date = document.getElementById("acteDate").value;
+        const heure = document.getElementById("acteHeure").value;
+        const commentaireDemande = document.getElementById("acteCommentaireDemande").value;
+        const type = document.getElementById("acteType").value.trim();
+
+        const now = new Date();
+
+        const acte = {
+            id: "acte_" + Date.now(),
+            type,
+            demande: {
+                date,
+                heure,
+                timestamp: now,
+                commentaire: commentaireDemande,
+                demandeur: {
+                    nom: window.medecinNom,
+                    specialite: window.medecinSpecialite,
+                    lieu: window.medecinLieu
+                }
+            },
+            realisation: {
+                realise: realiserDirectement,
+                date: realiserDirectement ? date : null,
+                heure: realiserDirectement ? heure : null,
+                timestamp: realiserDirectement ? now : null,
+                commentaire: "",
+                realisateur: realiserDirectement ? {
+                    nom: window.medecinNom,
+                    specialite: window.medecinSpecialite,
+                    lieu: window.medecinLieu
+                } : null
+            },
+            statut: realiserDirectement ? "realise" : "a_realiser"
+        };
+
+        actes.push(acte);
+        await updateDoc(hospiRef, { actes });
+
+        afficherBulle("Acte enregistré", "success");
+        fermerModalActe();
+        chargerActes();
+
+    } catch(err) {
+        console.error(err);
+        afficherBulle("Erreur Firestore", "error");
+    }
+}
+let acteIndexSelectionne = null;
+
+function ouvrirModalRealisation(index) {
+    acteIndexSelectionne = index;
+    document.getElementById("modalRealisation").style.display = "flex";
+}
+async function confirmerRealisation() {
+    const commentaire = document.getElementById("commentaireRealisation").value;
+
     const patientDocSnap = await getDoc(doc(db, "patients", patientId));
     const patientData = patientDocSnap.data();
-    if (!patientData) throw new Error("Patient introuvable");
 
-    // 2️⃣ Déterminer l'hospitalisation active
-    const hospitalisationId = patientData.hospitalisationActiveId
-                              || patientData.hospitalisations?.slice(-1)[0];
-    if (!hospitalisationId) {
-      afficherBulle("🚨 Aucune hospitalisation active", "warning");
-      return;
-    }
+    const hospitalisationId =
+        patientData.hospitalisationActiveId ||
+        patientData.hospitalisations?.slice(-1)[0];
 
-    // 3️⃣ Récupérer l'hospitalisation
     const hospiRef = doc(db, "hospitalisations", hospitalisationId);
     const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
-
     const hospiData = hospiSnap.data();
-    const actes = hospiData.actes || [];
 
-    // 4️⃣ Ajouter le nouvel acte
-    actes.push(acte);
+    const actes = hospiData.actes || [];
+    const acte = actes[acteIndexSelectionne];
+
+    const now = new Date();
+
+    acte.realisation = {
+        realise: true,
+        date: now.toLocaleDateString("fr-FR"),
+        heure: now.toLocaleTimeString("fr-FR"),
+        timestamp: now,
+        commentaire,
+        realisateur: {
+            nom: window.medecinNom,
+            specialite: window.medecinSpecialite,
+            lieu: window.medecinLieu
+        }
+    };
+
+    acte.statut = "realise";
+
     await updateDoc(hospiRef, { actes });
 
-    // 5️⃣ Feedback UI
-    afficherBulle("✔️ Acte enregistré", "success");
-    document.getElementById("rechercherActe").value = "";
-    document.getElementById("remarqueActe").value = "";
+    document.getElementById("modalRealisation").style.display = "none";
     chargerActes();
+}
+function demanderActe() {
+    sauvegarderActe(false);
+}
 
-  } catch (err) {
-    console.error("Erreur enregistrement acte :", err);
-    afficherBulle("❌ Erreur lors de l’enregistrement de l’acte", "error");
-  }
-});
+function demanderEtRealiser() {
+    sauvegarderActe(true);
+}
+function ouvrirModalActe() {
+    document.getElementById("modalActe").style.display = "flex";
 
+    const now = new Date();
+
+    document.getElementById("acteDate").value =
+        now.toISOString().split("T")[0];
+
+    document.getElementById("acteHeure").value =
+        now.toTimeString().slice(0,5);
+}
+
+function fermerModalActe() {
+    document.getElementById("modalActe").style.display = "none";
+}
 async function chargerServices() {
   try {
     // 🔹 Charger les services depuis le référentiel
@@ -5077,60 +5202,51 @@ window.openTab = function(tabName, evt) {
     chargerExamens();
   }
 };
-// 🔹 Charger les actes
 async function chargerActes() {
-  try {
-    // 1️⃣ Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-    if (!patientSnap.exists()) return;
+    const patientDocSnap = await getDoc(doc(db, "patients", patientId));
+    const patientData = patientDocSnap.data();
 
-    const patientData = patientSnap.data();
+    const hospitalisationId =
+        patientData.hospitalisationActiveId ||
+        patientData.hospitalisations?.slice(-1)[0];
 
-    // 2️⃣ Déterminer l'hospitalisation active
-    const hospitalisationId = patientData.hospitalisationActiveId
-                              || (patientData.hospitalisations?.slice(-1)[0]);
-    if (!hospitalisationId) {
-      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
-      return;
-    }
+    const hospiSnap = await getDoc(doc(db, "hospitalisations", hospitalisationId));
+    const data = hospiSnap.data();
 
-    // 3️⃣ Charger l'hospitalisation
-    const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-    const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists()) {
-      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
-      return;
-    }
+    const container = document.getElementById("listeActes");
+    container.innerHTML = "";
 
-    const hosp = hospiSnap.data();
+    (data.actes || []).forEach((acte, index) => {
+        const card = document.createElement("div");
+        card.className = "acte-card";
 
-    if (!hosp.actes || hosp.actes.length === 0) {
-      document.getElementById("actesListe").innerHTML = "<i>Aucun acte enregistré.</i>";
-      return;
-    }
+        let classe = "acte-a-faire";
 
-    // 4️⃣ Construire l'affichage HTML
-    const liste = hosp.actes.map((acte, i) => `
-      <div class="prescription-item" style="margin-bottom:8px; padding:10px; border-radius:8px; background:#f5faff;">
-        <p><b>💉 Type :</b> ${acte.type || "N/A"}</p>
-        <p><b>👨‍⚕️ Réalisé par :</b> ${acte.realisateur || "?"}</p>
-        <p><b>📅 Date :</b> ${acte.date || "?"}</p>
-        ${acte.remarque 
-          ? `<p><b>💬 Remarque :</b> ${acte.remarque}</p>` 
-          : ""}
-        <button class="btn-delete-acte" onclick="supprimerActe(${i})">🗑️</button>
-      </div>
-    `).join("");
+        if (acte.statut === "realise")
+            classe = "acte-realise";
+        else {
+            const diff = (new Date() - new Date(acte.demande.timestamp)) / 3600000;
+            if (diff > 2) classe = "acte-retard";
+        }
 
-    document.getElementById("actesListe").innerHTML = liste || "<i>Aucun acte enregistré.</i>";
+        card.classList.add(classe);
 
-  } catch (e) {
-    console.error("Erreur lors du chargement des actes :", e);
-    document.getElementById("actesListe").innerHTML = "<i>Erreur de chargement.</i>";
-  }
+        card.innerHTML = `
+            <b>${acte.type}</b><br>
+            Demande : ${acte.demande.date} ${acte.demande.heure}<br>
+            Demandeur : ${acte.demande.demandeur.nom}<br>
+            Commentaire : ${acte.demande.commentaire || "-"}
+            <br><br>
+            ${
+                acte.statut !== "realise"
+                ? `<button onclick="ouvrirModalRealisation(${index})">✔ Réaliser</button>`
+                : `✅ Réalisé`
+            }
+        `;
+
+        container.appendChild(card);
+    });
 }
-
 
 // 🔹 Supprimer un acte
 window.supprimerActe = async function (indexActe) {

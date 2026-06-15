@@ -766,7 +766,7 @@ const acte = {
   comment: comment,
   createdAt: formatDate(new Date()),
   dueAt: formatDate(scheduled),
-  status: "realise",
+  status: "a-faire",
   realiseAt: null,
   realiseComment: null
 };
@@ -886,7 +886,7 @@ await updateDoc(hospiRef, {
 
       // Calcul du statut
       let status = d.status;
-      if (status !== "a-faire") {
+      if (status !== "realise") {
         const now = new Date();
         const due = parseDate(d.dueAt);
         if (due) {
@@ -1113,10 +1113,9 @@ window.openTakeModal = (docId, name) => {
       return;
     }
 
-    // 🔹 Mettre à jour la médication
     actes[currentTakingDocId] = {
       ...actes[currentTakingDocId],
-      status: "a-faire",
+      status: "realise",
       realiseAt: realiseAt.toLocaleString("fr-FR"),
       realiseComment: realiseComment.value || ""
     };

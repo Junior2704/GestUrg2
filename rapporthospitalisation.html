@@ -655,6 +655,25 @@ async function chargerDepuisFirestore() {
             return ligne;
           }).join('\n\n')
         : "";
+const actes = hospi.actes || [];
+
+    document.getElementById("medicaments").value =
+      actes.length > 0
+        ? "Actes réalisés aux urgences :\n\n" +
+          actes.map(m => {
+            let ligne = `• ${actes.product || "Médicament non renseigné"}`;
+            if (m.createdAt) ligne += `\n   -> Demandé le : ${m.createdAt}`;
+            if (m.dueAt) ligne += `\n   -> Pour le : ${m.dueAt}`;
+            if (m.comment) ligne += `\n   -> Commentaire demande : ${m.comment}`;
+            if (m.status === "realise") {
+              if (m.takenAt) ligne += `\n   -> Réalisé le : ${m.takenAt}`;
+              if (m.takeComment) ligne += `\n   -> Commentaire réalisation : ${m.takeComment}`;
+            } else {
+              ligne += `\n   -> Non réalisé`;
+            }
+            return ligne;
+          }).join('\n\n')
+        : "";
 
     document.getElementById("identite").value =
       `${sexe} ${prenom} ${nom}, \nNé(e) le ${dateNaissance2}, ${age} \n${adresse}\nCIP (Code d'Identification Patient) : ${patientId}`;
@@ -679,11 +698,6 @@ async function chargerDepuisFirestore() {
         return `• ${typeAvecCommentaire} : demandé le ${e.dateDemande || "?"}, réalisé le ${e.dateRealisation || "?"}\n   Résultat : ${e.compteRendu || 'en attente'}`;
       }).join('\n');
 
-    document.getElementById("actes").value =
-      (hospi.actes || []).map(a => {
-        const remarques = a.remarques ? ` : ${a.remarques}` : '';
-        return `• ${a.date || '?'} : ${a.type} par ${a.realisateur || 'inconnu'}${remarques}`;
-      }).join('\n');
 
     if (!hospi.sortie) {
       document.getElementById("sortie").value = '';

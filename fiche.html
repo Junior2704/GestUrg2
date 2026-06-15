@@ -5121,7 +5121,15 @@ async function deleteExamen(){
     const hospiData = hospiSnap.data();
 
     const examens = hospiData.examens || [];
+const examen = examens[currentExamenIndex];
 
+if(examen?.realise){
+  afficherBulle(
+    "❌ Impossible de supprimer un examen réalisé",
+    "warning"
+  );
+  return;
+}
     examens.splice(currentExamenIndex, 1);
 
     await updateDoc(hospiRef, {

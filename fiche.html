@@ -3797,6 +3797,9 @@ if (!patient.hospitalisationActiveId || patient.hospitalisationActiveId === "") 
     chargerServices();
     await chargerEquipeReferente();
 chargerStatsActes(patientId);
+chargerStatsMedicaments(patientId);
+window.patientId = patientId;
+startAutoRefresh();
   } catch (err) {
     console.error("Erreur chargement patient :", err);
     afficherBulle("❌ Erreur de chargement", "error");
@@ -6279,6 +6282,16 @@ function updateMedsBadges() {
 
   if (lateEl)
     lateEl.textContent = window.medsEnRetard > 9 ? "9+" : window.medsEnRetard || 0;
+}
+function startAutoRefresh() {
+  setInterval(() => {
+    if (!window.patientId) return;
+
+    chargerStatsActes(window.patientId);
+    chargerStatsMedicaments(window.patientId);
+    updateExamBadges();
+
+  }, 60000);
 }
 </script>
 

@@ -530,13 +530,17 @@ width: 100%;
       </div>
             <input type="datetime-local" id="pres-datetime" style="display:none;margin-top:6px;" />
 
-
-      <label>Fréquence (optionnelle)</label>
+<label style="margin-top:14px;">
+  <input type="checkbox" id="pres-repeat-toggle" />
+  Répétition
+</label>
+<div id="frequency-block" style="display:none;">
+      <label>Fréquence</label>
       <div class="flex">
         <input type="number" id="pres-every-hours" placeholder="toutes les X heures" min="1"/>
         <input type="number" id="pres-repeat-count" placeholder="N répétitions (ex:6)" min="1"/>
       </div>
-
+</div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
        <button class="btn-id btn-id-c" id="pres-cancel">❌ Annuler</button>
         <button class="btn-id btn-id-v" id="pres-save">✔️ Valider & enregistrer</button>
@@ -1321,7 +1325,22 @@ function afficherBulle(msg, type = 'info') {
       if(e.target===modalTake) modalTake.style.display='none';
     });
 
- 
+ const repeatToggle = document.getElementById("pres-repeat-toggle");
+const frequencyBlock = document.getElementById("frequency-block");
+const everyHours = document.getElementById("pres-every-hours");
+const repeatCount = document.getElementById("pres-repeat-count");
+
+repeatToggle.addEventListener("change", () => {
+  if (repeatToggle.checked) {
+    frequencyBlock.style.display = "block";
+  } else {
+    frequencyBlock.style.display = "none";
+
+    // reset propre
+    everyHours.value = "";
+    repeatCount.value = "";
+  }
+});
 
 </script>
 </body>

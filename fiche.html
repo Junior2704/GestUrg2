@@ -2348,6 +2348,9 @@ z-index: 3000;
 .badge-circle.blue {
   background: #0d6efd;
 }
+.badge-circle.red {
+  background: #fd0d0d;
+}
 </style>
 </head>
 <body>
@@ -2404,7 +2407,13 @@ z-index: 3000;
     <span id="exam-pending" class="badge-circle blue">0</span>
   </span>
 </div>
-<div class="nav-item" data-module="actes">💉 <span>Actes</span></div>
+<div class="nav-item" data-module="actes">💉 <span>Actes</span>
+<span class="exam-badges">
+  <span id="actes-done" class="badge-circle green">0</span>
+  <span id="actes-pending" class="badge-circle blue">0</span>
+  <span id="actes-late" class="badge-circle red">0</span>
+</span>
+</div>
 <div class="nav-item" data-module="documents">📑 <span>Documents</span></div>
 <div class="nav-item" data-module="sortie">🚪 <span>Sortie</span></div>
 <div class="nav-item" data-module="historique">📜 <span>Historique</span></div>
@@ -3779,7 +3788,7 @@ if (!patient.hospitalisationActiveId || patient.hospitalisationActiveId === "") 
     // Services / équipes
     chargerServices();
     await chargerEquipeReferente();
-
+chargerStatsActes(patientId);
   } catch (err) {
     console.error("Erreur chargement patient :", err);
     afficherBulle("❌ Erreur de chargement", "error");
@@ -6183,6 +6192,43 @@ function updateExamBadges() {
   // format 9+
   doneEl.textContent = done > 9 ? "9+" : done;
   pendingEl.textContent = pending > 9 ? "9+" : pending;
+}
+async function chargerStatsActes(patientId) {
+  const patientRef = doc(db, "patients", patientId);
+  const patientSnap = await getDoc(patientRef);
+
+  if (!patientSnap.exists()) return;
+
+  const patientData = patientSnap.data();
+  const hospiId = patientData.hospitalisationActiveId;
+  if (!hospiId) return;
+
+  const hospiRef = doc(db, "hospitalisations", hospiId);
+  const hospiSnap = await getDoc(hospiRef);
+  if (!hospiSnap.exists()) return;
+
+  const hosp = hospiSnap.data();
+  const actes = hosp.actes || [];
+
+  const done = actes.filter(a => a.status === "realise").length;
+  const pending = actes.filter(a => a.status !== "realise").length;
+const late = actes.filter(a => a.status !== "en-retard").length;
+  window.actesRealises = done;
+  window.actesNonRealises = pending;
+  window.actesEnRetard = late;
+
+  updateActesBadges();
+}
+function updateActesBadges() {
+  const doneEl = document.getElementById("actes-done");
+  const pendingEl = document.getElementById("actes-pending");
+const lategEl = document.getElementById("actes-late");
+  if (doneEl)
+    doneEl.textContent = window.actesRealises > 9 ? "9+" : window.actesRealises || 0;
+if (lateEl)
+    doneEl.textContent = window.actesEnRetard > 9 ? "9+" : window.actesEnRetard || 0;
+  if (pendingEl)
+    pendingEl.textContent = window.actesNonRealises > 9 ? "9+" : window.actesNonRealises || 0;
 }
 </script>
 

@@ -2321,6 +2321,33 @@ z-index: 3000;
   box-shadow: none !important;
   background: transparent !important;
 }
+.exam-badges {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  align-items: center;
+}
+
+.badge-circle {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.badge-circle.green {
+  background: #28a745;
+}
+
+.badge-circle.blue {
+  background: #0d6efd;
+}
 </style>
 </head>
 <body>
@@ -2369,7 +2396,14 @@ z-index: 3000;
 <div class="nav-item" data-module="dossier">📋 <span>Dossier Médical</span></div>
 <div class="nav-item" data-module="constantes">🩺 <span>Constantes</span></div>
 <div class="nav-item" data-module="medsurgences">💊 <span>Médicaments aux Urgences</span></div>
-<div class="nav-item" data-module="examens">🩻 <span>Examens</span></div>
+<div class="nav-item" data-module="examens">
+  🩻 <span>Examens</span>
+
+  <span class="exam-badges">
+    <span id="exam-done" class="badge-circle green">0</span>
+    <span id="exam-pending" class="badge-circle blue">0</span>
+  </span>
+</div>
 <div class="nav-item" data-module="actes">💉 <span>Actes</span></div>
 <div class="nav-item" data-module="documents">📑 <span>Documents</span></div>
 <div class="nav-item" data-module="sortie">🚪 <span>Sortie</span></div>
@@ -4930,9 +4964,9 @@ filtrerHistorique();
 }
 async function chargerExamens() {
   try {
-    // 1️⃣ Récupérer le patient
     const patientRef = doc(db, "patients", patientId);
     const patientSnap = await getDoc(patientRef);
+
     if (!patientSnap.exists()) {
       document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
       return;
@@ -4940,68 +4974,76 @@ async function chargerExamens() {
 
     const patientData = patientSnap.data();
 
-    // 2️⃣ Déterminer l'hospitalisation active
     const hospitalisationId = patientData.hospitalisationActiveId
                               || (patientData.hospitalisations?.slice(-1)[0]);
+
     if (!hospitalisationId) {
       document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
       return;
     }
 
-    // 3️⃣ Charger l'hospitalisation
     const hospiRef = doc(db, "hospitalisations", hospitalisationId);
     const hospiSnap = await getDoc(hospiRef);
+
     if (!hospiSnap.exists()) {
       document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
       return;
     }
 
     const hosp = hospiSnap.data();
+
     if (!hosp.examens || hosp.examens.length === 0) {
       document.getElementById("examensListe").innerHTML = "<i>Aucun examen enregistré.</i>";
       return;
     }
-window.examensCourants = hosp.examens || [];
-    // 4️⃣ Construire la liste HTML
+
+    // =========================
+    // ✅ VARIABLES GLOBALES
+    // =========================
+    window.examensCourants = hosp.examens || [];
+
+    window.examensRealises = hosp.examens.filter(ex => ex.realise === true).length;
+    window.examensNonRealises = hosp.examens.filter(ex => !ex.realise).length;
+
+    // =========================
+    // 4️⃣ AFFICHAGE
+    // =========================
     const liste = hosp.examens.map((ex, index) => {
 
-  const statut = ex.realise ? "realise" : "a-faire";
+      const statut = ex.realise ? "realise" : "a-faire";
 
-  return `
-    <div class="examen-encart ${statut}">
+      return `
+        <div class="examen-encart ${statut}">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            
+            <div>
+              <strong>☢️ ${ex.type || "N/A"}</strong>
+            </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        
-        <div>
-          <strong>☢️ ${ex.type || "N/A"}</strong>
+            <div style="display:flex;align-items:center;gap:8px;">
+
+              <span class="examen-badge ${statut}">
+                ${ex.realise ? "Réalisé" : "À réaliser"}
+              </span>
+
+              <button class="btn-loupe" onclick="showExamenDetails(${index})">
+                🔎
+              </button>
+
+            </div>
+
+          </div>
         </div>
+      `;
+    }).join("");
 
-        <div style="display:flex;align-items:center;gap:8px;">
-
-          <span class="examen-badge ${statut}">
-            ${ex.realise ? "Réalisé" : "À réaliser"}
-          </span>
-
-          <button
-            class="btn-loupe"
-            onclick="showExamenDetails(${index})">
-            🔎
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  `;
-
-}).join("");
-
-    document.getElementById("examensListe").innerHTML = liste || "<i>Aucun examen enregistré.</i>";
-
+    document.getElementById("examensListe").innerHTML =
+      liste || "<i>Aucun examen enregistré.</i>";
+updateExamBadges();
   } catch (e) {
     console.error("Erreur lors du chargement des examens :", e);
-    document.getElementById("examensListe").innerHTML = "<i>Erreur de chargement.</i>";
+    document.getElementById("examensListe").innerHTML =
+      "<i>Erreur de chargement.</i>";
   }
 }
 let currentExamenIndex = null;  
@@ -6129,7 +6171,19 @@ document.addEventListener("click", function(e){
   }
 }, true);
 
+function updateExamBadges() {
+  const doneEl = document.getElementById("exam-done");
+  const pendingEl = document.getElementById("exam-pending");
 
+  if (!doneEl || !pendingEl) return;
+
+  let done = window.examensRealises || 0;
+  let pending = window.examensNonRealises || 0;
+
+  // format 9+
+  doneEl.textContent = done > 9 ? "9+" : done;
+  pendingEl.textContent = pending > 9 ? "9+" : pending;
+}
 </script>
 
 </body>

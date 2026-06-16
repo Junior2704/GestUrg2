@@ -6283,6 +6283,32 @@ function updateMedsBadges() {
   if (lateEl)
     lateEl.textContent = window.medsEnRetard > 9 ? "9+" : window.medsEnRetard || 0;
 }
+
+async function chargerStatsExamens(patientId) {
+  const patientRef = doc(db, "patients", patientId);
+  const patientSnap = await getDoc(patientRef);
+
+  if (!patientSnap.exists()) return;
+
+  const patientData = patientSnap.data();
+  const hospiId = patientData.hospitalisationActiveId;
+  if (!hospiId) return;
+
+  const hospiRef = doc(db, "hospitalisations", hospiId);
+  const hospiSnap = await getDoc(hospiRef);
+  if (!hospiSnap.exists()) return;
+
+  const hosp = hospiSnap.data();
+
+  const exams = hosp.examens || [];
+
+  window.examensRealises = exams.filter(e => e.realise === true).length;
+  window.examensNonRealises = exams.filter(e => !e.realise).length;
+
+  updateExamBadges();
+}
+
+
 let unsubscribeHospitalisation = null;
 
 function startAutoRefresh(patientId) {
@@ -6326,12 +6352,11 @@ function startAutoRefresh(patientId) {
 
       updateMedsBadges();
 
-      // 🩻 EXAMENS (si déjà stockés dans hosp.examens)
-      const exams = hosp.examens || [];
-      window.examensRealises = exams.filter(e => e.realise === true).length;
-      window.examensNonRealises = exams.filter(e => !e.realise).length;
-
-      updateExamBadges();
+      // 🩻 EXAMENS 
+  const exams = hosp.examens || [];
+window.examensRealises = exams.filter(e => e.realise === true).length;
+window.examensNonRealises = exams.filter(e => !e.realise).length;
+updateExamBadges();
     });
   });
 }

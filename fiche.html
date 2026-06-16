@@ -2398,7 +2398,15 @@ z-index: 3000;
 <div class="nav-item" data-module="admission">🗂️ <span>Admission et orientation</span></div>
 <div class="nav-item" data-module="dossier">📋 <span>Dossier Médical</span></div>
 <div class="nav-item" data-module="constantes">🩺 <span>Constantes</span></div>
-<div class="nav-item" data-module="medsurgences">💊 <span>Médicaments aux Urgences</span></div>
+<div class="nav-item" data-module="medsurgences">
+  💊 <span>Médicaments aux Urgences</span>
+
+  <span class="exam-badges">
+    <span id="meds-done" class="badge-circle green">0</span>
+    <span id="meds-pending" class="badge-circle blue">0</span>
+    <span id="meds-late" class="badge-circle red">0</span>
+  </span>
+</div>
 <div class="nav-item" data-module="examens">
   🩻 <span>Examens</span>
 
@@ -6211,7 +6219,7 @@ async function chargerStatsActes(patientId) {
   const actes = hosp.actes || [];
 
   const done = actes.filter(a => a.status === "realise").length;
-  const pending = actes.filter(a => a.status !== "realise").length;
+  const pending = actes.filter(a => a.status === "a-faire").length;
 const late = actes.filter(a => a.status === "en-retard").length;
   window.actesRealises = done;
   window.actesNonRealises = pending;
@@ -6229,6 +6237,48 @@ if (lateEl)
     doneEl.textContent = window.actesEnRetard > 9 ? "9+" : window.actesEnRetard || 0;
   if (pendingEl)
     pendingEl.textContent = window.actesNonRealises > 9 ? "9+" : window.actesNonRealises || 0;
+}
+async function chargerStatsMedicaments(patientId) {
+  const patientRef = doc(db, "patients", patientId);
+  const patientSnap = await getDoc(patientRef);
+
+  if (!patientSnap.exists()) return;
+
+  const patientData = patientSnap.data();
+  const hospiId = patientData.hospitalisationActiveId;
+  if (!hospiId) return;
+
+  const hospiRef = doc(db, "hospitalisations", hospiId);
+  const hospiSnap = await getDoc(hospiRef);
+  if (!hospiSnap.exists()) return;
+
+  const hosp = hospiSnap.data();
+
+  const meds = hosp.meds || [];
+
+  const done = meds.filter(m => m.status === "pris").length;
+  const pending = meds.filter(m => m.status === "a-donner").length;
+  const late = meds.filter(m => m.status === "en-retard").length;
+
+  window.medsRealises = done;
+  window.medsNonRealises = pending;
+  window.medsEnRetard = late;
+
+  updateMedsBadges();
+}
+function updateMedsBadges() {
+  const doneEl = document.getElementById("meds-done");
+  const pendingEl = document.getElementById("meds-pending");
+  const lateEl = document.getElementById("meds-late");
+
+  if (doneEl)
+    doneEl.textContent = window.medsRealises > 9 ? "9+" : window.medsRealises || 0;
+
+  if (pendingEl)
+    pendingEl.textContent = window.medsNonRealises > 9 ? "9+" : window.medsNonRealises || 0;
+
+  if (lateEl)
+    lateEl.textContent = window.medsEnRetard > 9 ? "9+" : window.medsEnRetard || 0;
 }
 </script>
 

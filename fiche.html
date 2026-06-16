@@ -6283,15 +6283,57 @@ function updateMedsBadges() {
   if (lateEl)
     lateEl.textContent = window.medsEnRetard > 9 ? "9+" : window.medsEnRetard || 0;
 }
-function startAutoRefresh() {
-  setInterval(() => {
-    if (!window.patientId) return;
+let unsubscribeHospitalisation = null;
 
-    chargerStatsActes(window.patientId);
-    chargerStatsMedicaments(window.patientId);
-    updateExamBadges();
+function startAutoRefresh(patientId) {
+  if (!patientId) return;
 
-  }, 60000);
+  // évite plusieurs listeners en double
+  if (unsubscribeHospitalisation) {
+    unsubscribeHospitalisation();
+    unsubscribeHospitalisation = null;
+  }
+
+  const patientRef = doc(db, "patients", patientId);
+
+  unsubscribeHospitalisation = onSnapshot(patientRef, async (patientSnap) => {
+    if (!patientSnap.exists()) return;
+
+    const patientData = patientSnap.data();
+    const hospiId = patientData.hospitalisationActiveId;
+    if (!hospiId) return;
+
+    const hospiRef = doc(db, "hospitalisations", hospiId);
+
+    onSnapshot(hospiRef, (hospiSnap) => {
+      if (!hospiSnap.exists()) return;
+
+      const hosp = hospiSnap.data();
+
+      // 🔥 ACTES
+      const actes = hosp.actes || [];
+      window.actesRealises = actes.filter(a => a.status === "realise").length;
+      window.actesNonRealises = actes.filter(a => a.status !== "realise").length;
+      window.actesEnRetard = actes.filter(a => a.status === "en-retard").length;
+
+      updateActesBadges();
+
+      // 💊 MÉDICAMENTS
+      const meds = hosp.medicamentsUrgences || [];
+      window.medsRealises = meds.filter(m => m.status === "realise").length;
+      window.medsNonRealises = meds.filter(m => m.status !== "realise").length;
+      window.medsEnRetard = meds.filter(m => m.status === "en-retard").length;
+
+      updateMedsBadges();
+
+      // 🩻 EXAMENS (si déjà stockés dans hosp.examens)
+      const exams = hosp.examens || [];
+      window.examensRealises = exams.filter(e => e.realise === true).length;
+      window.examensNonRealises = exams.filter(e => !e.realise).length;
+
+      updateExamBadges();
+    });
+  });
 }
 </script>
 

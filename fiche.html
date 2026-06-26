@@ -6338,9 +6338,38 @@ function startAutoRefresh(patientId) {
 
       // 🔥 ACTES
       const actes = hosp.actes || [];
-      window.actesRealises = actes.filter(a => a.status === "realise").length;
-      window.actesNonRealises = actes.filter(a => a.status === "a-faire").length;
-      window.actesEnRetard = actes.filter(a => a.status === "en-retard").length;
+
+window.actesRealises = 0;
+window.actesNonRealises = 0; // correspond à "a-faire"
+window.actesEnRetard = 0;
+window.actesPrevus = 0; // optionnel si tu veux aussi compter les "prevu"
+
+actes.forEach(acte => {
+  let status = acte.status || "";
+
+  if (status !== "realise") {
+    const now = new Date();
+    const due = parseDate(acte.dueAt);
+
+    if (due) {
+      const diff = (now - due) / 60000; 
+
+      if (Math.abs(diff) <= 10) {
+        status = "a-faire";
+      }else {
+        status = "en-retard";
+      }
+    }
+  }
+
+  if (status === "realise") {
+    window.actesRealises++;
+  } else if (status === "a-faire") {
+    window.actesNonRealises++;
+  } else if (status === "en-retard") {
+    window.actesEnRetard++;
+  } 
+});
 
       updateActesBadges();
 
@@ -6349,7 +6378,32 @@ function startAutoRefresh(patientId) {
       window.medsRealises = meds.filter(m => m.status === "pris").length;
       window.medsNonRealises = meds.filter(m => m.status === "a-donner").length;
       window.medsEnRetard = meds.filter(m => m.status === "en-retard").length;
+meds.forEach(med => {
+  let status = med.status || "";
 
+  if (status !== "realise") {
+    const now = new Date();
+    const due = parseDate(med.dueAt);
+
+    if (due) {
+      const diff = (now - due) / 60000; 
+
+      if (Math.abs(diff) <= 10) {
+        status = "a-faire";
+      }else {
+        status = "en-retard";
+      }
+    }
+  }
+
+  if (status === "realise") {
+    window.actesRealises++;
+  } else if (status === "a-faire") {
+    window.actesNonRealises++;
+  } else if (status === "en-retard") {
+    window.actesEnRetard++;
+  } 
+});
       updateMedsBadges();
 
       // 🩻 EXAMENS 

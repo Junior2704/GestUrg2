@@ -6362,13 +6362,11 @@ async function chargerStatsExamens(patientId) {
   updateExamBadges();
 }
 
-
 let unsubscribeHospitalisation = null;
 
 function startAutoRefresh(patientId) {
   if (!patientId) return;
 
-  // évite plusieurs listeners en double
   if (unsubscribeHospitalisation) {
     unsubscribeHospitalisation();
     unsubscribeHospitalisation = null;
@@ -6376,7 +6374,7 @@ function startAutoRefresh(patientId) {
 
   const patientRef = doc(db, "patients", patientId);
 
-  unsubscribeHospitalisation = onSnapshot(patientRef, async (patientSnap) => {
+  onSnapshot(patientRef, (patientSnap) => {
     if (!patientSnap.exists()) return;
 
     const patientData = patientSnap.data();
@@ -6385,81 +6383,83 @@ function startAutoRefresh(patientId) {
 
     const hospiRef = doc(db, "hospitalisations", hospiId);
 
-    onSnapshot(hospiRef, (hospiSnap) => {
+    // ❗ IMPORTANT : on garde unsubscribe
+    if (unsubscribeHospitalisation) {
+      unsubscribeHospitalisation();
+    }
+
+    unsubscribeHospitalisation = onSnapshot(hospiRef, (hospiSnap) => {
       if (!hospiSnap.exists()) return;
 
       const hosp = hospiSnap.data();
 
-      // 🔥 ACTES
-      const actes = hosp.actes || [];
+      // ===================== ACTES =====================
+      let actesRealises = 0;
+      let actesNonRealises = 0;
+      let actesEnRetard = 0;
 
-window.actesRealises = 0;
-window.actesNonRealises = 0; // correspond à "a-faire"
-window.actesEnRetard = 0;
+      (hosp.actes || []).forEach(acte => {
 
-actes.forEach(acte => {
+        if (acte.status === "realise") {
+          actesRealises++;
+          return;
+        }
 
-  if (acte.status === "realise") {
-    done++;
-    return;
-  }
+        const due = parseDate(acte.dueAt);
+        if (!due) return;
 
-  const due = parseDate(acte.dueAt);
-  if (!due) return;
+        const diff = (new Date() - due) / 60000;
 
-  const now = new Date();
-  const diff = (now - due) / 60000;
+        if (diff <= 10 && diff >= -10) {
+          actesNonRealises++;
+        } else if (diff > 10) {
+          actesEnRetard++;
+        }
+      });
 
-  if (diff <= 10 && diff >= -10) {
-    pending++;
-  }
-
-  else if (diff > 10) {
-    late++;
-  }
-
-});
+      window.actesRealises = actesRealises;
+      window.actesNonRealises = actesNonRealises;
+      window.actesEnRetard = actesEnRetard;
 
       updateActesBadges();
 
-      // 💊 MÉDICAMENTS
-      const meds = hosp.meds || [];
-      window.medsRealises = meds.filter(m => m.status === "pris").length;
-      window.medsNonRealises = meds.filter(m => m.status === "a-donner").length;
-      window.medsEnRetard = meds.filter(m => m.status === "en-retard").length;
-meds.forEach(med => {
-  let status = med.status || "";
+      // ===================== MEDS =====================
+      let medsRealises = 0;
+      let medsNonRealises = 0;
+      let medsEnRetard = 0;
 
-  if (status !== "realise") {
-    const now = new Date();
-    const due = parseDate(med.dueAt);
+      (hosp.meds || []).forEach(med => {
 
-    if (due) {
-      const diff = (now - due) / 60000; 
+        if (med.status === "pris") {
+          medsRealises++;
+          return;
+        }
 
-      if (diff <= 10) {
-  status = "a-faire";
-} else {
-  status = "en-retard";
-}
-    }
-  }
+        const due = parseDate(med.dueAt);
+        if (!due) return;
 
-  if (status === "pris") {
-    window.medsRealises++;
-  } else if (status === "a-donner") {
-    window.medsNonRealises++;
-  } else if (status === "en-retard") {
-    window.medsEnRetard++;
-  } 
-});
+        const diff = (new Date() - due) / 60000;
+
+        if (diff <= 10 && diff >= -10) {
+          medsNonRealises++;
+        } else if (diff > 10) {
+          medsEnRetard++;
+        }
+      });
+
+      window.medsRealises = medsRealises;
+      window.medsNonRealises = medsNonRealises;
+      window.medsEnRetard = medsEnRetard;
+
       updateMedsBadges();
 
-      // 🩻 EXAMENS 
-  const exams = hosp.examens || [];
-window.examensRealises = exams.filter(e => e.realise === true).length;
-window.examensNonRealises = exams.filter(e => !e.realise).length;
-updateExamBadges();
+      // ===================== EXAMS =====================
+      const exams = hosp.examens || [];
+
+      window.examensRealises = exams.filter(e => e.realise).length;
+      window.examensNonRealises = exams.filter(e => !e.realise).length;
+
+      updateExamBadges();
     });
   });
 }

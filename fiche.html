@@ -6312,16 +6312,16 @@ async function chargerStatsMedicaments(patientId) {
 
   updateMedsBadges();
 }
-function parseDate(dateStr) {
-  if (!dateStr) return null;
+function parseDate(str) {
+  if (!str) return null;
 
-  const [datePart, timePart] = dateStr.split(" ");
+  const [datePart, timePart] = str.split(" ");
   if (!datePart || !timePart) return null;
 
   const [day, month, year] = datePart.split("/").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
 
-  return new Date(year, month - 1, day, hour, minute);
+  return new Date(year, month - 1, day, hour, minute, second);
 }
 function updateMedsBadges() {
   const doneEl = document.getElementById("meds-done");
@@ -6397,29 +6397,27 @@ window.actesRealises = 0;
 window.actesNonRealises = 0; // correspond à "a-faire"
 window.actesEnRetard = 0;
 
-
 actes.forEach(acte => {
-  let status = acte.status || "";
 
-  if (status !== "realise") {
-    const now = new Date();
-    const due = parseDate(acte.dueAt);
-
-    if (due) {
-      const diff = (now - due) / 60000;
-          if (Math.abs(diff) <= 10) status = "a-faire";
-          
-          else status = "en-retard";
-    }
+  if (acte.status === "realise") {
+    done++;
+    return;
   }
 
-  if (status === "realise") {
-    window.actesRealises++;
-  } else if (status === "a-faire") {
-    window.actesNonRealises++;
-  } else if (status === "en-retard") {
-    window.actesEnRetard++;
-  } 
+  const due = parseDate(acte.dueAt);
+  if (!due) return;
+
+  const now = new Date();
+  const diff = (now - due) / 60000;
+
+  if (diff <= 10 && diff >= -10) {
+    pending++;
+  }
+
+  else if (diff > 10) {
+    late++;
+  }
+
 });
 
       updateActesBadges();

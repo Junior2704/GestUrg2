@@ -6277,12 +6277,34 @@ async function chargerStatsMedicaments(patientId) {
   if (!hospiSnap.exists()) return;
 
   const hosp = hospiSnap.data();
-
   const meds = hosp.meds || [];
 
-  const done = meds.filter(m => m.status === "pris").length;
-  const pending = meds.filter(m => m.status === "a-donner").length;
-  const late = meds.filter(m => m.status === "en-retard").length;
+  let done = 0;
+  let pending = 0;
+  let late = 0;
+
+  meds.forEach(med => {
+    // Firestore uniquement pour "pris"
+    if (med.status === "pris") {
+      done++;
+      return;
+    }
+
+    const due = parseDate(med.dueAt);
+    if (!due) return;
+
+    const now = new Date();
+    const diff = (now - due) / 60000; // minutes
+
+    if (diff < -10) {
+      // Trop tôt → pas encore à donner
+      return;
+    } else if (diff <= 10) {
+      pending++; // bleu
+    } else {
+      late++; // rouge
+    }
+  });
 
   window.medsRealises = done;
   window.medsNonRealises = pending;

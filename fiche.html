@@ -6207,7 +6207,6 @@ function updateExamBadges() {
 async function chargerStatsActes(patientId) {
   const patientRef = doc(db, "patients", patientId);
   const patientSnap = await getDoc(patientRef);
-
   if (!patientSnap.exists()) return;
 
   const patientData = patientSnap.data();
@@ -6221,9 +6220,31 @@ async function chargerStatsActes(patientId) {
   const hosp = hospiSnap.data();
   const actes = hosp.actes || [];
 
-  const done = actes.filter(a => a.status === "realise").length;
-  const pending = actes.filter(a => a.status === "a-faire").length;
-const late = actes.filter(a => a.status === "en-retard").length;
+  let done = 0;
+  let pending = 0;
+  let late = 0;
+
+  actes.forEach(acte => {
+    // uniquement Firestore pour les réalisés
+    if (acte.status === "realise") {
+      done++;
+      return;
+    }
+
+    // sinon calcul dynamique
+    const due = parseDate(acte.dueAt);
+    if (!due) return;
+
+    const now = new Date();
+    const diff = (now - due) / 60000; // minutes
+
+    if (diff <= 10) {
+      pending++;
+    } else {
+      late++;
+    }
+  });
+
   window.actesRealises = done;
   window.actesNonRealises = pending;
   window.actesEnRetard = late;

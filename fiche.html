@@ -6225,18 +6225,15 @@ async function chargerStatsActes(patientId) {
   let late = 0;
 
   actes.forEach(acte => {
-    // uniquement Firestore pour les réalisés
-    if (acte.status === "realise") {
-      done++;
-      return;
-    }
-
-    // sinon calcul dynamique
+    if ((acte.status || "").trim().toLowerCase() === "realise") {
+  done++;
+  return;
+}
     const due = parseDate(acte.dueAt);
     if (!due) return;
 
     const now = new Date();
-    const diff = (now - due) / 60000; // minutes
+    const diff = (now - due) / 60000; 
 
     if (diff <= 10) {
       pending++;
@@ -6254,13 +6251,19 @@ async function chargerStatsActes(patientId) {
 function updateActesBadges() {
   const doneEl = document.getElementById("actes-done");
   const pendingEl = document.getElementById("actes-pending");
-const lateEl = document.getElementById("actes-late");
+  const lateEl = document.getElementById("actes-late");
+
   if (doneEl)
-    doneEl.textContent = window.actesRealises > 9 ? "9+" : window.actesRealises || 0;
-if (lateEl)
-    doneEl.textContent = window.actesEnRetard > 9 ? "9+" : window.actesEnRetard || 0;
+    doneEl.textContent =
+      window.actesRealises > 9 ? "9+" : (window.actesRealises || 0);
+
   if (pendingEl)
-    pendingEl.textContent = window.actesNonRealises > 9 ? "9+" : window.actesNonRealises || 0;
+    pendingEl.textContent =
+      window.actesNonRealises > 9 ? "9+" : (window.actesNonRealises || 0);
+
+  if (lateEl)
+    lateEl.textContent =
+      window.actesEnRetard > 9 ? "9+" : (window.actesEnRetard || 0);
 }
 async function chargerStatsMedicaments(patientId) {
   const patientRef = doc(db, "patients", patientId);

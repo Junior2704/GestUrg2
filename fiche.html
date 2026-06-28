@@ -6312,6 +6312,17 @@ async function chargerStatsMedicaments(patientId) {
 
   updateMedsBadges();
 }
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+
+  const [datePart, timePart] = dateStr.split(" ");
+  if (!datePart || !timePart) return null;
+
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  return new Date(year, month - 1, day, hour, minute);
+}
 function updateMedsBadges() {
   const doneEl = document.getElementById("meds-done");
   const pendingEl = document.getElementById("meds-pending");

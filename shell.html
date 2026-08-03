@@ -1157,6 +1157,17 @@ transform:none;
     font-weight:700;
     margin-top:-20px;
 }
+    #welcome-text {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#welcome-text.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 #welcome-text2{
     color:#88949e;
     font-size:32px;
@@ -1369,7 +1380,7 @@ transform:none;
 <div id="home-center">
 
     <div id="welcome-text">
-    Bonjour <span id="welcome-name">...</span> 👋
+    
 </div>
 
     <canvas id="clockCanvas" width="260" height="260"></canvas>
@@ -1827,8 +1838,22 @@ if (user) {
     const snap = await getDoc(doc(db, "medecins", user.uid));
 
     if (snap.exists()) {
-        document.getElementById("welcome-name").textContent =
-            snap.data().prenom;
+       const heure = new Date().getHours();
+  const salutation = heure >= 18 ? "Bonsoir" : "Bonjour";
+      
+        document.getElementById("welcome-text").textContent =` ${salutation} ${snap.data().prenom} 👋`;
+        requestAnimationFrame(() => {
+        welcome.classList.add("show");
+    });
+    }
+    else{
+      const heure = new Date().getHours();
+  const salutation = heure >= 18 ? "Bonsoir" : "Bonjour";
+      
+        document.getElementById("welcome-text").textContent =` ${salutation} 👋`;
+        requestAnimationFrame(() => {
+        welcome.classList.add("show");
+    }); 
     }
 }
   if (!user) {

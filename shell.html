@@ -1538,50 +1538,53 @@ transform:none;
     <span id="app-title">🚑 GestUrg2</span>
 
     <div id="actions">
-      <button class="btn-id" onclick="openTab('Urgences','urgences.html')">🚑 Urgences</button>
-      <button class="btn-id" onclick="openTab('Tableau','regulation.html')">📊 Tableau</button>
+      <button class="btn-id"
+        data-page="urgences"
+        onclick="openTab('Urgences','urgences.html')">
+    🚑 Urgences
+</button>
+
+<button class="btn-id"
+        data-page="regulation"
+        onclick="openTab('Tableau','regulation.html')">
+    📊 Tableau
+</button>
 <div class="dropdown" id="dropdownOutils">
   <button class="btn-id" id="btnOutils">🧰 Outils ▾</button>
 
   <div class="dropdown-content" id="menuOutils">
 
-    <div class="dropdown-item" data-desc="Accéder aux dossiers et comptes rendus des patients.">
+    <div class="dropdown-item" data-desc="Accéder aux dossiers et comptes rendus des patients." data-page="patients">
        👥 Patients
      <span onclick="openTab('Patients','patients.html')">Ouvrir</span>
     </div>
-<div class="dropdown-item" data-desc="Gestion des appels des tickets patients.">
+<div class="dropdown-item" data-desc="Gestion des appels des tickets patients." data-page="accueil">
        🎟️ Tickets-Accueil
      <span onclick="openTab('Tickets','bureau.html')">Ouvrir</span>
     </div>
-      <div class="dropdown-item" data-desc="Créer un patient ou une hospitalisation">
+      <div class="dropdown-item" data-desc="Créer un patient ou une hospitalisation" data-page="ajouterpatient">
        ➕ Entrée aux Urgences
      <span onclick="openTab('Entrées patients','ajouterpatient.html')">Ouvrir</span>
     </div>
-    <!--<div class="dropdown-item" data-desc="Créer les ordonnances médicales des patients. Pré-remplissage possible via la fiche patient.">
-      📄 Ordonnancier
-      <span onclick="openTab('Ordonnancier','Ordonnancier.html')">Ouvrir</span>
-    </div>-->
+ 
 
-    <div class="dropdown-item" data-desc="Établir les factures patients. Pré-remplissage possible via la fiche patient.">
+    <div class="dropdown-item" data-desc="Établir les factures patients. Pré-remplissage possible via la fiche patient." data-page="facturation">
       💳 Facturation
       <span onclick="openTab('Facturation','Facturation.html')">Ouvrir</span>
     </div>
-<!--<div class="dropdown-item" data-desc="Rédiger rapidement des certificats médicaux. Pré-remplissage possible via la fiche patient.">
-      🧾 Certificats médicaux
-      <span onclick="openTab('Certificats','Certificatmedical.html')">Ouvrir</span>
-    </div>-->
 
-    <div class="dropdown-item" data-desc="Imprimer des fiches conseils de sortie adaptées à la pathologie.">
+
+    <div class="dropdown-item" data-desc="Imprimer des fiches conseils de sortie adaptées à la pathologie." data-page="fichesconseil">
       📋 Fiches conseils
       <span onclick="openTab('Fiches conseils','fichesconseilf.html')">Ouvrir</span>
     </div>
 
-    <div class="dropdown-item" data-desc="Visualiser les examens, rédiger les comptes rendus et gérer l’imagerie.">
+    <div class="dropdown-item" data-desc="Visualiser les examens, rédiger les comptes rendus et gérer l’imagerie." data-page="gestionnaireradiologie">
       🩻 Gestionnaire imagerie
       <span onclick="openTab('Imagerie','gestionnaireradiologie.html')">Ouvrir</span>
     </div>
 
-    <div class="dropdown-item" data-desc="Écrire un email à un patient. Pré-remplissage possible via la fiche patient.">
+    <div class="dropdown-item" data-desc="Écrire un email à un patient. Pré-remplissage possible via la fiche patient." data-page="mailto">
       ✉️ Mail To patients
       <span onclick="openTab('Mail','mailto.html')">Ouvrir</span>
     </div>
@@ -2169,6 +2172,13 @@ document.getElementById("unlockPassword").addEventListener("keydown", function(e
    //window.location.href = "index.html";
     return;
   }
+const snap = await getDoc(doc(db, "medecins", user.uid));
+
+    if (!snap.exists()) return;
+
+    const pages = snap.data().pages || {};
+
+    appliquerDroits(pages);
 
   // Parcours des iframes ouvertes
   document.querySelectorAll('iframe').forEach(iframe => {
@@ -2182,6 +2192,30 @@ document.getElementById("unlockPassword").addEventListener("keydown", function(e
     }, "*");
   });
 });
+function appliquerDroits(pages) {
+
+    document.querySelectorAll("[data-page]").forEach(element => {
+
+        const page = element.dataset.page;
+
+        if (!pages[page]) {
+            element.style.display = "none";
+        }
+
+    });
+
+    // Si plus aucun outil n'est visible, masquer le bouton Outils
+    const menu = document.getElementById("menuOutils");
+
+    const visible = [...menu.querySelectorAll(".dropdown-item")]
+        .some(item => item.style.display !== "none");
+
+    if (!visible) {
+        document.getElementById("dropdownOutils").style.display = "none";
+    }
+
+}
+
 // Fermer l'onglet actif avec Ctrl+W
 document.addEventListener("keydown", function(e) {
     // Vérifie Ctrl+W (ou Cmd+W sur Mac)

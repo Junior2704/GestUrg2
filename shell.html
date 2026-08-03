@@ -1860,16 +1860,7 @@ document.getElementById("unlockPassword").addEventListener("keydown", function(e
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-const user = auth.currentUser;
 
-if (user) {
-    const snap = await getDoc(doc(db, "users", user.uid));
-
-    if (snap.exists()) {
-        document.getElementById("welcome-name").textContent =
-            snap.data().prenom;
-    }
-}
   // Déconnexion
   document.getElementById("btnLogout").addEventListener("click", () => {
     signOut(auth)
@@ -1883,6 +1874,14 @@ if (user) {
 
   // Auth state + récupération du médecin
  onAuthStateChanged(auth, async (user) => {
+if (user) {
+    const snap = await getDoc(doc(db, "medecins", user.uid));
+
+    if (snap.exists()) {
+        document.getElementById("welcome-name").textContent =
+            snap.data().prenom;
+    }
+}
   if (!user) {
     console.log("Aucun utilisateur connecté");
 	const modal = document.getElementById("modal-error");

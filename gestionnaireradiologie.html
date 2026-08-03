@@ -527,7 +527,42 @@ body {
 .btn-id-v:focus {
   border-color: rgba(0, 200, 80, 0.8);
   box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}</style>
+}
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+</style>
 </head>
 <body>
   <div id="globalSpinner" class="spinner-overlay" style="display:none;">
@@ -535,7 +570,23 @@ body {
 </div>
 
 <div id="mainContent">
+ <div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+        <p>veuillez contacter un administrateur pour plus d'informations.</p>
 
+  </div>
+</div>
+
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un administrateur</p>
+
+  </div>
+</div>
 
 <button id="refreshPatientsBtn" class="btn-id">
   🔄 Actualiser la liste des patients
@@ -642,16 +693,23 @@ const hospitalisationsContent = document.getElementById("hospitalisationsContent
         const pages = data.pages || {};
         const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
         if (!pages[currentPage]) {
-          alert("⛔️ Vous n’avez pas accès à cette page.");
-          window.location.href = "accueil.html";
+          const modal = document.getElementById("modal-no-access");
+          if (modal) {
+          modal.style.display = "flex";       
+          console.warn("Accès refusé à", currentPage);}
         }
       } else {
-        alert("Utilisateur non trouvé.");
-        window.location.href = "index.html";
+        const modal = document.getElementById("modal-error");
+          if (modal) {
+          modal.style.display = "flex";       
+          }
       }
     } catch (error) {
       console.error("Erreur auth :", error);
-      alert("Erreur de connexion.");
+      const modal = document.getElementById("modal-error");
+          if (modal) {
+          modal.style.display = "flex";       
+          }
     }
   });
 function showSpinner() {

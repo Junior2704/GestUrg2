@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+<meta charset="UTF-8">
+<title>Messagerie - Administration - GestUrg2</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    box-sizing:border-box;
+    font-family:Inter,sans-serif;
+}
+
+body{
+    margin:0;
+    height:100vh;
+    background:#f4f7fa;
+    color:#222;
+}
+
+
+#app{
+    height:100vh;
+    display:flex;
+}
+
+
+/* SIDEBAR */
+
+#sidebar{
+
+    width:340px;
+    background:white;
+    border-right:1px solid #ddd;
+    display:flex;
+    flex-direction:column;
+
+}
+
+
+.header{
+
+    padding:20px;
+    font-size:20px;
+    font-weight:600;
+    color:#0078d4;
+    border-bottom:1px solid #eee;
+
+}
+
+
+.bloc{
+
+    padding:15px;
+    border-bottom:1px solid #eee;
+
+}
+
+
+.bloc-titre{
+
+    font-size:13px;
+    font-weight:600;
+    color:#555;
+    margin-bottom:8px;
+    text-transform:uppercase;
+
+}
+
+
+select,
+input,
+textarea{
+
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ddd;
+    font-size:14px;
+
+}
+
+
+#recherche-users{
+
+    margin-bottom:10px;
+
+}
+
+
+#liste-users{
+
+    flex:1;
+    overflow:auto;
+    padding:5px 15px 15px;
+
+}
+
+
+.user-ligne{
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 5px;
+    border-bottom:1px solid #f2f2f2;
+    font-size:14px;
+
+}
+
+
+.user-ligne input{
+
+    width:auto;
+
+}
+
+
+.user-nom{
+
+    font-weight:600;
+
+}
+
+
+.user-email{
+
+    font-size:12px;
+    color:#777;
+
+}
+
+
+.tous-ligne{
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:600;
+    padding:8px 5px;
+    border-bottom:2px solid #eee;
+    margin-bottom:5px;
+
+}
+
+
+.tous-ligne input{
+
+    width:auto;
+
+}
+
+
+/* PANEL PRINCIPAL */
+
+#panel{
+
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow:auto;
+
+}
+
+
+#onglets{
+
+    display:flex;
+    background:white;
+    border-bottom:1px solid #ddd;
+
+}
+
+
+.onglet{
+
+    padding:18px 25px;
+    cursor:pointer;
+    font-weight:600;
+    color:#777;
+    border-bottom:3px solid transparent;
+
+}
+
+
+.onglet.actif{
+
+    color:#0078d4;
+    border-bottom:3px solid #0078d4;
+
+}
+
+
+#contenu{
+
+    flex:1;
+    padding:25px;
+    max-width:700px;
+
+}
+
+
+.vue{
+
+    display:none;
+
+}
+
+
+.vue.actif{
+
+    display:block;
+
+}
+
+
+label{
+
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:#555;
+    margin:15px 0 6px;
+
+}
+
+
+label:first-child{
+
+    margin-top:0;
+
+}
+
+
+textarea{
+
+    resize:vertical;
+    min-height:100px;
+
+}
+
+
+button{
+
+    border:none;
+    background:#0078d4;
+    color:white;
+    padding:12px 20px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+    margin-top:15px;
+
+}
+
+
+button.secondaire{
+
+    background:#eef4fb;
+    color:#0078d4;
+    padding:8px 14px;
+    border-radius:10px;
+    margin-top:8px;
+
+}
+
+
+.option-row{
+
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+
+}
+
+
+.option-row button{
+
+    margin:0;
+    padding:8px 12px;
+    background:#f4f4f4;
+    color:#c00;
+
+}
+
+
+/* CARTES SONDAGES */
+
+.sondage-card{
+
+    background:white;
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px #0001;
+
+}
+
+
+.sondage-card-header{
+
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+    gap:10px;
+
+}
+
+
+.sondage-meta{
+
+    font-size:12px;
+    color:#777;
+    white-space:nowrap;
+
+}
+
+
+.resultat-option{
+
+    position:relative;
+    background:#f0f7ff;
+    border-radius:8px;
+    margin-bottom:6px;
+    overflow:hidden;
+
+}
+
+
+.resultat-bar{
+
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    background:#cfe4fb;
+
+}
+
+
+.resultat-label{
+
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    padding:8px 12px;
+    font-size:14px;
+
+}
+
+
+.empty,
+.acces-refuse{
+
+    margin:60px auto;
+    color:#777;
+    text-align:center;
+    max-width:400px;
+
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div id="app">
+
+<div class="empty" id="chargement">
+Chargement...
+</div>
+
+</div>
+
+
+
+<script type="module">
+
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+
+getFirestore,
+doc,
+getDoc,
+getDocs,
+collection,
+query,
+where,
+onSnapshot,
+addDoc,
+updateDoc,
+serverTimestamp,
+orderBy
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+import {
+
+getAuth,
+onAuthStateChanged
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4",
+  storageBucket: "urgences-a8ed4.firebasestorage.app",
+  messagingSenderId: "392921498200",
+  appId: "1:392921498200:web:7ccce767332c67c697c02d",
+  measurementId: "G-C74MK2KYDL"
+};
+
+
+const app=initializeApp(firebaseConfig);
+
+const db=getFirestore(app);
+
+const auth=getAuth(app);
+
+
+/* code de la page, à faire correspondre au champ
+   "pages" du document medecins de l'administrateur */
+
+const CODE_PAGE="messagerie-administration";
+
+
+/*
+===========================
+COMPTES ADMINISTRATEURS
+===========================
+Modifiable librement : ajouter / retirer des comptes
+depuis lesquels les messages peuvent être envoyés.
+*/
+
+const COMPTES_ADMIN=[
+
+{ id:"systeme", nom:"Système", icon:"⚙️" },
+{ id:"admin-medical", nom:"Administration médicale", icon:"🏥" },
+{ id:"rh", nom:"Ressources Humaines", icon:"🗂️" }
+
+];
+
+
+const comptesParId={};
+
+COMPTES_ADMIN.forEach(c=>{
+comptesParId[c.id]=c;
+});
+
+
+
+let utilisateur=null;
+
+let tousLesUsers=[];
+
+const selectionUids=new Set();
+
+let modeTous=false;
+
+
+
+
+/*
+===========================
+CONNEXION / VÉRIFICATION ACCÈS
+===========================
+*/
+
+
+onAuthStateChanged(auth,async(user)=>{
+
+
+if(!user){
+
+afficherAccesRefuse(
+"Vous devez être connecté pour accéder à cette page."
+);
+
+return;
+
+}
+
+
+utilisateur=user;
+
+
+const snap=
+await getDoc(
+doc(db,"medecins",user.uid)
+);
+
+
+if(
+!snap.exists() ||
+!snap.data().pages ||
+snap.data().pages[CODE_PAGE]!==true
+){
+
+afficherAccesRefuse(
+"Vous n'avez pas accès à la messagerie administrateur."
+);
+
+return;
+
+}
+
+
+construireInterface();
+
+
+});
+
+
+
+function afficherAccesRefuse(message){
+
+document.getElementById("app").innerHTML=`
+
+<div class="acces-refuse">
+🔒 Accès refusé<br><br>
+${message}
+</div>
+
+`;
+
+}
+
+
+
+
+/*
+===========================
+CONSTRUCTION DE L'INTERFACE
+===========================
+*/
+
+
+function construireInterface(){
+
+
+document.getElementById("app").innerHTML=`
+
+<div id="sidebar">
+
+<div class="header">
+🛠️ Messagerie - Administration
+</div>
+
+
+<div class="bloc">
+
+<div class="bloc-titre">Compte expéditeur</div>
+
+<select id="compte-select">
+
+${COMPTES_ADMIN.map(c=>
+`<option value="${c.id}">${c.icon} ${c.nom}</option>`
+).join("")}
+
+</select>
+
+</div>
+
+
+<div class="bloc" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+
+<div class="bloc-titre">Destinataires</div>
+
+<input id="recherche-users" placeholder="Rechercher un utilisateur...">
+
+<div class="tous-ligne">
+<input type="checkbox" id="check-tous">
+<span>Tous les utilisateurs</span>
+</div>
+
+<div id="liste-users"></div>
+
+</div>
+
+
+</div>
+
+
+
+<div id="panel">
+
+
+<div id="onglets">
+
+<div class="onglet actif" data-vue="vue-message">Message</div>
+<div class="onglet" data-vue="vue-sondage">Créer un sondage</div>
+<div class="onglet" data-vue="vue-resultats">Sondages envoyés</div>
+
+</div>
+
+
+<div id="contenu">
+
+
+<div class="vue actif" id="vue-message">
+
+<label>Message à envoyer</label>
+
+<textarea id="message-input" placeholder="Votre message..."></textarea>
+
+<button onclick="envoyerMessage()">Envoyer le message</button>
+
+</div>
+
+
+
+<div class="vue" id="vue-sondage">
+
+<label>Question du sondage</label>
+
+<input id="sondage-question" placeholder="Ex : Préférez-vous garder les horaires actuels ?">
+
+<label>Options de réponse</label>
+
+<div id="options-container">
+
+<div class="option-row">
+<input class="option-input" placeholder="Option 1">
+</div>
+
+<div class="option-row">
+<input class="option-input" placeholder="Option 2">
+</div>
+
+</div>
+
+<button type="button" class="secondaire" onclick="ajouterOption()">
++ Ajouter une option
+</button>
+
+<br>
+
+<button onclick="creerSondage()">Créer et envoyer le sondage</button>
+
+</div>
+
+
+
+<div class="vue" id="vue-resultats">
+
+<div id="liste-sondages"></div>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+`;
+
+
+initOnglets();
+
+chargerUtilisateurs();
+
+chargerSondagesAdmin();
+
+
+}
+
+
+
+
+/*
+===========================
+ONGLETS
+===========================
+*/
+
+
+function initOnglets(){
+
+
+document
+.querySelectorAll(".onglet")
+.forEach(onglet=>{
+
+onglet.onclick=()=>{
+
+document
+.querySelectorAll(".onglet")
+.forEach(o=>o.classList.remove("actif"));
+
+document
+.querySelectorAll(".vue")
+.forEach(v=>v.classList.remove("actif"));
+
+onglet.classList.add("actif");
+
+document
+.getElementById(onglet.dataset.vue)
+.classList.add("actif");
+
+};
+
+});
+
+
+}
+
+
+
+
+/*
+===========================
+LISTE DES UTILISATEURS
+===========================
+*/
+
+
+function chargerUtilisateurs(){
+
+
+onSnapshot(
+
+collection(db,"medecins"),
+
+(snap)=>{
+
+tousLesUsers=[];
+
+snap.forEach(docSnap=>{
+
+tousLesUsers.push({
+uid:docSnap.id,
+...docSnap.data()
+});
+
+});
+
+afficherUtilisateurs();
+
+}
+
+);
+
+
+document
+.getElementById("recherche-users")
+.addEventListener("input",afficherUtilisateurs);
+
+
+document
+.getElementById("check-tous")
+.addEventListener("change",(e)=>{
+
+modeTous=e.target.checked;
+
+document
+.querySelectorAll(".user-checkbox")
+.forEach(c=>{
+c.disabled=modeTous;
+});
+
+});
+
+
+}
+
+
+
+function afficherUtilisateurs(){
+
+
+const filtre=
+(document
+.getElementById("recherche-users")
+.value || "")
+.toLowerCase();
+
+
+const zone=
+document.getElementById("liste-users");
+
+
+zone.innerHTML="";
+
+
+tousLesUsers
+
+.filter(u=>{
+
+const texte=
+`${u.nom || ""} ${u.prenom || ""} ${u.email || ""}`
+.toLowerCase();
+
+return texte.includes(filtre);
+
+})
+
+.forEach(u=>{
+
+const div=
+document.createElement("div");
+
+div.className="user-ligne";
+
+
+div.innerHTML=`
+
+<input type="checkbox"
+class="user-checkbox"
+data-uid="${u.uid}"
+${selectionUids.has(u.uid)?"checked":""}
+${modeTous?"disabled":""}>
+
+<div>
+
+<div class="user-nom">
+${u.prenom || ""} ${u.nom || ""}
+</div>
+
+<div class="user-email">
+${u.email || ""}
+</div>
+
+</div>
+
+`;
+
+
+div
+.querySelector(".user-checkbox")
+.addEventListener("change",(e)=>{
+
+if(e.target.checked){
+selectionUids.add(u.uid);
+}else{
+selectionUids.delete(u.uid);
+}
+
+});
+
+
+zone.appendChild(div);
+
+
+});
+
+
+}
+
+
+
+function getDestinataires(){
+
+
+if(modeTous){
+
+return tousLesUsers.map(u=>u.uid);
+
+}
+
+
+return Array.from(selectionUids);
+
+
+}
+
+
+
+
+/*
+===========================
+CONVERSATION (créer si besoin)
+===========================
+*/
+
+
+async function trouverOuCreerConversation(uid,compte){
+
+
+const q=query(
+
+collection(db,"messageries"),
+
+where("participants","array-contains",uid),
+where("compteId","==",compte.id)
+
+);
+
+
+const snap=
+await getDocs(q);
+
+
+if(!snap.empty){
+
+return snap.docs[0].id;
+
+}
+
+
+const ref=
+await addDoc(
+
+collection(db,"messageries"),
+
+{
+
+participants:[uid],
+compteId:compte.id,
+titre:compte.nom,
+icon:compte.icon,
+lastMessage:"",
+createdAt:serverTimestamp(),
+updatedAt:serverTimestamp()
+
+}
+
+);
+
+
+return ref.id;
+
+
+}
+
+
+
+
+/*
+===========================
+ENVOI D'UN MESSAGE
+===========================
+*/
+
+
+window.envoyerMessage=async()=>{
+
+
+const compte=
+comptesParId[
+document.getElementById("compte-select").value
+];
+
+
+const texte=
+document
+.getElementById("message-input")
+.value.trim();
+
+
+if(!texte){
+alert("Veuillez saisir un message.");
+return;
+}
+
+
+const destinataires=
+getDestinataires();
+
+
+if(destinataires.length===0){
+alert("Sélectionnez au moins un destinataire.");
+return;
+}
+
+
+for(const uid of destinataires){
+
+const convId=
+await trouverOuCreerConversation(uid,compte);
+
+await addDoc(
+
+collection(db,"messageries",convId,"messages"),
+
+{
+
+auteur:compte.id,
+auteurNom:compte.nom,
+type:"message",
+texte,
+date:serverTimestamp(),
+luPar:[]
+
+}
+
+);
+
+
+await updateDoc(
+
+doc(db,"messageries",convId),
+
+{
+
+lastMessage:texte,
+updatedAt:serverTimestamp()
+
+}
+
+);
+
+
+}
+
+
+document.getElementById("message-input").value="";
+
+
+alert(
+"Message envoyé à "+
+destinataires.length+
+" utilisateur(s)."
+);
+
+
+};
+
+
+
+
+/*
+===========================
+CRÉATION D'UN SONDAGE
+===========================
+*/
+
+
+window.ajouterOption=()=>{
+
+
+const container=
+document.getElementById("options-container");
+
+
+const div=
+document.createElement("div");
+
+
+div.className="option-row";
+
+
+div.innerHTML=`
+
+<input class="option-input" placeholder="Option">
+
+<button type="button" onclick="this.parentElement.remove()">
+✕
+</button>
+
+`;
+
+
+container.appendChild(div);
+
+
+};
+
+
+
+window.creerSondage=async()=>{
+
+
+const compte=
+comptesParId[
+document.getElementById("compte-select").value
+];
+
+
+const question=
+document
+.getElementById("sondage-question")
+.value.trim();
+
+
+const options=
+Array.from(
+document.querySelectorAll(".option-input")
+)
+.map(i=>i.value.trim())
+.filter(v=>v.length>0);
+
+
+if(!question || options.length<2){
+alert("Une question et au moins 2 options sont nécessaires.");
+return;
+}
+
+
+const destinataires=
+getDestinataires();
+
+
+if(destinataires.length===0){
+alert("Sélectionnez au moins un destinataire.");
+return;
+}
+
+
+const sondageRef=
+await addDoc(
+
+collection(db,"sondages"),
+
+{
+
+question,
+options,
+compteId:compte.id,
+compteNom:compte.nom,
+destinataires,
+reponses:{},
+createdAt:serverTimestamp()
+
+}
+
+);
+
+
+for(const uid of destinataires){
+
+const convId=
+await trouverOuCreerConversation(uid,compte);
+
+await addDoc(
+
+collection(db,"messageries",convId,"messages"),
+
+{
+
+auteur:compte.id,
+auteurNom:compte.nom,
+type:"sondage",
+sondageId:sondageRef.id,
+date:serverTimestamp(),
+luPar:[]
+
+}
+
+);
+
+
+await updateDoc(
+
+doc(db,"messageries",convId),
+
+{
+
+lastMessage:"📊 Sondage : "+question,
+updatedAt:serverTimestamp()
+
+}
+
+);
+
+
+}
+
+
+document.getElementById("sondage-question").value="";
+
+document
+.querySelectorAll(".option-input")
+.forEach(i=>i.value="");
+
+
+alert(
+"Sondage envoyé à "+
+destinataires.length+
+" utilisateur(s)."
+);
+
+
+};
+
+
+
+
+/*
+===========================
+SUIVI DES SONDAGES ENVOYÉS
+===========================
+*/
+
+
+function chargerSondagesAdmin(){
+
+
+const q=query(
+
+collection(db,"sondages"),
+
+orderBy("createdAt","desc")
+
+);
+
+
+onSnapshot(q,(snap)=>{
+
+
+const zone=
+document.getElementById("liste-sondages");
+
+
+if(!zone)
+return;
+
+
+zone.innerHTML="";
+
+
+if(snap.empty){
+
+zone.innerHTML=
+`<div class="empty">Aucun sondage envoyé pour le moment.</div>`;
+
+return;
+
+}
+
+
+snap.forEach(docSnap=>{
+
+
+const s=
+docSnap.data();
+
+
+const reponses=
+s.reponses || {};
+
+
+const totalReponses=
+Object.keys(reponses).length;
+
+
+const totalDestinataires=
+(s.destinataires || []).length;
+
+
+const optionsHTML=
+
+(s.options || [])
+
+.map((opt,i)=>{
+
+const nbVoix=
+Object.values(reponses)
+.filter(v=>v===i).length;
+
+const pourcentage=
+totalReponses>0 ?
+Math.round((nbVoix/totalReponses)*100) :
+0;
+
+return `
+
+<div class="resultat-option">
+
+<div class="resultat-bar" style="width:${pourcentage}%;"></div>
+
+<div class="resultat-label">
+<span>${opt}</span>
+<span>${pourcentage}% (${nbVoix})</span>
+</div>
+
+</div>
+
+`;
+
+})
+
+.join("");
+
+
+
+const div=
+document.createElement("div");
+
+
+div.className="sondage-card";
+
+
+div.innerHTML=`
+
+<div class="sondage-card-header">
+
+<strong>${s.question}</strong>
+
+<span class="sondage-meta">
+${s.compteNom || ""} · ${totalReponses}/${totalDestinataires} réponses
+</span>
+
+</div>
+
+${optionsHTML}
+
+`;
+
+
+zone.appendChild(div);
+
+
+});
+
+
+});
+
+
+}
+
+
+</script>
+
+
+</body>
+</html>

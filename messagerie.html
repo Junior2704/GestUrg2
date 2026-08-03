@@ -254,6 +254,79 @@ button{
 }
 
 
+/* SONDAGES */
+
+.sondage{
+
+    margin-top:8px;
+
+}
+
+.sondage-question{
+
+    font-weight:600;
+    margin-bottom:8px;
+
+}
+
+.sondage-option{
+
+    display:block;
+    width:100%;
+    text-align:left;
+    background:#f0f7ff;
+    color:#0078d4;
+    border:1px solid #cfe4fb;
+    border-radius:10px;
+    padding:8px 12px;
+    margin-bottom:6px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    font-size:14px;
+
+}
+
+.sondage-option:hover{
+
+    background:#e2f0ff;
+
+}
+
+.sondage-option.voted-option{
+
+    cursor:default;
+
+}
+
+.sondage-bar{
+
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    background:#cfe4fb;
+    z-index:0;
+
+}
+
+.sondage-option-label{
+
+    position:relative;
+    z-index:1;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+
+}
+
+.sondage-note{
+
+    font-size:12px;
+    opacity:.7;
+    margin-top:4px;
+
+}
 
 </style>
 
@@ -579,10 +652,51 @@ orderBy("date","asc")
 
 
 
-onSnapshot(q,(snap)=>{
+onSnapshot(q,async(snap)=>{
 
 
 zone.innerHTML="";
+
+
+/* on repère d'abord les messages de type "sondage"
+   pour charger les documents "sondages" correspondants */
+
+const idsSondages=[];
+
+snap.forEach(m=>{
+
+const msg=m.data();
+
+if(msg.type==="sondage" && msg.sondageId){
+
+idsSondages.push(msg.sondageId);
+
+}
+
+});
+
+
+const sondagesData={};
+
+await Promise.all(
+
+idsSondages.map(async(id)=>{
+
+const s=
+await getDoc(
+doc(db,"sondages",id)
+);
+
+if(s.exists()){
+
+sondagesData[id]=s.data();
+
+}
+
+})
+
+);
+
 
 
 snap.forEach(m=>{
@@ -600,6 +714,29 @@ div.className=
 (msg.auteur==utilisateur.uid?"mine":"");
 
 
+let contenuHTML="";
+
+
+if(
+msg.type==="sondage" &&
+msg.sondageId &&
+sondagesData[msg.sondageId]
+){
+
+contenuHTML=
+creerSondageHTML(
+sondagesData[msg.sondageId],
+msg.sondageId
+);
+
+}else{
+
+contenuHTML=
+`<div>${msg.texte || ""}</div>`;
+
+}
+
+
 
 div.innerHTML=`
 
@@ -610,9 +747,7 @@ ${msg.auteurNom || ""}
 </div>
 
 
-<div>
-${msg.texte}
-</div>
+${contenuHTML}
 
 
 <div class="date">
@@ -666,6 +801,192 @@ zone.scrollTop=
 zone.scrollHeight;
 
 
+
+});
+
+
+}
+
+
+
+
+
+/*
+===========================
+AFFICHAGE / VOTE SONDAGES
+===========================
+*/
+
+
+function creerOptionSondageHTML(sondageId,optionIndex,optionTexte,dejaVote,monChoix,pourcentage,nbVoix){
+
+
+if(dejaVote){
+
+const estMonChoix=
+monChoix===optionIndex;
+
+return `
+
+<div class="sondage-option voted-option">
+
+<div class="sondage-bar" style="width:${pourcentage}%;"></div>
+
+<div class="sondage-option-label">
+<span>${optionTexte}${estMonChoix?" ✓":""}</span>
+<span>${pourcentage}% (${nbVoix})</span>
+</div>
+
+</div>
+
+`;
+
+}
+
+
+return `
+
+<button type="button" class="sondage-option"
+onclick="voterSondage('${sondageId}',${optionIndex})">
+
+${optionTexte}
+
+</button>
+
+`;
+
+
+}
+
+
+
+function creerSondageHTML(sondage,sondageId){
+
+
+const reponses=
+sondage.reponses || {};
+
+
+const dejaVote=
+!!utilisateur &&
+Object.prototype.hasOwnProperty.call(
+reponses,
+utilisateur.uid
+);
+
+
+const monChoix=
+dejaVote ? reponses[utilisateur.uid] : null;
+
+
+const totalReponses=
+Object.keys(reponses).length;
+
+
+const optionsHTML=
+(sondage.options || [])
+.map((opt,i)=>{
+
+const nbVoix=
+Object.values(reponses)
+.filter(v=>v===i).length;
+
+const pourcentage=
+totalReponses>0 ?
+Math.round((nbVoix/totalReponses)*100) :
+0;
+
+return creerOptionSondageHTML(
+sondageId,
+i,
+opt,
+dejaVote,
+monChoix,
+pourcentage,
+nbVoix
+);
+
+})
+.join("");
+
+
+
+return `
+
+<div class="sondage" data-sondage-id="${sondageId}">
+
+<div class="sondage-question">
+📊 ${sondage.question || ""}
+</div>
+
+${optionsHTML}
+
+<div class="sondage-note">
+${dejaVote ?
+"Vous avez déjà répondu à ce sondage." :
+"Cliquez sur une option pour répondre."}
+</div>
+
+</div>
+
+`;
+
+
+}
+
+
+
+window.voterSondage=async(sondageId,optionIndex)=>{
+
+
+if(!utilisateur)
+return;
+
+
+await updateDoc(
+
+doc(db,"sondages",sondageId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+optionIndex
+
+}
+
+);
+
+
+await rafraichirSondage(sondageId);
+
+
+};
+
+
+
+async function rafraichirSondage(sondageId){
+
+
+const snap=
+await getDoc(
+doc(db,"sondages",sondageId)
+);
+
+
+if(!snap.exists())
+return;
+
+
+const sondage=
+snap.data();
+
+
+document
+.querySelectorAll(`[data-sondage-id="${sondageId}"]`)
+.forEach(el=>{
+
+el.outerHTML=
+creerSondageHTML(sondage,sondageId);
 
 });
 

@@ -388,50 +388,64 @@ CHARGEMENT USERS
 =====================
 */
 
-
 async function chargerUsers(){
 
+    console.log("Chargement utilisateurs...");
 
-const snap=
-await getDocs(
-collection(db,"medecins")
-);
+    try {
 
-
-
-utilisateurs=[];
+        const snap = await getDocs(
+            collection(db,"medecins")
+        );
 
 
-
-snap.forEach(d=>{
-
-
-utilisateurs.push({
-
-id:d.id,
-...d.data()
-
-});
+        console.log(
+            "Nombre utilisateurs trouvés :",
+            snap.size
+        );
 
 
-});
+        utilisateurs=[];
 
 
+        snap.forEach((d)=>{
 
-afficherUsers();
+            console.log(
+                "Utilisateur :",
+                d.id,
+                d.data()
+            );
 
 
-chargerFiltres();
+            utilisateurs.push({
+
+                id:d.id,
+                ...d.data()
+
+            });
 
 
+        });
+
+
+        afficherUsers();
+        chargerFiltres();
+
+
+    } catch(error){
+
+        console.error(
+            "Erreur chargement utilisateurs :",
+            error
+        );
+
+        alert(
+            "Erreur Firestore : " + error.message
+        );
+
+    }
 
 }
-
-
-
-
-
-
 
 function afficherUsers(){
 

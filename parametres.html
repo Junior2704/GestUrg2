@@ -468,12 +468,61 @@ body {
 .switch input:active + .slider::before {
     width: 22px;
 }
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
 </style>
 </head>
 <body>
 
 <div id="content">
+<div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+        <p>veuillez contacter un administrateur pour plus d'informations.</p>
 
+  </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un administrateur</p>
+
+  </div>
+</div>
 
   <div class="section collapsed">
   <h2 class="section-title">
@@ -529,7 +578,7 @@ body {
     <ul id="moyensList"></ul>
   </div>
 </div>
-<div class="section" collapsed>
+<div id="section-mode-systeme" class="section" collapsed>
   <h2 class="section-title">⚙️ Mode du système</h2>
 
   <div class="section-content">
@@ -746,7 +795,10 @@ body {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "connexionadmin.html";
+    const modal = document.getElementById("modal-error");
+          if (modal) 
+          modal.style.display = "flex"; 
+        console.error("Aucun user connecté")
     return;
   }
 
@@ -755,8 +807,10 @@ onAuthStateChanged(auth, async (user) => {
   const data = snap.data();
 
   if (!data?.pages?.admin) {
-    alert("Accès réservé aux administrateurs.");
-    window.location.href = "index.html";
+    const modal = document.getElementById("modal-no-access");
+          if (modal) 
+          modal.style.display = "flex";       
+    return;
   }
 });
 
@@ -1185,10 +1239,14 @@ let medecinNom = "";
         const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
 
         if (!pages[currentPage]) {
-          alert("⛔️ Vous n’avez pas accès à cette page.");
-          window.location.href = "index.html";
-          return; // Stoppe le script ici
+          const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
+          return; 
         }
+        if (pages.adminsysteme !== true) {
+    document.getElementById("section-mode-systeme").style.display = "none";
+}
       } else {
         // Document inexistant — redirection
         alert("Utilisateur non trouvé, veuillez vous reconnecter.");

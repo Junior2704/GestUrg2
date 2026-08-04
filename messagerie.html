@@ -328,6 +328,50 @@ button{
 
 }
 
+
+.sondage-tag{
+
+    font-size:11px;
+    font-weight:500;
+    background:#eef4fb;
+    color:#0078d4;
+    padding:2px 8px;
+    border-radius:8px;
+    margin-left:8px;
+    vertical-align:middle;
+
+}
+
+
+.sondage-checkbox-ligne{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#f0f7ff;
+    border:1px solid #cfe4fb;
+    border-radius:10px;
+    padding:8px 12px;
+    margin-bottom:6px;
+    font-size:14px;
+    cursor:pointer;
+
+}
+
+
+.sondage-checkbox-ligne input{
+
+    width:auto;
+
+}
+
+
+.sondage-valider{
+
+    margin-top:4px;
+
+}
+
 </style>
 
 </head>
@@ -373,7 +417,16 @@ Aucune conversation sélectionnée
 </div>
 
 
+<!--<!--<div id="input-zone">
 
+<input id="message-input"
+placeholder="Votre message...">
+
+<button onclick="envoyerMessage()">
+Envoyer
+</button>
+
+</div>-->
 
 
 </div>
@@ -781,6 +834,48 @@ arrayUnion(utilisateur.uid)
 );
 
 
+if(msg.diffusionId){
+
+updateDoc(
+
+doc(db,"diffusions",msg.diffusionId),
+
+{
+
+[`statuts.${utilisateur.uid}.lu`]:
+true,
+
+[`statuts.${utilisateur.uid}.luLe`]:
+serverTimestamp()
+
+}
+
+).catch(()=>{});
+
+}
+
+
+if(msg.type==="sondage" && msg.sondageId){
+
+updateDoc(
+
+doc(db,"sondages",msg.sondageId),
+
+{
+
+[`statuts.${utilisateur.uid}.lu`]:
+true,
+
+[`statuts.${utilisateur.uid}.luLe`]:
+serverTimestamp()
+
+}
+
+).catch(()=>{});
+
+}
+
+
 }
 
 
@@ -809,13 +904,42 @@ AFFICHAGE / VOTE SONDAGES
 */
 
 
+function optionEstChoisie(monChoix,optionIndex){
+
+if(Array.isArray(monChoix)){
+return monChoix.includes(optionIndex);
+}
+
+return monChoix===optionIndex;
+
+}
+
+
+
+function nbVoixPourOption(reponses,optionIndex){
+
+return Object.values(reponses)
+.filter(v=>{
+
+if(Array.isArray(v)){
+return v.includes(optionIndex);
+}
+
+return v===optionIndex;
+
+}).length;
+
+}
+
+
+
 function creerOptionSondageHTML(sondageId,optionIndex,optionTexte,dejaVote,monChoix,pourcentage,nbVoix){
 
 
 if(dejaVote){
 
 const estMonChoix=
-monChoix===optionIndex;
+optionEstChoisie(monChoix,optionIndex);
 
 return `
 
@@ -858,6 +982,10 @@ const reponses=
 sondage.reponses || {};
 
 
+const estMultiple=
+sondage.type==="multiple";
+
+
 const dejaVote=
 !!utilisateur &&
 Object.prototype.hasOwnProperty.call(
@@ -874,13 +1002,20 @@ const totalReponses=
 Object.keys(reponses).length;
 
 
-const optionsHTML=
+let optionsHTML;
+
+
+if(dejaVote || !estMultiple){
+
+/* résultats déjà votés (simple ou multiple),
+   ou vote à choix simple (clic direct) */
+
+optionsHTML=
 (sondage.options || [])
 .map((opt,i)=>{
 
 const nbVoix=
-Object.values(reponses)
-.filter(v=>v===i).length;
+nbVoixPourOption(reponses,i);
 
 const pourcentage=
 totalReponses>0 ?
@@ -901,6 +1036,45 @@ nbVoix
 .join("");
 
 
+}else{
+
+/* vote à choix multiple, pas encore répondu :
+   cases à cocher + bouton de validation */
+
+const casesHTML=
+(sondage.options || [])
+.map((opt,i)=>`
+
+<label class="sondage-checkbox-ligne">
+<input type="checkbox" class="sondage-checkbox" value="${i}">
+<span>${opt}</span>
+</label>
+
+`)
+.join("");
+
+
+optionsHTML=`
+
+<div class="sondage-choix-multiple">
+
+${casesHTML}
+
+<button type="button" class="sondage-valider"
+onclick="voterSondageMultiple('${sondageId}')">
+
+Valider mes réponses
+
+</button>
+
+</div>
+
+`;
+
+
+}
+
+
 
 return `
 
@@ -908,6 +1082,9 @@ return `
 
 <div class="sondage-question">
 📊 ${sondage.question || ""}
+${estMultiple?
+`<span class="sondage-tag">choix multiple</span>`:
+""}
 </div>
 
 ${optionsHTML}
@@ -915,7 +1092,9 @@ ${optionsHTML}
 <div class="sondage-note">
 ${dejaVote ?
 "Vous avez déjà répondu à ce sondage." :
-"Cliquez sur une option pour répondre."}
+(estMultiple ?
+"Cochez une ou plusieurs options puis validez." :
+"Cliquez sur une option pour répondre.")}
 </div>
 
 </div>
@@ -942,6 +1121,57 @@ doc(db,"sondages",sondageId),
 
 [`reponses.${utilisateur.uid}`]:
 optionIndex
+
+}
+
+);
+
+
+await rafraichirSondage(sondageId);
+
+
+};
+
+
+
+window.voterSondageMultiple=async(sondageId)=>{
+
+
+if(!utilisateur)
+return;
+
+
+const container=
+document.querySelector(
+`.sondage[data-sondage-id="${sondageId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const indices=
+Array.from(
+container.querySelectorAll(".sondage-checkbox:checked")
+)
+.map(c=>parseInt(c.value,10));
+
+
+if(indices.length===0){
+alert("Veuillez cocher au moins une option.");
+return;
+}
+
+
+await updateDoc(
+
+doc(db,"sondages",sondageId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+indices
 
 }
 

@@ -717,7 +717,7 @@ body {
 
 </section>
 
- <div class="section collapsed">
+ <div id="nettoyage" class="section collapsed">
   <h2 class="section-title">🧹 Nettoyage et maintenance</h2>
 
   <div class="section-content">
@@ -732,7 +732,7 @@ body {
   </div>
 </div>
 
-<div class="section collapsed">
+<div id="afficheur" class="section collapsed">
   <h2 class="section-title">📺 Afficheur salle d’attente</h2>
 
   <div class="section-content">
@@ -793,26 +793,79 @@ body {
   console.log("✅ Firebase initialisé :", app.name);
 
 
-onAuthStateChanged(auth, async (user) => {
+let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
+
+  onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    const modal = document.getElementById("modal-error");
+const modal = document.getElementById("modal-error");
           if (modal) 
           modal.style.display = "flex"; 
         console.error("Aucun user connecté")
     return;
-  }
+    } else {
+    try {
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const medecinNom = data.nom || "";
+        const medecinSpecialite = data.specialite || "";
+        const medecinLieu = data.lieu || "";
 
-  const ref = doc(db, "medecins", user.uid);
-  const snap = await getDoc(ref);
-  const data = snap.data();
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
 
-  if (!data?.pages?.admin) {
-    const modal = document.getElementById("modal-no-access");
-          if (modal) 
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        
+
+        if (pages.adminsysteme !== true && pages.adminrh !== true && pages.adminmed !== true) {
+          const modal = document.getElementById("modal-no-access");
+          if (modal) masquerLoader();
           modal.style.display = "flex";       
-    return;
+          return; 
+        }
+        if (pages.adminsysteme !== true) {
+    document.getElementById("section-mode-systeme").style.display = "none";
+     document.getElementById("facturables").style.display = "none";
+      document.getElementById("bureaux").style.display = "none";
+       document.getElementById("messages").style.display = "none";
+       document.getElementById("afficheur").style.display = "none";
+       document.getElementById("maintenance").style.display = "none";
+}
+  if (pages.adminmed !== true) {
+   
+        document.getElementById("moyens").style.display = "none";
+        document.getElementById("services").style.display = "none";
+document.getElementById("actes").style.display = "none";
+}
+if (pages.adminmed !== true && pages.adminrh !== true){
+   document.getElementById("personnel").style.display = "none";
+}
+      } else {
+        // Document inexistant — redirection
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        window.location.href = "accueil.html";
+      }
+    } catch (error) {
+      console.error("Erreur chargement médecin :", error);
+      alert("Une erreur est survenue, veuillez réessayer plus tard.");
+    }
   }
 });
+
 
 
 
@@ -1189,87 +1242,7 @@ document.addEventListener("keydown", (e) => {
 loadData();
 
 
-  
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "accueil.html";
-    } else {
-      const docSnap = await getDoc(doc(db, "medecins", user.uid));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        
 
-      }
-    }
-  });
-  
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-
-  onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "index.html";
-  } else {
-    try {
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const medecinNom = data.nom || "";
-        const medecinSpecialite = data.specialite || "";
-        const medecinLieu = data.lieu || "";
-
-        // Met à jour aussi les variables globales sur window
-        window.medecinNom = medecinNom;
-        window.medecinSpecialite = medecinSpecialite;
-        window.medecinLieu = medecinLieu;
-
-        // Mise à jour des éléments HTML si présents
-        const nomElem = document.getElementById("nom-medecin");
-        if (nomElem) nomElem.textContent = medecinNom;
-
-        const specElem = document.getElementById("specialite");
-        if (specElem) specElem.textContent = medecinSpecialite;
-
-
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-        if (!pages[currentPage]) {
-          const modal = document.getElementById("modal-no-access");
-          if (modal) masquerLoader();
-          modal.style.display = "flex";       
-          return; 
-        }
-        if (pages.adminsysteme !== true) {
-    document.getElementById("section-mode-systeme").style.display = "none";
-     document.getElementById("facturables").style.display = "none";
-      document.getElementById("bureaux").style.display = "none";
-       document.getElementById("messages").style.display = "none";
-}
-  if (pages.adminmed !== true) {
-   
-        document.getElementById("moyens").style.display = "none";
-        document.getElementById("services").style.display = "none";
-document.getElementById("actes").style.display = "none";
-}
-if (pages.adminmed !== true && pages.adminrh !== true){
-   document.getElementById("personnel").style.display = "none";
-}
-      } else {
-        // Document inexistant — redirection
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        window.location.href = "accueil.html";
-      }
-    } catch (error) {
-      console.error("Erreur chargement médecin :", error);
-      alert("Une erreur est survenue, veuillez réessayer plus tard.");
-    }
-  }
-});
 // --- GESTION CCH & CAA ---
 const docPatientRef = doc(db, "patients", "QhwMJ0mjmUnS8MTNBCFU");
 const spanCCH = document.getElementById("afficheCCH");

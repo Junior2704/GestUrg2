@@ -1968,6 +1968,21 @@ function appliquerDroits(pages) {
 
         const page = element.dataset.page;
 
+        // Cas particulier : Administration GestUrg2
+        if (page === "parametres") {
+            const autorise =
+                pages.adminrh === true ||
+                pages.adminsysteme === true ||
+                pages.adminmed === true;
+
+            if (!autorise) {
+                element.style.display = "none";
+            }
+
+            return;
+        }
+
+        // Cas général
         if (!pages[page]) {
             element.style.display = "none";
         }
@@ -1983,9 +1998,7 @@ function appliquerDroits(pages) {
     if (!visible) {
         document.getElementById("dropdownOutils").style.display = "none";
     }
-
 }
-
 // Fermer l'onglet actif avec Ctrl+W
 document.addEventListener("keydown", function(e) {
     // Vérifie Ctrl+W (ou Cmd+W sur Mac)

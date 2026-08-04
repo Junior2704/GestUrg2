@@ -1,15 +1,3 @@
-
-
-Recommandation : n'ouvre pas cette écriture à TOUS les
-utilisateurs connectés (n'importe qui pourrait alors envoyer des
-messages "Système" à n'importe qui). Réserve-la, via tes règles,
-aux utilisateurs dont medecins/{uid}.pages contient un droit
-dédié, par exemple "envoi-automatique" ou le même droit que
-"messagerie-administration" si les codes concernés sont déjà
-réservés au personnel autorisé.
-==================================================================
-*/
-
 import { initializeApp, getApps, getApp }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 

@@ -27,13 +27,6 @@ const firebaseConfig = {
 };
 
 
-/* réutilise l'app Firebase si le code appelant l'a déjà
-   initialisée ailleurs (évite l'erreur "app déjà initialisée") */
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-const db = getFirestore(app);
-
 
 /* ==================================================================
    COMPTES EXPÉDITEURS AUTORISÉS

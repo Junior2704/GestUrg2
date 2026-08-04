@@ -32,8 +32,7 @@ const firebaseConfig = {
 const app = getApps().length
   ? getApp()
   : initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+
 
 
 /* ==================================================================

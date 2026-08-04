@@ -595,78 +595,6 @@ db.collection("accueil-1")
 
 
 
-// ================= APPEL =================
-async function appelerTicket(){
-  const snap = await db.collection("accueil-1")
-    .where("statut","==","attente")
-    .orderBy("dateArriveeClient")
-    .limit(1)
-    .get();
-
-  if(snap.empty){
-    afficher("Aucun patient en attente",false);
-    return;
-  }
-
-  const doc = snap.docs[0];
-
-  const anciens = await db.collection("accueil-1")
-    .where("statut","==","appele")
-    .get();
-
-  anciens.forEach(d=>d.ref.update({statut:"termine"}));
-const data = doc.data();
-
-const motif = data.motif || "";
-const circuit = data.circuit || "";
-const dateArrivee = data.dateArrivee || null;
-const dateArriveeClient = data.dateArriveeClient || null;
-
-await doc.ref.update({
-  statut: "appele",
-  bureau: bureauActuel,
-  dateAppel: firebase.firestore.FieldValue.serverTimestamp(),
-  afficheDepuis: firebase.firestore.FieldValue.serverTimestamp(),
-
-  motif: motif,
-  circuit: circuit,
-  dateArriveeClient: dateArrivee
-});
-
-
-  numeroAffiche.innerText = "N° "+doc.data().numero;
-  // 🔹 affichage infos agent d'accueil
-infosPatient.style.display = "block";
-
-infoMotif.innerText =
-  motif ? "📝 Motif : " + motif : "📝 Motif : —";
-
-infoCircuit.innerText =
-  circuit ? "🧭 Circuit : " + circuit : "🧭 Circuit : —";
-
-// ⏱️ durée d'attente
-let attenteMs = null;
-
-if (dateArriveeClient !== undefined && dateArriveeClient !== null) {
-  if (typeof dateArriveeClient === "number") {
-    // timestamp en ms
-    attenteMs = Date.now() - dateArriveeClient;
-  } else if (typeof dateArriveeClient.toMillis === "function") {
-    // Firestore Timestamp
-    attenteMs = Date.now() - dateArriveeClient.toMillis();
-  } else {
-    // Date ou string
-    attenteMs = Date.now() - new Date(dateArriveeClient).getTime();
-  }
-}
-
-infoAttente.innerText = attenteMs !== null ? "⏱️ Attente : " + formatDuree(attenteMs) : "⏱️ Attente : —";
-
-
-
-  afficher("Ticket appelé",true);
-}
-
 function afficher(msg,ok){
   appelStatus.innerText = msg;
   appelStatus.className = "status " + (ok?"ok":"err");
@@ -709,6 +637,73 @@ function applyParams(){
   document.querySelectorAll(".filterCircuit:checked").forEach(cb=>filterCircuits.add(cb.value));
   
   closeParams();
+}
+
+// ================= FILTRAGE DANS APPELER TICKET =================
+async function appelerTicket(){
+  const snap = await db.collection("accueil-1")
+    .where("statut","==","attente")
+    .orderBy("dateArriveeClient")
+    .get(); // on prend tous les tickets en attente
+
+  if(snap.empty){
+    afficher("Aucun patient en attente",false);
+    return;
+  }
+
+  // Filtrer selon paramètres
+  let doc = null;
+  for(const d of snap.docs){
+    const data = d.data();
+    const motif = data.motif || "";
+    const circuit = data.circuit || "";
+    
+    const motifOk = filterMotifs.size === 0 || filterMotifs.has(motif);
+    const circuitOk = filterCircuits.size === 0 || filterCircuits.has(circuit);
+    
+    if(motifOk && circuitOk){
+      doc = d;
+      break;
+    }
+  }
+
+  if(!doc){
+    afficher("Aucun patient correspondant aux filtres", false);
+    return;
+  }
+
+  // Suite de l'appel du ticket (inchangé)
+  const anciens = await db.collection("accueil-1")
+    .where("statut","==","appele")
+    
+    .get();
+  anciens.forEach(d=>d.ref.update({statut:"termine"}));
+
+  const data = doc.data();
+  await doc.ref.update({
+    statut: "appele",
+    bureau: bureauActuel,
+    dateAppel: firebase.firestore.FieldValue.serverTimestamp(),
+    afficheDepuis: firebase.firestore.FieldValue.serverTimestamp(),
+    motif: data.motif,
+    circuit: data.circuit,
+    dateArriveeClient: data.dateArrivee
+  });
+
+  numeroAffiche.innerText = "N° "+data.numero;
+  infosPatient.style.display = "block";
+  infoMotif.innerText = data.motif ? "📝 Motif : " + data.motif : "📝 Motif : —";
+  infoCircuit.innerText = data.circuit ? "🧭 Circuit : " + data.circuit : "🧭 Circuit : —";
+
+  let attenteMs = null;
+  const dateArriveeClient = data.dateArriveeClient;
+  if(dateArriveeClient){
+    if(typeof dateArriveeClient.toMillis === "function") attenteMs = Date.now() - dateArriveeClient.toMillis();
+    else attenteMs = Date.now() - new Date(dateArriveeClient).getTime();
+  }
+  infoAttente.innerText = attenteMs !== null ? "⏱️ Attente : " + formatDuree(attenteMs) : "⏱️ Attente : —";
+
+  afficher("Ticket appelé",true);
 }
 
 

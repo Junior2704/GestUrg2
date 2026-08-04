@@ -375,6 +375,7 @@ background:rgba(0,0,0,0.5);justify-content:center;align-items:center;">
 
   <script type="module">
   emailjs.init("CZapZCcxYfJ8-acLS"); // clé publique par défaut, remplacée si multi-comptes
+  import { envoyerMessageSysteme } from "./messagerie-envoi.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
       getAuth,
@@ -744,7 +745,11 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
       pages: {},
       doitChangerMDP: true
     });
-
+await envoyerMessageSysteme({
+    compteId: "systeme",
+    texte: `Bienvenue dans GestUrg2 ! Vous êtes actuellement dans votre messagerie. Ici les administrateurs des différents services de l'hôpital peuvent vous envoyer des messages; Pensez à la consulter régulièrement !`,
+    destinataires: [uid]
+  });
     // --- Envoi email via EmailJS
     await envoyerMailResetEmailJS(email, nom, motDePasseTemp);
 
@@ -764,6 +769,11 @@ window.demanderChangement = async (uid) => {
   try {
     const ref = doc(db, "medecins", uid);
     await updateDoc(ref, { doitChangerMDP: true });
+    await envoyerMessageSysteme({
+    compteId: "systeme",
+    texte: `Un changement de mot de passe vient d'être demandé pour votre compte. Celui-ci vous sera imposé lors de votre prochaine connexion à GestUrg2.`,
+    destinataires: [uid]
+  });
     afficherBulle("L’utilisateur devra changer son mot de passe à sa prochaine connexion.","default");
   } catch (error) {
     console.error(error);

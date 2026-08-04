@@ -88,6 +88,30 @@ body{
 }
 
 
+.conversation.non-lue{
+
+    background:#eaf4ff;
+    border-left:4px solid #0078d4;
+
+}
+
+
+.conversation.non-lue .conv-title{
+
+    font-weight:700;
+    color:#0078d4;
+
+}
+
+
+.conversation.non-lue .conv-last{
+
+    color:#333;
+    font-weight:600;
+
+}
+
+
 .avatar{
 
     width:45px;
@@ -133,6 +157,8 @@ body{
     border-radius:20px;
     padding:2px 8px;
     font-size:12px;
+    align-self:center;
+    height:fit-content;
 
 }
 
@@ -426,8 +452,8 @@ placeholder="Votre message...">
 Envoyer
 </button>
 
-</div>-->
-
+</div>
+-->
 
 </div>
 
@@ -459,6 +485,7 @@ addDoc,
 updateDoc,
 serverTimestamp,
 arrayUnion,
+increment,
 orderBy
 
 }
@@ -500,6 +527,14 @@ let utilisateur=null;
 let utilisateurNom="";
 
 let conversationActive=null;
+let participantsActifs=[];
+
+
+/* à adapter : origine exacte de la page parente
+   qui iframe messagerie.html (remplacer "*" par
+   ex. "https://mon-domaine.fr" en production) */
+
+const ORIGINE_PARENT="*";
 
 
 
@@ -582,17 +617,31 @@ document.getElementById("conversations");
 zone.innerHTML="";
 
 
+let totalNonLus=0;
+
+
 snap.forEach(docSnap=>{
 
 
 const c=docSnap.data();
 
 
+const nonLus=
+(c.nonLus && c.nonLus[utilisateur.uid]) ?
+c.nonLus[utilisateur.uid] :
+0;
+
+
+totalNonLus+=nonLus;
+
+
 const div=
 document.createElement("div");
 
 
-div.className="conversation";
+div.className=
+"conversation"+
+(nonLus>0 ? " non-lue" : "");
 
 
 div.innerHTML=`
@@ -615,6 +664,10 @@ ${c.lastMessage || ""}
 
 </div>
 
+${nonLus>0 ?
+`<div class="badge">${nonLus}</div>` :
+""}
+
 `;
 
 
@@ -633,7 +686,41 @@ zone.appendChild(div);
 });
 
 
+envoyerNonLusAuParent(totalNonLus);
+
+
 });
+
+
+}
+
+
+
+function envoyerNonLusAuParent(total){
+
+
+try{
+
+window.parent.postMessage(
+
+{
+
+source:"messagerie",
+type:"non-lus",
+nonLus:total
+
+},
+
+ORIGINE_PARENT
+
+);
+
+}catch(e){
+
+/* pas de fenêtre parente, ou postMessage indisponible :
+   on ignore silencieusement */
+
+}
 
 
 }
@@ -655,10 +742,29 @@ function ouvrirConversation(id,data){
 
 conversationActive=id;
 
+participantsActifs=
+data.participants || [];
+
 
 document.getElementById("chat-header")
 .innerHTML=
 `${data.icon || "💬"} ${data.titre}`;
+
+
+/* on marque la conversation comme lue dès l'ouverture */
+
+updateDoc(
+
+doc(db,"messageries",id),
+
+{
+
+[`nonLus.${utilisateur.uid}`]:
+0
+
+}
+
+).catch(()=>{});
 
 
 chargerMessages();
@@ -1280,6 +1386,23 @@ utilisateur.uid
 
 
 
+const autresParticipants=
+participantsActifs.filter(
+uid=>uid!==utilisateur.uid
+);
+
+
+const misAJourNonLus={};
+
+autresParticipants.forEach(uid=>{
+
+misAJourNonLus[`nonLus.${uid}`]=
+increment(1);
+
+});
+
+
+
 await updateDoc(
 
 doc(
@@ -1294,7 +1417,9 @@ lastMessage:
 texte,
 
 updatedAt:
-serverTimestamp()
+serverTimestamp(),
+
+...misAJourNonLus
 
 }
 

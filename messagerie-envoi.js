@@ -29,6 +29,11 @@ const firebaseConfig = {
   measurementId: "G-C74MK2KYDL"
 };
 
+const app = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 
 /* ==================================================================

@@ -2287,12 +2287,15 @@ window.addEventListener("load", () => {
   }, 1000);
 });
 
+
 let totalNonLusConnu = null;
 
 
 function surveillerMessagesNonLus(){
 
   onAuthStateChanged(auth, (user) => {
+
+    console.log("[messagerie-shell] état auth :", user ? user.uid : "non connecté");
 
     if(!user) return;
 
@@ -2301,55 +2304,76 @@ function surveillerMessagesNonLus(){
       where("participants", "array-contains", user.uid)
     );
 
-    onSnapshot(q, (snap) => {
+    onSnapshot(
 
-      let total = 0;
+      q,
 
-      snap.forEach(docSnap => {
+      (snap) => {
 
-        const c = docSnap.data();
+        console.log("[messagerie-shell] snapshot reçu,", snap.size, "conversation(s)");
 
-        const n = (c.nonLus && c.nonLus[user.uid]) ? c.nonLus[user.uid] : 0;
+        let total = 0;
 
-        total += n;
+        snap.forEach(docSnap => {
 
-      });
+          const c = docSnap.data();
+
+          const n = (c.nonLus && c.nonLus[user.uid]) ? c.nonLus[user.uid] : 0;
+
+          console.log("[messagerie-shell] conv", docSnap.id, "titre:", c.titre, "nonLus brut:", c.nonLus, "→", n, "pour", user.uid);
+
+          total += n;
+
+        });
 
 
-      const premierChargement = (totalNonLusConnu === null);
+        console.log("[messagerie-shell] total non lus:", total, "| connu avant:", totalNonLusConnu);
 
 
-      if(premierChargement){
+        const premierChargement = (totalNonLusConnu === null);
 
-        if(total > 0){
+
+        if(premierChargement){
+
+          if(total > 0){
+
+            afficherBulle(
+              total > 1 ?
+                `Vous avez ${total} messages non lus.` :
+                "Vous avez 1 message non lu.",
+              "default"
+            );
+
+          }
+
+        }else if(total > totalNonLusConnu){
+
+          const nouveaux = total - totalNonLusConnu;
 
           afficherBulle(
-            total > 1 ?
-              `🔔 Vous avez ${total} messages non lus.` :
-              "🔔 Vous avez 1 message non lu.",
+            nouveaux > 1 ?
+              `Vous avez reçu ${nouveaux} nouveaux messages.` :
+              "Vous avez reçu un nouveau message.",
             "default"
           );
 
         }
 
-      }else if(total > totalNonLusConnu){
 
-        const nouveaux = total - totalNonLusConnu;
+        totalNonLusConnu = total;
 
-        afficherBulle(
-          nouveaux > 1 ?
-            `🔔 Vous avez reçu ${nouveaux} nouveaux messages.` :
-            "🔔 Vous avez reçu un nouveau message.",
-          "default"
-        );
+
+      },
+
+      (erreur) => {
+
+        /* ICI on verra si Firestore bloque la lecture */
+
+        console.error("[messagerie-shell] ERREUR onSnapshot :", erreur.code, erreur.message);
 
       }
 
-
-      totalNonLusConnu = total;
-
-
-    });
+    );
 
   });
 

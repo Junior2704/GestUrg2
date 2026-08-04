@@ -1242,7 +1242,7 @@ document
 
 
 if(!texte){
-alert("Veuillez saisir un message.");
+afficherBulle("Veuillez saisir un message.", "error");
 return;
 }
 
@@ -1252,10 +1252,13 @@ getDestinataires();
 
 
 if(destinataires.length===0){
-alert("Sélectionnez au moins un destinataire.");
+afficherBulle("Sélectionnez au moins un destinataire.", 'error');
 return;
 }
 
+if(compte.length===0){
+    afficherBulle("Sélectionnez un compte d'envoi", 'error')
+}
 
 const diffusionRef=
 await addDoc(
@@ -1322,16 +1325,60 @@ updatedAt:serverTimestamp(),
 document.getElementById("message-input").value="";
 
 
-alert(
+afficherBulle(
 "Message envoyé à "+
 destinataires.length+
-" utilisateur(s)."
+" utilisateur(s).", "success"
 );
 
 
 };
 
 
+const ORIGINE_PARENT_BULLE = "*";
+
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
+  }
+
+  window.parent.postMessage(
+
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
+
+    ORIGINE_PARENT_BULLE
+
+  );
+
+}
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 
 
 /*
@@ -1401,7 +1448,7 @@ document.querySelectorAll(".option-input")
 
 
 if(!question || options.length<2){
-alert("Une question et au moins 2 options sont nécessaires.");
+afficherBulle("Une question et au moins 2 options sont nécessaires.", 'error');
 return;
 }
 
@@ -1411,7 +1458,7 @@ getDestinataires();
 
 
 if(destinataires.length===0){
-alert("Sélectionnez au moins un destinataire.");
+afficherBulle("Sélectionnez au moins un destinataire.", 'error');
 return;
 }
 
@@ -1486,10 +1533,10 @@ document
 .forEach(i=>i.value="");
 
 
-alert(
+afficherBulle(
 "Sondage envoyé à "+
 destinataires.length+
-" utilisateur(s)."
+" utilisateur(s).", 'success'
 );
 
 

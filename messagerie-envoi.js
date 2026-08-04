@@ -11,10 +11,13 @@ import {
   addDoc,
   updateDoc,
   serverTimestamp,
+  getDoc,
   increment
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+import {
+  getAuth
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -119,8 +122,28 @@ function creerStatutsInitiaux(destinataires){
 
 
 }
+const auth = getAuth(app);
+async function verifierAutorisation() {
 
+  const user = auth.currentUser;
 
+  if (!user) {
+    throw new Error("Utilisateur non connecté.");
+  }
+
+  const userSnap = await getDoc(doc(db, "medecins", user.uid));
+
+  if (!userSnap.exists()) {
+    throw new Error("Utilisateur introuvable.");
+  }
+
+  const pages = userSnap.data().pages || {};
+
+  if (pages.messagerieadministration !== true) {
+    throw new Error("Accès refusé.");
+  }
+
+}
 
 
 /**
@@ -137,7 +160,7 @@ function creerStatutsInitiaux(destinataires){
 
 export async function envoyerMessageSysteme({ compteId, texte, destinataires }){
 
-
+  await verifierAutorisation();
   const compte = COMPTES_ADMIN[compteId];
 
 

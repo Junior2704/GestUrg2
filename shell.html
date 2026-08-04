@@ -1282,6 +1282,39 @@ transform:none;
   position:relative;
   font-family:Inter, Arial, sans-serif;
 }
+#welcome-container{
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+#welcome-avatar{
+    width:72px;
+    height:72px;
+    object-fit:contain;
+    flex-shrink:0;
+
+    opacity:0;
+    transform:translateY(15px) scale(.9);
+
+    transition:
+        opacity 1s cubic-bezier(0.22,1,0.36,1),
+        transform 1s cubic-bezier(0.22,1,0.36,1);4
+    animation: assistantFloat 3s ease-in-out infinite;
+}
+
+@keyframes assistantFloat{
+    0%,100%{
+        transform:translateY(0);
+    }
+    50%{
+        transform:translateY(-6px);
+    }
+}
+#welcome-avatar.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+}
 </style>
 </head>
 <body>
@@ -1403,7 +1436,10 @@ transform:none;
  <div id="home">
 <div id="home-center">
 
+    <div id="welcome-container">
+    <img id="welcome-avatar" src="robotgesturg2.png" alt="Assistant">
     <div id="welcome-text"></div>
+</div>
 
     <canvas id="clockCanvas" width="260" height="260"></canvas>
 
@@ -1864,11 +1900,12 @@ if (user) {
     if (snap.exists()) {
        const heure = new Date().getHours();
   const salutation = heure >= 19 ? "Bonsoir" : "Bonjour";
-      
+      const avatar = document.getElementById("welcome-avatar");
         document.getElementById("welcome-text").textContent =` ${salutation} ${snap.data().prenom} 👋`;
           const welcome = document.getElementById("welcome-text");
         requestAnimationFrame(() => {
         welcome.classList.add("show");
+avatar.classList.add("show");
     });
     }
     else{

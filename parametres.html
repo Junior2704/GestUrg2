@@ -1082,33 +1082,50 @@ async function saveBureaux() {
 loadBureaux();
 
 
-function afficherBulle(texte, type) {
-  let container = document.getElementById('bubble-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'bubble-container';
-    container.style.position = "fixed";
-    container.style.top = "20px";
-    container.style.right = "20px";
-    container.style.zIndex = "9999";
-    document.body.appendChild(container);
+const ORIGINE_PARENT_BULLE = "*";
+
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
   }
-  const bulle = document.createElement('div');
-  bulle.className = `bubble ${type}`;
-  bulle.textContent = texte;
-  bulle.style.backgroundColor = type === "administratif" ? "#3498db" : "#e74c3c";
-  bulle.style.color = "white";
-  bulle.style.padding = "10px 15px";
-  bulle.style.marginBottom = "10px";
-  bulle.style.borderRadius = "6px";
-  bulle.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
-  bulle.style.transition = "opacity 0.4s ease";
-  container.appendChild(bulle);
-  setTimeout(() => {
-    bulle.style.opacity = "0";
-    setTimeout(() => bulle.remove(), 400);
-  }, 2500);
+
+  window.parent.postMessage(
+
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
+
+    ORIGINE_PARENT_BULLE
+
+  );
+
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     cancelModal();

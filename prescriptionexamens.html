@@ -968,54 +968,50 @@ function imprimer() {
     );
 }
 // Fonction pour afficher une bulle
-function afficherBulle(msg, type = 'info') {
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '8px';
-  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-  el.style.fontSize = '14px';
-  el.style.fontWeight = '500';
-  el.style.opacity = '0';
-  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-  el.style.transform = 'translateY(-10px)';
+const ORIGINE_PARENT_BULLE = "*";
 
-  // --- Code couleur selon type ---
-  switch (type) {
-    case 'success':
-      el.style.background = '#e6ffed'; // vert clair
-      el.style.color = '#064e22';      // texte vert foncé
-      break;
-    case 'error':
-      el.style.background = '#ffdede'; // rouge clair
-      el.style.color = '#a00';         // texte rouge foncé
-      break;
-    case 'warning':
-      el.style.background = '#fff4e5'; // orange clair
-      el.style.color = '#663c00';      // texte orange foncé
-      break;
-    default: // info ou autre
-      el.style.background = '#333';    // gris foncé
-      el.style.color = '#fff';         // texte blanc
-      break;
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
   }
 
-  notificationContainer.appendChild(el);
+  window.parent.postMessage(
 
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-  });
+    ORIGINE_PARENT_BULLE
 
-  // Suppression automatique après 3 secondes
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-10px)';
-    el.addEventListener('transitionend', () => el.remove());
-  }, 3000);
+  );
+
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 
 
 

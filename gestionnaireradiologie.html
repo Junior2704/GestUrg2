@@ -938,128 +938,50 @@ renderTable(patients);
 
 
   // --- 🫧 Notifications bulles ---
-  function afficherBulle(message, type) {
-    const cont = document.getElementById("bubble-container") || (() => {
-      const c = document.createElement("div");
-      c.id = "bubble-container";
-      document.body.appendChild(c);
-      return c;
-    })();
+  const ORIGINE_PARENT_BULLE = "*";
 
-    const bubble = document.createElement("div");
-    bubble.className = `bubble ${type}`;
-    bubble.textContent = message;
-    cont.appendChild(bubble);
-    setTimeout(() => bubble.remove(), 5500);
-  }
 
- async function chargerHistoriqueComplet(patientId) {
-  const contenu = document.getElementById("hospitalisationsContent");
-  if (!contenu) {
-    console.error("❌ #hospitalisationsContent introuvable");
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
     return;
+
   }
 
-  contenu.innerHTML = "<p>⏳ Chargement de l'historique...</p>";
+  window.parent.postMessage(
 
-  try {
-    const q = query(
-      collection(db, "hospitalisations"),
-      where("patientId", "==", patientId)
-    );
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-    const snap = await getDocs(q);
+    ORIGINE_PARENT_BULLE
 
-    if (snap.empty) {
-      contenu.innerHTML = "<p>Aucune hospitalisation trouvée.</p>";
-      return;
-    }
+  );
 
-    // 🔽 on garde uniquement les hospitalisations terminées
-    const hospitalisations = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(h => h.dateFin); // exclut l'active
-      // .sort((a, b) => new Date(b.dateDebut) - new Date(a.dateDebut)); // optionnel
-
-    if (hospitalisations.length === 0) {
-      contenu.innerHTML = "<p>Aucune hospitalisation antérieure.</p>";
-      return;
-    }
-
-    // 🔄 plus récentes d'abord
-    hospitalisations.sort(
-      (a, b) => new Date(b.dateDebut) - new Date(a.dateDebut)
-    );
-
-    contenu.innerHTML = "";
-
-    hospitalisations.forEach(hospi => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const dossier = hospi.dossierMedical || {};
-      const sortie = hospi.sortie || null;
-
-      const parts = [];
-
-      parts.push(`<div><strong>📅 Admission :</strong> ${hospi.dateDebut || "—"}</div>`);
-      parts.push(`<div><strong>📅 Sortie :</strong> ${hospi.dateFin || "—"}</div>`);
-      parts.push(`<div><strong>Motif :</strong> ${hospi.motif || "—"}</div>`);
-      parts.push(`<div><strong>Gravité :</strong> ${hospi.gravite || "—"}</div>`);
-
-      parts.push(`<hr>`);
-
-      parts.push(`<h3>📋 Dossier médical</h3>`);
-      parts.push(`<p><strong>Questionnaire IAO :</strong><br>${dossier.questionnaire || "—"}</p>`);
-      parts.push(`<p><strong>Antécédents :</strong><br>${dossier.antecedents || "—"}</p>`);
-      parts.push(`<p><strong>Traitements :</strong><br>${dossier.traitements || "—"}</p>`);
-      parts.push(`<p><strong>Histoire de la maladie :</strong><br>${dossier.histoire || "—"}</p>`);
-      parts.push(`<p><strong>CR Auscultation :</strong><br>${dossier.auscultation || "—"}</p>`);
-
-      parts.push(`<hr>`);
-
-      parts.push(`<h3>📈 Évolution aux urgences</h3>`);
-      parts.push(`<p style="white-space:pre-wrap">${hospi.evolution || "—"}</p>`);
-
-      if (sortie) {
-        parts.push(`<hr>`);
-        parts.push(`<h3>🚪 Sortie</h3>`);
-        parts.push(`<p><strong>Type :</strong> ${sortie.type || "—"}</p>`);
-
-        if (sortie.serviceHospitalisation)
-          parts.push(`<p><strong>🏥 Service :</strong> ${sortie.serviceHospitalisation}</p>`);
-
-        if (sortie.destinationTransfert)
-          parts.push(`<p><strong>↔️ Transfert :</strong> ${sortie.destinationTransfert}</p>`);
-
-        if (sortie.avisSpecialiste)
-          parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${sortie.avisSpecialiste}</p>`);
-
-        if (Array.isArray(sortie.options) && sortie.options.length > 0)
-          parts.push(`<p><strong>📋 Options :</strong> ${sortie.options.join(", ")}</p>`);
-
-        if (sortie.traitementSortie)
-          parts.push(`<p><strong>💊 Traitement de sortie :</strong><br>${sortie.traitementSortie}</p>`);
-
-        if (sortie.autreSortieTexte)
-          parts.push(`<p><strong>🔤 Autre :</strong> ${sortie.autreSortieTexte}</p>`);
-      }
-
-      if (hospi.rapport) {
-        parts.push(`<hr>`);
-        parts.push(`<h3>📄 Rapport d'hospitalisation</h3>`);
-        parts.push(`<p>${hospi.rapport}</p>`);
-      }
-
-      card.innerHTML = parts.join("\n");
-      contenu.appendChild(card);
-    });
-
-  } catch (err) {
-    console.error("❌ Erreur chargement historique :", err);
-    contenu.innerHTML = "<p>❌ Erreur lors du chargement de l'historique.</p>";
-  }
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 
 // ✅ Fonction accessible globalement pour ouvrir la modale d'édition
 window.openEditModal = (patientId, hospitalisationId, examIndex) => {

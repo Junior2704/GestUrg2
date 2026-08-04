@@ -346,113 +346,50 @@ const show = id => document.getElementById(id).style.display = "flex";
 
     const emailList = document.getElementById("emailList");
 
-    function afficherBulle(texte, type) {
-      let c = document.getElementById("bubble-container");
-      if (!c) { c = document.createElement("div"); c.id = "bubble-container"; document.body.appendChild(c); }
-      const b = document.createElement("div");
-      b.className = "bubble " + type;
-      b.textContent = texte;
-      c.appendChild(b);
-      setTimeout(() => b.remove(), 3000);
-    }
+    const ORIGINE_PARENT_BULLE = "*";
 
-    if (patientId) {
-      db.collection("patients").doc(patientId).get().then(doc => {
-        if (doc.exists) {
-          let emailsString = doc.data().email || "";
-          const emails = emailsString.split("//").filter(e => e.includes("@"));
 
-          if (emails.length === 0) {
-            emailList.innerHTML = `<p style='color:#777;'>Aucune adresse enregistrée.</p>`;
-          } else {
-            emails.forEach(email => {
-              emailList.innerHTML += `<label><input type='checkbox' value='${email}' checked> ${email}</label>`;
-            });
-          }
-        }
-      });
-    }
+function afficherBulle(message, typeBulle){
 
-    document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
-	
-      const checked = document.querySelectorAll("#emailList input:checked");
-      destinataires = Array.from(checked).map(cb => cb.value.trim());
+  if(window.parent === window){
 
-const other = document.getElementById("otherEmailCheck").checked
-  ? document.getElementById("otherEmailInput").value.trim()
-  : "";
-      if (other) destinataires.push(other);
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
 
-      if (destinataires.length === 0) {
-        return alert("Veuillez sélectionner au moins une adresse email.");
-      }
+    return;
 
-      const message = document.getElementById("messageText").value.trim();
-      if (!message) return alert("Veuillez rédiger un message.");
+  }
 
-show("loadingModal");
-      const comptesEmailJS = [
-        { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
-        { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
-        { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
-      ];
+  window.parent.postMessage(
 
-            const htmlMessage = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Message du Service des Urgences</title>
-</head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI',Roboto,Arial,sans-serif; color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
-    <tr>
-      <td style="background-color:#0057a4; padding:24px; text-align:center;">
-        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
-        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
-        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:30px;">
-        <div style="font-size:15px; line-height:1.6; color:#555;">${message.replace(/\n/g,"<br>")}</div>
-        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
-        <p style="font-size:13px; color:#999; text-align:center;">
-          Service des Urgences<br>
-          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-      for (const email of destinataires) {
-        let envoyé = false;
-        for (const compte of comptesEmailJS) {
-          try {
-            await emailjs.send(compte.serviceID, compte.templateID, {
-              to_email: email,
-              html_message: htmlMessage,
-              subject: "Message du Service des Urgences"
-            }, compte.publicKey);
-            afficherBulle(`📨 Message envoyé à ${email}`, "administratif");
-            envoyé = true;
-			hide("loadingModal");
-            break;
-          } catch (err) {
-            console.warn("Échec avec", compte.serviceID, err.text || err);
-          }
-        }
-        if (!envoyé) afficherBulle(`❌ Échec d'envoi à ${email}`, "alerte");
-		hide("loadingModal");
-      }
+    ORIGINE_PARENT_BULLE
 
-      
-    });
-    window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("loadingModal").style.display = "none";
-});
+  );
+
+}
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+}););
   </script>
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";

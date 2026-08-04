@@ -629,72 +629,50 @@
 
   function log(s) { const el = document.createElement('div'); el.textContent = '['+new Date().toLocaleTimeString()+'] '+s; logEl.prepend(el); }
 
-  function afficherBulle(texte, type) {
-    let container = document.getElementById('bubble-container');
-    if (!container) { container = document.createElement('div'); container.id='bubble-container'; document.body.appendChild(container); }
-    const bulle = document.createElement('div'); bulle.className = `bubble ${type}`; bulle.textContent = texte; container.appendChild(bulle);
-    setTimeout(()=>bulle.remove(), 3500);
+  const ORIGINE_PARENT_BULLE = "*";
+
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
   }
 
-  // ---- mise à jour UI et synchronisation des vues ----
-  function updateAll(){
-    if (mat) mat.textContent = `Table: Z=${height.value} mm | Y=${lateral.value} mm | X=${long.value} mm`;
-    if (hudB0) hudB0.textContent = b0.value + ' T';
-    if (hudSeq) hudSeq.textContent = sequence.value;
-    if (pHeight) pHeight.textContent = 'Hauteur: '+height.value+' mm';
-    if (pLateral) pLateral.textContent = 'Latéral: '+lateral.value+' mm';
-    if (pLong) pLong.textContent = 'Longitudinale: '+long.value+' mm';
-    if (pSeq) pSeq.textContent = 'Séquence: '+sequence.value;
-    if (pTR) pTR.textContent = 'TR: '+TR.value+' ms';
-    if (pTE) pTE.textContent = 'TE: '+TE.value+' ms';
-    // SAR estimate (very simplified): SAR ~ B0 * (flip^2) * duty
-    const duty = Math.min(1, (parseFloat(nslices.value) * parseFloat(averages.value)) / 100.0);
-    const sar = (parseFloat(b0.value) * Math.pow(parseFloat(flip.value),2) * duty) / 100.0;
-    if (hudSAR) hudSAR.textContent = sar.toFixed(2) + ' W/kg';
-    // animate field lines / gradient pulses
-    updateFieldAnimation();
-    drawSlices();
-	updatePatientVisual();
-  }
+  window.parent.postMessage(
 
-  [height,lateral,long,b0,sequence,TR,TE,flip,nslices,averages,bw].forEach(el => { if (el) el.addEventListener('input', updateAll); });
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-  function updatePositionLabels() {
-    $('heightVal').textContent = `${height.value} mm`;
-    $('lateralVal').textContent = `${lateral.value} mm`;
-    $('longVal').textContent = `${long.value} mm`;
-  }
+    ORIGINE_PARENT_BULLE
 
-  // buttons +/- animation
- function animateTo(el, target) {
-  if (!el) return;
-  const start = parseFloat(el.value);
-  const end = parseFloat(target);
-  const distance = Math.abs(end - start);
+  );
 
-  // --- Vitesse moyenne à régler ---
-  // en mm/ms : 0.2 = 200 mm/s
-  const speed = 0.25;
-
-  // Calcule durée proportionnelle à la distance (min 300 ms, max 2500 ms)
-  let duration = Math.max(300, Math.min(2500, distance / speed));
-
-  const startTime = performance.now();
-
-  function step(now) {
-    const progress = Math.min((now - startTime) / duration, 1);
-    const newVal = start + (end - start) * progress;
-    el.value = newVal;
-
-    // Mise à jour visuelle en direct
-    updateAll();
-    updateTargetFromUI();
-
-    if (progress < 1) requestAnimationFrame(step);
-  }
-
-  requestAnimationFrame(step);
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 
 
 // === ANIMATION PATIENT / TABLE / VUES (IRM) ===

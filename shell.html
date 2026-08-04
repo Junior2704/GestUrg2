@@ -1872,10 +1872,10 @@ if (user) {
     }
 }
   if (!user) {
-    //console.log("Aucun utilisateur connecté");
-	//const modal = document.getElementById("modal-error");
-      //    if (modal) masquerLoader();
-        //  modal.style.display = "flex"; 
+    console.log("Aucun utilisateur connecté");
+	const modal = document.getElementById("modal-error");
+     if (modal) masquerLoader();
+         modal.style.display = "flex"; 
       console.error("Erreur chargement médecin :", error);
    
     return;
@@ -1913,54 +1913,50 @@ if (!notificationContainer) {
   notificationContainer.style.zIndex = 9999;
   document.body.appendChild(notificationContainer);
 }
-function afficherBulle(msg, type = 'info') {
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '8px';
-  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-  el.style.fontSize = '14px';
-  el.style.fontWeight = '500';
-  el.style.opacity = '0';
-  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-  el.style.transform = 'translateY(-10px)';
+const ORIGINE_PARENT_BULLE = "*";
 
-  // --- Code couleur selon type ---
-  switch (type) {
-    case 'success':
-      el.style.background = '#e6ffed'; // vert clair
-      el.style.color = '#064e22';      // texte vert foncé
-      break;
-    case 'error':
-      el.style.background = '#ffdede'; // rouge clair
-      el.style.color = '#a00';         // texte rouge foncé
-      break;
-    case 'warning':
-      el.style.background = '#fff4e5'; // orange clair
-      el.style.color = '#663c00';      // texte orange foncé
-      break;
-    default: // info ou autre
-      el.style.background = '#333';    // gris foncé
-      el.style.color = '#fff';         // texte blanc
-      break;
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
   }
 
-  notificationContainer.appendChild(el);
+  window.parent.postMessage(
 
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-  // Animation d'entrée
-  requestAnimationFrame(() => {
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-  });
+    ORIGINE_PARENT_BULLE
 
-  // Suppression automatique après 3 secondes
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-10px)';
-    el.addEventListener('transitionend', () => el.remove());
-  }, 3000);
+  );
+
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 
 function appliquerDroits(pages) {
 
@@ -2297,7 +2293,7 @@ function surveillerMessagesNonLus(){
 
   onAuthStateChanged(auth, (user) => {
 
-    console.log("[messagerie-shell] état auth :", user ? user.uid : "non connecté");
+
 
     if(!user) return;
 
@@ -2312,7 +2308,7 @@ function surveillerMessagesNonLus(){
 
       (snap) => {
 
-        console.log("[messagerie-shell] snapshot reçu,", snap.size, "conversation(s)");
+       
 
         let total = 0;
 
@@ -2322,14 +2318,14 @@ function surveillerMessagesNonLus(){
 
           const n = (c.nonLus && c.nonLus[user.uid]) ? c.nonLus[user.uid] : 0;
 
-          console.log("[messagerie-shell] conv", docSnap.id, "titre:", c.titre, "nonLus brut:", c.nonLus, "→", n, "pour", user.uid);
+    
 
           total += n;
 
         });
 
 
-        console.log("[messagerie-shell] total non lus:", total, "| connu avant:", totalNonLusConnu);
+        
 
 
         const premierChargement = (totalNonLusConnu === null);
@@ -2339,7 +2335,6 @@ function surveillerMessagesNonLus(){
 
           if(total > 0){
 
-           console.log("[messagerie-shell] typeof afficherBulle:", typeof afficherBulle);
 
 if(premierChargement){
 
@@ -2349,12 +2344,11 @@ if(premierChargement){
 
       afficherBulle(
         total > 1 ?
-          `Vous avez ${total} messages non lus.` :
-          "Vous avez 1 message non lu.",
+          `🔔 Vous avez ${total} messages non lus.` :
+          "🔔 Vous avez 1 message non lu.",
         "default"
       );
 
-      console.log("[messagerie-shell] afficherBulle() appelée sans erreur");
 
     }catch(erreur){
 
@@ -2374,8 +2368,8 @@ if(premierChargement){
 
           afficherBulle(
             nouveaux > 1 ?
-              `Vous avez reçu ${nouveaux} nouveaux messages.` :
-              "Vous avez reçu un nouveau message.",
+              `🔔 Vous avez reçu ${nouveaux} nouveaux messages.` :
+              "🔔 Vous avez reçu un nouveau message.",
             "default"
           );
 
@@ -2403,6 +2397,24 @@ if(premierChargement){
 
 
 surveillerMessagesNonLus();
+
+
+
+/* ============================================================
+   RÉCEPTION CENTRALISÉE DES BULLES
+   shell.html est le seul endroit qui affiche réellement les
+   bulles, via sa fonction afficherBulle(message, type) native.
+   ============================================================ */
+
+window.addEventListener("message",(event)=>{
+
+  if(event.data && event.data.source==="notification-bulle"){
+
+    afficherBulle(event.data.message, event.data.typeBulle);
+
+  }
+
+});
 
 </script>
 

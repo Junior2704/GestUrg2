@@ -587,124 +587,50 @@ window.imprimer=imprimer;
   }
 window.telechargerCertif =telechargerCertif;
   // utilitaire notifications
-  function afficherBulle(msg, type = 'info') {
-    const container = document.getElementById('notification-container');
-    const el = document.createElement('div');
-    el.textContent = msg;
-    el.style.padding = '10px 14px';
-    el.style.borderRadius = '8px';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-    el.style.fontSize = '14px';
-    el.style.fontWeight = '500';
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-8px)';
-    el.style.transition = 'opacity 0.25s, transform 0.25s';
+  const ORIGINE_PARENT_BULLE = "*";
 
-    switch (type) {
-      case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
-      case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
-      case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
-      default: el.style.background = '#333'; el.style.color = '#fff'; break;
-    }
 
-    container.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+function afficherBulle(message, typeBulle){
 
-    setTimeout(() => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-8px)';
-      el.addEventListener('transitionend', () => el.remove());
-    }, 3000);
-  }
+  if(window.parent === window){
 
-  // format date
-  function formatDate(date) {
-    const pad = n => n.toString().padStart(2, '0');
-    const jour = pad(date.getDate());
-    const mois = pad(date.getMonth() + 1);
-    const annee = date.getFullYear();
-    const heures = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const secondes = pad(date.getSeconds());
-    return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
-  }
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
 
-  // ========== Validation & enregistrement (documents) ==========
-  async function validerCertificat() {
-  const nom = document.getElementById('nom').value.trim();
-  const prenom = document.getElementById('prenom').value.trim();
-
-  if (!nom || !prenom) {
-    afficherBulle("Veuillez remplir nom et prénom", "warning");
     return;
+
   }
 
-  // génère pdf base64
-  const pdfBase64 = await genererCertif(false);
+  window.parent.postMessage(
 
-  // création du contenu texte depuis cases cochées
-  const conds = [
-    { id: 'condition1', inputId: 'input1', label: "Aptitude scolaire :", suffix: "" },
-    { id: 'condition2', inputId: 'input2', label: "Aptitude sportive :", suffix: "" },
-    { id: 'condition3', inputId: 'input3', label: "Dispense de sport :", suffix: " jour(s)" },
-    { id: 'condition4', inputId: 'input4', label: "Absence scolaire/professionnelle :", suffix: " jour(s)" }
-  ];
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
 
-  let contenuTextuel = [];
+    ORIGINE_PARENT_BULLE
 
-  conds.forEach(c => {
-    const cb = document.getElementById(c.id);
-    if (cb && cb.checked) {
-      const v = (document.getElementById(c.inputId)?.value || "").trim();
-      contenuTextuel.push(`${c.label} ${v}${c.suffix}`);
-    }
-  });
+  );
 
-  const contenuFinal = contenuTextuel.join("\n");
-
-  try {
-    const idUnique = Math.random().toString(36).substring(2,10);
-    const dateFormatted = formatDate(new Date());
-    const fileName = `Certificat - ${prenom} ${nom}.pdf`;
-
-    if (!patientId) {
-      afficherBulle("Erreur : aucun patientId reçu", "alerte");
-      return;
-    }
-
-    window.pdfIdExistante = idUnique;
-
-    // ✅ Firestore v10
-    await setDoc(doc(db, "documents", idUnique), {
-      patientId: patientId,
-      nomFichier: fileName,
-      dateCreation: dateFormatted,
-      type: "Certificat médical",
-      contenu: contenuFinal,
-      pdfBase64: pdfBase64
-    });
-
-    afficherBulle("✅ Certificat enregistré !", "success");
-
-  } catch (err) {
-    console.error("Erreur enregistrement certificat :", err);
-    afficherBulle("❌ Erreur enregistrement", "alerte");
-    return;
-  }
-
-  // blocage du formulaire
-  const allInputs = document.querySelectorAll("input, textarea, select, button");
-  allInputs.forEach(el => {
-    if (!el.closest("#postValidationActions") && !el.closest("#emailSelectModal")) {
-      el.disabled = true;
-    }
-  });
-
-  const btnInitial = document.getElementById("btnGenererInitial");
-  if (btnInitial) btnInitial.style.display = "none";
-
-  document.getElementById("postValidationActions").style.display = "block";
 }
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 window.validerCertificat=validerCertificat;
 
   // ========== Envoi par email (pattern Ordonnancier) ==========

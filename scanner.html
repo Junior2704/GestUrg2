@@ -856,34 +856,50 @@ if ($('presetAbdo')) $('presetAbdo').addEventListener('click', ()=>{
 });
  
 
-   function afficherBulle(texte, type) {
-    let container = document.getElementById('bubble-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'bubble-container';
-      document.body.appendChild(container);
-    }
-    const bulle = document.createElement('div');
-    bulle.className = `bubble ${type}`;
-    bulle.textContent = texte;
-    container.appendChild(bulle);
-    setTimeout(() => {
-      bulle.remove();
-    }, 3000);
-  } 
+   const ORIGINE_PARENT_BULLE = "*";
 
-    // Presets
-    
-    if ($('centerPatient')) $('centerPatient').addEventListener('click', ()=>{
-  log('Patient centré');
-		animateTo(height, 0);
-  animateTo(lateral, 0);
-  animateTo(long, 0);
-  
-  if (collimation) collimation.value = 0;
-  if (kv) kv.value = 0;
-  if (ma) ma.value = 0;
-});
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
+  }
+
+  window.parent.postMessage(
+
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
+
+    ORIGINE_PARENT_BULLE
+
+  );
+
+}
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+}););
 
 if ($('park')) $('park').addEventListener('click', ()=>{
   log('Table parquée');

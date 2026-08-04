@@ -29,7 +29,6 @@ const firebaseConfig = {
   measurementId: "G-C74MK2KYDL"
 };
 
-const app=initializeApp(firebaseConfig);
 
 
 /* ==================================================================

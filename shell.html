@@ -1898,6 +1898,68 @@ const snap = await getDoc(doc(db, "medecins", user.uid));
     }, "*");
   });
 });
+let notificationContainer = document.getElementById('notification-container');
+if (!notificationContainer) {
+  notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.style.position = 'fixed';
+  notificationContainer.style.top = '12px';
+  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.display = 'flex';
+  notificationContainer.style.flexDirection = 'column';
+  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.zIndex = 9999;
+  document.body.appendChild(notificationContainer);
+}
+function afficherBulle(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '8px';
+  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = '500';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  el.style.transform = 'translateY(-10px)';
+
+  // --- Code couleur selon type ---
+  switch (type) {
+    case 'success':
+      el.style.background = '#e6ffed'; // vert clair
+      el.style.color = '#064e22';      // texte vert foncé
+      break;
+    case 'error':
+      el.style.background = '#ffdede'; // rouge clair
+      el.style.color = '#a00';         // texte rouge foncé
+      break;
+    case 'warning':
+      el.style.background = '#fff4e5'; // orange clair
+      el.style.color = '#663c00';      // texte orange foncé
+      break;
+    default: // info ou autre
+      el.style.background = '#333';    // gris foncé
+      el.style.color = '#fff';         // texte blanc
+      break;
+  }
+
+  notificationContainer.appendChild(el);
+
+
+  // Animation d'entrée
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px)';
+    el.addEventListener('transitionend', () => el.remove());
+  }, 3000);
+}
+
 function appliquerDroits(pages) {
 
     document.querySelectorAll("[data-page]").forEach(element => {
@@ -2224,6 +2286,78 @@ window.addEventListener("load", () => {
     });
   }, 1000);
 });
+
+let totalNonLusConnu = null;
+
+
+function surveillerMessagesNonLus(){
+
+  onAuthStateChanged(auth, (user) => {
+
+    if(!user) return;
+
+    const q = query(
+      collection(db, "messageries"),
+      where("participants", "array-contains", user.uid)
+    );
+
+    onSnapshot(q, (snap) => {
+
+      let total = 0;
+
+      snap.forEach(docSnap => {
+
+        const c = docSnap.data();
+
+        const n = (c.nonLus && c.nonLus[user.uid]) ? c.nonLus[user.uid] : 0;
+
+        total += n;
+
+      });
+
+
+      const premierChargement = (totalNonLusConnu === null);
+
+
+      if(premierChargement){
+
+        if(total > 0){
+
+          afficherBulle(
+            total > 1 ?
+              `🔔 Vous avez ${total} messages non lus.` :
+              "🔔 Vous avez 1 message non lu.",
+            "default"
+          );
+
+        }
+
+      }else if(total > totalNonLusConnu){
+
+        const nouveaux = total - totalNonLusConnu;
+
+        afficherBulle(
+          nouveaux > 1 ?
+            `🔔 Vous avez reçu ${nouveaux} nouveaux messages.` :
+            "🔔 Vous avez reçu un nouveau message.",
+          "default"
+        );
+
+      }
+
+
+      totalNonLusConnu = total;
+
+
+    });
+
+  });
+
+}
+
+
+surveillerMessagesNonLus();
+
 </script>
 
 </body>

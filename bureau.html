@@ -434,6 +434,9 @@ import {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  let medecinNom = "";
+  let medecinSpecialite = "";
+  let medecinLieu = "";
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     return;
@@ -470,9 +473,10 @@ onAuthStateChanged(auth, async (user) => {
 
         if (!pages[currentPage]) {
 const modal = document.getElementById("modal-no-access");
-          if (modal) ;
+          if (modal) {
           modal.style.display = "flex";       
           console.warn("Accès refusé à", currentPage);
+          }
         }
       } else {
         // Document inexistant — redirection
@@ -522,9 +526,9 @@ function showAccueil(){
 
 
 function initBureauxListener(){
-  db.collection("referentiels")
-    .doc("bureau")
-    .onSnapshot(docSnap=>{
+  onSnapshot(
+  doc(db,"referentiels","bureau"),
+  (docSnap)=>{
       bureauSelect.innerHTML = "";
 
       if(!docSnap.exists) return;
@@ -557,9 +561,12 @@ async function updateAttenteStats() {
   const totalDiv = document.querySelector(".attente-total");
   const typesDiv = document.getElementById("attenteParType");
 
-  const snap = await db.collection("accueil-1")
-    .where("statut", "==", "attente")
-    .get();
+ const snap = await getDocs(
+  query(
+    collection(db,"accueil-1"),
+    where("statut","==","attente")
+  )
+);
 
   // Total
   totalDiv.textContent = `⏳ Patients en attente : ${snap.size}`;
@@ -586,12 +593,15 @@ async function updateAttenteStats() {
     typesDiv.appendChild(pill);
   }
 }
-db.collection("accueil-1")
-  .where("statut", "==", "attente")
-  .onSnapshot(() => {
+onSnapshot(
+  query(
+    collection(db,"accueil-1"),
+    where("statut","==","attente")
+  ),
+  ()=>{
     updateAttenteStats();
-  });
-
+  }
+);
 
 
 
@@ -641,72 +651,144 @@ function applyParams(){
 
 // ================= FILTRAGE DANS APPELER TICKET =================
 async function appelerTicket(){
-  const snap = await db.collection("accueil-1")
-    .where("statut","==","attente")
-    .orderBy("dateArriveeClient")
-    .get(); // on prend tous les tickets en attente
+
+  const snap = await getDocs(
+    query(
+      collection(db,"accueil-1"),
+      where("statut","==" ,"attente")
+    )
+  );
+
 
   if(snap.empty){
     afficher("Aucun patient en attente",false);
     return;
   }
 
-  // Filtrer selon paramètres
-  let doc = null;
-  for(const d of snap.docs){
-    const data = d.data();
-    const motif = data.motif || "";
-    const circuit = data.circuit || "";
-    
-    const motifOk = filterMotifs.size === 0 || filterMotifs.has(motif);
-    const circuitOk = filterCircuits.size === 0 || filterCircuits.has(circuit);
-    
+
+  let docChoisi=null;
+
+
+  const docs=[
+    ...snap.docs
+  ].sort((a,b)=>{
+
+    const da=a.data().dateArriveeClient;
+    const db=b.data().dateArriveeClient;
+
+    return da.seconds-db.seconds;
+  });
+
+
+
+  for(const d of docs){
+
+    const data=d.data();
+
+    const motifOk =
+      filterMotifs.size===0 ||
+      filterMotifs.has(data.motif);
+
+
+    const circuitOk =
+      filterCircuits.size===0 ||
+      filterCircuits.has(data.circuit);
+
+
+
     if(motifOk && circuitOk){
-      doc = d;
+      docChoisi=d;
       break;
     }
   }
 
-  if(!doc){
-    afficher("Aucun patient correspondant aux filtres", false);
+
+
+  if(!docChoisi){
+    afficher("Aucun patient correspondant aux filtres",false);
     return;
   }
 
-  // Suite de l'appel du ticket (inchangé)
-  const anciens = await db.collection("accueil-1")
-    .where("statut","==","appele")
-    
-    .get();
-  anciens.forEach(d=>d.ref.update({statut:"termine"}));
 
-  const data = doc.data();
-  await doc.ref.update({
-    statut: "appele",
-    bureau: bureauActuel,
-    dateAppel: firebase.firestore.FieldValue.serverTimestamp(),
-    afficheDepuis: firebase.firestore.FieldValue.serverTimestamp(),
-    motif: data.motif,
-    circuit: data.circuit,
-    dateArriveeClient: data.dateArrivee
-  });
 
-  numeroAffiche.innerText = "N° "+data.numero;
-  infosPatient.style.display = "block";
-  infoMotif.innerText = data.motif ? "📝 Motif : " + data.motif : "📝 Motif : —";
-  infoCircuit.innerText = data.circuit ? "🧭 Circuit : " + data.circuit : "🧭 Circuit : —";
+  const anciens = await getDocs(
+    query(
+      collection(db,"accueil-1"),
+      where("statut","==" ,"appele")
+    )
+  );
 
-  let attenteMs = null;
-  const dateArriveeClient = data.dateArriveeClient;
-  if(dateArriveeClient){
-    if(typeof dateArriveeClient.toMillis === "function") attenteMs = Date.now() - dateArriveeClient.toMillis();
-    else attenteMs = Date.now() - new Date(dateArriveeClient).getTime();
+
+  await Promise.all(
+    anciens.docs.map(d=>
+      updateDoc(d.ref,{
+        statut:"termine"
+      })
+    )
+  );
+
+
+
+  const data=docChoisi.data();
+
+
+
+  await updateDoc(
+    docChoisi.ref,
+    {
+      statut:"appele",
+      bureau:bureauActuel,
+      dateAppel:serverTimestamp(),
+      afficheDepuis:serverTimestamp()
+    }
+  );
+
+
+
+  numeroAffiche.innerText="N° "+data.numero;
+
+
+  infosPatient.style.display="block";
+
+
+  infoMotif.innerText =
+    data.motif ?
+    "📝 Motif : "+data.motif :
+    "📝 Motif : —";
+
+
+  infoCircuit.innerText =
+    data.circuit ?
+    "🧭 Circuit : "+data.circuit :
+    "🧭 Circuit : —";
+
+
+
+  let attenteMs=null;
+
+
+  const arrivee=data.dateArriveeClient;
+
+
+  if(arrivee){
+
+    if(typeof arrivee.toMillis==="function"){
+      attenteMs=
+        Date.now()-arrivee.toMillis();
+    }
   }
-  infoAttente.innerText = attenteMs !== null ? "⏱️ Attente : " + formatDuree(attenteMs) : "⏱️ Attente : —";
+
+
+
+  infoAttente.innerText =
+    attenteMs!==null ?
+    "⏱️ Attente : "+formatDuree(attenteMs):
+    "⏱️ Attente : —";
+
 
   afficher("Ticket appelé",true);
+
 }
-
-
 // ================= INITIALISATION =================
 initBureauxListener();
 function entrerPoste(){

@@ -548,13 +548,47 @@ Modifiable librement : ajouter / retirer des comptes
 depuis lesquels les messages peuvent être envoyés.
 */
 
-const COMPTES_ADMIN=[
+let COMPTES_ADMIN = [];
 
-{ id:"systeme", nom:"Système", icon:"⚙️" },
-{ id:"admin-medical", nom:"Administration médicale", icon:"🏥" },
-{ id:"rh", nom:"Ressources Humaines", icon:"🗂️" }
+async function chargerComptesAdmin() {
+  const user = auth.currentUser;
+  if (!user) return;
 
-];
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) return;
+
+  const pages = userSnap.data().pages || {};
+
+  COMPTES_ADMIN = [];
+
+  if (pages.msgsysteme === true) {
+    COMPTES_ADMIN.push({
+      id: "systeme",
+      nom: "Système",
+      icon: "⚙️"
+    });
+  }
+
+  if (pages.msgadminmed === true) {
+    COMPTES_ADMIN.push({
+      id: "admin-medical",
+      nom: "Administration médicale",
+      icon: "🏥"
+    });
+  }
+
+  if (pages.msgrh === true) {
+    COMPTES_ADMIN.push({
+      id: "rh",
+      nom: "Ressources Humaines",
+      icon: "🗂️"
+    });
+  }
+
+  console.log("Comptes autorisés :", COMPTES_ADMIN);
+}
 
 
 const comptesParId={};

@@ -338,6 +338,51 @@ button.secondaire{
 }
 
 
+.checkbox-row{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:14px;
+
+}
+
+
+.checkbox-row input{
+
+    width:auto;
+
+}
+
+
+.checkbox-row label{
+
+    margin:0;
+    font-weight:400;
+    color:#222;
+    font-size:14px;
+
+}
+
+
+.sous-options{
+
+    margin-top:10px;
+    padding:12px 14px;
+    background:#f7fafc;
+    border-radius:10px;
+    border:1px solid #eef1f4;
+
+}
+
+
+.sous-options label:first-child{
+
+    margin-top:0;
+
+}
+
+
 /* CARTES SONDAGES / HISTORIQUE */
 
 .carte{
@@ -808,6 +853,7 @@ ${TYPES_UTILISATEURS.map(t=>
 <div class="onglet" data-vue="vue-sondage">Créer un sondage</div>
 <div class="onglet" data-vue="vue-resultats">Sondages envoyés</div>
 <div class="onglet" data-vue="vue-historique">Historique des messages</div>
+<div class="onglet" data-vue="vue-demandes-reponse">Réponses reçues</div>
 
 </div>
 
@@ -820,6 +866,24 @@ ${TYPES_UTILISATEURS.map(t=>
 <label>Message à envoyer</label>
 
 <textarea id="message-input" placeholder="Votre message..."></textarea>
+
+<div class="checkbox-row">
+<input type="checkbox" id="demander-reponse"
+onchange="document.getElementById('options-demande-reponse').style.display=this.checked?'block':'none';">
+<label for="demander-reponse">Demander une réponse à ce message</label>
+</div>
+
+<div class="sous-options" id="options-demande-reponse" style="display:none;">
+
+<label>Nombre de caractères maximum (facultatif)</label>
+<input type="number" id="reponse-max-caracteres" min="1" placeholder="Laisser vide = pas de limite">
+
+<div class="checkbox-row">
+<input type="checkbox" id="reponse-modifiable" checked>
+<label for="reponse-modifiable">L'utilisateur peut modifier sa réponse après l'avoir envoyée</label>
+</div>
+
+</div>
 
 <button onclick="envoyerMessage()">Envoyer le message</button>
 
@@ -891,6 +955,14 @@ Choix multiple
 </div>
 
 
+
+<div class="vue" id="vue-demandes-reponse">
+
+<div id="liste-demandes-reponse"></div>
+
+</div>
+
+
 </div>
 
 
@@ -906,6 +978,8 @@ chargerUtilisateurs();
 chargerSondagesAdmin();
 
 chargerDiffusionsAdmin();
+
+chargerDemandesReponseAdmin();
 
 
 }
@@ -1265,6 +1339,55 @@ if(compte.length===0){
     afficherBulle("Sélectionnez un compte d'envoi", 'error')
 }
 
+
+const demanderReponse=
+document.getElementById("demander-reponse").checked;
+
+
+const maxCaracteresBrut=
+document.getElementById("reponse-max-caracteres").value;
+
+
+const maxCaracteres=
+maxCaracteresBrut ?
+parseInt(maxCaracteresBrut,10) :
+null;
+
+
+const reponseModifiable=
+document.getElementById("reponse-modifiable").checked;
+
+
+let demandeReponseId=null;
+
+
+if(demanderReponse){
+
+const demandeRef=
+await addDoc(
+
+collection(db,"demandes-reponse"),
+
+{
+
+texteConsigne:texte,
+compteId:compte.id,
+compteNom:compte.nom,
+maxCaracteres,
+modifiable:reponseModifiable,
+destinataires,
+reponses:{},
+createdAt:serverTimestamp()
+
+}
+
+);
+
+demandeReponseId=demandeRef.id;
+
+}
+
+
 const diffusionRef=
 await addDoc(
 
@@ -1301,6 +1424,7 @@ auteurNom:compte.nom,
 type:"message",
 texte,
 diffusionId:diffusionRef.id,
+...(demandeReponseId ? { demandeReponseId } : {}),
 date:serverTimestamp(),
 luPar:[]
 
@@ -1328,6 +1452,11 @@ updatedAt:serverTimestamp(),
 
 
 document.getElementById("message-input").value="";
+
+document.getElementById("demander-reponse").checked=false;
+document.getElementById("options-demande-reponse").style.display="none";
+document.getElementById("reponse-max-caracteres").value="";
+document.getElementById("reponse-modifiable").checked=true;
 
 
 afficherBulle(
@@ -1963,6 +2092,148 @@ ${detailHTML}
 
 
 zone.appendChild(div);
+
+
+});
+
+
+}
+
+
+
+
+/*
+===========================
+ONGLET : RÉPONSES REÇUES
+===========================
+*/
+
+
+function chargerDemandesReponseAdmin(){
+
+
+const q=query(
+
+collection(db,"demandes-reponse"),
+
+orderBy("createdAt","desc")
+
+);
+
+
+onSnapshot(q,(snap)=>{
+
+
+const zone=
+document.getElementById("liste-demandes-reponse");
+
+
+if(!zone)
+return;
+
+
+zone.innerHTML="";
+
+
+if(snap.empty){
+
+zone.innerHTML=
+`<div class="empty">Aucune demande de réponse envoyée pour le moment.</div>`;
+
+return;
+
+}
+
+
+snap.forEach(docSnap=>{
+
+
+const d=
+docSnap.data();
+
+
+const reponses=
+d.reponses || {};
+
+
+const destinataires=
+d.destinataires || [];
+
+
+const nbReponses=
+Object.keys(reponses).length;
+
+
+const detailHTML=
+
+destinataires
+
+.map(uid=>{
+
+const rep=
+reponses[uid];
+
+
+const dateTexte=
+rep?.date?.toDate ?
+rep.date.toDate().toLocaleString() :
+"";
+
+
+return `
+
+<div class="detail-ligne">
+
+<span>${nomUtilisateur(uid)}</span>
+
+<span>
+${rep ?
+(rep.texte + (dateTexte ? ` (${dateTexte})` : "")) :
+"En attente de réponse"}
+</span>
+
+</div>
+
+`;
+
+})
+
+.join("");
+
+
+const div=
+document.createElement("div");
+
+
+div.className="carte";
+
+
+div.innerHTML=`
+
+<div class="carte-header">
+
+<strong>${d.texteConsigne}</strong>
+
+<span class="carte-meta">
+${d.compteNom || ""} ·
+${d.maxCaracteres ? d.maxCaracteres+" car. max" : "sans limite"} ·
+${d.modifiable ? "modifiable" : "non modifiable"} ·
+${nbReponses}/${destinataires.length} réponses
+</span>
+
+</div>
+
+<div class="detail-votes actif">
+${detailHTML}
+</div>
+
+`;
+
+
+zone.appendChild(div);
+
+
+});
 
 
 });

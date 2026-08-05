@@ -398,6 +398,95 @@ button{
 
 }
 
+
+.zone-reponse{
+
+    margin-top:10px;
+
+}
+
+
+.reponse-donnee{
+
+    background:#f0f7ff;
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:13px;
+    margin-bottom:6px;
+
+}
+
+
+.reponse-label{
+
+    font-weight:600;
+    color:#0078d4;
+    margin-right:4px;
+
+}
+
+
+.reponse-note{
+
+    font-size:12px;
+    opacity:.7;
+
+}
+
+
+.lien-reponse{
+
+    background:none;
+    border:none;
+    color:#0078d4;
+    font-size:13px;
+    font-weight:600;
+    padding:0;
+    cursor:pointer;
+    text-decoration:underline;
+
+}
+
+
+.formulaire-reponse{
+
+    margin-top:8px;
+
+}
+
+
+.reponse-textarea{
+
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    resize:vertical;
+    min-height:70px;
+    font-family:Inter,sans-serif;
+    font-size:14px;
+
+}
+
+
+.compteur-caracteres{
+
+    font-size:11px;
+    color:#999;
+    text-align:right;
+    margin-top:2px;
+
+}
+
+
+.formulaire-reponse button{
+
+    margin-top:6px;
+    padding:8px 16px;
+    font-size:13px;
+
+}
+
 </style>
 
 </head>
@@ -808,10 +897,12 @@ onSnapshot(q,async(snap)=>{
 zone.innerHTML="";
 
 
-/* on repère d'abord les messages de type "sondage"
-   pour charger les documents "sondages" correspondants */
+/* on repère d'abord les messages de type "sondage",
+   ou portant une demande de réponse, pour charger les
+   documents correspondants */
 
 const idsSondages=[];
+const idsDemandesReponse=[];
 
 snap.forEach(m=>{
 
@@ -820,6 +911,12 @@ const msg=m.data();
 if(msg.type==="sondage" && msg.sondageId){
 
 idsSondages.push(msg.sondageId);
+
+}
+
+if(msg.demandeReponseId){
+
+idsDemandesReponse.push(msg.demandeReponseId);
 
 }
 
@@ -840,6 +937,28 @@ doc(db,"sondages",id)
 if(s.exists()){
 
 sondagesData[id]=s.data();
+
+}
+
+})
+
+);
+
+
+const demandesReponseData={};
+
+await Promise.all(
+
+idsDemandesReponse.map(async(id)=>{
+
+const d=
+await getDoc(
+doc(db,"demandes-reponse",id)
+);
+
+if(d.exists()){
+
+demandesReponseData[id]=d.data();
 
 }
 
@@ -888,6 +1007,23 @@ contenuHTML=
 
 
 
+let zoneReponseHTML="";
+
+if(
+msg.demandeReponseId &&
+demandesReponseData[msg.demandeReponseId]
+){
+
+zoneReponseHTML=
+creerZoneReponseHTML(
+demandesReponseData[msg.demandeReponseId],
+msg.demandeReponseId
+);
+
+}
+
+
+
 div.innerHTML=`
 
 <div class="author">
@@ -898,6 +1034,8 @@ ${msg.auteurNom || ""}
 
 
 ${contenuHTML}
+
+${zoneReponseHTML}
 
 
 <div class="date">
@@ -1314,6 +1452,276 @@ document
 
 el.outerHTML=
 creerSondageHTML(sondage,sondageId);
+
+});
+
+
+}
+
+
+
+/*
+===========================
+DEMANDES DE RÉPONSE
+===========================
+*/
+
+
+function echapperHTML(texte){
+
+
+const div=
+document.createElement("div");
+
+div.textContent=
+texte || "";
+
+return div.innerHTML;
+
+
+}
+
+
+
+function creerZoneReponseHTML(demande,demandeId){
+
+
+const reponses=
+demande.reponses || {};
+
+
+const dejaRepondu=
+!!utilisateur &&
+Object.prototype.hasOwnProperty.call(
+reponses,
+utilisateur.uid
+);
+
+
+const monTexte=
+dejaRepondu ?
+(reponses[utilisateur.uid].texte || "") :
+"";
+
+
+const maxAttr=
+demande.maxCaracteres ?
+`maxlength="${demande.maxCaracteres}"` :
+"";
+
+
+const compteurHTML=
+demande.maxCaracteres ?
+`<div class="compteur-caracteres" data-max="${demande.maxCaracteres}">${monTexte.length}/${demande.maxCaracteres}</div>` :
+"";
+
+
+const formulaireHTML=`
+
+<div class="formulaire-reponse" style="display:none;">
+
+<textarea class="reponse-textarea" ${maxAttr}
+oninput="miseAJourCompteurReponse(this)">${echapperHTML(monTexte)}</textarea>
+
+${compteurHTML}
+
+<button type="button"
+onclick="envoyerReponse('${demandeId}')">
+Envoyer la réponse
+</button>
+
+</div>
+
+`;
+
+
+
+if(dejaRepondu){
+
+
+const peutModifier=
+demande.modifiable===true;
+
+
+return `
+
+<div class="zone-reponse" data-demande-id="${demandeId}">
+
+<div class="reponse-donnee">
+<span class="reponse-label">Votre réponse :</span>
+${echapperHTML(monTexte)}
+</div>
+
+${peutModifier ?
+`<button type="button" class="lien-reponse"
+onclick="basculerFormulaireReponse('${demandeId}')">
+Modifier ma réponse
+</button>` :
+`<div class="reponse-note">Réponse enregistrée, non modifiable.</div>`
+}
+
+${formulaireHTML}
+
+</div>
+
+`;
+
+
+}
+
+
+
+return `
+
+<div class="zone-reponse" data-demande-id="${demandeId}">
+
+<button type="button" class="lien-reponse"
+onclick="basculerFormulaireReponse('${demandeId}')">
+Répondre
+</button>
+
+${formulaireHTML}
+
+</div>
+
+`;
+
+
+}
+
+
+
+window.miseAJourCompteurReponse=(textarea)=>{
+
+
+const zone=
+textarea.parentElement.querySelector(".compteur-caracteres");
+
+
+if(!zone)
+return;
+
+
+const max=
+zone.dataset.max;
+
+
+zone.textContent=
+`${textarea.value.length}/${max}`;
+
+
+};
+
+
+
+window.basculerFormulaireReponse=(demandeId)=>{
+
+
+const container=
+document.querySelector(
+`.zone-reponse[data-demande-id="${demandeId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const formulaire=
+container.querySelector(".formulaire-reponse");
+
+
+formulaire.style.display=
+(formulaire.style.display==="none") ?
+"block" :
+"none";
+
+
+};
+
+
+
+window.envoyerReponse=async(demandeId)=>{
+
+
+if(!utilisateur)
+return;
+
+
+const container=
+document.querySelector(
+`.zone-reponse[data-demande-id="${demandeId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const textarea=
+container.querySelector(".reponse-textarea");
+
+
+const texte=
+textarea.value.trim();
+
+
+if(!texte){
+alert("Veuillez saisir une réponse avant d'envoyer.");
+return;
+}
+
+
+await updateDoc(
+
+doc(db,"demandes-reponse",demandeId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+{
+
+texte,
+date:
+serverTimestamp()
+
+}
+
+}
+
+);
+
+
+await rafraichirZoneReponse(demandeId);
+
+
+};
+
+
+
+async function rafraichirZoneReponse(demandeId){
+
+
+const snap=
+await getDoc(
+doc(db,"demandes-reponse",demandeId)
+);
+
+
+if(!snap.exists())
+return;
+
+
+const demande=
+snap.data();
+
+
+document
+.querySelectorAll(`.zone-reponse[data-demande-id="${demandeId}"]`)
+.forEach(el=>{
+
+el.outerHTML=
+creerZoneReponseHTML(demande,demandeId);
 
 });
 

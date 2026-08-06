@@ -2572,6 +2572,12 @@ z-index: 3000;
 
   <h3>📜 Historique</h3>
 
+  <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+    <button type="button" id="btnHistoriqueComplet" onclick="window.open('historique.html?id=' + encodeURIComponent(patientId), '_blank')">
+      🕘 Historique complet du patient (export PDF)
+    </button>
+  </div>
+
   <!-- 🔍 Recherche dans l’historique -->
   <input
     type="text"
@@ -3215,6 +3221,7 @@ const API_BASE =
    let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
+  let medecinType = "";
   const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
 
@@ -3234,11 +3241,14 @@ onAuthStateChanged(auth, async (user) => {
         medecinNom = data.nom || "";
         medecinSpecialite = data.specialite || "";
         medecinLieu = data.lieu || "";
+        medecinType = data.type || "";
 
         // Met à jour aussi les variables globales sur window
         window.medecinNom = medecinNom;
         window.medecinSpecialite = medecinSpecialite;
         window.medecinLieu = medecinLieu;
+        window.medecinType = medecinType;
+        window.medecinUid = user.uid;
 
         // Mise à jour des éléments HTML si présents
         const nomElem = document.getElementById("nom-medecin");
@@ -3436,6 +3446,10 @@ async function sauvegarderAdmissionPDC() {
     });
 
     console.log("Statut PDC mis à jour :", pdcValue);
+    ajouterEntreeHistorique(`Modification du statut PEC : ${pdcValue || "—"}`, {
+      hospitalisationId,
+      silencieux: true
+    });
 
   } catch (err) {
     console.error("Erreur enregistrement PDC :", err);
@@ -3810,18 +3824,21 @@ document.getElementById("allergies").addEventListener("change", async () => {
   const value = document.getElementById("allergies").value.trim() || "aucun";
   await updateDoc(patientRef, { allergies: value });
   afficherBulle("💾 Allergies enregistrées", "success");
+  ajouterEntreeHistorique(`Modification des allergies : ${value}`, { silencieux: true });
 });
 
 document.getElementById("vigilances").addEventListener("change", async () => {
   const value = document.getElementById("vigilances").value.trim() || "aucun";
   await updateDoc(patientRef, { vigilances: value });
   afficherBulle("💾 Vigilances enregistrées", "success");
+  ajouterEntreeHistorique(`Modification des vigilances : ${value}`, { silencieux: true });
 });
 
 document.getElementById("medtraitant").addEventListener("change", async () => {
   const value = document.getElementById("medtraitant").value.trim() || "";
   await updateDoc(patientRef, { medtraitant: value });
   afficherBulle("💾 Medecin(s) traitant(s) enregistré(s)", "success");
+  ajouterEntreeHistorique(`Modification du médecin traitant : ${value || "—"}`, { silencieux: true });
 });
 
 // Switch allergie(s) importantes
@@ -3833,6 +3850,10 @@ document.getElementById("importanceAllergies").addEventListener("change", async 
       ? "🚨 Allergie(s) importantes activée(s)"
       : "✅ Pas d’allergie majeure",
     "default"
+  );
+  ajouterEntreeHistorique(
+    isImportant ? "Activation du signalement allergie(s) importantes" : "Désactivation du signalement allergie(s) importantes",
+    { silencieux: true }
   );
 });
 
@@ -3862,7 +3883,22 @@ async function updateHospitalisationField(field, value) {
     const hospiRef = doc(db, "hospitalisations", hospitalisationId);
     await updateDoc(hospiRef, { [field]: value });
 
-    ajouterEntreeHistorique(`Modification de ${field} : ${value}`);
+    // Libellés lisibles pour l'historique
+    const libellesChamps = {
+      gravite: "Gravité",
+      motif: "Motif d'entrée",
+      moyen: "Moyen d'entrée",
+      circuit: "Circuit particulier",
+      positionPatient: "Position du patient",
+      dossierMedical: "Dossier médical (IAO/antécédents/traitements/histoire/auscultation)",
+      evolution: "Évolution aux urgences"
+    };
+    const libelle = libellesChamps[field] || field;
+    const resume = (value !== null && typeof value === "object")
+      ? "mis à jour"
+      : `: ${value}`;
+
+    ajouterEntreeHistorique(`Modification de ${libelle} ${resume}`, { hospitalisationId, silencieux: true });
 
   } catch (err) {
     console.error(`Erreur mise à jour ${field} :`, err);
@@ -4078,17 +4114,110 @@ document.querySelectorAll('input[name="positionPatient"]').forEach(radio => {
   });
 });
 
-async function ajouterEntreeHistorique(texte) {
-  const date = new Date().toLocaleString();
-  const entree = { date, texte };
-
+/**
+ * ajouterEntreeHistorique
+ * ------------------------------------------------------------------
+ * Fonction 100% autonome permettant de tracer une action dans
+ * l'historique de l'hospitalisation en cours.
+ *
+ * Elle se charge elle-même de :
+ *  - retrouver le patient et son hospitalisation active (ou une
+ *    hospitalisation précise si l'id est fourni),
+ *  - construire l'entrée d'historique (date, heure, action, auteur,
+ *    type/rôle de l'auteur),
+ *  - écrire cette entrée dans Firestore (champ "historique" du
+ *    document hospitalisation) de façon atomique via arrayUnion.
+ *
+ * Elle peut donc être appelée depuis n'importe quel endroit du code,
+ * dès qu'une action doit être tracée (modification des informations
+ * personnelles, des antécédents, de l'équipe référente, des examens,
+ * clôture de l'hospitalisation, etc.), sans avoir à re-fournir de
+ * contexte particulier.
+ *
+ * @param {string} action - Description de l'action effectuée
+ *                           (ex : "Modification des antécédents").
+ * @param {Object} [options]
+ * @param {string} [options.patientId] - Id patient à utiliser si
+ *                           différent du patient courant.
+ * @param {string} [options.hospitalisationId] - Id de l'hospitalisation
+ *                           ciblée si différente de l'hospitalisation
+ *                           active (utile par ex. juste avant une
+ *                           clôture, quand l'id actif va être effacé).
+ * @param {boolean} [options.silencieux] - Si true, n'affiche aucune
+ *                           bulle d'erreur en cas d'échec.
+ */
+async function ajouterEntreeHistorique(action, options = {}) {
   try {
-   
+    if (!action || typeof action !== "string") return null;
+
+    // 1️⃣ Identifiant du patient concerné
+    const pid = options.patientId || window.patientId || patientId;
+    if (!pid) {
+      console.warn("ajouterEntreeHistorique : patientId introuvable");
+      return null;
+    }
+
+    // 2️⃣ Détermination de l'hospitalisation cible
+    let hospitalisationId = options.hospitalisationId || null;
+
+    if (!hospitalisationId) {
+      const pRef = doc(db, "patients", pid);
+      const pSnap = await getDoc(pRef);
+
+      if (!pSnap.exists()) {
+        console.warn("ajouterEntreeHistorique : patient introuvable");
+        return null;
+      }
+
+      const pData = pSnap.data();
+      hospitalisationId =
+        pData.hospitalisationActiveId ||
+        (Array.isArray(pData.hospitalisations)
+          ? pData.hospitalisations.slice(-1)[0]
+          : null);
+    }
+
+    if (!hospitalisationId) {
+      console.warn("ajouterEntreeHistorique : aucune hospitalisation trouvée pour tracer l'action");
+      return null;
+    }
+
+    // 3️⃣ Construction de l'entrée d'historique
+    const maintenant = new Date();
+    const utilisateur = (typeof auth !== "undefined") ? auth.currentUser : null;
+
+    const entree = {
+      horodatage: Timestamp.now(),
+      date: maintenant.toLocaleDateString("fr-FR"),
+      heure: maintenant.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }),
+      action: action,
+      auteurNom: window.medecinNom || "Utilisateur inconnu",
+      auteurType: window.medecinType || "Non renseigné",
+      auteurSpecialite: window.medecinSpecialite || "",
+      auteurId: (utilisateur && utilisateur.uid) || window.medecinUid || ""
+    };
+
+    // 4️⃣ Écriture atomique et autonome dans Firestore
+    const hospiRef = doc(db, "hospitalisations", hospitalisationId);
+    await updateDoc(hospiRef, {
+      historique: arrayUnion(entree)
+    });
+
+    return entree;
 
   } catch (error) {
     console.error("Erreur ajout historique :", error);
+    if (!options.silencieux && typeof afficherBulle === "function") {
+      afficherBulle("⚠️ L'action n'a pas pu être tracée dans l'historique", "warning");
+    }
+    return null;
   }
 }
+window.ajouterEntreeHistorique = ajouterEntreeHistorique;
 
 
 
@@ -4268,6 +4397,12 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
     // 6️⃣ UI feedback
     modalExamen.style.display = "none";
     afficherBulle("✔️ Examens enregistrés", "success");
+
+    const typesExamens = examensSelectionnes.map(ex => ex.type).join(", ");
+    ajouterEntreeHistorique(`Demande d'examen(s) : ${typesExamens}`, {
+      hospitalisationId,
+      silencieux: true
+    });
     reinitialiserFormulaireExamen();
     chargerExamens(); // Recharge les examens depuis Firestore
 
@@ -4516,11 +4651,8 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
         const now = new Date().toLocaleString();
 
         // 4️⃣ Mettre à jour l'hospitalisation
-        const historique = hospiData.historique || [];
-        historique.push({ date: now, texte: "Hospitalisation clôturée" });
         await updateDoc(hospiRef, {
           dateFin: now,
-          historique,
           signature: signature,
             signatureStatut: signatureData?.refusSignature
     ? "Refus de signer"
@@ -4530,6 +4662,12 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
       ? "Patient : refus de signer."
       : "Document signé par le patient."
   }`
+        });
+
+        // Traçage de la clôture AVANT que l'hospitalisation active ne soit effacée du patient
+        await ajouterEntreeHistorique("Hospitalisation clôturée", {
+          hospitalisationId,
+          silencieux: true
         });
 
         // 🔄 Mise à jour automatique du statut PDC sur le patient
@@ -5171,6 +5309,8 @@ if(examen?.realise){
   );
   return;
 }
+    const typeExamenSupprime = examen?.type || "inconnu";
+
     examens.splice(currentExamenIndex, 1);
 
     await updateDoc(hospiRef, {
@@ -5183,6 +5323,11 @@ if(examen?.realise){
       "✔️ Demande d'examen annulée",
       "success"
     );
+
+    ajouterEntreeHistorique(`Annulation de la demande d'examen : ${typeExamenSupprime}`, {
+      hospitalisationId: hospiId,
+      silencieux: true
+    });
 
     chargerExamens();
 
@@ -5445,6 +5590,11 @@ async function saveEquipe(roleKey, equipeData) {
     };
     tx.update(hospiRef, hospitalisationUpdate);
   });
+
+  ajouterEntreeHistorique(`Affectation équipe (${roleKey}) : ${equipeData?.nom || "—"}`, {
+    hospitalisationId: hospiRef.id,
+    silencieux: true
+  });
 }
 
 // ❌ SUPPRESSION ÉQUIPE
@@ -5459,6 +5609,11 @@ async function removeEquipe(roleKey) {
       delete data.equipe[roleKey];
       tx.update(hospiRef, { equipe: data.equipe });
     }
+  });
+
+  ajouterEntreeHistorique(`Suppression du membre d'équipe (${roleKey})`, {
+    hospitalisationId: hospiRef.id,
+    silencieux: true
   });
 }
 
@@ -5664,6 +5819,8 @@ window.enregistrerVerificationIdentite = async function () {
       "✅ Vérification enregistrée",
       "success"
     );
+
+    ajouterEntreeHistorique(`Vérification d'identité effectuée (pièce : ${typePiece})`, { silencieux: true });
 
   } catch (err) {
 

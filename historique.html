@@ -323,14 +323,13 @@
 </style>
 </head>
 <body>
-<!--
+
   <header class="page-header no-print">
     <h1>📜 Historique complet du patient</h1>
     <div class="toolbar">
-      <button type="button" class="secondaire" id="btnRetour">⬅️ Retour à la fiche</button>
+      <button type="button" class="secondaire" style = "display:none;" id="btnRetour">⬅️ Retour à la fiche</button>
     </div>
   </header>
--->
 
   <div class="card no-print" id="barreExport" style="display:none;">
     <h3 style="margin-top:0;">📥 Export PDF d'une hospitalisation</h3>
@@ -346,6 +345,7 @@
       L'export ne concerne que l'hospitalisation sélectionnée ci-dessus (avec rappel de l'identité du patient en en-tête).
     </div>
   </div>
+
   <input
     type="text"
     id="rechercheGlobale"
@@ -358,8 +358,8 @@
   <div id="erreurChargement"></div>
 
   <div id="contenuHistorique" style="display:none;">
-     
-    <section id="identitePatient" class="card" style="display:none;"></section>
+    <!-- Bloc identité patient : rappel permanent -->
+    <section id="identitePatient" style = "display:none;" class="card"></section>
 
     <!-- Liste des hospitalisations -->
     <div id="listeHospitalisations"></div>
@@ -399,6 +399,10 @@ const elListe = document.getElementById("listeHospitalisations");
 const elRecherche = document.getElementById("rechercheGlobale");
 const elBarreExport = document.getElementById("barreExport");
 const elSelectHospiExport = document.getElementById("selectHospiExport");
+
+let hospitalisationsData = [];
+let patientDataGlobal = null;
+let tousLesDocumentsGlobal = [];
 
 // Identité du médecin connecté (pour la signature du PDF exporté)
 onAuthStateChanged(auth, async (user) => {
@@ -611,9 +615,7 @@ function rendreDocumentsListe(docs) {
 function rendreHospitalisation(hospi, numero, estActive, documents) {
   const date = hospi.dateDebut || "Date inconnue";
   const datef = hospi.dateFin || (estActive ? "En cours" : "Date inconnue");
-  const motif = hospi.motif || "Aucun motif d'hospitalisation renseigné";
-  const moyen = hospi.moyen || "Aucun moyen d'entrée renseigné"
-  
+  const motif = hospi.motif || "—";
   const gravite = hospi.gravite || "—";
   const evolution = hospi.evolution || "Aucune évolution enregistrée.";
   const dossier = hospi.dossierMedical || {};
@@ -629,8 +631,6 @@ function rendreHospitalisation(hospi, numero, estActive, documents) {
   parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${echapper(date)}</div>`);
   parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${echapper(datef)}</div>`);
   parts.push(`<div class="entry"><strong>Motif :</strong> ${echapper(motif)}</div>`);
-    parts.push(`<div class="entry"><strong>Moyen d'entrée :</strong> ${echapper(moyen)}</div>`);
-
   parts.push(`<div class="entry"><strong>Gravité :</strong> ${echapper(gravite)}</div>`);
   if (hospi.pdcStatut) parts.push(`<div class="entry"><strong>Statut PEC :</strong> ${echapper(hospi.pdcStatut)}</div>`);
 
@@ -735,6 +735,43 @@ function rendreHospitalisation(hospi, numero, estActive, documents) {
   return card;
 }
 
+function parseDateSouple(str) {
+  if (!str) return null;
+  str = String(str).trim();
+  // format "JJ/MM/AAAA[, ]HH:MM(:SS)?" (fr-FR)
+  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    const [, d, mo, y, h, mi, s] = m;
+    return new Date(+y, +mo - 1, +d, +h, +mi, s ? +s : 0);
+  }
+  // format date seule JJ/MM/AAAA
+  m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return new Date(+y, +mo - 1, +d, 0, 0, 0);
+  }
+  // fallback : tout format reconnu nativement (ISO, etc.)
+  const d2 = new Date(str);
+  if (!isNaN(d2.getTime())) return d2;
+  return null;
+}
+
+function documentsDeLHospitalisation(tousLesDocuments, hospiId, hospi, estActive) {
+  const debut = parseDateSouple(hospi.dateDebut);
+  const fin = estActive ? new Date() : (parseDateSouple(hospi.dateFin) || new Date());
+
+  return tousLesDocuments.filter(d => {
+    // Rattachement explicite (documents créés après la mise à jour de docs.html)
+    if (d.hospitalisationId && d.hospitalisationId === hospiId) return true;
+    if (d.hospitalisationId && d.hospitalisationId !== hospiId) return false;
+
+    // Documents "legacy" sans hospitalisationId : rattachement par date de création
+    const dateDoc = parseDateSouple(d.dateCreation);
+    if (!dateDoc || !debut) return false;
+    return dateDoc >= debut && dateDoc <= fin;
+  });
+}
+
 async function chargerTout() {
   if (!patientId) {
     afficherErreur("Identifiant patient manquant dans l'URL (?id=...)");
@@ -753,7 +790,20 @@ async function chargerTout() {
     const patient = patientSnap.data();
     rendreIdentite(patient);
 
+    // Tous les documents du patient, répartis ensuite par hospitalisation
+    let tousLesDocuments = [];
+    try {
+      const docsSnap = await getDocs(query(collection(db, "documents"), where("patientId", "==", patientId)));
+      tousLesDocuments = docsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      tousLesDocumentsGlobal = tousLesDocuments;
+    } catch (e) {
+      console.error("Erreur chargement des documents :", e);
+    }
+
     const hospitalisationIds = Array.isArray(patient.hospitalisations) ? [...patient.hospitalisations] : [];
+
+    hospitalisationsData = [];
+    elSelectHospiExport.innerHTML = "";
 
     if (hospitalisationIds.length === 0) {
       elListe.innerHTML = "<p>Aucune hospitalisation enregistrée pour ce patient.</p>";
@@ -767,17 +817,33 @@ async function chargerTout() {
       for (let i = hospitalisationIds.length - 1; i >= 0; i--) {
         const snap = hospis[i];
         if (!snap.exists()) continue;
-        const estActive = hospitalisationIds[i] === patient.hospitalisationActiveId;
+        const hospiId = hospitalisationIds[i];
+        const hospiData = snap.data();
+        const estActive = hospiId === patient.hospitalisationActiveId;
         const numero = i + 1;
-        const card = rendreHospitalisation(snap.data(), numero, estActive);
+
+        const documentsHospi = documentsDeLHospitalisation(tousLesDocuments, hospiId, hospiData, estActive);
+
+        hospiData.__id = hospiId;
+        const card = rendreHospitalisation(hospiData, numero, estActive, documentsHospi);
         elListe.appendChild(card);
+
+        hospitalisationsData.push({ id: hospiId, data: hospiData, numero, estActive });
+
+        const option = document.createElement("option");
+        option.value = hospiId;
+        option.textContent = `Hospitalisation n°${numero} — ${hospiData.dateDebut || "date inconnue"}${estActive ? " (EN COURS)" : ""}`;
+        elSelectHospiExport.appendChild(option);
       }
     }
+
+    patientDataGlobal = patient;
 
     elEtat.style.display = "none";
     elContenu.style.display = "block";
     elRecherche.style.display = "block";
-elBarreExport.style.display = "block";
+    elBarreExport.style.display = hospitalisationsData.length > 0 ? "block" : "none";
+
   } catch (err) {
     console.error("Erreur chargement historique patient :", err);
     afficherErreur("Erreur lors du chargement de l'historique.");
@@ -793,17 +859,349 @@ elRecherche.addEventListener("input", () => {
   });
 });
 
-// --- Export PDF (impression), avec ou sans journal des modifications ---
-const chkInclure = document.getElementById("chkInclureHistorique");
-document.getElementById("btnExporterPDF").addEventListener("click", () => {
-  const inclure = chkInclure.checked;
-  document.body.classList.toggle("masquer-historique-export", !inclure);
-  window.print();
-});
-window.addEventListener("afterprint", () => {
-  document.body.classList.remove("masquer-historique-export");
+document.getElementById("btnRetour").addEventListener("click", () => {
+  window.location.href = patientId ? `fiche.html?id=${encodeURIComponent(patientId)}` : "index.html";
 });
 
+// =====================================================================
+//  EXPORT PDF D'UNE SEULE HOSPITALISATION (style calqué sur rapporthospitalisation.html)
+// =====================================================================
+
+function chargerLogoPourPdf() {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = "https://junior2704.github.io/GestUrg2/logo.png";
+  });
+}
+
+async function genererPdfHospitalisation(hospiId, inclureJournal) {
+  const entree = hospitalisationsData.find(h => h.id === hospiId);
+  if (!entree || !patientDataGlobal) {
+    alert("Hospitalisation introuvable pour l'export.");
+    return;
+  }
+  const { data: hospi, numero, estActive } = entree;
+  const patient = patientDataGlobal;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: "pt", format: "a4" });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const marginX = 40;
+  let y = 40;
+
+  const bleu = [26, 115, 232]; // #1a73e8
+
+  // ---- En-tête : logo + titre ----
+  const logo = await chargerLogoPourPdf();
+  if (logo) {
+    try { pdf.addImage(logo, "PNG", marginX, y, 46, 46); } catch (e) {}
+  }
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.setTextColor(...bleu);
+  pdf.text("Historique d'hospitalisation", marginX + (logo ? 58 : 0), y + 20);
+  pdf.setFontSize(11);
+  pdf.setTextColor(90, 90, 90);
+  pdf.text(`Hospitalisation n°${numero}${estActive ? " — EN COURS" : ""}`, marginX + (logo ? 58 : 0), y + 38);
+
+  y += 60;
+  pdf.setDrawColor(...bleu);
+  pdf.setLineWidth(1.2);
+  pdf.line(marginX, y, pageWidth - marginX, y);
+  y += 20;
+
+  // ---- Bloc identité patient (rappel permanent) ----
+  const age = calculerAge(patient.dateNaissance);
+  const identiteTexte =
+    `Nom : ${patient.nom || "—"}    Prénom : ${patient.prenom || "—"}    Sexe : ${patient.sexe || "—"}\n` +
+    `Date de naissance : ${patient.dateNaissance || "—"}${age !== null ? " (" + age + " ans)" : ""}    ID patient : ${patientId}\n` +
+    `Médecin traitant : ${patient.medtraitant || "—"}\n` +
+    `Allergies : ${patient.importanceAllergies ? "🚨 " : ""}${patient.allergies || "aucune"}    Vigilances : ${patient.vigilances || "aucune"}`;
+
+  y = addBlock(pdf, "Identité du patient", identiteTexte, y, marginX, pageWidth, bleu);
+
+  // ---- Hospitalisation ----
+  const hospitalisationTexte =
+    `Admission : ${hospi.dateDebut || "—"}    Sortie : ${hospi.dateFin || (estActive ? "En cours" : "—")}\n` +
+    `Motif : ${hospi.motif || "—"}\n` +
+    `Gravité : ${hospi.gravite || "—"}    Moyen d'entrée : ${hospi.moyen || "—"}    Circuit : ${hospi.circuit || "—"}\n` +
+    `Statut PEC : ${hospi.pdcStatut || "—"}`;
+  y = addBlock(pdf, "Hospitalisation", hospitalisationTexte, y, marginX, pageWidth, bleu);
+
+  // ---- Équipe référente ----
+  const equipe = hospi.equipe || {};
+  const equipeTexte =
+    `Médecin : ${equipe.medecinReferent?.nom || "—"}\n` +
+    `Infirmier(e) : ${equipe.infirmierReferent?.nom || "—"}\n` +
+    `Interne : ${equipe.interneReferent?.nom || "—"}\n` +
+    `Externe : ${equipe.externeReferent?.nom || "—"}`;
+  y = addBlock(pdf, "Équipe référente", equipeTexte, y, marginX, pageWidth, bleu);
+
+  // ---- Dossier médical ----
+  const dossier = hospi.dossierMedical || {};
+  const medicalTexte =
+    `Questionnaire IAO :\n${dossier.questionnaire || "—"}\n\n` +
+    `Antécédents :\n${dossier.antecedents || "—"}\n\n` +
+    `Traitements :\n${dossier.traitements || "—"}\n\n` +
+    `Histoire de la maladie :\n${dossier.histoire || "—"}\n\n` +
+    `CR Auscultation :\n${dossier.auscultation || "—"}`;
+  y = addBlock(pdf, "Dossier médical", medicalTexte, y, marginX, pageWidth, bleu);
+
+  // ---- Évolution ----
+  y = addBlock(pdf, "Évolution aux urgences", hospi.evolution || "Aucune évolution enregistrée.", y, marginX, pageWidth, bleu);
+
+  // ---- Constantes (table) ----
+  const constantes = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
+  y = addTitreSection(pdf, "Constantes vitales", y, marginX, pageWidth, bleu);
+  if (constantes.length > 0) {
+    const tries = [...constantes].sort((a, b) => `${a.date || ""} ${a.heure || ""}`.localeCompare(`${b.date || ""} ${b.heure || ""}`));
+    pdf.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [["Date", "Heure", "Temp", "FC", "TA", "Sat", "FR", "Douleur", "GCS", "Obs"]],
+      body: tries.map(r => [
+        r.date || "—", r.heure || "—", r.temperature || "—", r.fc || "—",
+        r.ta || "—", r.saturation || "—", r.fr || "—", r.douleur || "—",
+        r.glasgowTotal || "—", r.observation || "—"
+      ]),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: bleu, textColor: 255 },
+      theme: "grid"
+    });
+    y = pdf.lastAutoTable.finalY + 20;
+  } else {
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text("Aucune constante enregistrée.", marginX, y);
+    y += 24;
+  }
+
+  // ---- Examens ----
+  const examens = Array.isArray(hospi.examens) ? hospi.examens : [];
+  y = addTitreSection(pdf, "Examens complémentaires", y, marginX, pageWidth, bleu);
+  if (examens.length > 0) {
+    pdf.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [["Examen", "Statut", "Demandé le", "Commentaire"]],
+      body: examens.map(ex => [
+        ex.type || "—",
+        ex.realise ? "Réalisé" : "En attente",
+        ex.dateDemande || "—",
+        ex.commentaire || "—"
+      ]),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: bleu, textColor: 255 },
+      theme: "grid"
+    });
+    y = pdf.lastAutoTable.finalY + 20;
+  } else {
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text("Aucun examen demandé.", marginX, y);
+    y += 24;
+  }
+
+  // ---- Actes ----
+  const actes = Array.isArray(hospi.actes) ? hospi.actes : [];
+  y = addListeTable(pdf, "Actes réalisés", actes, "realise", "realiseAt", "realiseComment", y, marginX, pageWidth, bleu);
+
+  // ---- Médicaments ----
+  const meds = Array.isArray(hospi.meds) ? hospi.meds : [];
+  y = addListeTable(pdf, "Médicaments administrés aux urgences", meds, "pris", "takenAt", "takeComment", y, marginX, pageWidth, bleu);
+
+  // ---- Documents ----
+  const documentsHospi = documentsDeLHospitalisation(tousLesDocumentsGlobal, hospiId, hospi, estActive);
+  y = addTitreSection(pdf, "Documents", y, marginX, pageWidth, bleu);
+  if (documentsHospi.length > 0) {
+    pdf.autoTable({
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [["Type", "Date de création", "Créé par"]],
+      body: documentsHospi.map(d => [d.type || "Document", d.dateCreation || "—", d.creePar || "—"]),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: bleu, textColor: 255 },
+      theme: "grid"
+    });
+    y = pdf.lastAutoTable.finalY + 20;
+  } else {
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text("Aucun document rattaché à cette hospitalisation.", marginX, y);
+    y += 24;
+  }
+
+  // ---- Sortie ----
+  const sortie = hospi.sortie;
+  if (sortie) {
+    const sortieLignes = [`Type : ${sortie.type || "—"}`];
+    if (sortie.serviceHospitalisation) sortieLignes.push(`Service hospitalisation : ${sortie.serviceHospitalisation}`);
+    if (sortie.destinationTransfert) sortieLignes.push(`Destination transfert : ${sortie.destinationTransfert}`);
+    if (sortie.avisSpecialiste) sortieLignes.push(`Avis spécialiste : ${sortie.avisSpecialiste}`);
+    if (Array.isArray(sortie.options) && sortie.options.length > 0) sortieLignes.push(`Options : ${sortie.options.join(", ")}`);
+    if (sortie.traitementSortie) sortieLignes.push(`Traitement de sortie :\n${sortie.traitementSortie}`);
+    if (sortie.autreSortieTexte) sortieLignes.push(`Autre : ${sortie.autreSortieTexte}`);
+    if (sortie.autreOptionTexte) sortieLignes.push(`Autre option : ${sortie.autreOptionTexte}`);
+    y = addBlock(pdf, "Sortie", sortieLignes.join("\n"), y, marginX, pageWidth, bleu);
+  }
+
+  // ---- Rapport de clôture ----
+  const rapportTexte = formatRapport(hospi.rapport);
+  if (rapportTexte) {
+    y = addBlock(pdf, "Rapport de clôture", rapportTexte, y, marginX, pageWidth, bleu);
+  }
+
+  // ---- Journal des modifications (optionnel) ----
+  if (inclureJournal) {
+    const entrees = Array.isArray(hospi.historique) ? [...hospi.historique] : [];
+    entrees.sort((a, b) => {
+      const da = formatHorodatage(a), dbb = formatHorodatage(b);
+      if (da && dbb) return da - dbb;
+      return 0;
+    });
+    y = addTitreSection(pdf, "Journal des modifications", y, marginX, pageWidth, bleu);
+    if (entrees.length > 0) {
+      pdf.autoTable({
+        startY: y,
+        margin: { left: marginX, right: marginX },
+        head: [["Date / Heure", "Action", "Auteur", "Rôle"]],
+        body: entrees.map(e => {
+          const d = formatHorodatage(e);
+          const dateAffichee = d
+            ? d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            : `${e.date || ""} ${e.heure || ""}`.trim() || "—";
+          return [dateAffichee, e.action || e.texte || "—", e.auteurNom || "—", e.auteurType || e.auteurSpecialite || "—"];
+        }),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: bleu, textColor: 255 },
+        theme: "grid"
+      });
+      y = pdf.lastAutoTable.finalY + 20;
+    } else {
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(10);
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("Aucune modification enregistrée pour cette hospitalisation.", marginX, y);
+      y += 24;
+    }
+  }
+
+  // ---- Signature / pied de page ----
+  if (y > pdf.internal.pageSize.getHeight() - 80) {
+    pdf.addPage();
+    y = 40;
+  }
+  pdf.setDrawColor(220, 220, 220);
+  pdf.setLineWidth(0.6);
+  pdf.line(marginX, y, pageWidth - marginX, y);
+  y += 18;
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.setTextColor(120, 120, 120);
+  const auteurExport = window.medecinNom
+    ? `Document généré par ${window.medecinNom}${window.medecinType ? " (" + window.medecinType + ")" : ""} le ${new Date().toLocaleString("fr-FR")}`
+    : `Document généré le ${new Date().toLocaleString("fr-FR")}`;
+  pdf.text(auteurExport, marginX, y);
+
+  const nomFichier = `historique_hospitalisation_${numero}_${(patient.nom || "patient").replace(/\s+/g, "_")}.pdf`;
+  pdf.save(nomFichier);
+}
+
+// ---- Helpers de mise en page PDF (mêmes conventions que rapporthospitalisation.html) ----
+
+function addTitreSection(pdf, titre, y, marginX, pageWidth, bleu) {
+  if (y > pdf.internal.pageSize.getHeight() - 100) {
+    pdf.addPage();
+    y = 40;
+  }
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(13);
+  pdf.setTextColor(...bleu);
+  pdf.text(titre, marginX, y);
+  y += 8;
+  pdf.setDrawColor(...bleu);
+  pdf.setLineWidth(0.8);
+  pdf.line(marginX, y, pageWidth - marginX, y);
+  return y + 16;
+}
+
+function addBlock(pdf, titre, contenu, y, marginX, pageWidth, bleu) {
+  y = addTitreSection(pdf, titre, y, marginX, pageWidth, bleu);
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(40, 40, 40);
+
+  const maxWidth = pageWidth - marginX * 2;
+  const lignes = pdf.splitTextToSize(contenu || "—", maxWidth);
+
+  lignes.forEach(ligne => {
+    if (y > pdf.internal.pageSize.getHeight() - 60) {
+      pdf.addPage();
+      y = 40;
+    }
+    pdf.text(ligne, marginX, y);
+    y += 13;
+  });
+
+  return y + 14;
+}
+
+function addListeTable(pdf, titre, items, statutFait, champDateRealise, champCommentRealise, y, marginX, pageWidth, bleu) {
+  y = addTitreSection(pdf, titre, y, marginX, pageWidth, bleu);
+  if (!items || items.length === 0) {
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text("Aucune entrée enregistrée.", marginX, y);
+    return y + 24;
+  }
+  pdf.autoTable({
+    startY: y,
+    margin: { left: marginX, right: marginX },
+    head: [["Libellé", "Statut", "Demandé le", "Réalisé/Administré le", "Commentaire"]],
+    body: items.map(it => [
+      it.product || "—",
+      (it.status === statutFait) ? "Fait" : "En attente",
+      it.createdAt || "—",
+      it[champDateRealise] || "—",
+      it[champCommentRealise] || it.comment || "—"
+    ]),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: bleu, textColor: 255 },
+    theme: "grid"
+  });
+  return pdf.lastAutoTable.finalY + 20;
+}
+
+document.getElementById("btnExporterPDF").addEventListener("click", async () => {
+  const hospiId = elSelectHospiExport.value;
+  if (!hospiId) {
+    alert("Sélectionnez une hospitalisation à exporter.");
+    return;
+  }
+  const inclure = document.getElementById("chkInclureHistorique").checked;
+  const btn = document.getElementById("btnExporterPDF");
+  const texteOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Génération...";
+  try {
+    await genererPdfHospitalisation(hospiId, inclure);
+  } catch (e) {
+    console.error("Erreur génération PDF :", e);
+    alert("Une erreur est survenue lors de la génération du PDF.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = texteOriginal;
+  }
+});
 
 // L'accès aux données patient nécessite d'être authentifié (règles Firestore).
 onAuthStateChanged(auth, (user) => {

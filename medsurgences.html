@@ -1225,12 +1225,18 @@ async function deleteFromModal() {
     }
 
     // 🔹 Supprimer la demande
+    const medSupprime = meds[currentDetailId];
     meds.splice(currentDetailId, 1);
 
     // 🔹 Mettre à jour Firestore
     await updateDoc(hospiRef, { meds });
 
     afficherBulle("✔️ Demande supprimée", "success");
+
+    ajouterEntreeHistorique(`Suppression de la prescription : ${medSupprime?.product || "—"}`, {
+      hospitalisationId: hospiId,
+      silencieux: true
+    });
 
     closeDetails();
     loadHistory();
@@ -1306,6 +1312,12 @@ window.openTakeModal = (docId, name) => {
     await updateDoc(hospiRef, { meds });
 
     afficherBulle("✔️ Administration enregistrée");
+
+    ajouterEntreeHistorique(`Administration du médicament : ${meds[currentTakingDocId].product || "—"}`, {
+      hospitalisationId: hospiId,
+      silencieux: true
+    });
+
     loadHistory();
 
   } catch (err) {

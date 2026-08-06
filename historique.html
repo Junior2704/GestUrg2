@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Historique Patient</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
     --bleu: #0078d4;
@@ -222,6 +224,86 @@
     font-size: 0.9rem;
   }
 
+  /* ---- Sous-sections actes / médicaments / documents ---- */
+  .sous-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sous-item {
+    background: #f9f9f9;
+    border-left: 4px solid var(--bleu);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.92rem;
+  }
+  .sous-item.statut-ok { border-left-color: #2e7d32; }
+  .sous-item.statut-attente { border-left-color: #e08a00; }
+  .sous-item .sous-item-titre {
+    font-weight: 700;
+    color: #222;
+  }
+  .sous-item .sous-item-meta {
+    color: #666;
+    font-size: 0.82rem;
+    margin-top: 2px;
+  }
+  .badge-statut {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+  }
+  .badge-statut.ok { background: #cbf7d5; color: #146c2e; }
+  .badge-statut.attente { background: #fff3cd; color: #7a5600; }
+
+  .doc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9f9;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 0.92rem;
+  }
+  .doc-item button {
+    padding: 5px 10px;
+    font-size: 0.82rem;
+  }
+
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+  .mini-table th, .mini-table td {
+    border: 1px solid #e0e6ec;
+    padding: 5px 7px;
+    text-align: left;
+  }
+  .mini-table th {
+    background: #eef3fb;
+    color: var(--bleu-fonce);
+  }
+  .section-vide {
+    color: #888;
+    font-style: italic;
+    font-size: 0.88rem;
+  }
+
+  /* ---- Barre d'export d'une hospitalisation ---- */
+  #selectHospiExport {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--gris-bord);
+    font-size: 0.9rem;
+    background: white;
+  }
+
   #rechercheGlobale {
     width: 100%;
     padding: 10px;
@@ -238,32 +320,6 @@
   #erreurChargement { color: #c62828; display:none; }
 
   .no-print { }
-
-  /* =====================  IMPRESSION / EXPORT PDF ===================== */
-  @media print {
-    .no-print { display: none !important; }
-    body {
-      background: white;
-      padding: 0;
-      max-width: none;
-    }
-    .card {
-      box-shadow: none;
-      border: 1px solid #ddd;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    #identitePatient {
-      position: relative;
-    }
-    .hospi-card { page-break-inside: avoid; }
-    .journal-modifications { break-inside: avoid; }
-    a[href]:after { content: ""; }
-  }
-
-  body.masquer-historique-export .journal-modifications {
-    display: none !important;
-  }
 </style>
 </head>
 <body>
@@ -271,14 +327,24 @@
   <header class="page-header no-print">
     <h1>📜 Historique complet du patient</h1>
     <div class="toolbar">
-      <label class="checkbox-inline">
-        <input type="checkbox" id="chkInclureHistorique" checked>
-        Inclure le journal des modifications à l'export
-      </label>
       <button type="button" class="secondaire" id="btnRetour">⬅️ Retour à la fiche</button>
-      <button type="button" id="btnExporterPDF">🖨️ Exporter en PDF</button>
     </div>
   </header>
+
+  <div class="card no-print" id="barreExport" style="display:none;">
+    <h3 style="margin-top:0;">📥 Export PDF d'une hospitalisation</h3>
+    <div class="toolbar">
+      <select id="selectHospiExport"></select>
+      <label class="checkbox-inline">
+        <input type="checkbox" id="chkInclureHistorique" checked>
+        Inclure le journal des modifications
+      </label>
+      <button type="button" id="btnExporterPDF">📥 Télécharger le PDF</button>
+    </div>
+    <div class="muted" style="font-size:0.82rem;color:#777;margin-top:8px;">
+      L'export ne concerne que l'hospitalisation sélectionnée ci-dessus (avec rappel de l'identité du patient en en-tête).
+    </div>
+  </div>
 
   <input
     type="text"
@@ -292,7 +358,7 @@
   <div id="erreurChargement"></div>
 
   <div id="contenuHistorique" style="display:none;">
-    <!-- Bloc identité patient : rappel permanent, toujours inclus à l'export -->
+    <!-- Bloc identité patient : rappel permanent -->
     <section id="identitePatient" class="card"></section>
 
     <!-- Liste des hospitalisations -->
@@ -306,6 +372,10 @@ import {
   getFirestore,
   doc,
   getDoc,
+  collection,
+  getDocs,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -327,6 +397,24 @@ const elContenu = document.getElementById("contenuHistorique");
 const elIdentite = document.getElementById("identitePatient");
 const elListe = document.getElementById("listeHospitalisations");
 const elRecherche = document.getElementById("rechercheGlobale");
+const elBarreExport = document.getElementById("barreExport");
+const elSelectHospiExport = document.getElementById("selectHospiExport");
+
+// Identité du médecin connecté (pour la signature du PDF exporté)
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  try {
+    const docSnap = await getDoc(doc(db, "medecins", user.uid));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      window.medecinNom = data.nom || "";
+      window.medecinSpecialite = data.specialite || "";
+      window.medecinType = data.type || "";
+    }
+  } catch (e) {
+    console.error("Erreur chargement médecin :", e);
+  }
+});
 
 function afficherErreur(message) {
   elEtat.style.display = "none";
@@ -434,7 +522,93 @@ function rendreJournalModifications(historique) {
   `;
 }
 
-function rendreHospitalisation(hospi, numero, estActive) {
+function formatRapport(rapport) {
+  if (!rapport) return null;
+  if (typeof rapport === "string") return rapport;
+  if (typeof rapport === "object") {
+    const labels = {
+      identite: "Identité",
+      hospitalisation: "Hospitalisation",
+      medical: "Dossier médical",
+      evolution: "Évolution aux urgences",
+      constantes: "Constantes vitales",
+      examens: "Examens complémentaires",
+      actes: "Actes réalisés",
+      medicaments: "Médicaments administrés",
+      sortie: "Sortie"
+    };
+    return Object.entries(labels)
+      .filter(([cle]) => rapport[cle] && String(rapport[cle]).trim() !== "")
+      .map(([cle, lbl]) => `${lbl} :\n${rapport[cle]}`)
+      .join("\n\n");
+  }
+  return null;
+}
+
+function rendreListeActesOuMeds(items, verbeRealise, champComment, champDateRealise, champCommentRealise) {
+  if (!items || items.length === 0) {
+    return `<p class="section-vide">Aucune entrée enregistrée.</p>`;
+  }
+  return `<div class="sous-liste">` + items.map(it => {
+    const estFait = it.status === "realise" || it.status === "pris";
+    return `
+      <div class="sous-item ${estFait ? "statut-ok" : "statut-attente"}">
+        <div class="sous-item-titre">${echapper(it.product || "—")}
+          <span class="badge-statut ${estFait ? "ok" : "attente"}">${estFait ? "✅ " + verbeRealise : "⏳ en attente"}</span>
+        </div>
+        <div class="sous-item-meta">
+          ${it.createdAt ? `Demandé le ${echapper(it.createdAt)}` : ""}${it.dueAt ? ` — pour le ${echapper(it.dueAt)}` : ""}
+          ${it[champDateRealise] ? `<br>${verbeRealise} le ${echapper(it[champDateRealise])}` : ""}
+        </div>
+        ${it[champComment] ? `<div class="sous-item-meta">Commentaire demande : ${echapper(it[champComment])}</div>` : ""}
+        ${it[champCommentRealise] ? `<div class="sous-item-meta">Commentaire réalisation : ${echapper(it[champCommentRealise])}</div>` : ""}
+      </div>
+    `;
+  }).join("") + `</div>`;
+}
+
+function rendreConstantesTable(rows) {
+  if (!rows || rows.length === 0) {
+    return `<p class="section-vide">Aucune constante enregistrée.</p>`;
+  }
+  const tries = [...rows].sort((a, b) => `${b.date || ""} ${b.heure || ""}`.localeCompare(`${a.date || ""} ${a.heure || ""}`));
+  const lignes = tries.map(r => `
+    <tr>
+      <td>${echapper(r.date || "—")}</td>
+      <td>${echapper(r.heure || "—")}</td>
+      <td>${echapper(r.temperature || "—")}</td>
+      <td>${echapper(r.fc || "—")}</td>
+      <td>${echapper(r.ta || "—")}</td>
+      <td>${echapper(r.saturation || "—")}</td>
+      <td>${echapper(r.fr || "—")}</td>
+      <td>${echapper(r.douleur || "—")}</td>
+      <td>${echapper(r.glasgowTotal || "—")}</td>
+      <td>${echapper(r.observation || "—")}</td>
+    </tr>
+  `).join("");
+  return `
+    <table class="mini-table">
+      <thead>
+        <tr><th>Date</th><th>Heure</th><th>Temp</th><th>FC</th><th>TA</th><th>Sat</th><th>FR</th><th>Douleur</th><th>GCS</th><th>Obs</th></tr>
+      </thead>
+      <tbody>${lignes}</tbody>
+    </table>
+  `;
+}
+
+function rendreDocumentsListe(docs) {
+  if (!docs || docs.length === 0) {
+    return `<p class="section-vide">Aucun document rattaché à cette hospitalisation.</p>`;
+  }
+  return docs.map(d => `
+    <div class="doc-item">
+      <span><strong>${echapper(d.type || "Document")}</strong> — ${echapper(d.dateCreation || "date inconnue")}${d.creePar ? ` <span style="color:#888;">(par ${echapper(d.creePar)})</span>` : ""}</span>
+      ${d.pdfBase64 ? `<button type="button" class="secondaire" data-doc-open="${d.id}">🔎 Consulter</button>` : ""}
+    </div>
+  `).join("");
+}
+
+function rendreHospitalisation(hospi, numero, estActive, documents) {
   const date = hospi.dateDebut || "Date inconnue";
   const datef = hospi.dateFin || (estActive ? "En cours" : "Date inconnue");
   const motif = hospi.motif || "—";
@@ -442,9 +616,12 @@ function rendreHospitalisation(hospi, numero, estActive) {
   const evolution = hospi.evolution || "Aucune évolution enregistrée.";
   const dossier = hospi.dossierMedical || {};
   const sortie = hospi.sortie || null;
-  const rapport = hospi.rapport || "Pas de rapport d'hospitalisation validé";
+  const rapportTexte = formatRapport(hospi.rapport);
   const equipe = hospi.equipe || {};
   const examens = Array.isArray(hospi.examens) ? hospi.examens : [];
+  const actes = Array.isArray(hospi.actes) ? hospi.actes : [];
+  const meds = Array.isArray(hospi.meds) ? hospi.meds : [];
+  const constantes = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
 
   const parts = [];
   parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${echapper(date)}</div>`);
@@ -474,6 +651,10 @@ function rendreHospitalisation(hospi, numero, estActive) {
   parts.push(`<h3>📈 Évolution aux urgences</h3>`);
   parts.push(`<p style="white-space:pre-wrap">${echapper(evolution)}</p>`);
 
+  parts.push(`<hr>`);
+  parts.push(`<h3>🌡️ Constantes vitales</h3>`);
+  parts.push(rendreConstantesTable(constantes));
+
   if (examens.length > 0) {
     parts.push(`<hr>`);
     parts.push(`<h3>🩻 Examens demandés</h3>`);
@@ -485,6 +666,18 @@ function rendreHospitalisation(hospi, numero, estActive) {
       </div>
     `).join(""));
   }
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>🩺 Actes réalisés</h3>`);
+  parts.push(rendreListeActesOuMeds(actes, "réalisé", "comment", "realiseAt", "realiseComment"));
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>💊 Médicaments administrés aux urgences</h3>`);
+  parts.push(rendreListeActesOuMeds(meds, "administré", "comment", "takenAt", "takeComment"));
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>📄 Documents</h3>`);
+  parts.push(rendreDocumentsListe(documents));
 
   if (sortie) {
     parts.push(`<hr>`);
@@ -499,16 +692,42 @@ function rendreHospitalisation(hospi, numero, estActive) {
     if (sortie.autreOptionTexte) parts.push(`<p><strong>🔤 Autre option :</strong> ${echapper(sortie.autreOptionTexte)}</p>`);
   }
 
-  parts.push(`<p>${echapper(rapport)}</p>`);
+  if (rapportTexte) {
+    parts.push(`<hr>`);
+    parts.push(`<h3>🧾 Rapport de clôture</h3>`);
+    parts.push(`<p style="white-space:pre-wrap">${echapper(rapportTexte)}</p>`);
+  }
+
   parts.push(`<hr>`);
   parts.push(rendreJournalModifications(hospi.historique));
 
   const card = document.createElement("section");
   card.className = "card hospi-card" + (estActive ? " active-hospi" : "");
+  card.dataset.hospiId = hospi.__id || "";
   card.innerHTML = `
     <h2>🏥 Hospitalisation n°${numero} ${estActive ? '<span class="badge-active">EN COURS</span>' : ""}</h2>
     ${parts.join("\n")}
   `;
+
+  // Ouverture des documents (PDF base64) dans un nouvel onglet
+  card.querySelectorAll("[data-doc-open]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const docId = btn.getAttribute("data-doc-open");
+      const docData = (documents || []).find(d => d.id === docId);
+      if (!docData || !docData.pdfBase64) return;
+      try {
+        const byteChars = atob(docData.pdfBase64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: docData.mime || "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, docData.type || "document");
+      } catch (e) {
+        console.error("Erreur ouverture document :", e);
+      }
+    });
+  });
+
   return card;
 }
 

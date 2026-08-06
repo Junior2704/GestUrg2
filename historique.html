@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<link rel="icon" type="image/jpeg" href="logog2.png">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Historique Patient</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bleu: #0078d4;
+    --bleu-fonce: #005ea2;
+    --gris-fond: #f4f6f8;
+    --gris-bord: #ccc;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--gris-fond);
+    color: #333;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  header.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header.page-header h1 {
+    font-size: 1.5rem;
+    color: var(--bleu);
+    margin: 0;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-size: 0.95rem;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--bleu);
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  button:hover { background: var(--bleu-fonce); }
+  button.secondaire {
+    background: white;
+    color: var(--bleu);
+    border: 1px solid var(--bleu);
+  }
+  button.secondaire:hover { background: #eaf3fc; }
+
+  label.checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--gris-bord);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 22px;
+  }
+
+  /* ---- Bloc identité patient (rappel permanent) ---- */
+  #identitePatient {
+    border-left: 6px solid var(--bleu);
+  }
+  #identitePatient h2 {
+    margin-top: 0;
+    color: var(--bleu);
+  }
+  .identite-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px 20px;
+  }
+  .identite-grid .champ {
+    background: #f9f9f9;
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .identite-grid .champ .lbl {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #777;
+    margin-bottom: 2px;
+  }
+  .identite-grid .champ .val {
+    font-weight: 600;
+    color: #222;
+  }
+  .alerte-allergie {
+    color: #c62828;
+    font-weight: 700;
+  }
+
+  /* ---- Cartes hospitalisation ---- */
+  .hospi-card {
+    border-left: 6px solid var(--bleu);
+  }
+  .hospi-card.active-hospi {
+    border-left-color: #2e7d32;
+  }
+  .hospi-card h2 {
+    margin-top: 0;
+    color: var(--bleu);
+    border-bottom: 3px solid var(--bleu);
+    padding-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hospi-card.active-hospi h2 { color: #2e7d32; border-bottom-color: #2e7d32; }
+  .badge-active {
+    background: #2e7d32;
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  .entry {
+    background: #f9f9f9;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .hospi-card h3 {
+    color: var(--bleu);
+    margin-bottom: 8px;
+  }
+  .hospi-card hr {
+    border: none;
+    height: 3px;
+    background: #e0e6ec;
+    border-radius: 2px;
+    margin: 16px 0;
+  }
+
+  /* ---- Journal des modifications ---- */
+  .journal-modifications {
+    margin-top: 14px;
+    border: 1px dashed var(--gris-bord);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #fbfcfe;
+  }
+  .journal-modifications summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--bleu);
+    outline: none;
+  }
+  .journal-liste {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .journal-ligne {
+    display: grid;
+    grid-template-columns: 150px 1fr 190px;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #eee;
+    font-size: 0.88rem;
+    align-items: center;
+  }
+  .journal-ligne .jl-date { color: #555; font-variant-numeric: tabular-nums; }
+  .journal-ligne .jl-action { color: #222; }
+  .journal-ligne .jl-auteur {
+    text-align: right;
+    color: #0078d4;
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+  .journal-ligne .jl-auteur .type {
+    display: block;
+    color: #888;
+    font-weight: 400;
+    font-size: 0.75rem;
+  }
+  .journal-vide {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  #rechercheGlobale {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    border: 1px solid var(--gris-bord);
+  }
+
+  #etatChargement, #erreurChargement {
+    text-align: center;
+    padding: 40px 0;
+    color: #666;
+  }
+  #erreurChargement { color: #c62828; display:none; }
+
+  .no-print { }
+
+  /* =====================  IMPRESSION / EXPORT PDF ===================== */
+  @media print {
+    .no-print { display: none !important; }
+    body {
+      background: white;
+      padding: 0;
+      max-width: none;
+    }
+    .card {
+      box-shadow: none;
+      border: 1px solid #ddd;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    #identitePatient {
+      position: relative;
+    }
+    .hospi-card { page-break-inside: avoid; }
+    .journal-modifications { break-inside: avoid; }
+    a[href]:after { content: ""; }
+  }
+
+  body.masquer-historique-export .journal-modifications {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+
+  <header class="page-header no-print">
+    <h1>📜 Historique complet du patient</h1>
+    <div class="toolbar">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="chkInclureHistorique" checked>
+        Inclure le journal des modifications à l'export
+      </label>
+      <button type="button" class="secondaire" id="btnRetour">⬅️ Retour à la fiche</button>
+      <button type="button" id="btnExporterPDF">🖨️ Exporter en PDF</button>
+    </div>
+  </header>
+
+  <input
+    type="text"
+    id="rechercheGlobale"
+    class="no-print"
+    placeholder="🔍 Rechercher dans l'historique (motif, service, date, texte, auteur...)"
+    style="display:none;"
+  />
+
+  <div id="etatChargement">⏳ Chargement de l'historique du patient...</div>
+  <div id="erreurChargement"></div>
+
+  <div id="contenuHistorique" style="display:none;">
+    <!-- Bloc identité patient : rappel permanent, toujours inclus à l'export -->
+    <section id="identitePatient" class="card"></section>
+
+    <!-- Liste des hospitalisations -->
+    <div id="listeHospitalisations"></div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get("id");
+
+const elEtat = document.getElementById("etatChargement");
+const elErreur = document.getElementById("erreurChargement");
+const elContenu = document.getElementById("contenuHistorique");
+const elIdentite = document.getElementById("identitePatient");
+const elListe = document.getElementById("listeHospitalisations");
+const elRecherche = document.getElementById("rechercheGlobale");
+
+function afficherErreur(message) {
+  elEtat.style.display = "none";
+  elErreur.style.display = "block";
+  elErreur.textContent = "❌ " + message;
+}
+
+function calculerAge(dateNaissance) {
+  if (!dateNaissance) return null;
+  const parts = dateNaissance.split(/[\/\-]/);
+  let d;
+  if (parts.length === 3) {
+    // formats possibles: JJ/MM/AAAA ou AAAA-MM-JJ
+    if (parts[0].length === 4) {
+      d = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      d = new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+  } else {
+    d = new Date(dateNaissance);
+  }
+  if (isNaN(d.getTime())) return null;
+  const diff = Date.now() - d.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+function echapper(texte) {
+  const div = document.createElement("div");
+  div.textContent = texte ?? "";
+  return div.innerHTML;
+}
+
+function formatHorodatage(entree) {
+  // entree.horodatage est un Timestamp Firestore ; fallback sur date/heure textuelles
+  try {
+    if (entree.horodatage && typeof entree.horodatage.toDate === "function") {
+      const d = entree.horodatage.toDate();
+      return d;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function rendreIdentite(patient) {
+  const age = calculerAge(patient.dateNaissance);
+  const allergiesImportantes = patient.importanceAllergies === true;
+
+  elIdentite.innerHTML = `
+    <h2>🧑‍⚕️ Identité du patient</h2>
+    <div class="identite-grid">
+      <div class="champ"><span class="lbl">Nom</span><span class="val">${echapper(patient.nom || "—")}</span></div>
+      <div class="champ"><span class="lbl">Prénom</span><span class="val">${echapper(patient.prenom || "—")}</span></div>
+      <div class="champ"><span class="lbl">Sexe</span><span class="val">${echapper(patient.sexe || "—")}</span></div>
+      <div class="champ"><span class="lbl">Date de naissance</span><span class="val">${echapper(patient.dateNaissance || "—")}${age !== null ? " (" + age + " ans)" : ""}</span></div>
+      <div class="champ"><span class="lbl">ID patient</span><span class="val">${echapper(patientId)}</span></div>
+      <div class="champ"><span class="lbl">Médecin traitant</span><span class="val">${echapper(patient.medtraitant || "—")}</span></div>
+      <div class="champ"><span class="lbl">Allergies</span><span class="val ${allergiesImportantes ? "alerte-allergie" : ""}">${allergiesImportantes ? "🚨 " : ""}${echapper(patient.allergies || "aucune")}</span></div>
+      <div class="champ"><span class="lbl">Vigilances</span><span class="val">${echapper(patient.vigilances || "aucune")}</span></div>
+    </div>
+  `;
+}
+
+function rendreJournalModifications(historique) {
+  const entrees = Array.isArray(historique) ? [...historique] : [];
+
+  entrees.sort((a, b) => {
+    const da = formatHorodatage(a);
+    const db_ = formatHorodatage(b);
+    if (da && db_) return da - db_;
+    return 0;
+  });
+
+  if (entrees.length === 0) {
+    return `
+      <details class="journal-modifications">
+        <summary>🕘 Journal des modifications (0)</summary>
+        <p class="journal-vide">Aucune modification enregistrée pour cette hospitalisation.</p>
+      </details>
+    `;
+  }
+
+  const lignes = entrees.map(e => {
+    const d = formatHorodatage(e);
+    const dateAffichee = d
+      ? d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      : `${e.date || ""} ${e.heure || ""}`.trim() || "Date inconnue";
+
+    const auteur = e.auteurNom || "Utilisateur inconnu";
+    const type = e.auteurType || e.auteurSpecialite || "";
+
+    return `
+      <div class="journal-ligne">
+        <span class="jl-date">${echapper(dateAffichee)}</span>
+        <span class="jl-action">${echapper(e.action || e.texte || "—")}</span>
+        <span class="jl-auteur">${echapper(auteur)}${type ? `<span class="type">${echapper(type)}</span>` : ""}</span>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <details class="journal-modifications" open>
+      <summary>🕘 Journal des modifications (${entrees.length})</summary>
+      <div class="journal-liste">${lignes}</div>
+    </details>
+  `;
+}
+
+function rendreHospitalisation(hospi, numero, estActive) {
+  const date = hospi.dateDebut || "Date inconnue";
+  const datef = hospi.dateFin || (estActive ? "En cours" : "Date inconnue");
+  const motif = hospi.motif || "—";
+  const gravite = hospi.gravite || "—";
+  const evolution = hospi.evolution || "Aucune évolution enregistrée.";
+  const dossier = hospi.dossierMedical || {};
+  const sortie = hospi.sortie || null;
+  const rapport = hospi.rapport || "Pas de rapport d'hospitalisation validé";
+  const equipe = hospi.equipe || {};
+  const examens = Array.isArray(hospi.examens) ? hospi.examens : [];
+
+  const parts = [];
+  parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${echapper(date)}</div>`);
+  parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${echapper(datef)}</div>`);
+  parts.push(`<div class="entry"><strong>Motif :</strong> ${echapper(motif)}</div>`);
+  parts.push(`<div class="entry"><strong>Gravité :</strong> ${echapper(gravite)}</div>`);
+  if (hospi.pdcStatut) parts.push(`<div class="entry"><strong>Statut PEC :</strong> ${echapper(hospi.pdcStatut)}</div>`);
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>👥 Équipe référente</h3>`);
+  parts.push(`<p>
+    <strong>Médecin :</strong> ${echapper(equipe.medecinReferent?.nom || "—")}<br>
+    <strong>Infirmier(e) :</strong> ${echapper(equipe.infirmierReferent?.nom || "—")}<br>
+    <strong>Interne :</strong> ${echapper(equipe.interneReferent?.nom || "—")}<br>
+    <strong>Externe :</strong> ${echapper(equipe.externeReferent?.nom || "—")}
+  </p>`);
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>📋 Dossier médical</h3>`);
+  parts.push(`<p><strong>Questionnaire IAO :</strong><br>${echapper(dossier.questionnaire || "—")}</p>`);
+  parts.push(`<p><strong>Antécédents :</strong><br>${echapper(dossier.antecedents || "—")}</p>`);
+  parts.push(`<p><strong>Traitements :</strong><br>${echapper(dossier.traitements || "—")}</p>`);
+  parts.push(`<p><strong>Histoire de la maladie :</strong><br>${echapper(dossier.histoire || "—")}</p>`);
+  parts.push(`<p><strong>CR Auscultation :</strong><br>${echapper(dossier.auscultation || "—")}</p>`);
+
+  parts.push(`<hr>`);
+  parts.push(`<h3>📈 Évolution aux urgences</h3>`);
+  parts.push(`<p style="white-space:pre-wrap">${echapper(evolution)}</p>`);
+
+  if (examens.length > 0) {
+    parts.push(`<hr>`);
+    parts.push(`<h3>🩻 Examens demandés</h3>`);
+    parts.push(examens.map(ex => `
+      <div class="entry">
+        <strong>${echapper(ex.type || "Examen")}</strong> — ${ex.realise ? "✅ Réalisé" : "⏳ En attente"}
+        ${ex.commentaire ? `<br><em>${echapper(ex.commentaire)}</em>` : ""}
+        ${ex.dateDemande ? `<br><small>Demandé le ${echapper(ex.dateDemande)}</small>` : ""}
+      </div>
+    `).join(""));
+  }
+
+  if (sortie) {
+    parts.push(`<hr>`);
+    parts.push(`<h3>🚪 Sortie</h3>`);
+    parts.push(`<p><strong>Type :</strong> ${echapper(sortie.type || "—")}</p>`);
+    if (sortie.serviceHospitalisation) parts.push(`<p><strong>🏥 Service hospitalisation :</strong> ${echapper(sortie.serviceHospitalisation)}</p>`);
+    if (sortie.destinationTransfert) parts.push(`<p><strong>↔️ Destination transfert :</strong> ${echapper(sortie.destinationTransfert)}</p>`);
+    if (sortie.avisSpecialiste) parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${echapper(sortie.avisSpecialiste)}</p>`);
+    if (Array.isArray(sortie.options) && sortie.options.length > 0) parts.push(`<p><strong>📋 Options :</strong> ${echapper(sortie.options.join(", "))}</p>`);
+    if (sortie.traitementSortie) parts.push(`<p><strong>💊 Traitement de sortie :</strong><br>${echapper(sortie.traitementSortie)}</p>`);
+    if (sortie.autreSortieTexte) parts.push(`<p><strong>🔤 Autre :</strong> ${echapper(sortie.autreSortieTexte)}</p>`);
+    if (sortie.autreOptionTexte) parts.push(`<p><strong>🔤 Autre option :</strong> ${echapper(sortie.autreOptionTexte)}</p>`);
+  }
+
+  parts.push(`<p>${echapper(rapport)}</p>`);
+  parts.push(`<hr>`);
+  parts.push(rendreJournalModifications(hospi.historique));
+
+  const card = document.createElement("section");
+  card.className = "card hospi-card" + (estActive ? " active-hospi" : "");
+  card.innerHTML = `
+    <h2>🏥 Hospitalisation n°${numero} ${estActive ? '<span class="badge-active">EN COURS</span>' : ""}</h2>
+    ${parts.join("\n")}
+  `;
+  return card;
+}
+
+async function chargerTout() {
+  if (!patientId) {
+    afficherErreur("Identifiant patient manquant dans l'URL (?id=...)");
+    return;
+  }
+
+  try {
+    const patientRef = doc(db, "patients", patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
+      afficherErreur("Patient introuvable.");
+      return;
+    }
+
+    const patient = patientSnap.data();
+    rendreIdentite(patient);
+
+    const hospitalisationIds = Array.isArray(patient.hospitalisations) ? [...patient.hospitalisations] : [];
+
+    if (hospitalisationIds.length === 0) {
+      elListe.innerHTML = "<p>Aucune hospitalisation enregistrée pour ce patient.</p>";
+    } else {
+      const hospis = await Promise.all(
+        hospitalisationIds.map(id => getDoc(doc(db, "hospitalisations", id)))
+      );
+
+      elListe.innerHTML = "";
+      // Affichage du plus récent au plus ancien
+      for (let i = hospitalisationIds.length - 1; i >= 0; i--) {
+        const snap = hospis[i];
+        if (!snap.exists()) continue;
+        const estActive = hospitalisationIds[i] === patient.hospitalisationActiveId;
+        const numero = i + 1;
+        const card = rendreHospitalisation(snap.data(), numero, estActive);
+        elListe.appendChild(card);
+      }
+    }
+
+    elEtat.style.display = "none";
+    elContenu.style.display = "block";
+    elRecherche.style.display = "block";
+
+  } catch (err) {
+    console.error("Erreur chargement historique patient :", err);
+    afficherErreur("Erreur lors du chargement de l'historique.");
+  }
+}
+
+// --- Recherche globale (filtre les cartes d'hospitalisation) ---
+elRecherche.addEventListener("input", () => {
+  const q = elRecherche.value.trim().toLowerCase();
+  document.querySelectorAll(".hospi-card").forEach(card => {
+    const texte = card.textContent.toLowerCase();
+    card.style.display = !q || texte.includes(q) ? "" : "none";
+  });
+});
+
+// --- Export PDF (impression), avec ou sans journal des modifications ---
+const chkInclure = document.getElementById("chkInclureHistorique");
+document.getElementById("btnExporterPDF").addEventListener("click", () => {
+  const inclure = chkInclure.checked;
+  document.body.classList.toggle("masquer-historique-export", !inclure);
+  window.print();
+});
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove("masquer-historique-export");
+});
+
+document.getElementById("btnRetour").addEventListener("click", () => {
+  window.location.href = patientId ? `fiche.html?id=${encodeURIComponent(patientId)}` : "index.html";
+});
+
+// L'accès aux données patient nécessite d'être authentifié (règles Firestore).
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    afficherErreur("Vous devez être connecté pour consulter l'historique de ce patient.");
+    return;
+  }
+  chargerTout();
+});
+</script>
+</body>
+</html>

@@ -613,7 +613,9 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  arrayUnion,
+  Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -625,9 +627,54 @@ import {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  /**
+   * ajouterEntreeHistorique : fonction autonome (voir fiche.html) qui trace
+   * une action dans le champ "historique" de l'hospitalisation active.
+   */
+  async function ajouterEntreeHistorique(action, options = {}) {
+    try {
+      if (!action) return null;
+      const pid = options.patientId || (typeof patientId !== "undefined" ? patientId : null);
+      if (!pid) return null;
+
+      let hospitalisationId = options.hospitalisationId || null;
+      if (!hospitalisationId) {
+        const pSnap = await getDoc(doc(db, "patients", pid));
+        if (!pSnap.exists()) return null;
+        const pData = pSnap.data();
+        hospitalisationId = pData.hospitalisationActiveId ||
+          (Array.isArray(pData.hospitalisations) ? pData.hospitalisations.slice(-1)[0] : null);
+      }
+      if (!hospitalisationId) return null;
+
+      const maintenant = new Date();
+      const utilisateur = auth.currentUser;
+      const entree = {
+        horodatage: Timestamp.now(),
+        date: maintenant.toLocaleDateString("fr-FR"),
+        heure: maintenant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        action: action,
+        auteurNom: window.medecinNom || "Utilisateur inconnu",
+        auteurType: window.medecinType || "Non renseigné",
+        auteurSpecialite: window.medecinSpecialite || "",
+        auteurId: (utilisateur && utilisateur.uid) || ""
+      };
+
+      await updateDoc(doc(db, "hospitalisations", hospitalisationId), {
+        historique: arrayUnion(entree)
+      });
+      return entree;
+    } catch (err) {
+      console.error("Erreur ajout historique :", err);
+      return null;
+    }
+  }
+  window.ajouterEntreeHistorique = ajouterEntreeHistorique;
+
    let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
+  let medecinType = "";
     onAuthStateChanged(auth, async (user) => {
   if (!user) {
     return;
@@ -641,11 +688,13 @@ import {
         medecinNom = data.nom || "";
         medecinSpecialite = data.specialite || "";
         medecinLieu = data.lieu || "";
+        medecinType = data.type || "";
 
         // Met à jour aussi les variables globales sur window
         window.medecinNom = medecinNom;
         window.medecinSpecialite = medecinSpecialite;
         window.medecinLieu = medecinLieu;
+        window.medecinType = medecinType;
 
         // Mise à jour des éléments HTML si présents
         const nomElem = document.getElementById("nom-medecin");
@@ -926,6 +975,13 @@ function formatDate(d) {
     await updateDoc(hospiRef, { meds: hospiData.meds });
 
     afficherBulle('✔️ Demande enregistrée', 'success');
+
+    const nomsEvenements = events.map(ev => ev.product).join(", ");
+    ajouterEntreeHistorique(`Prescription médicament(s) : ${nomsEvenements}`, {
+      hospitalisationId: hospiId,
+      silencieux: true
+    });
+
     loadHistory();
 
   } catch (err) {

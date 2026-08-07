@@ -1,1266 +1,484 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Urgences — Mobile</title>
-    <link rel="icon" type="image/jpeg" href="logog2.png">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#0078d4" />
+<title>Urgences · Mobile</title>
+<link rel="icon" type="image/jpeg" href="logog2.png">
 <style>
-  :root{
-    --brand:#0078d4;
-    --bg:#f0f4f8;
-    --card:#ffffff;
-    --muted:#6b7280;
-    --radius:12px;
-}
-
-/* Global */
-html,body{
-    height:100%;
-    margin:0;
-    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    background:var(--bg);
-    color:#111;
-    overscroll-behavior-x: none;
-}
-body {
-  touch-action: pan-y;
-}
-
-/* Main */
-#main {
-    flex: 1;
-    padding: 20px;
-}
-
-.container {
-    max-width: 500px;
-    margin: 40px auto;
-    background: white;
-    padding: 28px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-}
-
-#list-container {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 600px;
-}
-
-/* Top controls & Inputs */
-.top-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
-    margin-top: 20px;
-}
-
-input {
-    flex: 1;
-    padding: 14px 16px;
-    border: 2px solid var(--blue-soft);
-    background: white;
-    border-radius: var(--radius);
-    font-size: 15px;
-    outline: none;
-    transition: 0.2s;
-}
-
-input:focus {
-    border-color: var(--blue-main);
-    box-shadow: 0 0 0 3px rgba(30, 111, 255, 0.2);
-}
-
-/* Buttons */
-.btn {
-    padding: 14px 18px;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    color: white;
-    font-weight: 600;
-    transition: 0.2s;
-    font-size: 15px;
-    flex-shrink: 0;
-}
-
-.btn-add {
-    background: linear-gradient(145deg, #4b8bff, #0054ff);
-    box-shadow:
-        0 4px 10px rgba(0, 90, 255, 0.25),
-        inset 0 1px 1px rgba(255,255,255,0.25);
-}
-
-.btn-add:hover {
-    transform: translateY(-3px) scale(1.03);
-    box-shadow:
-        0 10px 22px rgba(0, 90, 255, 0.40),
-        inset 0 1px 2px rgba(255,255,255,0.3);
-}
-
-.btn-add:active {
-    transform: scale(0.97);
-}
-
-.btn-shop {
-    background: linear-gradient(145deg, #ffa93a, #ff7a00);
-    box-shadow:
-        0 4px 10px rgba(255, 140, 0, 0.30),
-        inset 0 1px 1px rgba(255,255,255,0.25);
-}
-
-.btn-shop:hover {
-    transform: translateY(-3px) scale(1.03);
-    box-shadow:
-        0 10px 22px rgba(255, 140, 0, 0.45),
-        inset 0 1px 2px rgba(255,255,255,0.3);
-}
-
-.btn-shop:active {
-    transform: scale(0.97);
-}
-
-.btn-green {
-    background: linear-gradient(135deg, #28a745, #32d067);
-    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.35);
-}
-
-.btn-green:hover {
-    background: #1f8a39;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(40,167,69,0.35);
-}
-
-.btn-grey {
-    background: linear-gradient(135deg, #9aa0b3, #7d8394);
-    color: white !important;
-}
-
-.btn-grey:hover {
-    background: #6d6d6d;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(130,130,130,0.35);
-}
-
-/* List Items */
-#items li,
-#list-items li {
-    list-style: none;
-    background: white;
-    padding: 14px 18px;
-    border-radius: 14px;
-    margin: 12px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 15px;
-    font-weight: 500;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    border: 1px solid #eef1f7;
-    transition: 0.2s;
-}
-
-#items li:hover,
-#list-items li:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
-}
-
-/* Delete Button */
-.deleteBtn {
-    border: none;
-    background: linear-gradient(135deg, #ff5c5c, #d90429);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: 0.2s;
-}
-
-.deleteBtn::before {
-    content: "🗑️";
-    font-size: 15px;
-}
-
-.deleteBtn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 3px 10px rgba(255, 0, 0, 0.25);
-}
-
-/* Modals */
-.modal-bg {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    backdrop-filter: blur(5px);
-    background: rgba(0, 0, 0, 0.45);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 5000;
-}
-
-.modal {
-    width: 92%;
-    max-width: 480px;
-    background: linear-gradient(135deg, #ffffff, #f3f6ff);
-    padding: 28px;
-    border-radius: 22px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.22);
-    animation: pop 0.25s ease-out;
-}
-
-.modal-header h2 {
-    color: #2c3e50;
-    font-weight: 700;
-}
-
-.modal-item {
-    background: #e8edff;
-    border-left: 6px solid #4a6cf7;
-    padding: 14px;
-    border-radius: 14px;
-    margin-bottom: 12px;
-}
-
-/* Home Section */
-#homeSection {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 20px;
-    background: #f9f9f9;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-#logo {
-    width: 80px;
-    height: auto;
-    animation: fadeIn 1.5s ease-in-out;
-}
-
-/* Sidebar */
-.menu-btn {
-    background: transparent;
-    border: none;
-    font-size: 26px;
-    cursor: pointer;
-    padding: 6px 10px;
-    color: var(--brand);
-}
-
-.sidebar {
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px; 
-    position: fixed;
-    top: 0;
-    left: -260px;
-    width: 260px;
-    height: 100%;
-    background: white;
-    box-shadow: 4px 0 18px rgba(0,0,0,0.15);
-    z-index: 3000;
-    transition: 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar.open {
-    left: 0;
-}
-
-.sidebar-header {
-    font-size: 20px;
-    font-weight: 700;
-    padding: 20px;
-    background: var(--brand);
-    color: white;
-}
-
-.sidebar-item {
-    padding: 16px 20px;
-    font-size: 16px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-}
-
-.sidebar-item:hover {
-    background: #f0f7ff;
-}
-
-.sidebar-item.logout {
-    margin-top: auto;
-    background: #ffeaea;
-    color: #b30000;
-    font-weight: 700;
-}
-
-.sidebar-item.logout:hover {
-    background: #ffd2d2;
-}
-
-.sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 2500;
-    display: none;
-}
-
-.sidebar-overlay.show {
-    display: block;
-}
-.action-btn {
-    border: none;
-    background: #eef4ff;
-    border-radius: 10px;
-    padding: 6px 10px;
-    font-size: 18px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.action-btn:hover {
-    background: #d7e9ff;
-    transform: scale(1.1);
-}
-
-/* Keyframes */
-@keyframes spinAround {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
-/* ====== RESPONSIVE MOBILE ====== */
-@media (max-width: 600px) {
-    html {
-        font-size: 14px;
-    }
-    #main { padding: 12px; }
-    .container, #list-container {
-        margin: 20px 10px;
-        padding: 20px;
-        max-width: 95%;
-    }
-    input {
-        padding: 12px 14px;
-        font-size: 14px;
-    }
-    .btn, .btn-add, .btn-shop, .btn-green, .btn-grey {
-        padding: 12px 16px;
-        font-size: 14px;
-    }
-    #items li, #list-items li {
-        padding: 12px 14px;
-        font-size: 14px;
-    }
-    #homeSection {
-        flex-direction: column;
-        gap: 12px;
-        padding: 14px;
-    }
-    #logo { width: 60px; }
-    .top-controls { flex-direction: column; gap: 12px; }
-    .sidebar { width: 220px; }
-    .modal { width: 90%; padding: 20px; }
-    .sidebar-header { font-size: 18px; padding: 16px; }
-    .sidebar-item { padding: 14px 16px; font-size: 14px; }
-}
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(5px);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 6000; /* AU-DESSUS de tout */
-}
-/* ===============================
-   CARTES PATIENTS
-================================ */
-.patient-card{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:14px 16px;
-  background:#fff;
-  border-radius:16px;
-  margin-bottom:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.08);
-  cursor:pointer;
-  transition:0.2s;
-}
-
-.patient-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 26px rgba(0,0,0,0.12);
-}
-
-/* ===============================
-   AVATAR
-================================ */
-.avatar{
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
-  color:white;
-  font-size:15px;
-  flex-shrink:0;
-}
-
-/* ===============================
-   INFOS PATIENT
-================================ */
-.patient-card .info{
-  flex:1;
-}
-
-.patient-card .name{
-  font-weight:700;
-  font-size:15px;
-  margin-bottom:4px;
-}
-
-.patient-card .meta{
-  display:flex;
-  gap:10px;
-  font-size:13px;
-  color:#6b7280;
-  flex-wrap:wrap;
-}
-
-/* ===============================
-   BADGES GRAVITÉ
-================================ */
-.badge{
-  padding:2px 8px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-  background:#eef4ff;
-  color:#1e40af;
-}
-
-/* Couleurs gravité */
-.g-Urgences_Vitales,
-.g-Urgences_Vitales .avatar{ background:#b91c1c; }
-
-.g-P3,
-.g-P3 .avatar{ background:#dc2626; }
-
-.g-P2,
-.g-P2 .avatar{ background:#f97316; }
-
-.g-P1,
-.g-P1 .avatar{ background:#eab308; color:#000; }
-
-.g-P0,
-.g-P0 .avatar{ background:#16a34a; }
-
-.g-Administratif,
-.g-Administratif .avatar{ background:#6b7280; }
-
-/* ===============================
-   COLONNE DROITE
-================================ */
-.actions{
-  display:flex;
-  gap:6px;
-}
-
-.allergy-star{
-  font-size:18px;
-  margin-bottom:6px;
-}
-
-/* ===============================
-   PILLS (examens / actes / meds)
-================================ */
-.pill{
-  display:inline-block;
-  padding:6px 12px;
-  border-radius:999px;
-  font-size:13px;
-  font-weight:600;
-  margin:4px 6px 4px 0;
-  white-space:nowrap;
-  transition:0.15s;
-}
-
-.pill:hover{
-  transform:scale(1.05);
-}
-
-/* ===============================
-   MODALES – STRUCTURE
-================================ */
-.modal{
-  background:#fff;
-  border-radius:20px;
-  padding:22px;
-  max-height:85vh;
-  overflow-y:auto;
-}
-
-/* Titres de sections */
-.section-title{
-  margin-top:18px;
-  margin-bottom:8px;
-  font-size:14px;
-  font-weight:800;
-  text-transform:uppercase;
-  color:#1e3a8a;
-  letter-spacing:0.03em;
-}
-
-/* Champs */
-.field{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  padding:6px 0;
-  font-size:14px;
-  border-bottom:1px dashed #e5e7eb;
-}
-
-.field:last-child{
-  border-bottom:none;
-}
-
-.field label{
-  font-weight:600;
-  color:#374151;
-  min-width:120px;
-}
-
-.field .val{
-  flex:1;
-  color:#111827;
-  text-align:left;
-  white-space:pre-line;
-}
-
-/* ===============================
-   MODALES – BOUTONS
-================================ */
-.modal button.btn{
-  width:100%;
-}
-
-/* ===============================
-   SEARCH RESULTS
-================================ */
-.res-item{
-  padding:10px 14px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-}
-
-.res-item:hover{
-  background:#f0f7ff;
-}
-
-/* ===============================
-   LISTE PRINCIPALE
-================================ */
-.list{
-  margin-top:12px;
-}
-/* =====================================================
-   1️⃣ COULEURS PATIENTS — VERSION DOUCE / MÉDICALE
-===================================================== */
-.g-Urgences_Vitales,
-.g-Urgences_Vitales .avatar{
-  background:#fceaea;
-  color:#7a1c1c;
-}
-
-.g-P3,
-.g-P3 .avatar{
-  background:#fdeeee;
-  color:#8b1d1d;
-}
-
-.g-P2,
-.g-P2 .avatar{
-  background:#fff4e5;
-  color:#8a4b12;
-}
-
-.g-P1,
-.g-P1 .avatar{
-  background:#fffbe6;
-  color:#7a6a10;
-}
-
-.g-P0,
-.g-P0 .avatar{
-  background:#eefaf1;
-  color:#1f6b3a;
-}
-
-.g-Administratif,
-.g-Administratif .avatar{
-  background:#f3f4f6;
-  color:#374151;
-}
-
-/* Badge gravité plus discret */
-.badge{
-  background:#f1f5f9;
-  color:#334155;
-}
-
-/* =====================================================
-   2️⃣ MODALE PATIENT — PLEIN ÉCRAN MOBILE
-===================================================== */
-#modal.modal-overlay{
-  align-items:stretch;
-}
-
-#modal .modal{
-  width:100%;
-  height:100%;
-  max-width:none;
-  max-height:none;
-  border-radius:0;
-  padding:18px 16px;
-  animation:none;
-}
-
-/* Header collant */
-#modal .modal > div:first-child{
-  position:sticky;
-  top:0;
-  background:white;
-  z-index:1;
-  padding-bottom:10px;
-  margin-bottom:10px;
-  border-bottom:1px solid #e5e7eb;
-}
-
-/* Scroll confortable */
-#modal .modal{
-  overflow-y:auto;
-}
-
-/* =====================================================
-   3️⃣ Z-INDEX PROPRE (ORDRE CLAIR)
-===================================================== */
-/* Fond patient */
-#modal.modal-overlay{
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --blue-700:#005ea2;
+  --blue-600:#0078d4;
+  --blue-100:#e6f0fc;
+  --bg:#f0f4f8;
+  --card:#ffffff;
+  --text:#0f172a;
+  --text-muted:#64748b;
+  --border:#e2e8f0;
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:10px;
+  --g-p0:#22c55e;
+  --g-p1:#eab308;
+  --g-p2:#f97316;
+  --g-p3:#ef4444;
+  --g-uv:#111827;
+  --g-admin:#4169e1;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html,body{ margin:0; padding:0; height:100%; overscroll-behavior-y: none; }
+body{
+  font-family:'Inter', sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+button{ font-family:inherit; }
+input, textarea, select{ font-family:inherit; }
+
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:#c7d6ea; border-radius:10px; }
+* { scrollbar-width: thin; scrollbar-color:#c7d6ea transparent; }
+
+.hidden{ display:none !important; }
+
+/* ============ LOGIN ============ */
+#loginScreen{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:32px 24px calc(32px + var(--safe-bottom));
+  background:
+    radial-gradient(120% 90% at 20% -10%, #eaf3ff 0%, transparent 60%),
+    radial-gradient(120% 90% at 100% 110%, #eef6ff 0%, transparent 55%),
+    var(--bg);
   z-index:5000;
 }
-
-/* Examens / actes / meds AU-DESSUS */
-#examModal.modal-overlay,
-#acteModal.modal-overlay,
-#medModal.modal-overlay{
-  z-index:9999;
+.login-mark{
+  width:64px; height:64px; border-radius:20px;
+  background:linear-gradient(160deg, var(--blue-600), var(--blue-700));
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px; color:white; box-shadow:0 14px 30px rgba(0,120,212,0.35);
+  margin-bottom:18px;
+}
+.login-title{ font-size:1.5rem; font-weight:800; letter-spacing:-.01em; }
+.login-sub{ color:var(--text-muted); font-size:.92rem; margin-top:4px; margin-bottom:28px; text-align:center; }
+.login-card{
+  width:100%; max-width:360px; background:var(--card); border-radius:var(--radius-lg);
+  padding:22px; box-shadow:0 16px 40px rgba(15,23,42,0.08); border:1px solid var(--border);
+}
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:.78rem; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+.field input{
+  width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--border);
+  font-size:1rem; background:#f8fafc; transition:border-color .2s, box-shadow .2s;
+}
+.field input:focus{ outline:none; border-color:var(--blue-600); box-shadow:0 0 0 4px rgba(0,120,212,.12); background:white; }
+.btn-primary{
+  width:100%; padding:14px; border:none; border-radius:12px; background:var(--blue-600); color:white;
+  font-size:1rem; font-weight:700; cursor:pointer; transition:transform .15s, background .2s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary:active{ transform:scale(.98); }
+.btn-primary:hover{ background:var(--blue-700); }
+.btn-primary:disabled{ opacity:.6; }
+.login-error{
+  margin-top:12px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c;
+  border-radius:10px; font-size:.85rem; display:none;
 }
 
-/* Sidebar toujours en dessous */
-.sidebar{
-  z-index:3000;
+/* ============ APP SHELL ============ */
+#appRoot{ display:none; flex-direction:column; height:100%; min-height:100dvh; }
+#appRoot.active{ display:flex; }
+
+.topbar{
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:200;
 }
-.sidebar-overlay{
-  z-index:2500;
+.topbar-id{ display:flex; align-items:center; gap:10px; }
+.topbar-logo{
+  width:38px; height:38px; border-radius:12px; background:linear-gradient(160deg, var(--blue-600), var(--blue-700));
+  display:flex; align-items:center; justify-content:center; font-size:18px; color:white;
+}
+.topbar-title{ font-weight:800; font-size:1.02rem; line-height:1.1; }
+.topbar-sub{ font-size:.72rem; color:var(--text-muted); font-weight:600; }
+.topbar-actions{ display:flex; gap:8px; }
+.icon-btn{
+  width:38px; height:38px; border-radius:12px; border:none; background:#f0f4f8; color:#334155;
+  font-size:1.05rem; display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.icon-btn:active{ transform:scale(.94); }
+.icon-btn.spinning svg{ animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+.pulse-bar{
+  height:5px; width:100%; background:#e2e8f0; position:relative; overflow:hidden;
+}
+.pulse-bar-fill{ height:100%; border-radius:0 4px 4px 0; transition:width .6s ease, background .6s ease; }
+
+main.views{ flex:1; overflow:hidden; position:relative; }
+.view{
+  position:absolute; inset:0; overflow-y:auto; padding:16px 16px calc(96px + var(--safe-bottom));
+  opacity:0; transform:translateY(6px); pointer-events:none; transition:opacity .18s ease, transform .18s ease;
+}
+.view.active{ opacity:1; transform:translateY(0); pointer-events:auto; }
+
+/* bottom nav */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:300;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:flex; padding: 6px 10px calc(8px + var(--safe-bottom));
+}
+.tabbar-btn{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none; border:none; padding:8px 4px 6px; color:#94a3b8; cursor:pointer; border-radius:12px;
+}
+.tabbar-btn .ic{ font-size:1.25rem; line-height:1; }
+.tabbar-btn .lb{ font-size:.68rem; font-weight:700; letter-spacing:.01em; }
+.tabbar-btn.active{ color:var(--blue-600); }
+.tabbar-btn.active .ic{ transform:translateY(-1px); }
+
+/* ============ generic sections/cards ============ */
+.section-title{
+  font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--text-muted); margin:20px 2px 10px;
+}
+.section-title:first-child{ margin-top:2px; }
+.card{
+  background:var(--card); border-radius:var(--radius-lg); border:1px solid var(--border);
+  box-shadow:0 2px 10px rgba(15,23,42,.04);
+}
+.pad{ padding:16px; }
+
+/* category / salle rows */
+.categorie-block{ margin-bottom:18px; }
+.categorie-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 4px 8px;
+}
+.categorie-head h2{
+  font-size:.92rem; margin:0; font-weight:800; letter-spacing:.01em; color:var(--text);
+  display:flex; align-items:center; gap:8px;
+}
+.categorie-count{ font-size:.76rem; font-weight:700; color:var(--text-muted); background:#eef2f8; padding:3px 9px; border-radius:20px; }
+
+.salle-row{
+  display:flex; align-items:center; gap:12px; padding:13px 14px;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  margin-bottom:8px; cursor:pointer; transition:transform .12s, box-shadow .12s;
+}
+.salle-row:active{ transform:scale(.985); background:#f8fafc; }
+.salle-ic{
+  width:40px; height:40px; border-radius:12px; background:var(--blue-100); color:var(--blue-700);
+  display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;
+}
+.salle-info{ flex:1; min-width:0; }
+.salle-name{ font-weight:700; font-size:.92rem; }
+.salle-dots{ display:flex; gap:4px; margin-top:5px; flex-wrap:wrap; }
+.dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.dot-more{ font-size:.68rem; font-weight:700; color:var(--text-muted); }
+.occ-chip{
+  font-size:.76rem; font-weight:800; padding:5px 10px; border-radius:20px; flex-shrink:0;
+  background:#f1f5f9; color:#475569;
+}
+.occ-chip.ok{ background:#e9f9ee; color:#15803d; }
+.occ-chip.mid{ background:#fff4e5; color:#c2410c; }
+.occ-chip.full{ background:#fdeaea; color:#b91c1c; }
+.occ-chip.flex{ background:var(--blue-100); color:var(--blue-700); }
+.salle-empty-hint{ font-size:.78rem; color:#94a3b8; margin-top:3px; }
+
+/* search */
+.search-box{
+  position:sticky; top:0; z-index:5; background:var(--bg); padding-bottom:10px;
+}
+.search-input-wrap{ position:relative; }
+.search-input-wrap .ic{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; }
+#searchInput{
+  width:100%; padding:13px 14px 13px 42px; border-radius:14px; border:1.5px solid var(--border);
+  font-size:1rem; background:var(--card);
+}
+#searchInput:focus{ outline:none; border-color:var(--blue-600); box-shadow:0 0 0 4px rgba(0,120,212,.1); }
+.chips-row{ display:flex; gap:8px; overflow-x:auto; padding:12px 2px 4px; }
+.chip{
+  flex-shrink:0; padding:7px 13px; border-radius:20px; font-size:.8rem; font-weight:700;
+  background:var(--card); border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer;
+}
+.chip.active{ background:var(--text); color:white; border-color:var(--text); }
+
+.patient-row{
+  display:flex; align-items:center; gap:12px; padding:13px 14px;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  margin-bottom:8px; cursor:pointer;
+}
+.patient-row:active{ background:#f8fafc; transform:scale(.985); }
+.grav-bar{ width:5px; align-self:stretch; border-radius:4px; flex-shrink:0; min-height:38px; }
+.patient-row-info{ flex:1; min-width:0; }
+.patient-row-name{ font-weight:700; font-size:.93rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.patient-row-meta{ font-size:.78rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.patient-row-loc{ font-size:.72rem; font-weight:700; color:var(--blue-700); background:var(--blue-100); padding:4px 9px; border-radius:20px; flex-shrink:0; }
+.star-allerg{ color:#ef4444; font-size:.85rem; margin-left:4px; }
+
+.empty-state{ text-align:center; padding:48px 20px; color:var(--text-muted); }
+.empty-state .ic{ font-size:2.4rem; margin-bottom:10px; }
+.empty-state p{ margin:4px 0; font-size:.9rem; }
+
+/* ============ stats ============ */
+.stat-hero{
+  background:linear-gradient(155deg, var(--blue-600), var(--blue-700));
+  color:white; border-radius:var(--radius-lg); padding:22px; margin-bottom:16px;
+  box-shadow:0 16px 34px rgba(0,94,162,.3); position:relative; overflow:hidden;
+}
+.stat-hero::after{
+  content:""; position:absolute; width:220px; height:220px; border-radius:50%;
+  background:rgba(255,255,255,.08); right:-70px; top:-90px;
+}
+.stat-hero-label{ font-size:.78rem; font-weight:700; opacity:.85; text-transform:uppercase; letter-spacing:.06em; }
+.stat-hero-num{ font-size:2.6rem; font-weight:800; line-height:1.05; margin-top:4px; }
+.stat-hero-row{ display:flex; gap:22px; margin-top:16px; }
+.stat-hero-mini{ font-size:1.15rem; font-weight:800; }
+.stat-hero-mini-lb{ font-size:.7rem; opacity:.8; font-weight:600; }
+
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.mini-card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; }
+.mini-card .num{ font-size:1.5rem; font-weight:800; }
+.mini-card .lb{ font-size:.74rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
+
+.bar-row{ margin-bottom:12px; }
+.bar-row-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.bar-row-top .lb{ font-size:.85rem; font-weight:700; display:flex; align-items:center; gap:7px; }
+.bar-row-top .val{ font-size:.85rem; font-weight:800; color:var(--text-muted); }
+.bar-track{ height:9px; background:#eef2f8; border-radius:6px; overflow:hidden; }
+.bar-fill{ height:100%; border-radius:6px; transition:width .5s ease; }
+.leg-dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+/* ============ patient detail overlay ============ */
+#patientDetail{
+  position:fixed; inset:0; background:var(--bg); z-index:1000;
+  transform:translateY(100%); transition:transform .28s cubic-bezier(.32,.72,0,1);
+  display:flex; flex-direction:column;
+}
+#patientDetail.open{ transform:translateY(0); }
+.pd-header{
+  padding: calc(12px + var(--safe-top)) 14px 14px; background:var(--card); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:5;
+}
+.pd-back{
+  width:38px; height:38px; border-radius:12px; border:none; background:#f0f4f8; font-size:1.1rem; cursor:pointer; flex-shrink:0;
+}
+.pd-head-info{ flex:1; min-width:0; }
+.pd-name{ font-weight:800; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pd-sub{ font-size:.78rem; color:var(--text-muted); font-weight:600; }
+.pd-grav-badge{
+  font-size:.72rem; font-weight:800; padding:6px 11px; border-radius:20px; color:white; flex-shrink:0; text-align:center;
+}
+.pd-body{ flex:1; overflow-y:auto; padding:16px 16px calc(40px + var(--safe-bottom)); }
+
+.pd-alert{
+  display:flex; gap:10px; align-items:flex-start; background:#fef2f2; border:1px solid #fecaca; color:#991b1b;
+  border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:.86rem; font-weight:600;
 }
 
-/* =====================================================
-   4️⃣ MODALES SECONDAIRES — FORMAT "FEUILLE"
-===================================================== */
-#examModal .modal,
-#acteModal .modal,
-#medModal .modal{
-  width:92%;
-  max-width:420px;
-  border-radius:18px;
-  padding:20px;
-  animation:pop 0.25s ease-out;
-  z-index:9999;
+details.pd-section{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  margin-bottom:10px; overflow:hidden;
 }
+details.pd-section > summary{
+  list-style:none; cursor:pointer; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+  font-weight:700; font-size:.9rem;
+}
+details.pd-section > summary::-webkit-details-marker{ display:none; }
+details.pd-section > summary .chev{ transition:transform .2s; color:#94a3b8; font-size:.85rem; }
+details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
+.pd-section-content{ padding:0 16px 16px; }
 
-/* =====================================================
-   5️⃣ PILLS PLUS DOUCES VISUELLEMENT
-===================================================== */
-.pill{
-  background:#f1f5f9;
-  color:#334155;
-  border:1px solid #e2e8f0;
-}
+.kv{ display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px solid #f1f5f9; font-size:.87rem; }
+.kv:last-child{ border-bottom:none; }
+.kv .k{ color:var(--text-muted); font-weight:600; flex-shrink:0; }
+.kv .v{ font-weight:700; text-align:right; }
+.kv .v.empty{ color:#cbd5e1; font-weight:600; }
 
-.pill:hover{
-  background:#e8f0ff;
-}
+.txt-block{ font-size:.87rem; line-height:1.55; white-space:pre-wrap; color:#1e293b; }
+.txt-block.empty{ color:#cbd5e1; font-style:italic; }
+.txt-label{ font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin:12px 0 6px; }
+.txt-label:first-child{ margin-top:0; }
 
-/* ===============================
-   ACCUEIL – LOGO (GAUCHE)
-================================ */
-#accueil-logo{
-  display:block !important;
-  max-width:120px !important;   /* limite dure */
-  width:auto !important;
-  height:auto !important;
-  margin:0 0 16px 0 !important; /* PLUS de centrage */
-  object-fit:contain;
+.exam-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:11px 0; border-bottom:1px solid #f1f5f9; cursor:pointer;
 }
+.exam-item:last-child{ border-bottom:none; }
+.exam-badge{ font-size:.7rem; font-weight:800; padding:4px 9px; border-radius:20px; flex-shrink:0; }
+.exam-badge.done{ background:#e9f9ee; color:#15803d; }
+.exam-badge.pending{ background:#fff4e5; color:#c2410c; }
+.exam-detail{ display:none; font-size:.83rem; color:#334155; padding:8px 0 4px; line-height:1.5; }
+.exam-detail.open{ display:block; }
 
-/* Sécurité écran */
-#accueil-logo{
-  max-inline-size:120px;
+/* bottom sheet salle */
+.sheet-backdrop{
+  position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:900; opacity:0; pointer-events:none; transition:opacity .2s;
 }
+.sheet-backdrop.open{ opacity:1; pointer-events:auto; }
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:901; background:var(--bg);
+  border-radius:24px 24px 0 0; max-height:82vh; display:flex; flex-direction:column;
+  transform:translateY(100%); transition:transform .28s cubic-bezier(.32,.72,0,1);
+  box-shadow:0 -10px 40px rgba(15,23,42,.2);
+}
+.sheet.open{ transform:translateY(0); }
+.sheet-handle{ width:40px; height:4px; background:#d8dee8; border-radius:4px; margin:10px auto 4px; }
+.sheet-head{ padding:6px 18px 12px; display:flex; align-items:center; justify-content:space-between; }
+.sheet-head h3{ margin:0; font-size:1rem; font-weight:800; }
+.sheet-close{ width:32px; height:32px; border-radius:10px; border:none; background:#f0f4f8; cursor:pointer; }
+.sheet-body{ overflow-y:auto; padding:0 16px calc(20px + var(--safe-bottom)); }
 
-/* Parent : alignement à gauche */
-#accueil-logo-parent{
-  width:100%;
-  max-width:100%;
-  overflow:hidden;
-  display:flex;
-  justify-content:flex-start;
+/* toast */
+#toastWrap{ position:fixed; top:calc(10px + var(--safe-top)); left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:5000; pointer-events:none; }
+.toast{
+  background:#111827; color:white; padding:11px 18px; border-radius:30px; font-size:.85rem; font-weight:600;
+  box-shadow:0 10px 26px rgba(0,0,0,.25); opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s;
+  max-width:88vw; text-align:center;
 }
+.toast.show{ opacity:1; transform:translateY(0); }
+.toast.error{ background:#b91c1c; }
+.toast.success{ background:#15803d; }
 
-.numero{text-align:center;font-size:4rem;font-weight:800;color:#dc3545}
-.status{text-align:center;font-weight:600;min-height:24px}
-.ok{color:#198754}
-.err{color:#dc3545}
-.footer{text-align:center;font-size:.85rem;color:#667;margin-top:10px}
-#infosPatient div{
-  font-size:1.05rem;
-  margin-top:4px;
-  font-weight:500;
-  color:#0b2240;
+.loader-overlay{
+  position:fixed; inset:0; background:rgba(240,244,248,.7); backdrop-filter:blur(3px); z-index:4000;
+  display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .25s;
 }
-/* ===============================
-   PAGE APPELS – MOBILE FRIENDLY
-================================ */
+.loader-overlay.show{ opacity:1; pointer-events:auto; }
+.spinner{ width:44px; height:44px; border-radius:50%; border:4px solid #cfe1f7; border-top-color:var(--blue-600); animation:spin .8s linear infinite; }
 
-/* Carte générale */
-#pageAppels .card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  margin: 12px 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 15px;
-}
-
-/* Labels et selects */
-#pageAppels label {
-  font-weight: 600;
-  margin-bottom: 4px;
-  display: block;
-  color: #374151;
-}
-
-#pageAppels select {
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 14px;
-  outline: none;
-  width: 100%;
-  transition: 0.2s;
-}
-
-#pageAppels select:focus {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(0,120,212,0.2);
-}
-
-/* Bouton appeler */
-#pageAppels .btn-success {
-  background: linear-gradient(135deg, #28a745, #32d067);
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-#pageAppels .btn-success:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(40,167,69,0.35);
-}
-
-/* Infos patient appelé */
-#infosAppelMobile {
-  margin-top: 12px;
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-}
-
-#infosAppelMobile .numero {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #dc3545;
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-#infosAppelMobile div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Status général */
-#appelStatusMobile {
-  margin-top: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* ===== RESPONSIVE MOBILE ===== */
-@media (max-width: 480px) {
-  #pageAppels h2 {
-    font-size: 18px;
-    text-align: center;
-    margin-bottom: 12px;
-  }
-
-  #pageAppels .card {
-    padding: 12px;
-    margin: 10px 6px;
-  }
-
-  #pageAppels select {
-    font-size: 13px;
-    padding: 10px 12px;
-  }
-
-  #pageAppels .btn-success {
-    font-size: 14px;
-    padding: 10px 12px;
-  }
-
-  #infosAppelMobile .numero {
-    font-size: 2.5rem;
-  }
-
-  #infosAppelMobile div {
-    font-size: 13px;
-  }
-}
-.page {
-  display: none;
-}
-.page.active {
-  display: block;
-}
-
-.page.active {
-  overscroll-behavior-x: none;
-  touch-action: pan-y;
-}
-/* ===============================
-   FILE D’ATTENTE – APPELS
-================================ */
-.attente-stats{
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border-radius: 14px;
-  font-size: 14px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-}
-
-.attente-total{
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.attente-types{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.attente-types span{
-  background: #e8f0ff;
-  color: #1e40af;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-/* ===============================
-   MODALE DE CHARGEMENT
-================================ */
-.loading-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000; /* AU-DESSUS DE TOUT */
-}
-
-.spinner{
-  width: 60px;
-  height: 60px;
-  border: 6px solid rgba(255,255,255,0.3);
-  border-top: 6px solid white;
-  border-radius: 50%;
-  animation: spinAround 0.9s linear infinite;
-}
-/* === SCAN CAMERA FIX === */
-
-#reader {
-  width: 100%;
-  max-width: 500px;
-  margin: auto;
-  aspect-ratio: 16 / 9; /* 🔥 meilleur pour code-barres */
-  background: black;
-  overflow: hidden;
-  border-radius: 16px;
-}
-
-#reader video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
-/* Cache les éléments inutiles html5-qrcode */
-#reader__dashboard_section,
-#reader__status_span {
-  display: none !important;
-}
-#barcodeFrame {
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 5px lime; }
-  50% { box-shadow: 0 0 20px lime; }
-  100% { box-shadow: 0 0 5px lime; }
-}
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+.pull-hint{ text-align:center; font-size:.72rem; color:#94a3b8; padding:2px 0 12px; font-weight:600; }
+</style>
 </head>
 <body>
-<div class="app" role="application" aria-label="Vue mobile urgences">
 
-  <header>
-  <button id="menuBtn" class="menu-btn">☰</button>
-  <div style="flex:1">
-    <h1>🚑 GestUrg2 mobil</h1>
-  </div>
-</header>
-<!-- MENU LATÉRAL -->
-<div id="sidebar" class="sidebar">
-  <div class="sidebar-header">Menu</div>
-
-  <div class="sidebar-item" onclick="goHome()">🏠 Accueil</div>
-  <div class="sidebar-item" onclick="goUrgences()">🚑 Urgences</div>
-<div id="menuAppels" class="sidebar-item" onclick="goAppels()">
-  📞 Appels
-</div>
-<div class="sidebar-item" onclick="goSignature()">
- ✍️ Signature patient
-</div>
-  <div class="sidebar-item logout" onclick="logout()">🔓 Se déconnecter</div>
-</div>
-
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-<div id="pageAccueil" class="page">
-  <div class="accueil-wrap">
-<div id="accueil-logo-parent">
-  <img id="accueil-logo" src="logo.png" alt="Logo">
-</div>
-    <h2 id="accueilBienvenue">Bienvenue</h2>
-    <div id="accueilHeure" class="accueil-heure">--:--</div>
-    <p class="accueil-txt">Sélectionnez une option dans le menu pour commencer.</p>
-  </div>
-</div>
-
-<div id="pageUrgences" class="page">
-
-  <div class="top-row">
-    <div class="search-wrap">
-      <input id="searchInput" class="search" type="search"
-             placeholder="Rechercher nom / prénom / ID..."
-             aria-label="Rechercher patient"/>
-
-      <div id="results" style="display:none"
-           role="listbox"
-           aria-label="Résultats de recherche"></div>
-
-      <button id="refreshBtn" class="btn" title="Rafraîchir">🔄</button>
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="login-mark">🏥</div>
+  <div class="login-title">Urgences · Mobile</div>
+  <div class="login-sub">Connectez-vous avec votre compte de l'application Urgences</div>
+  <div class="login-card">
+    <div class="field">
+      <label>Adresse email</label>
+      <input type="email" id="loginEmail" autocomplete="username" placeholder="prenom.nom@hopital.fr" />
     </div>
-  </div>
-
-  <!-- ✅ LA LISTE DOIT ÊTRE ICI -->
-  <div id="list" class="list" aria-live="polite"></div>
-
-</div>
-<!-- MODALE QR LOGIN -->
-
-<div id="pageAppels" class="page">
-  <h2>📞 Gestion des appels</h2>
-
-  <!-- Carte principale -->
-  <div class="card">
-    <label for="bureauMobile">Bureau</label>
-    <select id="bureauMobile">
-      <option value="">Sélectionner</option>
-      <option value="Bureau 1">Bureau 1</option>
-      <option value="Bureau 2">Bureau 2</option>
-      <option value="Bureau 3">Bureau 3</option>
-    </select>
-
-    <label for="typeAppel">Type d’appel</label>
-    <select id="typeAppel">
-      <option value="">Tous</option>
-      <option value="Urgences diverses">Urgences diverses</option>
-      <option value="Traumatologie">Traumatologie</option>
-      <option value="Pédiatrie">Pédiatrie</option>
- <option value="Gynécologie">Gynécologie</option>
-<option value="Ophtalmologie">Ophtalmologie</option>
-<option value="Administratif">Administratif</option>
-<option value="Sortie">Sortie</option>
-
-    </select>
-
-    <button class="btn-success" onclick="appelerTicketMobile()">
-      📣 Appeler le patient suivant
-    </button>
-
-    <!-- Infos patient appelé -->
-    <div id="infosAppelMobile" style="display:none" class="card">
-      <div class="numero" id="numeroAppelMobile">—</div>
-
-      <div id="infoMotifMobile">📝 Motif : —</div>
-      <div id="infoCircuitMobile">🧭 Circuit : —</div>
-      <div id="infoAttenteMobile">⏱️ Attente : —</div>
-      <div id="infoBureauMobile">📍 Bureau : —</div>
+    <div class="field" style="margin-bottom:8px;">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" />
     </div>
-
-    <!-- Statut -->
-    <div class="status" id="appelStatusMobile"></div>
-    <!-- 👇 NOUVEAU : file d’attente -->
-<div id="attenteStats" class="attente-stats">
-  <div class="attente-total">⏳ Patients en attente : —</div>
-  <div id="attenteParType" class="attente-types"></div>
-</div>
+    <button class="btn-primary" id="btnLogin">Se connecter</button>
+    <div class="login-error" id="loginError"></div>
   </div>
 </div>
-<div id="pageSignature" class="page">
 
-  <h2>✍️ Signature patient</h2>
+<!-- ================= APP ================= -->
+<div id="appRoot">
 
-  <button class="btn btn-green" onclick="startQrScan()">
-    📷 Scanner QR Code
-  </button>
-
-  <div id="reader" style="margin-top:15px;"></div>
-
-  <div id="signatureInfos" style="margin-top:15px;"></div>
-
-  <canvas
-      id="signatureCanvas"
-      width="350"
-      height="200"
-      style="
-        border:2px solid #ccc;
-        border-radius:12px;
-        background:white;
-        margin-top:15px;
-        display:none;">
-  </canvas>
-
-  <div style="margin-top:10px;">
-    <button class="btn btn-grey" onclick="clearSignature()">
-      Effacer
-    </button>
-
-    <button class="btn btn-green" onclick="saveSignature()">
-      Enregistrer
-    </button>
-  </div>
-
-</div>
-
-</div>
-
-
-  <!-- Modal lecture seule -->
-  <div id="modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal" role="document">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 id="modalTitle">Fiche patient</h3>
-        <button id="closeModal" style="background:transparent;border:0;font-size:20px;cursor:pointer">✖️</button>
+  <div class="topbar">
+    <div class="topbar-id">
+      <div class="topbar-logo">🏥</div>
+      <div>
+        <div class="topbar-title">Urgences</div>
+        <div class="topbar-sub" id="userGreeting">Vue mobile</div>
       </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnRefresh" title="Actualiser">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+      </button>
+      <button class="icon-btn" id="btnLogout" title="Déconnexion">⏻</button>
+    </div>
+  </div>
 
-      <div id="modalContent">
-        <div class="section-title">Identité</div>
-        <div class="field"><label>ID</label><div class="val" id="m-id">—</div></div>
-        <div class="field"><label>Nom / Prénom</label><div class="val" id="m-name">—</div></div>
-        <div class="field"><label>Sexe • Âge</label><div class="val" id="m-sexe-age">—</div></div>
-        <div class="field"><label>Allergies</label><div class="val" id="m-allergies">—</div></div>
+  <div class="pulse-bar"><div class="pulse-bar-fill" id="pulseBarFill" style="width:0%"></div></div>
 
-        <div class="section-title">Admission</div>
-        <div class="field"><label>Gravité</label><div class="val" id="m-grav">—</div></div>
-        <div class="field"><label>Motif</label><div class="val" id="m-motif">—</div></div>
-        <div class="field"><label>Moyen</label><div class="val" id="m-moyen">—</div></div>
-        <div class="field"><label>Position</label><div class="val" id="m-pos">—</div></div>
-                <div class="field"><label>Statut PEC</label><div class="val" id="m-statut">—</div></div>
+  <main class="views">
 
+    <!-- -------- PLAN -------- -->
+    <section class="view active" id="view-plan">
+      <div id="planContent"></div>
+    </section>
 
-        <div class="section-title">Dossier médical</div>
-        <div class="field"><label>Questionnaire</label><div class="val" id="m-questionnaire">—</div></div>
-        <div class="field"><label>Antécédents</label><div class="val" id="m-antecedents">—</div></div>
-        <div class="field"><label>Traitements</label><div class="val" id="m-traitements">—</div></div>
-        <div class="field"><label>Histoire</label><div class="val" id="m-histoire">—</div></div>
-        <div class="field"><label>Auscultation</label><div class="val" id="m-auscultation">—</div></div>
-
-        <div class="section-title">Constantes</div>
-<div class="field"><div class="val" id="m-constantes">—</div></div>
-
-<div class="section-title">Médicaments aux urgences</div>
-<div class="field"><div id="m-medicaments" class="val">Chargement...</div></div>
-
-        <div class="section-title">Examens</div>
-        <div class="field"><div class="val" id="m-exams">—</div></div>
-
-        <div class="section-title">Actes</div>
-        <div class="field"><div class="val" id="m-actes">—</div></div>
-
-        <div style="margin-top:12px;display:flex;gap:8px;">
+    <!-- -------- RECHERCHE -------- -->
+    <section class="view" id="view-recherche">
+      <div class="search-box">
+        <div class="search-input-wrap">
+          <span class="ic">🔍</span>
+          <input type="text" id="searchInput" placeholder="Rechercher un patient…" />
         </div>
-        <br><br>
+        <div class="chips-row" id="graviteChips"></div>
       </div>
-    </div>
-  </div>
-<!-- MODALE MEDICAMENT -->
-<div id="medModal" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 id="med-title">Médicament</h3>
-      <button id="medClose" style="background:none;border:0;font-size:20px;cursor:pointer">✖️</button>
-    </div>
+      <div id="searchResults"></div>
+    </section>
 
-    <div class="section-title">Informations</div>
-    <div class="field"><label>Nom</label><div class="val" id="med-nom">—</div></div>
-    <div class="field"><label>Date demande</label><div class="val" id="med-ddm">—</div></div>
-    <div class="field"><label>Damandé pour</label><div class="val" id="med-pr">—</div></div>
-        <div class="field"><label>Date administration</label><div class="val" id="med-date-admin">—</div></div>
+    <!-- -------- STATS -------- -->
+    <section class="view" id="view-stats">
+      <div id="statsContent"></div>
+    </section>
 
-    <div class="field"><label>Commentaires demande</label><div class="val" id="med-commentsd">—</div></div>
-   <div class="field"><label>Commentaires administration</label><div class="val" id="med-commentsp">—</div></div>
-    <button id="medClose2" class="btn" style="margin-top:10px">Fermer</button>
+  </main>
+
+  <div class="tabbar">
+    <button class="tabbar-btn active" data-view="plan">
+      <span class="ic">🗺️</span><span class="lb">Plan</span>
+    </button>
+    <button class="tabbar-btn" data-view="recherche">
+      <span class="ic">🔍</span><span class="lb">Recherche</span>
+    </button>
+    <button class="tabbar-btn" data-view="stats">
+      <span class="ic">📊</span><span class="lb">Stats</span>
+    </button>
   </div>
+
+  <!-- ---- Bottom sheet salle ---- -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="salleSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3 id="sheetTitle">Salle</h3>
+      <button class="sheet-close" id="sheetCloseBtn">✖</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+
+  <!-- ---- Fiche patient (plein écran) ---- -->
+  <div id="patientDetail">
+    <div class="pd-header">
+      <button class="pd-back" id="pdBack">←</button>
+      <div class="pd-head-info">
+        <div class="pd-name" id="pdName">—</div>
+        <div class="pd-sub" id="pdSub">—</div>
+      </div>
+      <div class="pd-grav-badge" id="pdGravBadge">—</div>
+    </div>
+    <div class="pd-body" id="pdBody"></div>
+  </div>
+
 </div>
 
+<div id="toastWrap"></div>
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
 
-<!-- MODALE EXAMEN -->
-<div id="examModal" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 id="exam-title">Examen</h3>
-      <button id="examClose" style="background:transparent;border:0;font-size:20px;cursor:pointer">✖️</button>
-    </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, query, where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <div class="section-title">Informations</div>
-    <div class="field"><label>Type</label><div class="val" id="exam-type">—</div></div>
-    <div class="field"><label>Date demande</label><div class="val" id="exam-date-demande">—</div></div>
-    <div class="field"><label>Date réalisation</label><div class="val" id="exam-date-real">—</div></div>
-    <div class="field"><label>Commentaires</label><div class="val" id="exam-comments">—</div></div>
-
-    <div class="section-title">Compte-rendu</div>
-    <div class="field"><div class="val" id="exam-report">—</div></div>
-
-    <div class="section-title">Fichier</div>
-    <div class="field"><div class="val" id="exam-file">Aucun fichier</div></div>
-
-    <button id="examClose2" class="btn" style="margin-top:14px">Fermer</button>
-  </div>
-</div>
-<!-- MODALE ACTE -->
-<div id="acteModal" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 id="acte-title">Acte</h3>
-      <button id="acteClose" style="background:transparent;border:0;font-size:20px;cursor:pointer">✖️</button>
-    </div>
-
-    <div class="section-title">Informations</div>
-    <div class="field"><label>Type</label><div class="val" id="acte-type">—</div></div>
-    <div class="field"><label>Date de demande</label><div class="val" id="acte-date-demande">—</div></div>
-    <div class="field"><label>Commentaires</label><div class="val" id="acte-comments">—</div></div>
-
-    <button id="acteClose2" class="btn" style="margin-top:14px">Fermer</button>
-  </div>
-</div>
-<!-- MODALE DE CHARGEMENT -->
-<div id="loadingModal" class="loading-overlay">
-  <div class="spinner"></div>
-</div>
-
-<!-- Firebase compat (comme dans tes fichiers existants) -->
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-<script>
-/* ----------------------
-   Config Firebase (identique à tes fichiers)
-   ---------------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
   authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -1270,1179 +488,750 @@ const firebaseConfig = {
   appId: "1:392921498200:web:7ccce767332c67c697c02d",
   measurementId: "G-C74MK2KYDL"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
-/* ----------------------
-   Utils
-   ---------------------- */
-const sansAccents = s => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-const ageFromDOB = dob => {
-  if(!dob) return '—';
-  const d = new Date(dob);
-  const diff = Date.now() - d.getTime();
-  const y = Math.floor(diff / (1000*60*60*24*365.25));
-  return y + ' ans';
-};
-const graviteClass = (g) => g ? 'g-' + String(g).replace(/\s+/g,'_') : 'g-Administratif';
-const graviteLabel = (g) => g ? String(g).replace(/_/g,' ') : '—';
-db.collection("accueil-1")
-  .where("statut", "==", "attente")
-  .onSnapshot(() => {
-    updateAttenteStats();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+/* =========================================================
+   CONFIG SALLES (identique au plan des urgences bureau)
+========================================================= */
+const CATEGORIES = [
+  {
+    id: "accueil", label: "Accueil & Orientation", icon: "🏥",
+    salles: [
+      { id: "salle-attente", label: "Salle d'attente", icon: "🪑", capacite: 6, flexible: true },
+      { id: "nv-couche",     label: "Non vus couchés", icon: "🛏️", capacite: 6, flexible: false },
+      { id: "iao",           label: "IAO",             icon: "👨‍⚕️", capacite: 6, flexible: false },
+    ]
+  },
+  {
+    id: "pec", label: "Prise en charge", icon: "🩺",
+    salles: [
+      { id: "PEC-valide", label: "PEC Valide",  icon: "🧍", capacite: 4, flexible: true },
+      { id: "PEC-couche", label: "PEC Couché",  icon: "🛌", capacite: 4, flexible: true },
+      { id: "dechoc",     label: "Déchoquage",  icon: "🚨", capacite: 4, flexible: false },
+      { id: "imagerie",   label: "Imagerie",    icon: "☢️", capacite: 4, flexible: true },
+      { id: "psy",        label: "Filière Psy", icon: "🧠", capacite: 4, flexible: true },
+    ]
+  },
+  {
+    id: "boxs", label: "Boxs", icon: "⬜",
+    salles: [
+      { id: "box1", label: "Box 1", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box2", label: "Box 2", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box3", label: "Box 3", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box4", label: "Box 4", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box5", label: "Box 5", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box6", label: "Box 6", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box7", label: "Box 7", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box8", label: "Box 8", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box9", label: "Box 9", icon: "🔲", capacite: 1, flexible: false },
+      { id: "box10", label: "Box 10", icon: "🔲", capacite: 1, flexible: false },
+      { id: "boxContention", label: "Box contention", icon: "🧷", capacite: 1, flexible: false },
+      { id: "boxTrauma1", label: "Trauma 1", icon: "🩼", capacite: 1, flexible: false },
+      { id: "boxTrauma2", label: "Trauma 2", icon: "🩼", capacite: 1, flexible: false },
+      { id: "boxTrauma3", label: "Trauma 3", icon: "🩼", capacite: 1, flexible: false },
+      { id: "boxTrauma4", label: "Trauma 4", icon: "🩼", capacite: 1, flexible: false },
+      { id: "boxTrauma5", label: "Trauma 5", icon: "🩼", capacite: 1, flexible: false },
+    ]
+  },
+  {
+    id: "sortie", label: "Sortie", icon: "🚪",
+    salles: [
+      { id: "sortieUrgente",         label: "Sortie urgente",    icon: "🚨", capacite: 2, flexible: true },
+      { id: "sortieSecondaire",      label: "Sortie secondaire", icon: "🚪", capacite: 2, flexible: true },
+      { id: "hospitalisationSortie", label: "Hospitalisation",   icon: "🏥", capacite: 2, flexible: true },
+    ]
+  },
+];
+
+const SALLES_INDEX = {}; // id -> {label, icon, capacite, flexible, categorieId, categorieLabel}
+CATEGORIES.forEach(cat => {
+  cat.salles.forEach(s => {
+    SALLES_INDEX[s.id] = { ...s, categorieId: cat.id, categorieLabel: cat.label, categorieIcon: cat.icon };
   });
+});
 
-/* ----------------------
-   DOM refs
-   ---------------------- */
-const listEl = document.getElementById('list');
-const searchInput = document.getElementById('searchInput');
-const resultsBox = document.getElementById('results');
-const refreshBtn = document.getElementById('refreshBtn');
+const GRAVITE_COLORS = {
+  P0: "var(--g-p0)",
+  P1: "var(--g-p1)",
+  P2: "var(--g-p2)",
+  P3: "var(--g-p3)",
+  Urgences_Vitales: "var(--g-uv)",
+  Administratif: "var(--g-admin)"
+};
+const GRAVITE_LABELS = {
+  P0: "P0", P1: "P1", P2: "P2", P3: "P3",
+  Urgences_Vitales: "Urgences vitales", Administratif: "Administratif"
+};
+const GRAVITE_ORDER = ["Urgences_Vitales","P3","P2","P1","P0","Administratif"];
 
-const modalOverlay = document.getElementById('modal');
-const closeModal = document.getElementById('closeModal');
+/* =========================================================
+   ETAT GLOBAL
+========================================================= */
+let state = {
+  patients: [],        // liste enrichie { id, ...patientData, hospi:{...} }
+  currentTab: "plan",
+  searchTerm: "",
+  searchGravFilter: null,
+  refreshTimer: null,
+};
 
-const m_id = document.getElementById('m-id');
-const m_name = document.getElementById('m-name');
-const m_sexe_age = document.getElementById('m-sexe-age');
-const m_allergies = document.getElementById('m-allergies');
-const m_grav = document.getElementById('m-grav');
-const m_motif = document.getElementById('m-motif');
-const m_moyen = document.getElementById('m-moyen');
-const m_pos = document.getElementById('m-pos');
-const m_statut = document.getElementById('m-statut');
-const m_questionnaire = document.getElementById('m-questionnaire');
-const m_antecedents = document.getElementById('m-antecedents');
-const m_traitements = document.getElementById('m-traitements');
-const m_histoire = document.getElementById('m-histoire');
-const m_auscultation = document.getElementById('m-auscultation');
-const m_temp = document.getElementById('m-temp');
-const m_fc = document.getElementById('m-fc');
-const m_ta = document.getElementById('m-ta');
-const m_sat = document.getElementById('m-sat');
-const m_fr = document.getElementById('m-fr');
-const m_exams = document.getElementById('m-exams');
-const m_actes = document.getElementById('m-actes');
-const medModal = document.getElementById("medModal");
-const medClose = document.getElementById("medClose");
-const medClose2 = document.getElementById("medClose2");
+/* =========================================================
+   UTILS UI
+========================================================= */
+function toast(message, type=""){
+  const wrap = document.getElementById("toastWrap");
+  const el = document.createElement("div");
+  el.className = "toast" + (type ? " " + type : "");
+  el.textContent = message;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 300);
+  }, 2600);
+}
+function showLoader(){ document.getElementById("loaderOverlay").classList.add("show"); }
+function hideLoader(){ document.getElementById("loaderOverlay").classList.remove("show"); }
 
-function showMedModal(){ medModal.style.display = "flex"; }
-function hideMedModal(){ medModal.style.display = "none"; }
-
-medClose.onclick = hideMedModal;
-medClose2.onclick = hideMedModal;
-medModal.onclick = e => { if (e.target === medModal) hideMedModal(); };
-
-let patientsCache = [];
-let lastOpenedId = null;
-
-/* ----------------------
-   Récupère et rend la liste (méthode loyale à urgences.html)
-   ---------------------- */
-async function fetchPatients() {
-  listEl.innerHTML = '<div style="padding:12px;color:var(--muted)">Chargement…</div>';
-  try {
-    const snap = await db.collection('patients').get();
-    const arr = [];
-
-    for (const doc of snap.docs) {
-      const data = doc.data();
-
-      // Vérifie s'il y a une hospitalisation active
-      const hospiId = data.hospitalisationActiveId;
-      let hospi = null; // initialisation à null
-
-      if (hospiId) {
-        const hospiSnap = await db.collection('hospitalisations').doc(hospiId).get();
-        if (hospiSnap.exists) hospi = hospiSnap.data();
-      }
-
-      // Ne garder que les patients ayant une hospitalisation active
-      if (hospi) {
-        arr.push({
-          id: doc.id,
-          docData: data,
-          hospi
-        });
-      }
-    }
-
-    // tri : urgences vitales, P3,P2,P1,P0, puis alpha
-    const order = {'Urgences_Vitales':0,'P3':1,'P2':2,'P1':3,'P0':4,'Administratif':5};
-    arr.sort((a, b) => {
-      const oa = order[a.hospi?.gravite] ?? 6;
-      const ob = order[b.hospi?.gravite] ?? 6;
-      if (oa !== ob) return oa - ob;
-      const na = (a.docData.nom || '').toLowerCase();
-      const nb = (b.docData.nom || '').toLowerCase();
-      return na.localeCompare(nb);
-    });
-
-    patientsCache = arr;
-    renderList(arr);
-
-  } catch(e) {
-    console.error(e);
-    listEl.innerHTML = '<div style="padding:12px;color:#d9534f">Erreur chargement patients.</div>';
-  }
+function sansAccents(str){
+  return (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+function calculerAge(dateNaissance){
+  if (!dateNaissance) return NaN;
+  const naissance = new Date(dateNaissance);
+  if (isNaN(naissance.getTime())) return NaN;
+  const now = new Date();
+  let age = now.getFullYear() - naissance.getFullYear();
+  const m = now.getMonth() - naissance.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < naissance.getDate())) age--;
+  return age;
+}
+function escapeHtml(str){
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function fieldOrEmpty(val, emptyLabel="Non renseigné"){
+  const v = (val === null || val === undefined || val === "") ? null : val;
+  return v
+    ? `<span class="v">${escapeHtml(v)}</span>`
+    : `<span class="v empty">${emptyLabel}</span>`;
+}
+function textBlock(val, emptyLabel="Non renseigné."){
+  const v = (val || "").trim();
+  return v
+    ? `<div class="txt-block">${escapeHtml(v)}</div>`
+    : `<div class="txt-block empty">${emptyLabel}</div>`;
 }
 
+/* =========================================================
+   AUTHENTIFICATION
+========================================================= */
+document.getElementById("btnLogin").addEventListener("click", doLogin);
+document.getElementById("loginPassword").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 
-function renderList(arr){
-  listEl.innerHTML = '';
-  if(arr.length === 0){
-    listEl.innerHTML = '<div style="padding:12px;color:var(--muted)">Aucun patient hospitalisé.</div>';
+async function doLogin(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errBox = document.getElementById("loginError");
+  errBox.style.display = "none";
+  if (!email || !password){
+    errBox.textContent = "Merci de renseigner votre email et votre mot de passe.";
+    errBox.style.display = "block";
     return;
   }
-
-  arr.forEach(p => {
-    const card = document.createElement('div');
-    const gravite = p.hospi?.gravite || 'P0';
-    card.className = 'patient-card ' + graviteClass(gravite);
-    card.dataset.id = p.id;
-
-    const initials = document.createElement('div');
-    initials.className = 'avatar ' + graviteClass(gravite);
-    const nom = (p.docData.nom || '?').toString();
-    const prenom = (p.docData.prenom || '').toString();
-    initials.textContent = ( (nom[0]||'?') + (prenom[0]||'?') ).toUpperCase();
-
-    const info = document.createElement('div');
-    info.className = 'info';
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = `${(nom || '—').toUpperCase()} ${(prenom || '')}`;
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const age = document.createElement('div'); age.textContent = ageFromDOB(p.docData.dateNaissance);
-    const place = document.createElement('div'); place.textContent = p.docData.position || '—';
-    const grav = document.createElement('div'); grav.className = 'badge'; grav.textContent = graviteLabel(gravite);
-
-    meta.appendChild(age);
-    meta.appendChild(place);
-    meta.appendChild(grav);
-
-    info.appendChild(name);
-    info.appendChild(meta);
-
-    const rightCol = document.createElement('div');
-    rightCol.style.display='flex';
-    rightCol.style.flexDirection='column';
-    rightCol.style.alignItems='flex-end';
-
-    // allergy star (use importanceAllergies OR allergies text)
-    if(p.docData.importanceAllergies === true || (p.docData.allergies && p.docData.allergies.trim() && p.docData.allergies.trim().toLowerCase() !== 'aucun')){
-      const star = document.createElement('div');
-      star.className = 'allergy-star';
-      star.title = 'Allergie signalée';
-      star.textContent = '⭐';
-      rightCol.appendChild(star);
-    }
-
-    const actions = document.createElement('div'); actions.className='actions';
-    const btnView = document.createElement('button'); btnView.className='action-btn'; btnView.textContent='🔎';
-    btnView.addEventListener('click', (e)=>{ e.stopPropagation(); openModalFor(p.id); });
-   
-    actions.appendChild(btnView); 
-    rightCol.appendChild(actions);
-
-    // double-click / touch long to open modal
-    card.addEventListener('dblclick', ()=> openModalFor(p.id));
-    let touchTimer = null;
-    card.addEventListener('touchstart', e=>{
-      touchTimer = setTimeout(()=> openModalFor(p.id),700);
-    });
-    card.addEventListener('touchend', e=>{ if(touchTimer) clearTimeout(touchTimer); });
-
-    card.appendChild(initials);
-    card.appendChild(info);
-    card.appendChild(rightCol);
-    listEl.appendChild(card);
-  });
-}
-function showLoading(){
-  document.getElementById("loadingModal").style.display = "flex";
-  document.body.style.pointerEvents = "none";
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true; btn.textContent = "Connexion…";
+  try{
+    await signInWithEmailAndPassword(auth, email, password);
+  }catch(e){
+    console.error(e);
+    errBox.textContent = "Identifiants incorrects ou compte introuvable.";
+    errBox.style.display = "block";
+  }finally{
+    btn.disabled = false; btn.textContent = "Se connecter";
+  }
 }
 
-function hideLoading(){
-  document.getElementById("loadingModal").style.display = "none";
-  document.body.style.pointerEvents = "auto";
-}
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  clearInterval(state.refreshTimer);
+  await signOut(auth);
+});
 
-
-function formatDuree(ms) {
-  const min = Math.floor(ms / 60000);
-  if (min < 1) return "moins d’1 min";
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  const r = min % 60;
-  return r ? `${h}h ${r}min` : `${h}h`;
-}
-
-/* ----------------------
-   Recherche autocomplete (local cache)
-   ---------------------- */
-searchInput.addEventListener('input', (e)=>{
-  const q = sansAccents(e.target.value.trim());
-  resultsBox.innerHTML=''; resultsBox.style.display='none';
-  if(q.length < 2) return;
-  const found = patientsCache.filter(p => {
-    const nom = sansAccents(p.docData.nom || '');
-    const pren = sansAccents(p.docData.prenom || '');
-    return nom.includes(q) || pren.includes(q) || p.id.toLowerCase().includes(q);
-  }).slice(0,30);
-
-  if(found.length === 0){
-    resultsBox.style.display='block';
-    resultsBox.innerHTML = '<div class="res-item">Aucun résultat</div>';
+onAuthStateChanged(auth, async (user) => {
+  if (!user){
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("appRoot").classList.remove("active");
     return;
   }
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appRoot").classList.add("active");
 
-  found.forEach(p=>{
-    const d = document.createElement('div');
-    d.className='res-item';
-    d.textContent = `${p.docData.nom || ''} ${p.docData.prenom || ''} • ${p.hospi?.gravite || '—'} • ${p.docData.position||'—'}`;
-    d.addEventListener('click', ()=> openModalFor(p.id));
-    d.addEventListener('dblclick', ()=> window.location.href = `fiche.html?id=${p.id}`);
-    resultsBox.appendChild(d);
-  });
-  resultsBox.style.display='block';
+  try{
+    const medRef = doc(db, "medecins", user.uid);
+    const medSnap = await getDoc(medRef);
+    if (medSnap.exists()){
+      const d = medSnap.data();
+      document.getElementById("userGreeting").textContent = d.nom ? `Bonjour, ${d.nom}` : "Vue mobile";
+    }
+  }catch(e){ /* pas bloquant */ }
+
+  await initApp();
 });
 
-// hide results on click outside
-document.addEventListener('click',(e)=>{
-  if(!document.querySelector('.search-wrap').contains(e.target)){
-    resultsBox.style.display='none';
-  }
-});
-
-/* ----------------------
-   Modal functions (loads patient document and fills modal using hospitalisationIndex)
-   ---------------------- */
-function showModal(){ modalOverlay.style.display='flex'; modalOverlay.setAttribute('aria-hidden','false'); }
-function hideModal(){ modalOverlay.style.display='none'; modalOverlay.setAttribute('aria-hidden','true'); }
-closeModal.addEventListener('click', hideModal);
-
-async function openModalFor(id) {
-  lastOpenedId = id;
-  try {
-    const patientSnap = await db.collection('patients').doc(id).get();
-    if (!patientSnap.exists) { alert('Patient introuvable'); return; }
-    const data = patientSnap.data();
-
-    const hospiId = data.hospitalisationActiveId;
-    let hospi = {};
-    if (hospiId) {
-      const hospiSnap = await db.collection('hospitalisations').doc(hospiId).get();
-      if (hospiSnap.exists) hospi = hospiSnap.data();
-    }
-
-    // identité
-    m_id.textContent = id;
-    m_name.textContent = `${data.nom || '—'} ${data.prenom || ''}`;
-    m_sexe_age.textContent = `${data.sexe || '—'} • ${ageFromDOB(data.dateNaissance)}`;
-    m_allergies.textContent = data.allergies || (data.importanceAllergies ? 'Allergies (importantes)' : 'Aucune');
-
-    // admission
-    m_grav.textContent = hospi.gravite || '—';
-    m_motif.textContent = hospi.motif || '—';
-    m_moyen.textContent = hospi.moyen || '—';
-    m_pos.textContent = data.position || '—';
-    m_statut.textContent = data.pdcStatut || '—';
-
-    // dossier médical
-    const dm = hospi.dossierMedical || {};
-    m_questionnaire.textContent = dm.questionnaire || '—';
-    m_antecedents.textContent = dm.antecedents || '—';
-    m_traitements.textContent = dm.traitements || '—';
-    m_histoire.textContent = dm.histoire || '—';
-    m_auscultation.textContent = dm.auscultation || '—';
-
-    
-    // ---------------------------
-// Constantes regroupées
-// ---------------------------
-const c = hospi.constantes || {};
-const constantesText = 
-    `Temp : ${c.temperature || "—"}\n` +
-    `FC : ${c.fc || "—"}\n` +
-    `TA : ${c.ta || "—"}\n` +
-    `SpO2 : ${c.saturation || "—"}\n` +
-    `FR : ${c.fr || "—"}\n` +
-    `Douleur : ${c.douleur || "—"}`;
-
-document.getElementById("m-constantes").textContent = constantesText;
-
-// ---------------------------
-// EXAMENS — couleur + clic = modale
-// ---------------------------
-const examsRaw = Array.isArray(hospi.examens)
-  ? hospi.examens
-  : (Array.isArray(hospi.examensDemandes) ? hospi.examensDemandes : []);
-
-// Filtre des entrées vides
-const exams = examsRaw.filter(e => {
-  if (!e) return false;
-  if (typeof e === "string" && e.trim() === "") return false;
-  if (typeof e === "object" && Object.keys(e).length === 0) return false;
-  return true;
-});
-
-if (exams.length === 0) {
-  m_exams.textContent = "Aucun examen";
-} else {
-  m_exams.innerHTML = "";
-
-  exams.forEach((ex, i) => {
-    const pill = document.createElement("span");
-    pill.className = "pill";
-    pill.style.cursor = "pointer";
-    pill.textContent = truncateText(ex.type || "Examen", 25);
-
-
-    // ---------------------------
-    // CODE COULEUR EXAMENS
-    // ---------------------------
-    const realised = !!ex.dateRealisation;
-
-    if (realised) {
-      // VERT = réalisé
-      pill.style.background = "#e8fff1";
-      pill.style.color = "#146c2e";
-      pill.style.border = "1px solid #cbf7d5";
-    } else {
-      // BLEU = non réalisé
-      pill.style.background = "#d7e9ff";
-      pill.style.color = "#0d47a1";
-      pill.style.border = "1px solid #c1d7ff";
-    }
-
-    pill.onclick = () => openExam(id, i);
-    m_exams.appendChild(pill);
-  });
+/* =========================================================
+   CHARGEMENT DES DONNEES (lecture seule)
+========================================================= */
+async function initApp(){
+  await chargerDonnees();
+  buildGraviteChips();
+  clearInterval(state.refreshTimer);
+  state.refreshTimer = setInterval(chargerDonnees, 60 * 1000);
 }
 
-
-// ---------------------------
-// Actes
-// ---------------------------
-let rawActes = Array.isArray(hospi.actes) ? hospi.actes : [];
-
-// Filtre les actes vides
-const actes = rawActes.filter(a => {
-  if (!a) return false;
-  if (typeof a === "string" && a.trim() === "") return false;
-  if (typeof a === "object" && Object.keys(a).length === 0) return false;
-  return true;
-});
-
-if (actes.length) {
-  m_actes.innerHTML = "";
-  actes.forEach((a, i) => {
-    const s = document.createElement("span");
-    s.className = "pill";
-    s.textContent = truncateText(a.type || a || "Acte", 25);
-
-
-    // clique → modale acte
-    s.style.cursor = "pointer";
-    s.onclick = () => openActe(id, i);
-
-    m_actes.appendChild(s);
-  });
-} else {
-  m_actes.textContent = "Aucun acte";
-}
-// ----------------------------------------------------
-// MÉDICAMENTS AUX URGENCES — VERSION CORRECTE POUR TA STRUCTURE
-// ----------------------------------------------------
-const medsDiv = document.getElementById("m-medicaments");
-medsDiv.textContent = "Chargement...";
-
-// hospitalisation actuelle
-const hospiIndex = data.hospitalisationIndex ?? 0;
-const hospi2 = data.hospitalisations?.[hospiIndex] || {};
-const meds = hospi2.meds || [];
-
-if (!Array.isArray(meds) || meds.length === 0) {
-    medsDiv.textContent = "Aucun médicament";
-} 
-else {
-    medsDiv.innerHTML = "";
-
-    meds.forEach((m, i) => {
-      console.log("---- med index", i, "----");
-console.log("m:", m);
-console.log("m.status initial:", m.status);
-console.log("m.dueAt raw:", m.dueAt);
-
-        // m = le DOCUMENT du médicament (directement)
-        const pill = document.createElement("span");
-        pill.className = "pill";
-        pill.style.cursor = "pointer";
-
-pill.textContent = truncateText(m.product || "Médicament", 25);
-
-        // -----------------------------
-        // LOGIQUE CODE COULEUR EXACTE
-        // -----------------------------
-        let status = m.status || "";
-
-      if (status !== "pris") {
-    const now = new Date();
-    const due = m.dueAt?.toDate?.() ? m.dueAt.toDate() : null;
-
-    if (due) {
-        const diff = (now - due) / 60000;
-
-        if (diff >= -10 && diff <= 10) {
-            status = "a-donner";           // Dans la fenêtre ±10 min
-        } else if (diff < -10) {
-            status = "prevu";              // Plus de 10 min avant
-        } else if (diff > 10) {
-            status = "en-retard";          // Plus de 10 min après
-        }
-    }
-}
-
-
-        if (status === "pris") {
-            pill.style.background = "#e8fff1";
-            pill.style.color = "#146c2e";
-            pill.style.border = "1px solid #cbf7d5";
-        }
-        else if (status === "en-retard") {
-            pill.style.background = "#ffecec";
-            pill.style.color = "#c62828";
-            pill.style.border = "1px solid #ffdada";
-        }
-        else if (status === "a-donner") {
-            pill.style.background = "#d7e9ff";
-            pill.style.color = "#0d47a1";
-            pill.style.border = "1px solid #c1d7ff";
-        }
-        else if (status === "prevu") {
-            pill.style.background = "#eef4ff";
-            pill.style.color = "#0d47a1";
-            pill.style.border = "1px solid #d0e0ff";
-        }
-
-        // clic → ouvrir modale détaillée
-        pill.onclick = () => openMedicamentLocal(m);
-
-        medsDiv.appendChild(pill);
-    });
-}
-
-
-
-    showModal();
-  }catch(err){
-    console.error(err);
-    alert('Erreur récupération fiche');
-  }
-}
-/* ------------------------------------------------
-   MODALE EXAMEN
----------------------------------------------------*/
-const examModal = document.getElementById('examModal');
-const examClose = document.getElementById('examClose');
-const examClose2 = document.getElementById('examClose2');
-
-function showExamModal(){ examModal.style.display='flex'; }
-function hideExamModal(){ examModal.style.display='none'; }
-
-examClose.onclick = hideExamModal;
-examClose2.onclick = hideExamModal;
-examModal.onclick = (e)=>{ if(e.target === examModal) hideExamModal(); };
-
-/* Charge un examen complet dans la modale */
-async function openExam(patientId, examIndex) {
-  try {
-    // 🔹 Charger le patient
-    const patientSnap = await db.collection("patients").doc(patientId).get();
-    if (!patientSnap.exists) return alert("Patient introuvable");
-    const patientData = patientSnap.data();
-
-    // 🔹 Charger l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) return alert("Aucune hospitalisation active");
-
-    const hospiSnap = await db.collection("hospitalisations").doc(hospiId).get();
-    if (!hospiSnap.exists) return alert("Hospitalisation introuvable");
-    const hospi = hospiSnap.data();
-
-    // 🔹 Récupérer examens
-    const exams = hospi.examens || hospi.examensDemandes || [];
-    const ex = exams[examIndex];
-    if (!ex) return alert("Examen introuvable");
-
-    // 🔹 Remplissage modal
-    document.getElementById("exam-title").textContent = ex.type || "Examen";
-    document.getElementById("exam-type").textContent = ex.type || "—";
-    document.getElementById("exam-date-demande").textContent = ex.dateDemande || "—";
-    document.getElementById("exam-date-real").textContent = ex.dateRealisation || "—";
-    document.getElementById("exam-comments").textContent = ex.commentaires || ex.commentaire || "—";
-    document.getElementById("exam-report").textContent = ex.compteRendu || "—";
-
-    const fileDiv = document.getElementById("exam-file");
-    if (ex.fichier) {
-      fileDiv.innerHTML = `<a href="${ex.fichier}" target="_blank">Voir fichier</a>`;
-    } else {
-      fileDiv.textContent = "Aucun fichier";
-    }
-
-    showExamModal();
-
-  } catch (e) {
-    console.error(e);
-    alert("Erreur chargement examen");
-  }
-}
-
-
-/* ----------------------
-   Refresh / init
-   ---------------------- */
-refreshBtn.addEventListener('click', () => {
-    fetchPatients();
-
-    const canvas = document.getElementById("signatureCanvas");
-
-    signaturePad = new SignaturePad(canvas, {
-        backgroundColor: "white"
-    });
-});
-
-window.addEventListener('load', () => {
-    fetchPatients();
-
-    const canvas = document.getElementById("signatureCanvas");
-
-    signaturePad = new SignaturePad(canvas, {
-        backgroundColor: "white"
-    });
-});
-
-// close modal by clicking overlay
-modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) hideModal(); });
-
-/* ------------------------------------------------
-   MODALE ACTE
----------------------------------------------------*/
-const acteModal = document.getElementById('acteModal');
-const acteClose = document.getElementById('acteClose');
-const acteClose2 = document.getElementById('acteClose2');
-
-function showActeModal(){ acteModal.style.display='flex'; }
-function hideActeModal(){ acteModal.style.display='none'; }
-
-acteClose.onclick = hideActeModal;
-acteClose2.onclick = hideActeModal;
-acteModal.onclick = (e)=>{ if(e.target === acteModal) hideActeModal(); };
-
-/* Charger un acte dans la modale */
-async function openActe(patientId, acteIndex) {
-  try {
-    // 🔹 Charger le patient
-    const patientSnap = await db.collection("patients").doc(patientId).get();
-    if (!patientSnap.exists) return alert("Patient introuvable");
-    const patientData = patientSnap.data();
-
-    // 🔹 Charger l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) return alert("Aucune hospitalisation active");
-
-    const hospiSnap = await db.collection("hospitalisations").doc(hospiId).get();
-    if (!hospiSnap.exists) return alert("Hospitalisation introuvable");
-    const hospi = hospiSnap.data();
-
-    // 🔹 Récupérer actes
-    const actes = Array.isArray(hospi.actes) ? hospi.actes : [];
-    const a = actes[acteIndex];
-    if (!a) return alert("Acte introuvable");
-
-    // 🔹 Remplissage modal
-    document.getElementById("acte-title").textContent = a.type || "Acte";
-    document.getElementById("acte-type").textContent = a.type || "—";
-    document.getElementById("acte-date-demande").textContent = a.date || "—";
-    document.getElementById("acte-comments").textContent = a.commentaires || "—";
-
-    showActeModal();
-
-  } catch(e){
-    console.error(e);
-    alert("Erreur chargement acte");
-  }
-}
-async function updateAttenteStats() {
-  const totalDiv = document.querySelector(".attente-total");
-  const typesDiv = document.getElementById("attenteParType");
-
-  const snap = await db.collection("accueil-1")
-    .where("statut", "==", "attente")
-    .get();
-
-  // Total
-  totalDiv.textContent = `⏳ Patients en attente : ${snap.size}`;
-
-  // Comptage par type
-  const counts = {};
-
-  snap.docs.forEach(d => {
-    const motif = d.data().motif || "Autre";
-    counts[motif] = (counts[motif] || 0) + 1;
-  });
-
-  // Affichage
-  typesDiv.innerHTML = "";
-  for (const type in counts) {
-    const pill = document.createElement("span");
-    pill.textContent = `${type} : ${counts[type]}`;
-    typesDiv.appendChild(pill);
-  }
-
-  // Aucun patient
-  if (snap.size === 0) {
-    typesDiv.innerHTML = `<span>Aucun patient</span>`;
-  }
-}
-
-async function openMedicament(patientId, medIndex) {
-  try {
-    // 🔹 Charger le patient
-    const patientSnap = await db.collection("patients").doc(patientId).get();
-    if (!patientSnap.exists) return alert("Patient introuvable");
-    const patientData = patientSnap.data();
-
-    // 🔹 Récupérer l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) return alert("Aucune hospitalisation active");
-
-    const hospiSnap = await db.collection("hospitalisations").doc(hospiId).get();
-    if (!hospiSnap.exists) return alert("Hospitalisation introuvable");
-    const hospi = hospiSnap.data();
-
-    // 🔹 Récupérer le médicament
-    const meds = Array.isArray(hospi.meds) ? hospi.meds : [];
-    const m = meds[medIndex];
-    if (!m) return alert("Médicament introuvable");
-
-    // 🔹 Remplissage modal
-    document.getElementById("med-title").textContent = m.product || "Médicament";
-    document.getElementById("med-nom").textContent = m.product || "—";
-    document.getElementById("med-ddm").textContent = m.createdAt || "—";
-    document.getElementById("med-pr").textContent = m.dueAt || "—";
-    document.getElementById("med-date-admin").textContent = m.takenAt || "—";
-    document.getElementById("med-commentsd").textContent = m.comment || "—";
-    document.getElementById("med-commentsp").textContent = m.takeComment || "—";
-
-    showMedModal();
-
-  } catch (err) {
-    console.error(err);
-    alert("Erreur chargement médicament");
-  }
-}
-
-// Si tu as déjà l'objet médicament localement
-function openMedicamentLocal(m) {
-  document.getElementById("med-title").textContent = m.product || "Médicament";
-  document.getElementById("med-nom").textContent = m.product || "—";
-  document.getElementById("med-ddm").textContent = m.createdAt || "—";
-  document.getElementById("med-pr").textContent = m.dueAt || "—";
-  document.getElementById("med-date-admin").textContent = m.takenAt || "—";
-  document.getElementById("med-commentsd").textContent = m.comment || "—";
-  document.getElementById("med-commentsp").textContent = m.takeComment || "—";
-
-  showMedModal();
-}
-
-function truncateText(text, maxLength = 30) {
-  if (!text) return "";
-  return text.length > maxLength ? text.slice(0, maxLength) + "…" : text;
-}
-async function notifyDoctor(msg) {
-  await fetch("https://onesignal-notify-backend.onrender.com", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      doctorId: auth.currentUser.uid,
-      title: "🩺 Patient mis à jour",
-      message: msg
-    })
-  });
-}
-function hideAllPages(){
-  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-}
-
-
-const bureauSelectMobile = document.getElementById("bureauMobile");
-
-db.collection("referentiels").doc("bureau")
-  .onSnapshot(doc => {
-    bureauSelectMobile.innerHTML = "";
-    if (!doc.exists) return;
-
-    const data = doc.data();
-
-    for (const id in data) {
-
-      // ❌ exclure "general"
-      if (id === "general") continue;
-
-      // sécurité
-      if (typeof data[id] !== "object") continue;
-
-      const opt = document.createElement("option");
-      opt.value = id;
-      opt.textContent = id;
-      bureauSelectMobile.appendChild(opt);
-    }
-  });
-  function showPage(pageId) {
-
-  
-
-  document.querySelectorAll('.page').forEach(p => {
-    p.classList.remove('active');
-  });
-
-  document.getElementById(pageId).classList.add('active');
-
-
-
-  closeSidebar();
-}
-function goHome() {
-  showPage('pageAccueil');
-}
-
-function goUrgences() {
-  showPage('pageUrgences');
-}
-
-function goAppels() {
-  showPage('pageAppels');
-  updateAttenteStats();
-
-}
-function goSignature() {
-  showPage('pageSignature');
-}
-
-
-
- async function appelerTicketMobile() {
-  showLoading();
-
-  try {
-    updateAttenteStats();
-
-    const bureau = document.getElementById("bureauMobile").value;
-    const type = document.getElementById("typeAppel").value;
-
-    const status    = document.getElementById("appelStatusMobile");
-    const numeroDiv = document.getElementById("numeroAppelMobile");
-    const motifDiv  = document.getElementById("infoMotifMobile");
-    const circuitDiv= document.getElementById("infoCircuitMobile");
-    const attenteDiv= document.getElementById("infoAttenteMobile");
-    const bureauDiv = document.getElementById("infoBureauMobile");
-    const infosBox  = document.getElementById("infosAppelMobile");
-
-    const snap = await db.collection("accueil-1")
-      .where("statut","==","attente")
-      .orderBy("dateArriveeClient")
-      .get();
-
-    // ======= Aucun patient en attente =======
-    if (snap.empty) {
-      infosBox.style.display = "none";
-      numeroDiv.innerText = "—";
-      motifDiv.innerText = "📝 Motif : —";
-      circuitDiv.innerText = "🧭 Circuit : —";
-      attenteDiv.innerText = "⏱️ Attente : —";
-      bureauDiv.innerText = "📍 Bureau : —";
-      status.innerText = "🚨 Aucun patient en attente";
-      return;
-    }
-
-    // 🔍 filtrage par type
-    let doc = null;
-    for (const d of snap.docs) {
-      const data = d.data();
-      if (!type || data.motif === type) {
-        doc = d;
-        break;
+document.getElementById("btnRefresh").addEventListener("click", () => chargerDonnees(true));
+
+async function chargerDonnees(manuel=false){
+  const btnRefresh = document.getElementById("btnRefresh");
+  btnRefresh.classList.add("spinning");
+  if (manuel) showLoader();
+  try{
+    const patientsRef = collection(db, "patients");
+    const q = query(patientsRef, where("hospitalisationActiveId", "!=", ""));
+    const snapshot = await getDocs(q);
+
+    const enriched = [];
+    for (const docSnap of snapshot.docs){
+      const data = docSnap.data();
+      let hospi = {};
+      if (data.hospitalisationActiveId){
+        try{
+          const hospiSnap = await getDoc(doc(db, "hospitalisations", data.hospitalisationActiveId));
+          if (hospiSnap.exists()) hospi = hospiSnap.data();
+        }catch(e){ console.warn("Erreur lecture hospitalisation", e); }
       }
+      enriched.push({
+        id: docSnap.id,
+        ...data,
+        position: data.position || "salle-attente",
+        hospi
+      });
     }
+    state.patients = enriched;
+    renderAll();
+    if (manuel) toast("Plan actualisé", "success");
+  }catch(e){
+    console.error("Erreur chargement données :", e);
+    toast("Erreur de chargement des données", "error");
+  }finally{
+    btnRefresh.classList.remove("spinning");
+    hideLoader();
+  }
+}
 
-    // ======= Aucun patient correspondant =======
-    if (!doc) {
-      infosBox.style.display = "none";
-      numeroDiv.innerText = "—";
-      motifDiv.innerText = "📝 Motif : —";
-      circuitDiv.innerText = "🧭 Circuit : —";
-      attenteDiv.innerText = "⏱️ Attente : —";
-      bureauDiv.innerText = "📍 Bureau : —";
-      status.innerText = "🚨 Aucun patient correspondant";
-      return;
-    }
+function renderAll(){
+  renderPlan();
+  renderStats();
+  renderSearch();
+  updatePulseBar();
+}
 
-    // 🔚 terminer anciens appels du même bureau
-    const anciens = await db.collection("accueil-1")
-      .where("statut","==","appele")
-      .where("bureau","==",bureau)
-      .get();
+/* =========================================================
+   NAVIGATION (onglets)
+========================================================= */
+document.querySelectorAll(".tabbar-btn").forEach(btn => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.view));
+});
+function switchTab(view){
+  state.currentTab = view;
+  document.querySelectorAll(".tabbar-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
+}
 
-    anciens.forEach(d => d.ref.update({ statut:"termine" }));
+/* =========================================================
+   VUE PLAN
+========================================================= */
+function occupancyClass(occupe, capacite, flexible){
+  if (flexible) return "flex";
+  if (occupe === 0) return "ok";
+  if (occupe >= capacite) return "full";
+  if (occupe / capacite >= 0.7) return "mid";
+  return "ok";
+}
 
-    const data = doc.data();
+function renderPlan(){
+  const container = document.getElementById("planContent");
+  const parSalle = groupBySalle();
 
-    await doc.ref.update({
-      statut: "appele",
-      bureau: bureau,
-      dateAppel: firebase.firestore.FieldValue.serverTimestamp(),
-      afficheDepuis: firebase.firestore.FieldValue.serverTimestamp()
+  let html = "";
+  CATEGORIES.forEach(cat => {
+    const totalCat = cat.salles.reduce((sum, s) => sum + (parSalle[s.id]?.length || 0), 0);
+    html += `<div class="categorie-block">
+      <div class="categorie-head">
+        <h2>${cat.icon} ${escapeHtml(cat.label)}</h2>
+        <span class="categorie-count">${totalCat} patient${totalCat > 1 ? "s" : ""}</span>
+      </div>`;
+
+    cat.salles.forEach(s => {
+      const patients = parSalle[s.id] || [];
+      const occ = patients.length;
+      const cls = occupancyClass(occ, s.capacite, s.flexible);
+      const chipTxt = s.flexible ? `${occ}` : `${occ}/${s.capacite}`;
+
+      const dots = patients.slice(0, 8).map(p => {
+        const g = p.hospi.gravite || "P0";
+        return `<span class="dot" style="background:${GRAVITE_COLORS[g] || "#94a3b8"}"></span>`;
+      }).join("");
+      const more = patients.length > 8 ? `<span class="dot-more">+${patients.length - 8}</span>` : "";
+
+      html += `<div class="salle-row" data-salle="${s.id}">
+        <div class="salle-ic">${s.icon}</div>
+        <div class="salle-info">
+          <div class="salle-name">${escapeHtml(s.label)}</div>
+          ${occ > 0
+            ? `<div class="salle-dots">${dots}${more}</div>`
+            : `<div class="salle-empty-hint">Salle libre</div>`}
+        </div>
+        <div class="occ-chip ${cls}">${chipTxt}</div>
+      </div>`;
     });
 
-    // ================= AFFICHAGE =================
-    numeroDiv.innerText = "N° " + (data.numero ?? "—");
-    motifDiv.innerText  = data.motif ? "📝 Motif : " + data.motif : "📝 Motif : —";
-    circuitDiv.innerText= data.circuit ? "🧭 Circuit : " + data.circuit : "🧭 Circuit : —";
-    bureauDiv.innerText = "📍 Bureau : " + bureau;
-
-    let attenteMs = null;
-    const dateArrivee = data.dateArriveeClient || data.dateArrivee;
-    if (dateArrivee) {
-      attenteMs = typeof dateArrivee.toMillis === "function"
-        ? Date.now() - dateArrivee.toMillis()
-        : Date.now() - new Date(dateArrivee).getTime();
-    }
-
-    attenteDiv.innerText =
-      attenteMs !== null
-        ? "⏱️ Attente : " + formatDuree(attenteMs)
-        : "⏱️ Attente : —";
-
-    infosBox.style.display = "block";
-    status.innerText = "✅ Ticket appelé";
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById("appelStatusMobile").innerText = "❌ Erreur lors de l’appel";
-  } finally {
-    hideLoading(); // ✅ TOUJOURS exécuté
-  }
-}
-
-
-const menuAppels = document.getElementById("menuAppels");
-
-// Par défaut : caché
-menuAppels.style.display = "none";
-
-db.collection("referentiels").doc("bureau")
-  .onSnapshot(docSnap => {
-    if (!docSnap.exists) return;
-
-    const data = docSnap.data();
-
-    // 🔐 OPTION LOGICIELLE
-    const optionActive =
-      data.general &&
-      data.general.active === true;
-
-    // Affichage conditionnel
-    menuAppels.style.display = optionActive ? "block" : "none";
-
-    // Sécurité UX : si on est dessus et que ça se désactive
-    if (!optionActive) {
-      hideAllPages();
-      document.getElementById("pageAccueil").style.display = "block";
-    }
+    html += `</div>`;
   });
 
-</script>
+  container.innerHTML = html;
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import  {getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
-let currentSignatureId = null;
-let qrScanner = null;
-let signaturePad = null;
-  onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "index.html";
-  } else {
-    try {
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-  window.medecinNom = data.nom || "";
-        window.medecinSpecialite = data.specialite || "";
-        window.medecinLieu = data.lieu || "";
-
-
-
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = "fichemobile";
-const menuAppels = document.getElementById("menuAppels");
-
-  if (pages.appelsmobile === true) {
-    menuAppels.style.display = "block";
-  } else {
-    menuAppels.style.display = "none";
-  }
-        if (!pages[currentPage]) {
-          alert("⛔️ Vous n’avez pas accès à cette page.");
-          window.location.href = "index.html";
-          return; // Stoppe le script ici
-        }
-      } else {
-        // Document inexistant — redirection
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        window.location.href = "index.html";
-      }
-    } catch (error) {
-      console.error("Erreur chargement médecin :", error);
-      alert("Une erreur est survenue, veuillez réessayer plus tard.");
-    }
-  }
-});
-
-window.startQrScan = function () {
-
-    const reader = document.getElementById("reader");
-
-    reader.innerHTML = "";
-
-    qrScanner = new Html5Qrcode("reader");
-
-    qrScanner.start(
-        { facingMode: "environment" },
-        {
-            fps: 10,
-            qrbox: 250
-        },
-        async (decodedText) => {
-
-            await qrScanner.stop();
-
-            loadSignatureDocument(decodedText);
-
-        }
-    );
+  container.querySelectorAll(".salle-row").forEach(row => {
+    row.addEventListener("click", () => openSalleSheet(row.dataset.salle));
+  });
 }
 
-async function loadSignatureDocument(id) {
-
-    currentSignatureId = id;
-
-    const docSnap =
-      await db.collection("signatures-patient")
-              .doc(id)
-              .get();
-
-    if(!docSnap.exists){
-
-        alert("Document introuvable");
-        return;
-    }
-
-    const data = docSnap.data();
-
-    document.getElementById("signatureInfos").innerHTML = `
-        <b>${data.nom || ""}</b><br>
-        ${data.prenom || ""}
-    `;
-
-    document.getElementById("signatureCanvas")
-        .style.display = "block";
-}
-function clearSignature() {
-
-    if(signaturePad){
-        signaturePad.clear();
-    }
-
-}
-async function saveSignature() {
-
-    if(!currentSignatureId){
-        alert("Aucun document chargé");
-        return;
-    }
-
-    if(signaturePad.isEmpty()){
-        alert("Le patient doit signer");
-        return;
-    }
-
-    const image =
-        signaturePad.toDataURL("image/png");
-
-    await db.collection("signatures-patient")
-        .doc(currentSignatureId)
-        .update({
-
-            signatureImage: image,
-
-            signatureDate:
-                firebase.firestore.FieldValue.serverTimestamp(),
-
-            signee: true
-        });
-
-    alert("Signature enregistrée");
-
-    signaturePad.clear();
-} 
-</script>
-<script>
-const sb = document.getElementById("sidebar");
-const sbOverlay = document.getElementById("sidebarOverlay");
-const menuBtn = document.getElementById("menuBtn");
-
-// Pages internes
-const pageAccueil = document.getElementById("pageAccueil");
-const pageUrgences = document.getElementById("pageUrgences");
-
-// --- OUVERTURE / FERMETURE MENU ---
-menuBtn.onclick = () => {
-  sb.classList.add("open");
-  sbOverlay.classList.add("show");
-};
-sbOverlay.onclick = () => {
-  sb.classList.remove("open");
-  sbOverlay.classList.remove("show");
-};
-
-// --- CHARGEMENT PAR DÉFAUT : ACCUEIL ---
-window.addEventListener("load", () => {
- 
-  startHorloge();
-});
-function closeSidebar() {
-  sb.classList.remove("open");
-  sbOverlay.classList.remove("show");
+function groupBySalle(){
+  const map = {};
+  state.patients.forEach(p => {
+    const salleId = SALLES_INDEX[p.position] ? p.position : "salle-attente";
+    if (!map[salleId]) map[salleId] = [];
+    map[salleId].push(p);
+  });
+  return map;
 }
 
+/* ---- bottom sheet salle ---- */
+const sheetBackdrop = document.getElementById("sheetBackdrop");
+const salleSheet = document.getElementById("salleSheet");
+document.getElementById("sheetCloseBtn").addEventListener("click", closeSalleSheet);
+sheetBackdrop.addEventListener("click", closeSalleSheet);
 
-window.addEventListener("load", () => {
-  showPage('pageAccueil');
-});
+function openSalleSheet(salleId){
+  const salle = SALLES_INDEX[salleId];
+  if (!salle) return;
+  const patients = groupBySalle()[salleId] || [];
 
-// --- HORLOGE ---
-function startHorloge(){
-  const el = document.getElementById("accueilHeure");
-  setInterval(() => {
-    const d = new Date();
-    el.textContent = d.toLocaleTimeString("fr-FR", {hour: "2-digit", minute:"2-digit"});
-  }, 1000);
-}
+  document.getElementById("sheetTitle").textContent = `${salle.icon} ${salle.label} (${patients.length}${salle.flexible ? "" : "/" + salle.capacite})`;
 
-// --- MESSAGE DE BIENVENUE EN FONCTION DU MEDECIN CONNECTÉ ---
-if (window.medecinNom){
-  document.getElementById("accueilBienvenue").textContent =
-    "Bienvenue Dr " + window.medecinNom;
-}
-
-// --- LOGOUT ---
-function logout(){
-  if (confirm("Voulez-vous vous déconnecter ?")) {
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js").then(module => {
-      const { getAuth, signOut } = module;
-      const auth = getAuth();
-
-      signOut(auth).then(() => {
-        window.location.href = "index.html";
-      }).catch(err => {
-        alert("Erreur lors de la déconnexion : " + err.message);
+  const body = document.getElementById("sheetBody");
+  if (patients.length === 0){
+    body.innerHTML = `<div class="empty-state"><div class="ic">🛌</div><p>Aucun patient dans cette salle actuellement.</p></div>`;
+  }else{
+    body.innerHTML = patients.map(p => renderPatientRow(p)).join("");
+    body.querySelectorAll("[data-patient-id]").forEach(el => {
+      el.addEventListener("click", () => {
+        closeSalleSheet();
+        setTimeout(() => openPatientDetail(el.dataset.patientId), 200);
       });
     });
   }
+
+  sheetBackdrop.classList.add("open");
+  salleSheet.classList.add("open");
+}
+function closeSalleSheet(){
+  sheetBackdrop.classList.remove("open");
+  salleSheet.classList.remove("open");
 }
 
-</script>
-<script>
-/* ===============================
-   SWIPE MENU — BLOQUE BACK SYSTEM
-================================ */
+/* =========================================================
+   VUE RECHERCHE
+========================================================= */
+function buildGraviteChips(){
+  const wrap = document.getElementById("graviteChips");
+  let html = `<div class="chip active" data-grav="">Tous</div>`;
+  GRAVITE_ORDER.forEach(g => {
+    html += `<div class="chip" data-grav="${g}">${GRAVITE_LABELS[g]}</div>`;
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      wrap.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      state.searchGravFilter = chip.dataset.grav || null;
+      renderSearch();
+    });
+  });
+}
 
-const sidebar = document.getElementById("sidebar");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  state.searchTerm = sansAccents(e.target.value.trim());
+  renderSearch();
+});
 
-let startX = 0;
-let startY = 0;
-let tracking = false;
+function renderSearch(){
+  const container = document.getElementById("searchResults");
+  let list = state.patients;
 
-document.addEventListener("touchstart", (e) => {
-  // ne rien faire si menu ouvert ou modale ouverte
-  if (sidebar.classList.contains("open")) return;
-  if (document.querySelector(".modal-overlay[style*='flex']")) return;
+  if (state.searchGravFilter){
+    list = list.filter(p => (p.hospi.gravite || "P0") === state.searchGravFilter);
+  }
+  if (state.searchTerm.length >= 1){
+    list = list.filter(p =>
+      sansAccents(p.nom).includes(state.searchTerm) ||
+      sansAccents(p.prenom).includes(state.searchTerm)
+    );
+  }
 
-  const t = e.touches[0];
-  startX = t.clientX;
-  startY = t.clientY;
+  // tri par gravité puis nom
+  list = [...list].sort((a,b) => {
+    const oa = GRAVITE_ORDER.indexOf(a.hospi.gravite || "P0");
+    const ob = GRAVITE_ORDER.indexOf(b.hospi.gravite || "P0");
+    if (oa !== ob) return oa - ob;
+    return (a.nom || "").localeCompare(b.nom || "");
+  });
 
-  // 🔒 ZONE ULTRA SÉCURISÉE (évite le back Android)
-// 🚨 NE JAMAIS utiliser x <= 24
-tracking = startX > 24 && startX < 80;
-}, { passive: false });
-
-document.addEventListener("touchmove", (e) => {
-  if (!tracking) return;
-
-  const t = e.touches[0];
-  const dx = t.clientX - startX;
-  const dy = Math.abs(t.clientY - startY);
-
-  // laisser passer le scroll vertical
-  if (dy > 20) {
-    tracking = false;
+  if (list.length === 0){
+    container.innerHTML = `<div class="empty-state"><div class="ic">🔍</div><p>Aucun patient trouvé.</p>${state.searchTerm.length < 1 ? `<p style="opacity:.7">${state.patients.length} patient(s) actuellement aux urgences.</p>` : ""}</div>`;
     return;
   }
 
-  // swipe horizontal suffisant
-  if (dx > 50) {
-    e.preventDefault(); // 🔥 BLOQUE LE RETOUR ANDROID
-    openSidebar();
-    tracking = false;
-  }
-}, { passive: false });
+  container.innerHTML = list.map(p => renderPatientRow(p, true)).join("");
+  container.querySelectorAll("[data-patient-id]").forEach(el => {
+    el.addEventListener("click", () => openPatientDetail(el.dataset.patientId));
+  });
+}
 
-function openSidebar() {
-  sidebar.classList.add("open");
-  sidebarOverlay.classList.add("show");
+function renderPatientRow(p, withLoc=false){
+  const grav = p.hospi.gravite || "P0";
+  const color = GRAVITE_COLORS[grav] || "#94a3b8";
+  const age = p.dateNaissance ? calculerAge(p.dateNaissance) : NaN;
+  const ageTxt = !isNaN(age) ? `${age} ans` : "âge inconnu";
+  const mineur = !isNaN(age) && age < 18;
+  const salle = SALLES_INDEX[p.position];
+  const motif = p.hospi.motif ? p.hospi.motif : "Motif non renseigné";
+
+  return `<div class="patient-row" data-patient-id="${p.id}">
+    <div class="grav-bar" style="background:${color}"></div>
+    <div class="patient-row-info">
+      <div class="patient-row-name">${escapeHtml(p.nom)} ${escapeHtml(p.prenom)}${mineur ? " 🧸" : ""}${p.importanceAllergies ? `<span class="star-allerg">★</span>` : ""}</div>
+      <div class="patient-row-meta">${ageTxt} · ${escapeHtml(GRAVITE_LABELS[grav] || grav)} · ${escapeHtml(motif)}</div>
+    </div>
+    ${withLoc && salle ? `<div class="patient-row-loc">${salle.icon} ${escapeHtml(salle.label)}</div>` : ""}
+  </div>`;
+}
+
+/* =========================================================
+   VUE STATS
+========================================================= */
+function renderStats(){
+  const container = document.getElementById("statsContent");
+  const patients = state.patients;
+  const total = patients.length;
+
+  // répartition par gravité
+  const parGravite = {};
+  GRAVITE_ORDER.forEach(g => parGravite[g] = 0);
+  patients.forEach(p => {
+    const g = p.hospi.gravite || "P0";
+    parGravite[g] = (parGravite[g] || 0) + 1;
+  });
+
+  // occupation salles fixes (non flexibles)
+  const parSalle = groupBySalle();
+  let capaciteFixe = 0, occupeFixe = 0, sallesPleines = 0, sallesDispo = 0, sallesFixesTotal = 0;
+  let capaciteFlexOccupe = 0;
+  CATEGORIES.forEach(cat => cat.salles.forEach(s => {
+    const occ = (parSalle[s.id] || []).length;
+    if (!s.flexible){
+      sallesFixesTotal++;
+      capaciteFixe += s.capacite;
+      occupeFixe += Math.min(occ, s.capacite);
+      if (occ >= s.capacite) sallesPleines++; else sallesDispo++;
+    }else{
+      capaciteFlexOccupe += occ;
+    }
+  }));
+  const tauxOccupation = capaciteFixe > 0 ? Math.round((occupeFixe / capaciteFixe) * 100) : 0;
+
+  // répartition par catégorie
+  const parCategorie = CATEGORIES.map(cat => {
+    const count = cat.salles.reduce((sum, s) => sum + (parSalle[s.id]?.length || 0), 0);
+    return { ...cat, count };
+  });
+
+  // répartition par circuit
+  const parCircuit = {};
+  patients.forEach(p => {
+    const c = (p.hospi.circuit || "").trim();
+    if (!c) return;
+    parCircuit[c] = (parCircuit[c] || 0) + 1;
+  });
+
+  // patients mineurs / allergies importantes
+  const mineurs = patients.filter(p => { const a = calculerAge(p.dateNaissance); return !isNaN(a) && a < 18; }).length;
+  const allergiesImportantes = patients.filter(p => p.importanceAllergies).length;
+
+  let html = `
+    <div class="stat-hero">
+      <div class="stat-hero-label">Patients actuellement aux urgences</div>
+      <div class="stat-hero-num">${total}</div>
+      <div class="stat-hero-row">
+        <div>
+          <div class="stat-hero-mini">${tauxOccupation}%</div>
+          <div class="stat-hero-mini-lb">Occupation lits fixes</div>
+        </div>
+        <div>
+          <div class="stat-hero-mini">${sallesPleines}/${sallesFixesTotal}</div>
+          <div class="stat-hero-mini-lb">Salles fixes pleines</div>
+        </div>
+        <div>
+          <div class="stat-hero-mini">${parGravite.Urgences_Vitales + parGravite.P3}</div>
+          <div class="stat-hero-mini-lb">P3 + urgences vitales</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="mini-card"><div class="num">${mineurs}</div><div class="lb">🧸 Patients mineurs</div></div>
+      <div class="mini-card"><div class="num">${allergiesImportantes}</div><div class="lb">★ Allergie(s) importante(s)</div></div>
+    </div>
+
+    <div class="section-title">Répartition par gravité</div>
+    <div class="card pad">
+      ${GRAVITE_ORDER.map(g => {
+        const count = parGravite[g] || 0;
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return `<div class="bar-row">
+          <div class="bar-row-top">
+            <span class="lb"><span class="leg-dot" style="background:${GRAVITE_COLORS[g]}"></span>${GRAVITE_LABELS[g]}</span>
+            <span class="val">${count}</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${GRAVITE_COLORS[g]}"></div></div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="section-title">Occupation par zone</div>
+    <div class="card pad">
+      ${parCategorie.map(cat => {
+        const capaciteCat = cat.salles.reduce((s,x)=> s + (x.flexible ? 0 : x.capacite), 0);
+        const pct = capaciteCat > 0 ? Math.min(100, Math.round((cat.count / capaciteCat) * 100)) : (cat.count > 0 ? 100 : 0);
+        return `<div class="bar-row">
+          <div class="bar-row-top">
+            <span class="lb">${cat.icon} ${escapeHtml(cat.label)}</span>
+            <span class="val">${cat.count}${capaciteCat ? " / " + capaciteCat : ""}</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:var(--blue-600)"></div></div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    ${Object.keys(parCircuit).length > 0 ? `
+    <div class="section-title">Circuits particuliers</div>
+    <div class="card pad">
+      ${Object.entries(parCircuit).sort((a,b)=>b[1]-a[1]).map(([c, count]) => {
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return `<div class="bar-row">
+          <div class="bar-row-top">
+            <span class="lb">🧭 ${escapeHtml(c)}</span>
+            <span class="val">${count}</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:var(--blue-700)"></div></div>
+        </div>`;
+      }).join("")}
+    </div>` : ""}
+
+    <div class="section-title">Détail des salles</div>
+    <div class="card pad">
+      ${CATEGORIES.flatMap(cat => cat.salles).map(s => {
+        const occ = (parSalle[s.id] || []).length;
+        const cls = occupancyClass(occ, s.capacite, s.flexible);
+        return `<div class="kv">
+          <span class="k">${s.icon} ${escapeHtml(s.label)}</span>
+          <span class="v"><span class="occ-chip ${cls}" style="margin:0;">${s.flexible ? occ : occ + "/" + s.capacite}</span></span>
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function updatePulseBar(){
+  const parSalle = groupBySalle();
+  let capaciteFixe = 0, occupeFixe = 0;
+  CATEGORIES.forEach(cat => cat.salles.forEach(s => {
+    if (s.flexible) return;
+    capaciteFixe += s.capacite;
+    occupeFixe += Math.min((parSalle[s.id] || []).length, s.capacite);
+  }));
+  const pct = capaciteFixe > 0 ? Math.round((occupeFixe / capaciteFixe) * 100) : 0;
+  const fill = document.getElementById("pulseBarFill");
+  fill.style.width = Math.min(100, pct) + "%";
+  fill.style.background = pct >= 100 ? "var(--g-p3)" : pct >= 70 ? "var(--g-p2)" : "var(--g-p0)";
+}
+
+/* =========================================================
+   FICHE PATIENT (lecture seule)
+========================================================= */
+const patientDetail = document.getElementById("patientDetail");
+document.getElementById("pdBack").addEventListener("click", closePatientDetail);
+
+function openPatientDetail(patientId){
+  const p = state.patients.find(x => x.id === patientId);
+  if (!p){ toast("Patient introuvable (a peut-être quitté les urgences)", "error"); return; }
+
+  const h = p.hospi || {};
+  const grav = h.gravite || "P0";
+  const age = calculerAge(p.dateNaissance);
+  const ageTxt = !isNaN(age) ? `${age} ans` : "Âge inconnu";
+  const mineur = !isNaN(age) && age < 18;
+  const salle = SALLES_INDEX[p.position];
+
+  document.getElementById("pdName").textContent = `${p.nom || ""} ${p.prenom || ""}${mineur ? " 🧸" : ""}`;
+  document.getElementById("pdSub").textContent = `${ageTxt} · ${p.sexe || "sexe inconnu"} · ${salle ? salle.icon + " " + salle.label : "position inconnue"}`;
+  const badge = document.getElementById("pdGravBadge");
+  badge.textContent = GRAVITE_LABELS[grav] || grav;
+  badge.style.background = GRAVITE_COLORS[grav] || "#94a3b8";
+  if (grav === "P1") badge.style.color = "#7a5c00"; else badge.style.color = "white";
+
+  const dm = h.dossierMedical || {};
+  const equipe = h.equipe || {};
+  const examens = h.examens || [];
+  const sortie = h.sortie || null;
+
+  let html = "";
+
+  if (p.importanceAllergies){
+    html += `<div class="pd-alert">⚠️ <div>Allergie(s) importante(s) signalée(s) — voir détail dans « Identité & vigilance ».</div></div>`;
+  }
+
+  html += `
+  <details class="pd-section" open>
+    <summary>🫆 Identité & vigilance <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      <div class="kv"><span class="k">CIP</span>${fieldOrEmpty(p.id)}</div>
+      <div class="kv"><span class="k">Nom</span>${fieldOrEmpty(p.nom)}</div>
+      <div class="kv"><span class="k">Prénom</span>${fieldOrEmpty(p.prenom)}</div>
+      <div class="kv"><span class="k">Sexe</span>${fieldOrEmpty(p.sexe)}</div>
+      <div class="kv"><span class="k">Âge</span>${fieldOrEmpty(ageTxt !== "Âge inconnu" ? ageTxt : null)}</div>
+      <div class="kv"><span class="k">Médecin traitant</span>${fieldOrEmpty(p.medtraitant)}</div>
+      <div class="kv"><span class="k">Vigilance(s)</span>${fieldOrEmpty(p.vigilances)}</div>
+      <div class="kv"><span class="k">Allergie(s)</span>${fieldOrEmpty(p.allergies)}</div>
+      <div class="kv"><span class="k">Allergie(s) importante(s)</span><span class="v">${p.importanceAllergies ? "🚨 Oui" : "Non"}</span></div>
+    </div>
+  </details>
+
+  <details class="pd-section" open>
+    <summary>🗂️ Admission & orientation <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      <div class="kv"><span class="k">Position actuelle</span><span class="v">${salle ? salle.icon + " " + escapeHtml(salle.label) : "—"}</span></div>
+      <div class="kv"><span class="k">Motif d'entrée</span>${fieldOrEmpty(h.motif)}</div>
+      <div class="kv"><span class="k">Moyen d'entrée</span>${fieldOrEmpty(h.moyen)}</div>
+      <div class="kv"><span class="k">Gravité</span><span class="v">${escapeHtml(GRAVITE_LABELS[grav] || grav)}</span></div>
+      <div class="kv"><span class="k">Circuit particulier</span>${fieldOrEmpty(h.circuit)}</div>
+      <div class="kv"><span class="k">Statut PEC</span>${fieldOrEmpty(h.pdcStatut)}</div>
+      <div class="kv"><span class="k">Position patient</span>${fieldOrEmpty(h.positionPatient)}</div>
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>👥 Équipe référente <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      <div class="kv"><span class="k">👨‍⚕️ Médecin</span>${fieldOrEmpty(equipe.medecinReferent?.nom)}</div>
+      <div class="kv"><span class="k">👩‍⚕️ Infirmier(e)</span>${fieldOrEmpty(equipe.infirmierReferent?.nom)}</div>
+      <div class="kv"><span class="k">🧑‍⚕️ Interne</span>${fieldOrEmpty(equipe.interneReferent?.nom)}</div>
+      <div class="kv"><span class="k">🎓 Externe</span>${fieldOrEmpty(equipe.externeReferent?.nom)}</div>
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>📋 Dossier médical <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      <div class="txt-label">Questionnaire IAO</div>
+      ${textBlock(dm.questionnaire)}
+      <div class="txt-label">Antécédents</div>
+      ${textBlock(dm.antecedents)}
+      <div class="txt-label">Traitements en cours</div>
+      ${textBlock(dm.traitements)}
+      <div class="txt-label">Histoire de la maladie</div>
+      ${textBlock(dm.histoire)}
+      <div class="txt-label">CR auscultation initiale</div>
+      ${textBlock(dm.auscultation)}
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>📈 Évolution aux urgences <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      ${textBlock(h.evolution)}
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>☢️ Examens <span class="chev">›</span> ${examens.length ? `<span class="occ-chip" style="margin-left:6px;">${examens.length}</span>` : ""}</summary>
+    <div class="pd-section-content">
+      ${examens.length === 0 ? `<div class="txt-block empty">Aucun examen enregistré.</div>` :
+        examens.map((ex, i) => `
+          <div class="exam-item" data-exam-idx="${i}">
+            <span>☢️ ${escapeHtml(ex.type || "N/A")}</span>
+            <span class="exam-badge ${ex.realise ? "done" : "pending"}">${ex.realise ? "Réalisé" : "À réaliser"}</span>
+          </div>
+          <div class="exam-detail" id="exam-detail-${i}">
+            <div><b>Date demande :</b> ${escapeHtml(ex.dateDemande || "Non renseignée")}</div>
+            ${ex.realise ? `
+              <div><b>Date réalisation :</b> ${escapeHtml(ex.dateRealisation || "Non renseignée")}</div>
+              <div style="margin-top:6px;"><b>Compte-rendu :</b></div>
+              <div class="txt-block">${escapeHtml(ex.compteRendu || "Aucun compte-rendu")}</div>
+            ` : `<div style="margin-top:4px; color:#c2410c;">Examen non réalisé.</div>`}
+          </div>
+        `).join("")
+      }
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>🚪 Sortie <span class="chev">›</span></summary>
+    <div class="pd-section-content">
+      ${!sortie || !sortie.type ? `<div class="txt-block empty">Aucune sortie enregistrée — patient toujours pris en charge.</div>` : `
+        <div class="kv"><span class="k">Type de sortie</span><span class="v">${escapeHtml(sortie.type)}</span></div>
+        <div class="kv"><span class="k">Options</span>${fieldOrEmpty((sortie.options || []).join(", "), "Aucune")}</div>
+        ${sortie.destinationTransfert ? `<div class="kv"><span class="k">Destination</span><span class="v">${escapeHtml(sortie.destinationTransfert)}</span></div>` : ""}
+        ${sortie.serviceHospitalisation ? `<div class="kv"><span class="k">Service</span><span class="v">${escapeHtml(sortie.serviceHospitalisation)}</span></div>` : ""}
+        ${sortie.avisSpecialiste ? `<div class="kv"><span class="k">Spécialiste</span><span class="v">${escapeHtml(sortie.avisSpecialiste)}</span></div>` : ""}
+        ${sortie.autreOptionTexte ? `<div class="kv"><span class="k">Autre option</span><span class="v">${escapeHtml(sortie.autreOptionTexte)}</span></div>` : ""}
+        ${sortie.traitementSortie ? `<div class="txt-label">Traitement de sortie</div>${textBlock(sortie.traitementSortie)}` : ""}
+      `}
+    </div>
+  </details>
+  `;
+
+  document.getElementById("pdBody").innerHTML = html;
+
+  document.querySelectorAll(".exam-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const d = document.getElementById("exam-detail-" + item.dataset.examIdx);
+      if (d) d.classList.toggle("open");
+    });
+  });
+
+  patientDetail.classList.add("open");
+}
+
+function closePatientDetail(){
+  patientDetail.classList.remove("open");
 }
 
 </script>
-
-
-
 </body>
 </html>

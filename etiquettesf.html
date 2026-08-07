@@ -5,10 +5,6 @@
 <title>🎟️ Générateur d’étiquettes patient</title>
     <link rel="icon" type="image/jpeg" href="logog2.png">
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-
 <!-- Librairies PDF & code-barres -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -24,7 +20,7 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, sans-serif;
-  background-color: #ffffff;
+  background: var(--bg);
   color: #333;
 }
 header {
@@ -90,16 +86,7 @@ footer {
   margin-top:40px;
   font-size:0.85rem;
 }
-.hidden-field {
-    display: none !important;
-}
-	  hr {
-  border: none;
-  height: 4px;
-  background-color: #0078d4; 
-  border-radius: 2px;
-  margin: 20px 0;
-}
+
 .btn-id {
   all: unset;
   background: transparent;
@@ -158,6 +145,52 @@ footer {
   border-color: rgba(0, 200, 80, 0.8);
   box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
 }
+
+/* ---- Modales accès / erreur (identiques au reste de l'application) ---- */
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+}
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.modalna h2 { color: #d32f2f; margin-bottom: 12px; }
+.modalna p { font-size: 16px; margin-bottom: 20px; }
+
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.75);
+  z-index: 10000;
+  flex-direction: column;
+  gap: 12px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #cfe3fb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Chrome, Edge, Opera */
 ::-webkit-scrollbar {
     width: 12px;
@@ -187,67 +220,169 @@ footer {
 </head>
 <body>
 
+<header>🎟️ Générateur d’étiquettes patient</header>
 
-
-<!--<main>-->
-  <div class="form-group hidden-field">
+<main id="mainContent" style="display:none;">
   <div id="infos">Chargement du patient...</div>
-</div>
 
-    <h3 style="margin-top:25px;">Presets</h3>
-  <div style="margin-top:15px;">
-   
-    <button class="btn-id" id="btnDefault">🧾 Planche par défaut</button>
-    <button class="btn-id" id="btnIdentite">👤 Identité uniquement</button>
-    <button class="btn-id" id="btnAdresse">🏠 Adresse uniquement</button>
-    
-  </div>
-    <hr>
-   <h3 style="margin-top:25px;">Planche personnalisée</h3>
-<div>
+  <hr style="margin:20px 0;">
+
+  <div>
     <label>Nombre d’étiquettes d’identité :
       <input type="number" id="nbIdentite" value="4" min="0">
     </label>
     <label>Nombre d’étiquettes d’adresse :
       <input type="number" id="nbAdresse" value="2" min="0">
     </label>
-    <button id="btnGenerer" class="btn-id" >🖨️ Générer PDF (manuel)</button>
   </div>
-<hr>
+
+  <div style="margin-top:15px;">
+    <button class="btn-id" id="btnDefault">🧾 Planche par défaut</button>
+    <button class="btn-id" id="btnIdentite">👤 Identité uniquement</button>
+    <button class="btn-id" id="btnAdresse">🏠 Adresse uniquement</button>
+    <button class="btn-id" id="btnGenerer" >🖨️ Générer PDF (manuel)</button>
+  </div>
+
   <h3 style="margin-top:25px;">Aperçu des modèles</h3>
   <div id="preview"></div>
 </main>
 
+<footer>© 2025 — GestUrg | Impression étiquettes</footer>
 
+<!-- Écran de chargement -->
+<div id="loaderOverlay" class="loader-overlay">
+  <div class="spinner"></div>
+  <div>Chargement...</div>
+</div>
 
-<script>
-/* --- FIREBASE --- */
+<!-- Accès refusé -->
+<div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+  </div>
+</div>
+
+<!-- Erreur générique -->
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+    <p>Si le problème persiste, contactez un administrateur</p>
+  </div>
+</div>
+
+<script type="module">
+/* --- FIREBASE (API modulaire v10) --- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
   authDomain: "urgences-a8ed4.firebaseapp.com",
   projectId: "urgences-a8ed4"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
 let patientData = null;
 
-/* --- CHARGER PATIENT --- */
-db.collection("patients").doc(patientId).get().then(doc=>{
-  if(!doc.exists) { 
-    document.getElementById("infos").textContent = "❌ Patient introuvable"; 
-    return; 
+function afficherLoader() {
+  document.getElementById("loaderOverlay").style.display = "flex";
+}
+function masquerLoader() {
+  document.getElementById("loaderOverlay").style.display = "none";
+}
+
+/* --- SYSTÈME D'IDENTIFICATION (identique aux autres pages de l'application) --- */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    // Pas connecté : rien à afficher (la page est destinée à être ouverte
+    // depuis fiche.html, déjà protégée par la connexion).
+    return;
   }
-  patientData = doc.data();
-  document.getElementById("infos").innerHTML = `
-    <b>${patientData.prenom} ${patientData.nom}</b><br>
-    Né(e) le ${patientData.dateNaissance || "?"}<br>
-    CIP: ${patientId}
-  `;
-  majApercu();
+
+  afficherLoader();
+
+  try {
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      masquerLoader();
+      document.getElementById("modal-no-access").style.display = "flex";
+      console.warn("Médecin non trouvé");
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // Infos médecin (stockées globalement si besoin par d'autres scripts)
+    window.medecinNom = data.nom || "";
+    window.medecinSpecialite = data.specialite || "";
+    window.medecinLieu = data.lieu || "";
+    window.medecinType = data.type || "";
+    window.medecinUid = user.uid;
+
+    // Vérification d'accès à la page
+    const pages = data.pages || {};
+    const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
+    if (!pages[currentPage]) {
+      masquerLoader();
+      document.getElementById("modal-no-access").style.display = "flex";
+      console.warn("Accès refusé à", currentPage);
+      return;
+    }
+
+    // ✅ Accès autorisé : on peut charger le patient
+    await chargerPatient();
+    document.getElementById("mainContent").style.display = "block";
+    masquerLoader();
+
+  } catch (error) {
+    console.error("Erreur lors de la récupération du médecin :", error);
+    masquerLoader();
+    document.getElementById("modal-error").style.display = "flex";
+  }
 });
+
+/* --- CHARGER PATIENT (API modulaire) --- */
+async function chargerPatient() {
+  if (!patientId) {
+    document.getElementById("infos").textContent = "❌ Identifiant patient manquant dans l'URL";
+    return;
+  }
+
+  try {
+    const snap = await getDoc(doc(db, "patients", patientId));
+
+    if (!snap.exists()) {
+      document.getElementById("infos").textContent = "❌ Patient introuvable";
+      return;
+    }
+
+    patientData = snap.data();
+    document.getElementById("infos").innerHTML = `
+      <b>${patientData.prenom} ${patientData.nom}</b><br>
+      Né(e) le ${patientData.dateNaissance || "?"}<br>
+      ID: ${patientId}
+    `;
+    majApercu();
+
+  } catch (error) {
+    console.error("Erreur chargement patient :", error);
+    document.getElementById("infos").textContent = "❌ Erreur lors du chargement du patient";
+  }
+}
 
 /* --- APERÇU --- */
 function majApercu(){
@@ -256,13 +391,8 @@ function majApercu(){
   preview.innerHTML = "";
 
   const canvas = document.createElement("canvas");
-JsBarcode(canvas, patientId,{
-  format: "CODE128",
-  width: 2.5,        // 🔥 plus épais
-  height: 50,        // 🔥 plus haut
-  margin: 10,
-  displayValue: false
-});  const barcodeData = canvas.toDataURL("image/png");
+  JsBarcode(canvas, patientId, {format:"CODE128", width:3, height:60, displayValue:false});
+  const barcodeData = canvas.toDataURL("image/png");
 
   const div1=document.createElement("div");
   div1.className="preview-card";
@@ -326,7 +456,7 @@ function genererPDF(nbIdentite, nbAdresse) {
   if(!patientData) return alert("Patient non chargé");
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:"mm", format:"a4"});
+  const pdfDoc = new jsPDF({unit:"mm", format:"a4"});
 
   const marginLeft=5, marginTop=10;
   const labelW=63, labelH=35, cols=3, rows=8;
@@ -337,11 +467,12 @@ function genererPDF(nbIdentite, nbAdresse) {
   const canvas=document.createElement("canvas");
 JsBarcode(canvas, patientId,{
   format: "CODE128",
-  width: 3,        // 🔥 plus épais
-  height: 60,        // 🔥 plus haut
+  width: 2.5,        // 🔥 plus épais
+  height: 50,        // 🔥 plus haut
   margin: 10,
   displayValue: false
-});  const barcodeData=canvas.toDataURL("image/png");
+});
+  const barcodeData=canvas.toDataURL("image/png");
 function formatTel(num) {
   if (!num) return "";
   // Supprime tout sauf les chiffres
@@ -360,17 +491,18 @@ function formatTel(num) {
     let offsetY=y+8;
 
     for (const line of contenu) {
-      const { size, lines } = layoutText(doc, line, labelW-4, labelH-12);
-      doc.setFontSize(size);
+      const { size, lines } = layoutText(pdfDoc, line, labelW-4, labelH-12);
+      pdfDoc.setFontSize(size);
       for (const l of lines) {
-        doc.text(l, x+2, offsetY);
+        pdfDoc.text(l, x+2, offsetY);
         offsetY += 4;
         if (offsetY > y + labelH - 10) break; // pas plus bas que la zone code-barres
       }
     }
 
     if(barcode){
-doc.addImage(barcodeData,"PNG",x+5,y+labelH-18,53,15);    }
+      pdfDoc.addImage(barcodeData,"PNG",x+2,y+labelH-12,40,10);
+    }
     count++;
   }
 
@@ -392,8 +524,9 @@ doc.addImage(barcodeData,"PNG",x+5,y+labelH-18,53,15);    }
     ]);
   }
 
+ 
    // Générer le PDF en blob
-const pdfBlob = doc.output("blob");
+const pdfBlob = pdfDoc.output("blob");
 
 // Créer une URL temporaire
 const pdfUrl = URL.createObjectURL(pdfBlob);

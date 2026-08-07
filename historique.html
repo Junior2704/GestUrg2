@@ -702,7 +702,13 @@ function rendreHospitalisation(hospi, numero, hospiId, estActive, documents) {
     parts.push(`<h3>🧾 Rapport de clôture</h3>`);
     parts.push(`<p style="white-space:pre-wrap">${echapper(rapportTexte)}</p>`);
   }
-
+if (hospi.signatureImage) {
+      parts.push(`<p><strong>✍️ Signature du patient :</strong><br>
+        <img src="${hospi.signatureImage}" alt="Signature du patient" style="max-width:280px;border:1px solid #e0e6ec;border-radius:6px;background:white;padding:6px;">
+      </p>`);
+    } else if (hospi.signatureStatut === "Refus de signer") {
+      parts.push(`<p><strong>✍️ Signature du patient :</strong> ⚠️ Refus de signer</p>`);
+    }
   parts.push(`<hr>`);
   parts.push(rendreJournalModifications(hospi.historique));
 
@@ -1055,7 +1061,28 @@ async function genererPdfHospitalisation(hospiId, inclureJournal) {
   if (rapportTexte) {
     y = addBlock(pdf, "Rapport de clôture", rapportTexte, y, marginX, pageWidth, bleu);
   }
-
+if (hospi.signatureImage) {
+      if (y > pdf.internal.pageSize.getHeight() - 140) { pdf.addPage(); y = 40; }
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
+      pdf.text("Signature du patient :", marginX, y);
+      y += 8;
+      try {
+        const formatImg = /^data:image\/jpeg/i.test(hospi.signatureImage) ? "JPEG" : "PNG";
+        pdf.addImage(hospi.signatureImage, formatImg, marginX, y, 160, 80);
+        y += 96;
+      } catch (e) {
+        console.error("Erreur insertion signature dans le PDF :", e);
+      }
+    } else if (hospi.signatureStatut === "Refus de signer") {
+      if (y > pdf.internal.pageSize.getHeight() - 60) { pdf.addPage(); y = 40; }
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(200, 60, 0);
+      pdf.text("Signature du patient : ⚠️ Refus de signer", marginX, y);
+      y += 20;
+    }
   // ---- Journal des modifications (optionnel) ----
   if (inclureJournal) {
     const entrees = Array.isArray(hospi.historique) ? [...hospi.historique] : [];

@@ -985,21 +985,17 @@ async function genererPdfHospitalisation(hospiId, inclureJournal) {
   const examens = Array.isArray(hospi.examens) ? hospi.examens : [];
   y = addTitreSection(pdf, "Examens complémentaires", y, marginX, pageWidth, bleu);
   if (examens.length > 0) {
-    pdf.autoTable({
-      startY: y,
-      margin: { left: marginX, right: marginX },
-      head: [["Examen", "Statut", "Demandé le", "Commentaire"]],
-      body: examens.map(ex => [
-        ex.type || "—",
-        ex.realise ? "Réalisé" : "En attente",
-        ex.dateDemande || "—",
-        ex.commentaire || "—"
-      ]),
-      styles: { fontSize: 8, cellPadding: 3 },
-      headStyles: { fillColor: bleu, textColor: 255 },
-      theme: "grid"
+    examens.forEach((ex, idx) => {
+      y = addExamenBloc(pdf, ex, y, marginX, pageWidth, bleu);
+      if (idx < examens.length - 1) {
+        if (y > pdf.internal.pageSize.getHeight() - 60) { pdf.addPage(); y = 40; }
+        pdf.setDrawColor(225, 225, 225);
+        pdf.setLineWidth(0.5);
+        pdf.line(marginX, y, pageWidth - marginX, y);
+        y += 14;
+      }
     });
-    y = pdf.lastAutoTable.finalY + 20;
+    y += 10;
   } else {
     pdf.setFont("helvetica", "italic");
     pdf.setFontSize(10);
@@ -1010,11 +1006,11 @@ async function genererPdfHospitalisation(hospiId, inclureJournal) {
 
   // ---- Actes ----
   const actes = Array.isArray(hospi.actes) ? hospi.actes : [];
-  y = addListeTable(pdf, "Actes réalisés", actes, "realise", "realiseAt", "realiseComment", y, marginX, pageWidth, bleu);
+  y = addListeTable(pdf, "Actes réalisés", actes, "realise", "Réalisé", "realiseAt", "realiseComment", y, marginX, pageWidth, bleu);
 
   // ---- Médicaments ----
   const meds = Array.isArray(hospi.meds) ? hospi.meds : [];
-  y = addListeTable(pdf, "Médicaments administrés aux urgences", meds, "pris", "takenAt", "takeComment", y, marginX, pageWidth, bleu);
+  y = addListeTable(pdf, "Médicaments administrés aux urgences", meds, "pris", "Administré", "takenAt", "takeComment", y, marginX, pageWidth, bleu);
 
   // ---- Documents ----
   const documentsHospi = documentsDeLHospitalisation(tousLesDocumentsGlobal, hospiId, hospi, estActive);
@@ -1110,12 +1106,86 @@ async function genererPdfHospitalisation(hospiId, inclureJournal) {
     : `Document généré le ${new Date().toLocaleString("fr-FR")}`;
   pdf.text(auteurExport, marginX, y);
 
-  const nomFichier = `historique_hospitalisation_${numero}_${(patient.nom || "patient").replace(/\s+/g, "_")}.pdf`;
-  pdf.save(nomFichier);
+  const nomFichier = `rapport_hospitalisation_n°_${numero}_${(patient.nom || "patient").replace(/\s+/g, "_")}.pdf`;
+ const blob = pdf.output("blob");
+const url = URL.createObjectURL(blob);
+window.open(url, "_blank");
 }
 
 // ---- Helpers de mise en page PDF (mêmes conventions que rapporthospitalisation.html) ----
 
+function addExamenBloc(pdf, ex, y, marginX, pageWidth, bleu) {
+  const maxWidth = pageWidth - marginX * 2;
+  const estRealise = !!ex.realise;
+
+  const verifierSaut = (hauteurNecessaire) => {
+    if (y + hauteurNecessaire > pdf.internal.pageSize.getHeight() - 60) {
+      pdf.addPage();
+      y = 40;
+    }
+  };
+
+  // Titre de l'examen + statut
+  verifierSaut(16);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(11);
+  pdf.setTextColor(30, 30, 30);
+  pdf.text(ex.type || "Examen", marginX, y);
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(9);
+  pdf.setTextColor(...(estRealise ? [46, 125, 50] : [230, 140, 0]));
+  pdf.text(estRealise ? "✔ Réalisé" : "⏳ En attente", pageWidth - marginX, y, { align: "right" });
+  y += 15;
+
+  // Métadonnées (dates)
+  const meta = [];
+  if (ex.dateDemande) meta.push(`Demandé le ${ex.dateDemande}`);
+  if (ex.dateRealisation) meta.push(`Réalisé le ${ex.dateRealisation}`);
+  if (meta.length > 0) {
+    verifierSaut(13);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(110, 110, 110);
+    pdf.text(meta.join("    "), marginX, y);
+    y += 15;
+  }
+
+  // Commentaire de la demande
+  if (ex.commentaire) {
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(70, 70, 70);
+    const lignesCom = pdf.splitTextToSize(`Commentaire : ${ex.commentaire}`, maxWidth);
+    lignesCom.forEach(ligne => {
+      verifierSaut(13);
+      pdf.text(ligne, marginX, y);
+      y += 13;
+    });
+  }
+
+  // Compte-rendu (peut être long, multi-lignes)
+  if (ex.compteRendu) {
+    verifierSaut(14);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(50, 50, 50);
+    pdf.text("Compte-rendu :", marginX, y);
+    y += 13;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(40, 40, 40);
+    const lignesCR = pdf.splitTextToSize(ex.compteRendu, maxWidth);
+    lignesCR.forEach(ligne => {
+      verifierSaut(13);
+      pdf.text(ligne, marginX, y);
+      y += 13;
+    });
+  }
+
+  return y + 8;
+}
 function addTitreSection(pdf, titre, y, marginX, pageWidth, bleu) {
   if (y > pdf.internal.pageSize.getHeight() - 100) {
     pdf.addPage();
@@ -1154,7 +1224,7 @@ function addBlock(pdf, titre, contenu, y, marginX, pageWidth, bleu) {
   return y + 14;
 }
 
-function addListeTable(pdf, titre, items, statutFait, champDateRealise, champCommentRealise, y, marginX, pageWidth, bleu) {
+function addListeTable(pdf, titre, items, statutFait, statutFaitAff, champDateRealise, champCommentRealise, y, marginX, pageWidth, bleu) {
   y = addTitreSection(pdf, titre, y, marginX, pageWidth, bleu);
   if (!items || items.length === 0) {
     pdf.setFont("helvetica", "italic");
@@ -1166,7 +1236,7 @@ function addListeTable(pdf, titre, items, statutFait, champDateRealise, champCom
   pdf.autoTable({
     startY: y,
     margin: { left: marginX, right: marginX },
-    head: [["Libellé", "Statut", "Demandé le", "Réalisé/Administré le", "Commentaire"]],
+    head: [["Libellé", "Statut", "Demandé le", `${statutFaitAff} le`, "Commentaire"]],
     body: items.map(it => [
       it.product || "—",
       (it.status === statutFait) ? "Fait" : "En attente",
@@ -1196,13 +1266,56 @@ document.getElementById("btnExporterPDF").addEventListener("click", async () => 
     await genererPdfHospitalisation(hospiId, inclure);
   } catch (e) {
     console.error("Erreur génération PDF :", e);
-    alert("Une erreur est survenue lors de la génération du PDF.");
+    afficherBulle("Une erreur est survenue lors de la génération du PDF.");
   } finally {
     btn.disabled = false;
     btn.textContent = texteOriginal;
   }
 });
+const ORIGINE_PARENT_BULLE = "*";
 
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
+  }
+
+  window.parent.postMessage(
+
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
+
+    ORIGINE_PARENT_BULLE
+
+  );
+
+}
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});
 // L'accès aux données patient nécessite d'être authentifié (règles Firestore).
 onAuthStateChanged(auth, (user) => {
   if (!user) {

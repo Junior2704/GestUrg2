@@ -2527,7 +2527,7 @@ z-index: 3000;
   />
 
   <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-    <label style="margin:0;">Allergie(s) importantes</label>
+    <label style="margin:0;">Allergie(s) importante(s)</label>
 
     <label class="switch" style="margin:0;">
       <input
@@ -2570,32 +2570,12 @@ z-index: 3000;
 
 <section id="panel-historique" class="panel" style="display:none;">
 
-  <h3>📜 Historique</h3>
-
-  <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
-    <button type="button" id="btnHistoriqueComplet" onclick="window.open('historique.html?id=' + encodeURIComponent(patientId), '_blank')">
-      🕘 Historique complet du patient (export PDF)
-    </button>
-  </div>
-
-  <!-- 🔍 Recherche dans l’historique -->
-  <input
-    type="text"
-    id="rechercheHistorique"
-    placeholder="🔍 Rechercher (motif, service, date, texte...)"
-    style="
-      width:100%;
-      padding:10px;
-      margin-bottom:15px;
-      border-radius:8px;
-      border:1px solid #ccc;
-    "
-  />
-
-  <div id="hospitalisationsContent"></div>
+  <h3>📜 Historique complet des hospitalisations du patient</h3>
+<iframe
+    id="historiqueFrame"
+    style="width:100%; border:none; border-radius:10px; overflow:hidden;">
+  </iframe>
 </section>
-
-
 
 <section id="panel-admission" class="panel" style="display:none;">
   
@@ -2899,7 +2879,7 @@ z-index: 3000;
     <div id="tab-ordo" class="docs-tab active" onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">Ordonnancier</div>
     <div id="tab-cert" class="docs-tab" onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">Certificats</div>
     <div id="tab-exams" class="docs-tab" onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">Examens</div>
-        <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>
+    <!--    <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>-->
 
     <div id="tab-fiches" class="docs-tab" onclick="openDocsTab('tab-fiches','fichesconseilf.html')">Fiches Conseils</div>
 
@@ -3847,7 +3827,7 @@ document.getElementById("importanceAllergies").addEventListener("change", async 
   await updateDoc(patientRef, { importanceAllergies: isImportant });
   afficherBulle(
     isImportant
-      ? "🚨 Allergie(s) importantes activée(s)"
+      ? "🚨 Allergie(s) importante(s) activée(s)"
       : "✅ Pas d’allergie majeure",
     "default"
   );
@@ -5013,124 +4993,6 @@ window.enregistrerEvolution = async function() {
 }
 
 
-
-async function chargerHistoriqueComplet() {
-  const contenu = document.getElementById("hospitalisationsContent");
-  if (!contenu) {
-    console.error("Element #hospitalisationsContent introuvable");
-    return;
-  }
-  contenu.innerHTML = "<p>⏳ Chargement...</p>";
-
-  try {
-    // 1️⃣ Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-
-    if (!patientSnap.exists()) {
-      contenu.innerHTML = "<p>❌ Patient introuvable</p>";
-      window.location.href = "aucun-patients.html";
-      return;
-    }
-
-    const patientData = patientSnap.data();
-    let hospitalisationIds = Array.isArray(patientData.hospitalisations) 
-                             ? [...patientData.hospitalisations] 
-                             : [];
-
-    // on enlève la dernière hospitalisation (courante)
-    if (hospitalisationIds.length > 1) {
-      hospitalisationIds = hospitalisationIds.slice(0, -1);
-    } else {
-      hospitalisationIds = [];
-    }
-
-    if (hospitalisationIds.length === 0) {
-      contenu.innerHTML = "<p>Aucune hospitalisation antérieure.</p>";
-      return;
-    }
-
-    contenu.innerHTML = "";
-
-    // 2️⃣ Charger chaque document hospitalisation et afficher
-    for (let i = hospitalisationIds.length - 1; i >= 0; i--) {
-      const hospiRef = doc(db, "hospitalisations", hospitalisationIds[i]);
-      const hospiSnap = await getDoc(hospiRef);
-      if (!hospiSnap.exists()) continue;
-
-      const hospi = hospiSnap.data();
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const numero = hospitalisationIds.length - i;
-      const titre = document.createElement("h2");
-      titre.textContent = `🏥 Hospitalisation n°${numero}`;
-      titre.style.color = "#0078d4";
-      titre.style.borderBottom = "3px solid #0078d4";
-      titre.style.paddingBottom = "5px";
-      titre.style.marginTop = "0";
-      titre.style.marginBottom = "15px";
-
-      // --- Données hospitalisation ---
-      const date = hospi.dateDebut || "Date inconnue";
-      const datef = hospi.dateFin || "Date inconnue";
-      const motif = hospi.motif || "—";
-      const gravite = hospi.gravite || "—";
-      const evolution = hospi.evolution || "Aucune évolution enregistrée.";
-      const dossier = hospi.dossierMedical || {};
-      const sortie = hospi.sortie || null;
-      const rapport = hospi.rapport || "Pas de rapport d'hospitalisation validé";
-
-      const parts = [];
-      parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${date}</div>`);
-      parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${datef}</div>`);
-      parts.push(`<div class="entry"><strong>Motif :</strong> ${motif}</div>`);
-      parts.push(`<div class="entry"><strong>Gravité :</strong> ${gravite}</div>`);
-      parts.push(`<hr>`);
-      parts.push(`<h3>📋 Dossier médical</h3>`);
-      parts.push(`<p><strong>Questionnaire IAO :</strong><br>${dossier.questionnaire || "—"}</p>`);
-      parts.push(`<p><strong>Antécédents :</strong><br>${dossier.antecedents || "—"}</p>`);
-      parts.push(`<p><strong>Traitements :</strong><br>${dossier.traitements || "—"}</p>`);
-      parts.push(`<p><strong>Histoire de la maladie :</strong><br>${dossier.histoire || "—"}</p>`);
-      parts.push(`<p><strong>CR Auscultation :</strong><br>${dossier.auscultation || "—"}</p>`);
-      parts.push(`<hr>`);
-      parts.push(`<h3>📈 Évolution aux urgences</h3>`);
-      parts.push(`<p style="white-space:pre-wrap">${evolution}</p>`);
-
-      // --- Sortie ---
-      if (sortie) {
-        parts.push(`<hr>`);
-        parts.push(`<h3>🚪 Sortie</h3>`);
-        parts.push(`<p><strong>Type :</strong> ${sortie.type || "—"}</p>`);
-        if (sortie.serviceHospitalisation)
-          parts.push(`<p><strong>🏥 Service hospitalisation :</strong> ${sortie.serviceHospitalisation}</p>`);
-        if (sortie.destinationTransfert)
-          parts.push(`<p><strong>↔️ Destination transfert :</strong> ${sortie.destinationTransfert}</p>`);
-        if (sortie.avisSpecialiste)
-          parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${sortie.avisSpecialiste}</p>`);
-        if (Array.isArray(sortie.options) && sortie.options.length > 0)
-          parts.push(`<p><strong>📋 Options :</strong> ${sortie.options.join(", ")}</p>`);
-        if (sortie.traitementSortie)
-          parts.push(`<p><strong>💊 Traitement de sortie :</strong><br>${sortie.traitementSortie}</p>`);
-        if (sortie.autreSortieTexte)
-          parts.push(`<p><strong>🔤 Autre :</strong> ${sortie.autreSortieTexte}</p>`);
-        if (sortie.autreOptionTexte)
-          parts.push(`<p><strong>🔤 Autre option :</strong> ${sortie.autreOptionTexte}</p>`);
-      }
-
-      parts.push(`<p><strong></strong> ${rapport}</p>`);
-
-      card.innerHTML = parts.join("\n");
-      card.prepend(titre);
-      contenu.appendChild(card);
-      card.style.display = "";
-    }
-filtrerHistorique();
-  } catch (err) {
-    console.error("Erreur chargement historique :", err);
-    contenu.innerHTML = "<p>❌ Erreur lors du chargement de l'historique.</p>";
-  }
-}
 async function chargerExamens() {
   try {
     const patientRef = doc(db, "patients", patientId);
@@ -5540,7 +5402,10 @@ if (panelId === "panel-constantes") {
     const url = "constantes.html?id=" + patientId;
     document.getElementById("constantesFrame").src = url;
 }
-
+if (panelId === "panel-historique") {
+    const url = "historique.html?id=" + patientId;
+    document.getElementById("historiqueFrame").src = url;
+}
     });
 }
 window.openSection = openSection;
@@ -6029,38 +5894,7 @@ async function getHospitalisationEnCours(patientId) {
     return null;
   }
 }
-const input = document.getElementById("rechercheHistorique");
 
-if (input) {
-  input.addEventListener("input", filtrerHistorique);
-}
-function filtrerHistorique() {
-  const input = document.getElementById("rechercheHistorique");
-
-  if (!input) return;
-
-  const recherche = input.value.toLowerCase().trim();
-
-  document
-    .querySelectorAll("#hospitalisationsContent .card")
-    .forEach(card => {
-      const texte = card.innerText.toLowerCase();
-
-      card.style.display =
-        recherche === "" || texte.includes(recherche)
-          ? ""
-          : "none";
-    });
-}
-
-
-
-document.getElementById("rechercheHistorique").addEventListener("keydown", function(e){
-  if (e.key === "Escape") {
-    this.value = "";
-    this.dispatchEvent(new Event("input"));
-  }
-});
 
 document.addEventListener("keydown", function (e) {
     // Vérifie que c'est bien une touche F1 à F12
@@ -6102,10 +5936,7 @@ function initNavigation() {
        document.querySelector(`.nav-item[data-module="${module}"]`)
     .classList.add('active');
 
-      // Charger l’historique si nécessaire
-      if (module === 'historique') {
-        if (typeof chargerHistoriqueComplet === 'function') chargerHistoriqueComplet();
-      }
+    
 
       // Gestion spécifique : mode Documents -> scroll interne iframe
       if (module === 'documents') {
@@ -6236,7 +6067,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const iframeconstantes = document.getElementById("constantesFrame");
         iframeconstantes.src = "constantes.html?id=" + patientId;
     });
-    
+    const btnHistorique = document.querySelector('[data-module="historique"]');
+    btnHistorique.addEventListener("click", () => {
+      
+        const iframeconstantes = document.getElementById("historiqueFrame");
+        iframeconstantes.src = "historique.html?id=" + patientId;
+    });
 });
 
 

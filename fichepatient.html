@@ -2525,26 +2525,12 @@ z-index: 3000;
 
 <section id="panel-historique" class="panel" style="display:none;">
 
-  <h3>📜 Historique</h3>
-
-  <!-- 🔍 Recherche dans l’historique -->
-  <input
-    type="text"
-    id="rechercheHistorique"
-    placeholder="🔍 Rechercher (motif, service, date, texte...)"
-    style="
-      width:100%;
-      padding:10px;
-      margin-bottom:15px;
-      border-radius:8px;
-      border:1px solid #ccc;
-    "
-  />
-
-  <div id="hospitalisationsContent"></div>
+  <h3>📜 Historique complet des hospitalisations du patient</h3>
+<iframe
+    id="historiqueFrame"
+    style="width:100%; border:none; border-radius:10px; overflow:hidden;">
+  </iframe>
 </section>
-
-
 
 <section id="panel-documents" class="panel" style="display:none;">
  
@@ -2556,7 +2542,7 @@ z-index: 3000;
     <div id="tab-ordo" class="docs-tab active" onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">Ordonnancier</div>
     <div id="tab-cert" class="docs-tab" onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">Certificats</div>
     <div id="tab-exams" class="docs-tab" onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">Examens</div>
-        <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>
+      <!--  <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>-->
 
     <div id="tab-fiches" class="docs-tab" onclick="openDocsTab('tab-fiches','fichesconseilf.html')">Fiches Conseils</div>
 
@@ -3140,6 +3126,15 @@ function formaterDate(dateStr) {
 }
     
 
+document.addEventListener("DOMContentLoaded", () => {
+    const btnHistorique = document.querySelector('[data-module="historique"]');
+    btnHistorique.addEventListener("click", () => {
+      
+        const iframeconstantes = document.getElementById("historiqueFrame");
+        iframeconstantes.src = "historique.html?id=" + patientId;
+    });
+});
+
 
 
 
@@ -3416,7 +3411,10 @@ if (panelId === "panel-constantes") {
     const url = "constantes.html?id=" + patientId;
     document.getElementById("constantesFrame").src = url;
 }
-
+if (panelId === "panel-historique") {
+    const url = "historique.html?id=" + patientId;
+    document.getElementById("historiqueFrame").src = url;
+}
     });
 }
 window.openSection = openSection;
@@ -3690,38 +3688,8 @@ function afficherHistoriqueVerifications(verifications) {
 
   });
 }
- const input = document.getElementById("rechercheHistorique");
-
-if (input) {
-  input.addEventListener("input", filtrerHistorique);
-}
-function filtrerHistorique() {
-  const input = document.getElementById("rechercheHistorique");
-
-  if (!input) return;
-
-  const recherche = input.value.toLowerCase().trim();
-
-  document
-    .querySelectorAll("#hospitalisationsContent .card")
-    .forEach(card => {
-      const texte = card.innerText.toLowerCase();
-
-      card.style.display =
-        recherche === "" || texte.includes(recherche)
-          ? ""
-          : "none";
-    });
-}
 
 
-
-document.getElementById("rechercheHistorique").addEventListener("keydown", function(e){
-  if (e.key === "Escape") {
-    this.value = "";
-    this.dispatchEvent(new Event("input"));
-  }
-});
 
 document.addEventListener("keydown", function (e) {
     // Vérifie que c'est bien une touche F1 à F12
@@ -3763,10 +3731,6 @@ function initNavigation() {
        document.querySelector(`.nav-item[data-module="${module}"]`)
     .classList.add('active');
 
-      // Charger l’historique si nécessaire
-      if (module === 'historique') {
-        if (typeof chargerHistoriqueComplet === 'function') chargerHistoriqueComplet();
-      }
 
       // Gestion spécifique : mode Documents -> scroll interne iframe
       if (module === 'documents') {

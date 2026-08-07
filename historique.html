@@ -556,7 +556,7 @@ function rendreListeActesOuMeds(items, verbeRealise, champComment, champDateReal
     const estFait = it.status === "realise" || it.status === "pris";
     return `
       <div class="sous-item ${estFait ? "statut-ok" : "statut-attente"}">
-        <div class="sous-item-titre">${echapper(it.product || "—")}
+        <div class="sous-item-titre">${echapper(it.product || "Non renseigné")}
           <span class="badge-statut ${estFait ? "ok" : "attente"}">${estFait ? "✅ " + verbeRealise : "⏳ en attente"}</span>
         </div>
         <div class="sous-item-meta">
@@ -631,7 +631,6 @@ function rendreHospitalisation(hospi, numero, estActive, documents) {
   parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${echapper(datef)}</div>`);
   parts.push(`<div class="entry"><strong>Motif :</strong> ${echapper(motif)}</div>`);
   parts.push(`<div class="entry"><strong>Gravité :</strong> ${echapper(gravite)}</div>`);
-  if (hospi.pdcStatut) parts.push(`<div class="entry"><strong>Statut PEC :</strong> ${echapper(hospi.pdcStatut)}</div>`);
 
   parts.push(`<hr>`);
   parts.push(`<h3>👥 Équipe référente</h3>`);
@@ -666,6 +665,9 @@ function rendreHospitalisation(hospi, numero, estActive, documents) {
         <strong>${echapper(ex.type || "Examen")}</strong> — ${ex.realise ? "✅ Réalisé" : "⏳ En attente"}
         ${ex.commentaire ? `<br><em>${echapper(ex.commentaire)}</em>` : ""}
         ${ex.dateDemande ? `<br><small>Demandé le ${echapper(ex.dateDemande)}</small>` : ""}
+          ${ex.dateRealisation ? `<br><small>Réalisé le ${echapper(ex.dateRealisation)}</small>` : ""}
+        ${ex.compteRendu ? `<br><small>Résultat : ${echapper(ex.compteRendu)}</small>` : ""}
+
       </div>
     `).join(""));
   }
@@ -927,8 +929,7 @@ async function genererPdfHospitalisation(hospiId, inclureJournal) {
   const hospitalisationTexte =
     `Admission : ${hospi.dateDebut || "—"}    Sortie : ${hospi.dateFin || (estActive ? "En cours" : "—")}\n` +
     `Motif : ${hospi.motif || "—"}\n` +
-    `Gravité : ${hospi.gravite || "—"}    Moyen d'entrée : ${hospi.moyen || "—"}    Circuit : ${hospi.circuit || "—"}\n` +
-    `Statut PEC : ${hospi.pdcStatut || "—"}`;
+    `Gravité : ${hospi.gravite || "—"}    Moyen d'entrée : ${hospi.moyen || "—"}    Circuit : ${hospi.circuit || "—"}\n` ;
   y = addBlock(pdf, "Hospitalisation", hospitalisationTexte, y, marginX, pageWidth, bleu);
 
   // ---- Équipe référente ----

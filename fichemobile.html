@@ -323,6 +323,12 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 .exam-detail{ display:none; font-size:.83rem; color:#334155; padding:8px 0 4px; line-height:1.5; }
 .exam-detail.open{ display:block; }
 
+.tx-badge{ font-size:.7rem; font-weight:800; padding:4px 9px; border-radius:20px; flex-shrink:0; }
+.tx-badge[data-status="a-faire"], .tx-badge[data-status="a-donner"]{ background:#dceaff; color:#0d6efd; }
+.tx-badge[data-status="prevu"]{ background:#f1f5f9; color:#475569; }
+.tx-badge[data-status="en-retard"]{ background:#ffdada; color:#c62828; }
+.tx-badge[data-status="realise"], .tx-badge[data-status="pris"]{ background:#cbf7d5; color:#146c2e; }
+
 /* bottom sheet salle */
 .sheet-backdrop{
   position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:900; opacity:0; pointer-events:none; transition:opacity .2s;
@@ -767,6 +773,99 @@ function textBlock(val, emptyLabel="Non renseigné."){
   return v
     ? `<div class="txt-block">${escapeHtml(v)}</div>`
     : `<div class="txt-block empty">${emptyLabel}</div>`;
+}
+
+/* =========================================================
+   ACTES & MÉDICAMENTS (lecture seule)
+   Structure identique à l'app bureau : hospi.actes[] et hospi.meds[],
+   chacun avec { product, comment, createdAt, dueAt, status, ... }
+   au format "JJ/MM/AAAA HH:MM:SS".
+========================================================= */
+const STATUS_LABELS_FR = {
+  "a-faire": "À faire",
+  "a-donner": "À donner",
+  "prevu": "Prévu",
+  "en-retard": "En retard",
+  "realise": "Réalisé",
+  "pris": "Administré"
+};
+
+function parseDateFR(str){
+  if (!str) return null;
+  try{
+    const [datePart, timePart] = str.split(" ");
+    if (!datePart) return null;
+    const [dd, mm, yyyy] = datePart.split("/");
+    let h = 0, m = 0, s = 0;
+    if (timePart){
+      const parts = timePart.split(":");
+      h = parseInt(parts[0]) || 0; m = parseInt(parts[1]) || 0; s = parseInt(parts[2]) || 0;
+    }
+    const d = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd), h, m, s);
+    return isNaN(d.getTime()) ? null : d;
+  }catch(e){ return null; }
+}
+
+function formatDateFRCourt(d){
+  if (!d) return "—";
+  return d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Reproduit exactement la logique de statut dynamique de l'app bureau :
+// si non "fait", on recalcule "à faire / prévu / en retard" selon l'échéance.
+function computeDynamicStatus(item, currentLabel, doneLabel){
+  let status = item.status;
+  if (status !== doneLabel){
+    const due = parseDateFR(item.dueAt);
+    if (due){
+      const diffMin = (Date.now() - due.getTime()) / 60000;
+      if (Math.abs(diffMin) <= 10) status = currentLabel;
+      else if (diffMin < -10) status = "prevu";
+      else status = "en-retard";
+    }
+  }
+  return status;
+}
+
+function renderTxList(items, kind){
+  // kind: "acte" -> hospi.actes[]  |  "med" -> hospi.meds[]
+  const currentLabel = kind === "acte" ? "a-faire" : "a-donner";
+  const doneLabel = kind === "acte" ? "realise" : "pris";
+  const dateDoneField = kind === "acte" ? "realiseAt" : "takenAt";
+  const commentDoneField = kind === "acte" ? "realiseComment" : "takeComment";
+  const doneDateLabel = kind === "acte" ? "Réalisé le" : "Administré le";
+  const doneCommentLabel = kind === "acte" ? "Commentaire de réalisation" : "Commentaire d'administration";
+  const icon = kind === "acte" ? "💉" : "💊";
+
+  if (!items || items.length === 0){
+    return `<div class="txt-block empty">${kind === "acte" ? "Aucun acte demandé." : "Aucun médicament prescrit."}</div>`;
+  }
+
+  const sorted = items
+    .map((it, idx) => ({ ...it, idx }))
+    .sort((a, b) => (parseDateFR(b.createdAt)?.getTime() || 0) - (parseDateFR(a.createdAt)?.getTime() || 0));
+
+  return sorted.map(it => {
+    const status = computeDynamicStatus(it, currentLabel, doneLabel);
+    const due = parseDateFR(it.dueAt);
+    const doneDate = parseDateFR(it[dateDoneField]);
+    const rowId = `${kind}-${it.idx}`;
+
+    return `
+      <div class="exam-item" data-exam-idx="${rowId}">
+        <span>${icon} ${escapeHtml(it.product || "N/A")}</span>
+        <span class="tx-badge" data-status="${status}">${STATUS_LABELS_FR[status] || status}</span>
+      </div>
+      <div class="exam-detail" id="exam-detail-${rowId}">
+        <div><b>Prévu le :</b> ${formatDateFRCourt(due)}</div>
+        ${it.comment ? `<div style="margin-top:6px;"><b>Commentaire demande :</b><br>${escapeHtml(it.comment)}</div>` : ""}
+        ${status === doneLabel ? `
+          <div style="margin-top:6px;"><b>${doneDateLabel} :</b> ${formatDateFRCourt(doneDate)}</div>
+          ${it[commentDoneField] ? `<div style="margin-top:4px;"><b>${doneCommentLabel} :</b><br>${escapeHtml(it[commentDoneField])}</div>` : ""}
+        ` : ""}
+      </div>
+    `;
+  }).join("");
 }
 
 /* =========================================================
@@ -1282,6 +1381,8 @@ function openPatientDetail(patientId, overrideObj){
   const dm = h.dossierMedical || {};
   const equipe = h.equipe || {};
   const examens = h.examens || [];
+  const actes = h.actes || [];
+  const meds = h.meds || [];
   const sortie = h.sortie || null;
 
   let html = "";
@@ -1353,6 +1454,20 @@ function openPatientDetail(patientId, overrideObj){
     <summary>📈 Évolution aux urgences <span class="chev">›</span></summary>
     <div class="pd-section-content">
       ${textBlock(h.evolution)}
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>💊 Médicaments aux urgences <span class="chev">›</span> ${meds.length ? `<span class="occ-chip" style="margin-left:6px;">${meds.length}</span>` : ""}</summary>
+    <div class="pd-section-content">
+      ${renderTxList(meds, "med")}
+    </div>
+  </details>
+
+  <details class="pd-section">
+    <summary>💉 Actes aux urgences <span class="chev">›</span> ${actes.length ? `<span class="occ-chip" style="margin-left:6px;">${actes.length}</span>` : ""}</summary>
+    <div class="pd-section-content">
+      ${renderTxList(actes, "acte")}
     </div>
   </details>
 

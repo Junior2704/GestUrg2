@@ -36,7 +36,63 @@
       document.body.innerHTML += `<p>✅ ${count} lien(s) supprimé(s).</p>`;
     }
 
+async function nettoyerAccueil1() {
+  try {
+    const snapshot = await getDocs(collection(db, "accueil-1"));
+
+    if (snapshot.empty) {
+      console.log("📭 La collection accueil-1 est vide.");
+      return;
+    }
+
+    // Trouver le document avec le numéro le plus élevé
+    let docAConserver = null;
+    let numeroMax = -Infinity;
+
+    snapshot.forEach((documentSnap) => {
+      const data = documentSnap.data();
+
+      // Conversion en nombre pour éviter les problèmes
+      // si numéro est enregistré comme texte
+      const numero = Number(data.numéro);
+
+      if (!isNaN(numero) && numero > numeroMax) {
+        numeroMax = numero;
+        docAConserver = documentSnap;
+      }
+    });
+
+    if (!docAConserver) {
+      console.warn("⚠️ Aucun document avec un numéro valide trouvé.");
+      return;
+    }
+
+    console.log(
+      `✅ Conservation du document ${docAConserver.id} avec numéro ${numeroMax}`
+    );
+
+    // Supprimer tous les autres documents
+    const suppressions = [];
+
+    snapshot.forEach((documentSnap) => {
+      if (documentSnap.id !== docAConserver.id) {
+        suppressions.push(
+          deleteDoc(doc(db, "accueil-1", documentSnap.id))
+        );
+      }
+    });
+
+    await Promise.all(suppressions);
+
+    console.log(
+      `🗑️ ${suppressions.length} document(s) supprimé(s).`
+    );
+
+  } catch (error) {
+    console.error("❌ Erreur nettoyage accueil-1 :", error);
+  }
     nettoyerPDFs();
+    nettoyerAccueil1();
   </script>
 </body>
 </html>

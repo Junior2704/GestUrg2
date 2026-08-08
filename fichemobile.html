@@ -2380,52 +2380,42 @@ function initBureauxListenerMobile() {
   });
 
 }
+async function renderBureaux() {
 
-function renderBureaux() {
+    const select = document.getElementById("bureauSelectMobile");
 
-  const select =
-    document.getElementById("bureauSelectMobile");
+    if (!select) return;
 
-  if (!select) return;
+    try {
 
+        const ref = doc(db, "referentiels", "bureau");
+        const snap = await getDoc(ref);
 
+        if (!snap.exists()) {
+            console.warn("Document referentiels/bureau introuvable");
+            return;
+        }
 
-  const bureaux = [
-    ...new Set(
-      ticketsAccueil
-        .map(t =>
-          t.bureau ??
-          t.bureauId ??
-          t.guichet ??
-          t.poste
-        )
-        .filter(Boolean)
-    )
-  ];
+        const data = snap.data();
 
+        // Les noms des bureaux sont les clés des Maps
+        const bureaux = Object.keys(data);
 
+        select.innerHTML = bureaux.map(bureau => `
+            <option value="${escapeHtml(bureau)}">
+                ${escapeHtml(bureau)}
+            </option>
+        `).join("");
 
-  if (bureaux.length === 0) {
+    } catch (error) {
 
-    select.innerHTML = `
-      <option value="bureau-1">
-        Bureau 1
-      </option>
-    `;
+        console.error("Erreur chargement des bureaux :", error);
 
-    return;
-  }
-
-
-  select.innerHTML = bureaux.map(b => `
-    <option value="${escapeHtml(String(b))}">
-      ${escapeHtml(String(b))}
-    </option>
-  `).join("");
-
+        select.innerHTML = `
+            <option value="">Erreur de chargement</option>
+        `;
+    }
 }
-
-
 /* ---------- APPELER LE TICKET SUIVANT ---------- */
 
 async function appelerTicketSuivant() {

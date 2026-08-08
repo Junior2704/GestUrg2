@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <meta name="theme-color" content="#0078d4" />
-<title>Urgences · Mobile</title>
+<title>GestUrg2 · Mobile</title>
 <link rel="icon" type="image/jpeg" href="logog2.png">
 <link rel="manifest" href="manifest.json">
 <style>
@@ -360,6 +360,40 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 .spinner{ width:44px; height:44px; border-radius:50%; border:4px solid #cfe1f7; border-top-color:var(--blue-600); animation:spin .8s linear infinite; }
 
 .pull-hint{ text-align:center; font-size:.72rem; color:#94a3b8; padding:2px 0 12px; font-weight:600; }
+
+/* ============ scan ============ */
+.scan-wrap{ display:flex; flex-direction:column; align-items:center; gap:16px; padding-top:4px; }
+.scan-frame-wrap{
+  width:100%; max-width:420px; aspect-ratio:3/4; background:#0b1220; border-radius:var(--radius-lg);
+  overflow:hidden; position:relative; box-shadow:0 14px 34px rgba(15,23,42,.22);
+}
+#qr-reader{ width:100%; height:100%; }
+#qr-reader video{ width:100% !important; height:100% !important; object-fit:cover; }
+.scan-guide{
+  position:absolute; inset:14%; border:2.5px solid rgba(255,255,255,.85); border-radius:20px;
+  box-shadow:0 0 0 999px rgba(0,0,0,.28); pointer-events:none;
+}
+.scan-status{ font-size:.85rem; color:var(--text-muted); text-align:center; padding:0 16px; font-weight:600; min-height:20px; }
+#btnScanAgain{ max-width:300px; }
+.scan-hint{
+  display:flex; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; font-size:.8rem; color:var(--text-muted); line-height:1.5; max-width:420px;
+}
+.scan-hint b{ color:var(--text); }
+
+/* ============ lien interne (iframe) ============ */
+.scan-frame-overlay{
+  position:fixed; inset:0; background:var(--bg); z-index:1200;
+  transform:translateY(100%); transition:transform .28s cubic-bezier(.32,.72,0,1);
+  display:flex; flex-direction:column;
+}
+.scan-frame-overlay.open{ transform:translateY(0); }
+.scan-frame-header{
+  padding: calc(12px + var(--safe-top)) 14px 12px; background:var(--card); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.scan-frame-title{ font-weight:800; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#scanFrameIframe{ flex:1; border:none; width:100%; background:white; }
 </style>
 </head>
 <body>
@@ -428,6 +462,25 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
       <div id="statsContent"></div>
     </section>
 
+    <!-- -------- SCAN -------- -->
+    <section class="view" id="view-scan">
+      <div class="scan-wrap">
+        <div class="scan-frame-wrap">
+          <div id="qr-reader"></div>
+          <div class="scan-guide" id="scanGuide"></div>
+        </div>
+        <div class="scan-status" id="scanStatus">Activation de la caméra…</div>
+        <button class="btn-primary" id="btnScanAgain" style="display:none;">🔄 Scanner un autre code</button>
+        <div class="scan-hint">
+          <span>ℹ️</span>
+          <div>
+            <b>Étiquette patient</b> : ouvre directement sa fiche.<br>
+            <b>QR code de l'application</b> : s'ouvre dans une fenêtre intégrée, sans quitter l'app.
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <div class="tabbar">
@@ -439,6 +492,9 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     </button>
     <button class="tabbar-btn" data-view="stats">
       <span class="ic">📊</span><span class="lb">Stats</span>
+    </button>
+    <button class="tabbar-btn" data-view="scan">
+      <span class="ic">📷</span><span class="lb">Scan</span>
     </button>
   </div>
 
@@ -466,11 +522,21 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <div class="pd-body" id="pdBody"></div>
   </div>
 
+  <!-- ---- Lien interne de l'application (QR code) ---- -->
+  <div id="scanFrameOverlay" class="scan-frame-overlay">
+    <div class="scan-frame-header">
+      <div class="scan-frame-title" id="scanFrameTitle">Application Urgences</div>
+      <button class="pd-back" id="scanFrameClose">✖</button>
+    </div>
+    <iframe id="scanFrameIframe" src="about:blank"></iframe>
+  </div>
+
 </div>
 
 <div id="toastWrap"></div>
 <div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -659,6 +725,7 @@ async function doLogin(){
 
 document.getElementById("btnLogout").addEventListener("click", async () => {
   clearInterval(state.refreshTimer);
+  stopScanner();
   await signOut(auth);
 });
 
@@ -750,6 +817,11 @@ function switchTab(view){
   state.currentTab = view;
   document.querySelectorAll(".tabbar-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
+  if (view === "scan"){
+    startScanner();
+  }else{
+    stopScanner();
+  }
 }
 
 /* =========================================================
@@ -1088,10 +1160,11 @@ function updatePulseBar(){
 const patientDetail = document.getElementById("patientDetail");
 document.getElementById("pdBack").addEventListener("click", closePatientDetail);
 
-function openPatientDetail(patientId){
-  const p = state.patients.find(x => x.id === patientId);
+function openPatientDetail(patientId, overrideObj){
+  const p = overrideObj || state.patients.find(x => x.id === patientId);
   if (!p){ toast("Patient introuvable (a peut-être quitté les urgences)", "error"); return; }
 
+  const estHospitalise = !!p.hospitalisationActiveId;
   const h = p.hospi || {};
   const grav = h.gravite || "P0";
   const age = calculerAge(p.dateNaissance);
@@ -1100,11 +1173,19 @@ function openPatientDetail(patientId){
   const salle = SALLES_INDEX[p.position];
 
   document.getElementById("pdName").textContent = `${p.nom || ""} ${p.prenom || ""}${mineur ? " 🧸" : ""}`;
-  document.getElementById("pdSub").textContent = `${ageTxt} · ${p.sexe || "sexe inconnu"} · ${salle ? salle.icon + " " + salle.label : "position inconnue"}`;
+  document.getElementById("pdSub").textContent = estHospitalise
+    ? `${ageTxt} · ${p.sexe || "sexe inconnu"} · ${salle ? salle.icon + " " + salle.label : "position inconnue"}`
+    : `${ageTxt} · ${p.sexe || "sexe inconnu"} · pas d'hospitalisation active`;
   const badge = document.getElementById("pdGravBadge");
-  badge.textContent = GRAVITE_LABELS[grav] || grav;
-  badge.style.background = GRAVITE_COLORS[grav] || "#94a3b8";
-  if (grav === "P1") badge.style.color = "#7a5c00"; else badge.style.color = "white";
+  if (estHospitalise){
+    badge.textContent = GRAVITE_LABELS[grav] || grav;
+    badge.style.background = GRAVITE_COLORS[grav] || "#94a3b8";
+    badge.style.color = (grav === "P1") ? "#7a5c00" : "white";
+  }else{
+    badge.textContent = "Non hospitalisé";
+    badge.style.background = "#94a3b8";
+    badge.style.color = "white";
+  }
 
   const dm = h.dossierMedical || {};
   const equipe = h.equipe || {};
@@ -1112,6 +1193,10 @@ function openPatientDetail(patientId){
   const sortie = h.sortie || null;
 
   let html = "";
+
+  if (!estHospitalise){
+    html += `<div class="pd-alert" style="background:#eef2f8; border-color:#dbe7f5; color:#334155;">ℹ️ <div>Ce patient n'a pas d'hospitalisation active actuellement. Seules les informations d'identité sont disponibles ci-dessous.</div></div>`;
+  }
 
   if (p.importanceAllergies){
     html += `<div class="pd-alert">⚠️ <div>Allergie(s) importante(s) signalée(s) — voir détail dans « Identité & vigilance ».</div></div>`;
@@ -1231,6 +1316,185 @@ function openPatientDetail(patientId){
 
 function closePatientDetail(){
   patientDetail.classList.remove("open");
+}
+
+/* =========================================================
+   SCAN (étiquettes patient + QR codes internes)
+========================================================= */
+const INTERNAL_DOMAIN = "junior2704.github.io/GestUrg2/";
+
+let html5QrCode = null;
+let scannerRunning = false;
+let scannerStarting = false;
+let scanLocked = false;
+
+const SUPPORTED_FORMATS = (window.Html5QrcodeSupportedFormats) ? [
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODABAR,
+  Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+] : undefined;
+
+function setScanStatus(txt){
+  const el = document.getElementById("scanStatus");
+  if (el) el.textContent = txt;
+}
+
+function startScanner(){
+  if (scannerRunning || scannerStarting) return;
+  if (typeof Html5Qrcode === "undefined"){
+    setScanStatus("Le module de scan n'a pas pu se charger. Vérifiez votre connexion internet.");
+    return;
+  }
+  scannerStarting = true;
+  scanLocked = false;
+  document.getElementById("btnScanAgain").style.display = "none";
+  setScanStatus("Initialisation de la caméra…");
+
+  try{
+    html5QrCode = new Html5Qrcode(
+      "qr-reader",
+      SUPPORTED_FORMATS ? { formatsToSupport: SUPPORTED_FORMATS, verbose: false } : undefined
+    );
+  }catch(e){
+    console.error("Erreur création scanner :", e);
+    setScanStatus("Scanner indisponible sur cet appareil.");
+    scannerStarting = false;
+    return;
+  }
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72);
+        return { width: size, height: size };
+      }
+    },
+    onScanDecoded,
+    () => { /* échec de décodage sur une frame : ignoré, on continue */ }
+  ).then(() => {
+    scannerRunning = true;
+    scannerStarting = false;
+    if (!scanLocked) setScanStatus("Visez un code-barres patient ou un QR code de l'application.");
+  }).catch(err => {
+    console.error("Erreur démarrage caméra :", err);
+    scannerStarting = false;
+    setScanStatus("Impossible d'accéder à la caméra. Vérifiez les autorisations de l'application puis réessayez.");
+  });
+}
+
+function stopScanner(){
+  if (!html5QrCode || !scannerRunning){ return; }
+  html5QrCode.stop()
+    .then(() => { try{ html5QrCode.clear(); }catch(e){} scannerRunning = false; })
+    .catch(() => { scannerRunning = false; });
+}
+
+async function onScanDecoded(decodedText){
+  if (scanLocked) return;
+  scanLocked = true;
+
+  if (html5QrCode && scannerRunning){
+    try{ html5QrCode.pause(true); }catch(e){}
+  }
+  if (navigator.vibrate) navigator.vibrate(60);
+  document.getElementById("btnScanAgain").style.display = "block";
+
+  await handleScanResult((decodedText || "").trim());
+}
+
+document.getElementById("btnScanAgain").addEventListener("click", () => {
+  scanLocked = false;
+  document.getElementById("btnScanAgain").style.display = "none";
+  setScanStatus("Visez un code-barres patient ou un QR code de l'application.");
+  if (html5QrCode && scannerRunning){
+    try{ html5QrCode.resume(); }
+    catch(e){ startScanner(); }
+  }else{
+    startScanner();
+  }
+});
+
+async function handleScanResult(value){
+  if (!value){
+    setScanStatus("Code vide ou illisible, réessayez.");
+    return;
+  }
+
+  // 1) QR code interne de l'application → ouverture en iframe
+  if (value.includes(INTERNAL_DOMAIN)){
+    let url = value;
+    if (!/^https?:\/\//i.test(url)) url = "https://" + url.replace(/^\/+/, "");
+    setScanStatus("Ouverture du lien dans l'application…");
+    openScanFrame(url);
+    return;
+  }
+
+  // 2) autre lien externe → non ouvert automatiquement (sécurité)
+  if (/^https?:\/\//i.test(value)){
+    setScanStatus("Ce QR code pointe vers un site externe, non ouvert automatiquement.");
+    toast("Lien externe non pris en charge", "error");
+    return;
+  }
+
+  // 3) sinon on considère qu'il s'agit d'un identifiant patient (étiquette / code-barres)
+  setScanStatus("Recherche du patient…");
+  showLoader();
+  try{
+    const snap = await getDoc(doc(db, "patients", value));
+    hideLoader();
+
+    if (!snap.exists()){
+      setScanStatus(`Aucun patient trouvé pour le code « ${value} ».`);
+      toast("Code non reconnu", "error");
+      return;
+    }
+
+    const data = snap.data();
+    let hospi = {};
+    if (data.hospitalisationActiveId){
+      try{
+        const hSnap = await getDoc(doc(db, "hospitalisations", data.hospitalisationActiveId));
+        if (hSnap.exists()) hospi = hSnap.data();
+      }catch(e){ console.warn("Erreur lecture hospitalisation :", e); }
+    }
+
+    const patientObj = { id: snap.id, ...data, position: data.position || "salle-attente", hospi };
+    setScanStatus("Patient trouvé.");
+    openPatientDetail(patientObj.id, patientObj);
+  }catch(e){
+    hideLoader();
+    console.error("Erreur recherche patient :", e);
+    setScanStatus("Erreur lors de la recherche du patient.");
+    toast("Erreur de recherche", "error");
+  }
+}
+
+/* ---- overlay lien interne (iframe) ---- */
+const scanFrameOverlay = document.getElementById("scanFrameOverlay");
+document.getElementById("scanFrameClose").addEventListener("click", closeScanFrame);
+
+function openScanFrame(url){
+  document.getElementById("scanFrameTitle").textContent = url.replace(/^https?:\/\//, "");
+  document.getElementById("scanFrameIframe").src = url;
+  scanFrameOverlay.classList.add("open");
+}
+
+function closeScanFrame(){
+  scanFrameOverlay.classList.remove("open");
+  document.getElementById("scanFrameIframe").src = "about:blank";
+  scanLocked = false;
+  document.getElementById("btnScanAgain").style.display = "none";
+  setScanStatus("Visez un code-barres patient ou un QR code de l'application.");
+  if (html5QrCode && scannerRunning){
+    try{ html5QrCode.resume(); }catch(e){}
+  }
 }
 
 </script>

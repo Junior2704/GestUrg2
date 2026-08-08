@@ -395,9 +395,35 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 }
 .scan-frame-title{ font-weight:800; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #scanFrameIframe{ flex:1; border:none; width:100%; background:white; }
+
+/* ============ hors connexion ============ */
+#offlineBlockScreen{
+  position:fixed; inset:0; z-index:6500;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  padding:32px 28px calc(32px + var(--safe-bottom));
+  background:var(--bg); text-align:center;
+}
+#offlineBlockScreen.show{ display:flex; }
+.offline-block-icon{ font-size:2.6rem; margin-bottom:14px; opacity:.85; }
+.offline-block-title{ font-size:1.25rem; font-weight:800; }
+.offline-block-sub{ color:var(--text-muted); font-size:.9rem; margin:8px 0 24px; max-width:340px; line-height:1.5; }
+
+.offline-banner{
+  background:#fff4e5; color:#9a3412; border-bottom:1px solid #fed7aa;
+  font-size:.78rem; font-weight:700; text-align:center; padding:9px 14px;
+  display:flex; align-items:center; justify-content:center; gap:7px;
+}
 </style>
 </head>
 <body>
+
+<!-- ================= HORS CONNEXION (blocage total) ================= -->
+<div id="offlineBlockScreen">
+  <div class="offline-block-icon">📡</div>
+  <div class="offline-block-title">Pas de connexion internet</div>
+  <div class="offline-block-sub">Impossible de charger les données de l'application. Vérifiez votre connexion puis réessayez.</div>
+  <button class="btn-primary" id="btnRetryConnection" style="max-width:220px;">Réessayer</button>
+</div>
 
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
@@ -437,6 +463,8 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     </div>
   </div>
 
+  <div class="offline-banner hidden" id="offlineBanner">📡 Hors connexion — actualisation impossible, données potentiellement obsolètes</div>
+
   <div class="pulse-bar"><div class="pulse-bar-fill" id="pulseBarFill" style="width:0%"></div></div>
 
   <main class="views">
@@ -472,14 +500,14 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
         </div>
         <div class="scan-status" id="scanStatus">Activation de la caméra…</div>
         <button class="btn-primary" id="btnScanAgain" style="display:none;">🔄 Scanner un autre code</button>
-       <!-- <div class="scan-hint">
+        <div class="scan-hint">
           <span>ℹ️</span>
           <div>
             <b>Étiquette patient</b> : ouvre directement sa fiche.<br>
             <b>QR code de l'application</b> : s'ouvre dans une fenêtre intégrée, sans quitter l'app.<br>
             <b>Astuce code-barres</b> : alignez-le bien horizontal dans le cadre, à bonne distance (ni trop près ni trop loin), avec un bon éclairage et sans reflet.
           </div>
-        </div>-->
+        </div>
       </div>
     </section>
 
@@ -645,7 +673,52 @@ let state = {
   searchTerm: "",
   searchGravFilter: null,
   refreshTimer: null,
+  dataLoaded: false,    // true dès qu'un premier chargement de données a réussi
 };
+
+/* =========================================================
+   GESTION HORS CONNEXION
+   - Si aucune donnée n'a encore été chargée : accès bloqué (écran plein écran).
+   - Si des données sont déjà chargées : simple bandeau d'avertissement,
+     l'app reste consultable mais ne peut pas s'actualiser.
+========================================================= */
+function updateOfflineUI(){
+  const offline = !navigator.onLine;
+  const blockScreen = document.getElementById("offlineBlockScreen");
+  const banner = document.getElementById("offlineBanner");
+
+  if (offline && !state.dataLoaded){
+    blockScreen.classList.add("show");
+    banner.classList.add("hidden");
+  }else if (offline && state.dataLoaded){
+    blockScreen.classList.remove("show");
+    banner.classList.remove("hidden");
+  }else{
+    blockScreen.classList.remove("show");
+    banner.classList.add("hidden");
+  }
+}
+
+document.getElementById("btnRetryConnection").addEventListener("click", () => {
+  if (navigator.onLine){
+    location.reload();
+  }else{
+    toast("Toujours hors connexion", "error");
+  }
+});
+
+window.addEventListener("offline", () => {
+  updateOfflineUI();
+  toast("Connexion perdue", "error");
+});
+window.addEventListener("online", () => {
+  updateOfflineUI();
+  toast("Connexion rétablie", "success");
+  if (auth.currentUser) chargerDonnees();
+});
+
+// vérification immédiate au chargement de la page (avant même la connexion à Firebase)
+updateOfflineUI();
 
 /* =========================================================
    UTILS UI
@@ -707,6 +780,11 @@ async function doLogin(){
   const password = document.getElementById("loginPassword").value;
   const errBox = document.getElementById("loginError");
   errBox.style.display = "none";
+  if (!navigator.onLine){
+    errBox.textContent = "Vous êtes hors connexion. Impossible de se connecter pour le moment.";
+    errBox.style.display = "block";
+    return;
+  }
   if (!email || !password){
     errBox.textContent = "Merci de renseigner votre email et votre mot de passe.";
     errBox.style.display = "block";
@@ -765,6 +843,11 @@ async function initApp(){
 document.getElementById("btnRefresh").addEventListener("click", () => chargerDonnees(true));
 
 async function chargerDonnees(manuel=false){
+  if (!navigator.onLine){
+    updateOfflineUI();
+    if (manuel) toast("Hors connexion : actualisation impossible", "error");
+    return;
+  }
   const btnRefresh = document.getElementById("btnRefresh");
   btnRefresh.classList.add("spinning");
   if (manuel) showLoader();
@@ -791,11 +874,18 @@ async function chargerDonnees(manuel=false){
       });
     }
     state.patients = enriched;
+    state.dataLoaded = true;
+    updateOfflineUI();
     renderAll();
     if (manuel) toast("Plan actualisé", "success");
   }catch(e){
     console.error("Erreur chargement données :", e);
-    toast("Erreur de chargement des données", "error");
+    updateOfflineUI();
+    if (navigator.onLine){
+      toast("Erreur de chargement des données", "error");
+    }else if (manuel){
+      toast("Hors connexion : actualisation impossible", "error");
+    }
   }finally{
     btnRefresh.classList.remove("spinning");
     hideLoader();
@@ -1449,7 +1539,7 @@ async function handleScanResult(value){
 
   // 2) autre lien externe → non ouvert automatiquement (sécurité)
   if (/^https?:\/\//i.test(value)){
-    setScanStatus("Ce QR code pointe vers un site externe, non ouvert automatiquement.");
+    setScanStatus("Ce QR code ne correspond pas à un lien GestUrg2 valide.");
     toast("Lien externe non pris en charge", "error");
     return;
   }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <meta name="theme-color" content="#0078d4" />
-<title>GestUrg2 · Mobile</title>
+<title>Urgences · Mobile</title>
 <link rel="icon" type="image/jpeg" href="logog2.png">
 <link rel="manifest" href="manifest.json">
 <style>
@@ -370,7 +370,8 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 #qr-reader{ width:100%; height:100%; }
 #qr-reader video{ width:100% !important; height:100% !important; object-fit:cover; }
 .scan-guide{
-  position:absolute; inset:14%; border:2.5px solid rgba(255,255,255,.85); border-radius:20px;
+  position:absolute; left:6%; right:6%; top:50%; transform:translateY(-50%); height:38%;
+  border:2.5px solid rgba(255,255,255,.85); border-radius:18px;
   box-shadow:0 0 0 999px rgba(0,0,0,.28); pointer-events:none;
 }
 .scan-status{ font-size:.85rem; color:var(--text-muted); text-align:center; padding:0 16px; font-weight:600; min-height:20px; }
@@ -471,11 +472,12 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
         </div>
         <div class="scan-status" id="scanStatus">Activation de la caméra…</div>
         <button class="btn-primary" id="btnScanAgain" style="display:none;">🔄 Scanner un autre code</button>
-        <!--<div class="scan-hint">
+       <!-- <div class="scan-hint">
           <span>ℹ️</span>
           <div>
             <b>Étiquette patient</b> : ouvre directement sa fiche.<br>
-            <b>QR code de l'application</b> : s'ouvre dans une fenêtre intégrée, sans quitter l'app.
+            <b>QR code de l'application</b> : s'ouvre dans une fenêtre intégrée, sans quitter l'app.<br>
+            <b>Astuce code-barres</b> : alignez-le bien horizontal dans le cadre, à bonne distance (ni trop près ni trop loin), avec un bon éclairage et sans reflet.
           </div>
         </div>-->
       </div>
@@ -1370,10 +1372,19 @@ function startScanner(){
   html5QrCode.start(
     { facingMode: "environment" },
     {
-      fps: 10,
+      fps: 15,
       qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72);
-        return { width: size, height: size };
+        // Zone large et peu haute : adaptée aux codes-barres 1D (larges) ET aux QR codes.
+        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        const width = Math.floor(Math.min(viewfinderWidth, minEdge * 1.35));
+        const height = Math.floor(minEdge * 0.55);
+        return { width, height };
+      },
+      disableFlip: true,
+      // Utilise l'API native BarcodeDetector du navigateur quand elle est disponible
+      // (bien plus fiable que le décodeur JS pour les codes-barres 1D type Code128).
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
       }
     },
     onScanDecoded,

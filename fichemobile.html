@@ -419,6 +419,31 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
   font-size:.78rem; font-weight:700; text-align:center; padding:9px 14px;
   display:flex; align-items:center; justify-content:center; gap:7px;
 }
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eef3ff;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2196f3, #1565c0);
+    border-radius: 10px;
+    border: 2px solid #eef3ff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #42a5f5, #1976d2);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2196f3 #eef3ff;
+}
 </style>
 </head>
 <body>
@@ -506,7 +531,7 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
         </div>
         <div class="scan-status" id="scanStatus">Activation de la caméra…</div>
         <button class="btn-primary" id="btnScanAgain" style="display:none;">🔄 Scanner un autre code</button>
-        <!--<div class="scan-hint">
+       <!-- <div class="scan-hint">
           <span>ℹ️</span>
           <div>
             <b>Étiquette patient</b> : ouvre directement sa fiche.<br>
@@ -514,6 +539,50 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
             <b>Astuce code-barres</b> : alignez-le bien horizontal dans le cadre, à bonne distance (ni trop près ni trop loin), avec un bon éclairage et sans reflet.
           </div>
         </div>-->
+      </div>
+    </section>
+
+    <!-- -------- APPELS (tickets accueil) -------- -->
+    <section class="view" id="view-appels">
+      <div class="section-title">File d'attente accueil</div>
+      <div class="card pad" id="queueStatsCard">
+        <div class="empty-state" style="padding:20px 10px;"><div class="ic">⏳</div><p>Chargement…</p></div>
+      </div>
+
+      <div class="section-title">Appeler un ticket</div>
+      <div class="card pad">
+        <div class="field" style="margin-bottom:12px;">
+          <label>🏢 Bureau</label>
+          <select id="bureauSelectMobile"></select>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Filtrer par motif (optionnel)</label>
+          <div class="chips-row" id="motifFilterChips" style="padding:6px 0 0;"></div>
+        </div>
+        <button class="btn-primary" id="btnAppelerTicket" style="margin-top:16px;">📣 Appeler le ticket suivant</button>
+        <div class="scan-status" id="appelStatusMobile" style="margin-top:10px; min-height:auto;"></div>
+      </div>
+
+      <div class="card pad hidden" id="ticketAppeleCard">
+        <div class="section-title" style="margin-top:0;">Dernier ticket appelé</div>
+        <div class="stat-hero" style="margin-bottom:0;">
+          <div class="stat-hero-label">Numéro appelé</div>
+          <div class="stat-hero-num" id="ticketNumero">—</div>
+          <div class="stat-hero-row">
+            <div>
+              <div class="stat-hero-mini" id="ticketMotif">—</div>
+              <div class="stat-hero-mini-lb">Motif</div>
+            </div>
+            <div>
+              <div class="stat-hero-mini" id="ticketCircuit">—</div>
+              <div class="stat-hero-mini-lb">Circuit</div>
+            </div>
+            <div>
+              <div class="stat-hero-mini" id="ticketAttente">—</div>
+              <div class="stat-hero-mini-lb">Attente</div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -531,6 +600,9 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     </button>
     <button class="tabbar-btn" data-view="scan">
       <span class="ic">📷</span><span class="lb">Scan</span>
+    </button>
+    <button class="tabbar-btn" data-view="appels">
+      <span class="ic">📣</span><span class="lb">Appels</span>
     </button>
   </div>
 
@@ -579,7 +651,8 @@ import {
   getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, query, where
+  getFirestore, collection, doc, getDoc, getDocs, query, where,
+  onSnapshot, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -835,7 +908,7 @@ function renderTxList(items, kind){
   const commentDoneField = kind === "acte" ? "realiseComment" : "takeComment";
   const doneDateLabel = kind === "acte" ? "Réalisé le" : "Administré le";
   const doneCommentLabel = kind === "acte" ? "Commentaire de réalisation" : "Commentaire d'administration";
-  const icon = kind === "acte" ? "💉" : "💊";
+  const icon = kind === "acte" ? "🩹" : "💊";
 
   if (!items || items.length === 0){
     return `<div class="txt-block empty">${kind === "acte" ? "Aucun acte demandé." : "Aucun médicament prescrit."}</div>`;
@@ -1465,7 +1538,7 @@ function openPatientDetail(patientId, overrideObj){
   </details>
 
   <details class="pd-section">
-    <summary>💉 Actes aux urgences <span class="chev">›</span> ${actes.length ? `<span class="occ-chip" style="margin-left:6px;">${actes.length}</span>` : ""}</summary>
+    <summary>🩹 Actes aux urgences <span class="chev">›</span> ${actes.length ? `<span class="occ-chip" style="margin-left:6px;">${actes.length}</span>` : ""}</summary>
     <div class="pd-section-content">
       ${renderTxList(actes, "acte")}
     </div>

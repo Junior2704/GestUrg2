@@ -64,12 +64,20 @@ if (snap.exists()) {
 
     // ➡️ Sinon, redirige vers la page principale
 // (mobile → urgences_mobile, ordinateur → urgences)
+// ➡️ Sauf si un paramètre ?page=... est présent dans l'URL : dans ce cas, priorité à cette page
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone|Mobile/i.test(navigator.userAgent)
       || (window.innerWidth < 850);
 }
 
-if (isMobileDevice()) {
+const urlParams = new URLSearchParams(window.location.search);
+let pageDemandee = urlParams.get("page");
+
+if (pageDemandee) {
+  // Nettoie une éventuelle extension .html déjà présente
+  pageDemandee = pageDemandee.replace(/\.html$/i, "");
+  window.location.href = `${pageDemandee}.html?uid=${user.uid}`;
+} else if (isMobileDevice()) {
   window.location.href = `fichemobile.html?uid=${user.uid}`;
 } else {
   window.location.href = `shell.html`;

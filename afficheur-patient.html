@@ -6,9 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Affichage Patients - Urgences</title>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- Firebase v10 (modulaire) : importé via <script type="module"> en bas de page -->
+  <link rel="preconnect" href="https://www.gstatic.com">
 
   <style>
     html, body {
@@ -665,9 +664,100 @@
   transform:translateY(0);
 }
 
+/* ===== LOADER ===== */
+#loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 64, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 100000;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+#loader-overlay .spinner {
+  width: 56px;
+  height: 56px;
+  border: 6px solid rgba(255,255,255,0.25);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== MODALES ACCÈS / ERREUR ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 64, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100001;
+}
+
+.modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px 50px;
+  max-width: 520px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modal-box .modal-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.modal-box h2 {
+  color: #0b2240;
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+}
+
+.modal-box p {
+  color: #364152;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
 </style>
 </head>
 <body>
+
+  <!-- ===== LOADER ===== -->
+  <div id="loader-overlay">
+    <div class="spinner"></div>
+    <div>Chargement en cours…</div>
+  </div>
+
+  <!-- ===== MODALE ACCÈS REFUSÉ ===== -->
+  <div id="modal-no-access" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">🚫</div>
+      <h2>Accès refusé</h2>
+      <p>Votre compte n'a pas accès à cette page. Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+    </div>
+  </div>
+
+  <!-- ===== MODALE ERREUR ===== -->
+  <div id="modal-error" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h2>Erreur de chargement</h2>
+      <p>Une erreur est survenue lors du chargement de vos informations. Veuillez recharger la page ou contacter un administrateur.</p>
+    </div>
+  </div>
 
   <header>
     <img src="logo.png" alt="Logo hôpital">
@@ -857,16 +947,47 @@
 
   </main>
 
-  <script>
+  <script type="module">
+    // --- IMPORTS FIREBASE v10 (modulaire) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      getDoc,
+      getDocs,
+      onSnapshot,
+      query,
+      where,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     // --- CONFIG FIREBASE ---
     const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-let unsubscribeHospitalisations = null;
+      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+      authDomain: "urgences-a8ed4.firebaseapp.com",
+      projectId: "urgences-a8ed4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let unsubscribeHospitalisations = null;
+
+    // --- LOADER ---
+    function afficherLoader() {
+      const el = document.getElementById("loader-overlay");
+      if (el) el.style.display = "flex";
+    }
+    function masquerLoader() {
+      const el = document.getElementById("loader-overlay");
+      if (el) el.style.display = "none";
+    }
 
     // --- HORLOGE ---
     function updateClock() {
@@ -892,19 +1013,22 @@ let unsubscribeHospitalisations = null;
   
 let hospitalisationIdsActives = [];
 function listenPatientsPresents() {
-  db.collection("patients")
-    .where("hospitalisationActiveId", ">", "")
-    .onSnapshot(snapshot => {
+  const q = query(
+    collection(db, "patients"),
+    where("hospitalisationActiveId", ">", "")
+  );
 
-      console.log("📦 Patients reçus :", snapshot.size);
+  onSnapshot(q, snapshot => {
 
-      hospitalisationIdsActives = snapshot.docs.map(d => ({
-        patientId: d.id,
-        hospId: d.data().hospitalisationActiveId
-      }));
+    console.log("📦 Patients reçus :", snapshot.size);
 
-      console.log("🏥 Hospitalisations actives :", hospitalisationIdsActives);
-    });
+    hospitalisationIdsActives = snapshot.docs.map(d => ({
+      patientId: d.id,
+      hospId: d.data().hospitalisationActiveId
+    }));
+
+    console.log("🏥 Hospitalisations actives :", hospitalisationIdsActives);
+  });
 }
 
 
@@ -1040,10 +1164,12 @@ document.getElementById("quizReponse2").style.opacity = 0;
 async function majCompteursDepuisHospitalisations() {
   try {
     // 1️⃣ Patients présents
-    const patientsSnap = await db.collection("patients")
-      .where("hospitalisationActiveId", "!=", null)
-      .orderBy("hospitalisationActiveId")
-      .get();
+    const patientsQuery = query(
+      collection(db, "patients"),
+      where("hospitalisationActiveId", "!=", null),
+      orderBy("hospitalisationActiveId")
+    );
+    const patientsSnap = await getDocs(patientsQuery);
 
     const counts = {
       total: 0,
@@ -1077,12 +1203,9 @@ async function majCompteursDepuisHospitalisations() {
       }
 
       // 🔗 HOSPITALISATION
-      const hospSnap = await db
-        .collection("hospitalisations")
-        .doc(String(hospId))
-        .get();
+      const hospSnap = await getDoc(doc(db, "hospitalisations", String(hospId)));
 
-      if (!hospSnap.exists) continue;
+      if (!hospSnap.exists()) continue;
 
       const h = hospSnap.data() || {};
       const gravite = (h.gravite || "").toLowerCase();
@@ -1200,10 +1323,10 @@ setInterval(() => {
 
 }, 7000);
 	 function goFullScreen() {
-    const doc = document.documentElement;
-    if (doc.requestFullscreen) doc.requestFullscreen();
-    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-    else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
+    const rootEl = document.documentElement;
+    if (rootEl.requestFullscreen) rootEl.requestFullscreen();
+    else if (rootEl.webkitRequestFullscreen) rootEl.webkitRequestFullscreen();
+    else if (rootEl.msRequestFullscreen) rootEl.msRequestFullscreen();
     window.removeEventListener('click', goFullScreen);
   }
 // Conteneur global pour les bulles
@@ -1286,16 +1409,20 @@ const panneau = document.getElementById("appels");
 let appelsConnus = new Set();
 
 /* ===== ÉCOUTE DES APPELS ===== */
-db.collection("accueil-1")
-  .where("statut", "==", "appele")
-  .onSnapshot(async snapshot => {
+function ecouterAppels() {
+  const q = query(
+    collection(db, "accueil-1"),
+    where("statut", "==", "appele")
+  );
+
+  onSnapshot(q, async snapshot => {
 
     liste.innerHTML = "";
     let affiches = 0;
     const maintenant = Date.now();
 
-    for (const doc of snapshot.docs) {
-      const d = doc.data();
+    for (const docSnap of snapshot.docs) {
+      const d = docSnap.data();
       if (!d.numero || !d.bureau) continue;
 
       
@@ -1309,8 +1436,8 @@ if (age > DUREE_AFFICHAGE) continue;
       if (affiches >= MAX_APPELS) continue;
       affiches++;
 
-      const estNouveau = !appelsConnus.has(doc.id);
-      appelsConnus.add(doc.id);
+      const estNouveau = !appelsConnus.has(docSnap.id);
+      appelsConnus.add(docSnap.id);
 
       /* ===== Création DOM ===== */
       const el = document.createElement("div");
@@ -1341,6 +1468,7 @@ if (age > DUREE_AFFICHAGE) continue;
     /* État vide */
     vide.style.display = affiches === 0 ? "block" : "none";
   });
+}
 
 function appelerPatient(numero, destination) {
 
@@ -1381,12 +1509,9 @@ message.volume = 1;
 
 async function verifierActivationBureaux() {
   try {
-    const snap = await db
-      .collection("referentiels")
-      .doc("bureau")
-      .get();
+    const snap = await getDoc(doc(db, "referentiels", "bureau"));
 
-    if (!snap.exists) return;
+    if (!snap.exists()) return;
 
     const actif = snap.data()?.general?.active === true;
     panneau.style.display = actif ? "block" : "none";
@@ -1396,8 +1521,6 @@ async function verifierActivationBureaux() {
   }
 }
 
-/* 🔹 Exécution une seule fois au chargement */
-verifierActivationBureaux();
 function updateHorlogeGauche() {
   const now = new Date();
 
@@ -1414,9 +1537,6 @@ function updateHorlogeGauche() {
 
 updateHorlogeGauche();
 setInterval(updateHorlogeGauche, 1000);
-
-majCompteursDepuisHospitalisations();          // au chargement
-setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
 
 const cercle = document.getElementById("relaxCircle");
 const texteRespiration = document.getElementById("respirationTexte");
@@ -1651,7 +1771,73 @@ afficherCitation();
 
 setInterval(afficherCitation, 12000);
 
+// === INITIALISATION DES DONNÉES FIRESTORE (après vérification d'accès) ===
+let intervalCompteurs = null;
 
+function initAfficheur() {
+  majCompteursDepuisHospitalisations();          // au chargement
+  intervalCompteurs = setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
+
+  verifierActivationBureaux();
+  ecouterAppels();
+}
+
+// === AUTHENTIFICATION & VÉRIFICATION D'ACCÈS ===
+let medecinNom = "";
+let medecinSpecialite = "";
+let medecinLieu = "";
+let medecinType = "";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "connexion.html?page=afficheurpatient";
+  } else {
+    try {
+      afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+        medecinType = data.type || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+        window.medecinType = medecinType;
+        window.medecinUid = user.uid;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+     
+      } else {
+        // Document inexistant — redirection
+        masquerLoader();
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+
+      masquerLoader();
+      initAfficheur();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+      masquerLoader();
+      if (modal) modal.style.display = "flex";
+      console.error("Erreur chargement médecin :", error);
+    }
+  }
+});
 
 </script>
 

@@ -556,7 +556,7 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
           <select id="bureauSelectMobile"></select>
         </div>
         <div class="field" style="margin-bottom:0;">
-          <label>Filtrer par motif (optionnel)</label>
+          <label>Filtrer par motifs (optionnel, plusieurs choix possibles)</label>
           <div class="chips-row" id="motifFilterChips" style="padding:6px 0 0;"></div>
         </div>
         <button class="btn-primary" id="btnAppelerTicket" style="margin-top:16px;">📣 Appeler le ticket suivant</button>
@@ -1792,14 +1792,14 @@ function closeScanFrame(){
 ========================================================= */
 
 let ticketsAccueil = [];
-let motifAppelSelectionne = null;
+let filterMotifs = new Set();
 let appelsRefreshTimer = null;
 
 
 /* ---------- UTILITAIRES ---------- */
 
 function getTicketDate(ticket) {
-  const d = ticket.dateCreation || ticket.createdAt || ticket.heureCreation || ticket.timestamp;
+  const d = ticket.dateArriveeClient || ticket.dateCreation || ticket.createdAt || ticket.heureCreation || ticket.timestamp;
 
   if (!d) return null;
 
@@ -1946,7 +1946,6 @@ async function chargerAppels() {
 
     renderAppels(attente);
     renderMotifs(attente);
-    renderBureaux();
 
     document.getElementById("appelStatusMobile").textContent =
       `${attente.length} ticket(s) en attente`;
@@ -1972,6 +1971,65 @@ async function chargerAppels() {
 }
 
 
+function formatMinutes(min) {
+  if (min === null || min === undefined || isNaN(min)) return "—";
+
+  min = Math.round(min);
+
+  if (min < 1) return "< 1 min";
+
+  const h = Math.floor(min / 60);
+  const r = min % 60;
+
+  return h > 0 ? `${h} h ${String(r).padStart(2, "0")}` : `${min} min`;
+}
+
+
+function computeAttenteStats(liste) {
+
+  const now = Date.now();
+
+  const withDates = liste
+    .map(t => ({ t, date: getTicketDate(t) }))
+    .filter(x => x.date);
+
+  const moyenneGlobale = withDates.length
+    ? withDates.reduce((sum, x) => sum + (now - x.date.getTime()), 0) / withDates.length / 60000
+    : null;
+
+  const parMotif = {};
+
+  liste.forEach(t => {
+
+    const motif = getTicketMotif(t);
+
+    if (!parMotif[motif]) {
+      parMotif[motif] = { count: 0, sommeMs: 0, avecDate: 0 };
+    }
+
+    parMotif[motif].count++;
+
+    const date = getTicketDate(t);
+
+    if (date) {
+      parMotif[motif].sommeMs += (now - date.getTime());
+      parMotif[motif].avecDate++;
+    }
+
+  });
+
+  const categories = Object.entries(parMotif)
+    .map(([motif, v]) => ({
+      motif,
+      count: v.count,
+      moyenne: v.avecDate ? (v.sommeMs / v.avecDate) / 60000 : null
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return { moyenneGlobale, categories };
+}
+
+
 /* ---------- AFFICHAGE DE LA FILE ---------- */
 
 function renderAppels(attente) {
@@ -1983,12 +2041,12 @@ function renderAppels(attente) {
   let liste = [...attente];
 
   /*
-    Filtre motif
+    Filtre motifs (multi-sélection)
   */
-  if (motifAppelSelectionne) {
+  if (filterMotifs.size > 0) {
 
     liste = liste.filter(t =>
-      getTicketMotif(t) === motifAppelSelectionne
+      filterMotifs.has(getTicketMotif(t))
     );
 
   }
@@ -2011,7 +2069,7 @@ function renderAppels(attente) {
   });
 
 
-  if (liste.length === 0) {
+  if (attente.length === 0) {
 
     container.innerHTML = `
       <div class="empty-state" style="padding:20px 10px;">
@@ -2025,6 +2083,19 @@ function renderAppels(attente) {
 
 
   const total = attente.length;
+
+  const { moyenneGlobale, categories } = computeAttenteStats(attente);
+
+  const attenteTrie = [...attente].sort((a, b) => {
+    const da = getTicketDate(a);
+    const db = getTicketDate(b);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.getTime() - db.getTime();
+  });
+
+  const plusAncienDate = attenteTrie.length ? getTicketDate(attenteTrie[0]) : null;
 
   container.innerHTML = `
     <div class="stat-hero" style="margin-bottom:0;">
@@ -2040,6 +2111,24 @@ function renderAppels(attente) {
 
         <div>
           <div class="stat-hero-mini">
+            ${formatMinutes(moyenneGlobale)}
+          </div>
+          <div class="stat-hero-mini-lb">
+            Attente moyenne
+          </div>
+        </div>
+
+        <div>
+          <div class="stat-hero-mini">
+            ${plusAncienDate ? formatAttente(plusAncienDate) : "—"}
+          </div>
+          <div class="stat-hero-mini-lb">
+            Plus ancien
+          </div>
+        </div>
+
+        <div>
+          <div class="stat-hero-mini">
             ${liste.length}
           </div>
           <div class="stat-hero-mini-lb">
@@ -2047,21 +2136,44 @@ function renderAppels(attente) {
           </div>
         </div>
 
-        <div>
-          <div class="stat-hero-mini">
-            ${liste.length ? formatAttente(getTicketDate(liste[0])) : "—"}
-          </div>
-          <div class="stat-hero-mini-lb">
-            Plus ancien
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <div style="margin-top:12px;">
+    <div style="margin-top:14px;">
+      <div class="section-title" style="margin:0 0 8px;">Détail par catégorie</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${categories.map(c => `
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              padding:9px 12px;
+              background:var(--blue-100);
+              border-radius:12px;
+            "
+          >
+            <span style="font-weight:700; font-size:.85rem; color:var(--blue-700);">
+              ${escapeHtml(String(c.motif))}
+            </span>
+            <span style="font-size:.78rem; color:var(--blue-700); font-weight:600;">
+              ${c.count} · ⏱️ ${formatMinutes(c.moyenne)}
+            </span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
 
-      ${liste.slice(0, 8).map((ticket, index) => {
+    <div style="margin-top:14px;">
+
+      ${liste.length === 0
+        ? `
+          <div class="empty-state" style="padding:16px 10px;">
+            <div class="ic">🔎</div>
+            <p>Aucun ticket ne correspond au filtre actuel.</p>
+          </div>
+        `
+        : liste.slice(0, 8).map((ticket, index) => {
 
         const date = getTicketDate(ticket);
         const attenteTxt = formatAttente(date);
@@ -2164,7 +2276,7 @@ function renderMotifs(attente) {
 
   let html = `
     <div
-      class="chip ${motifAppelSelectionne === null ? "active" : ""}"
+      class="chip ${filterMotifs.size === 0 ? "active" : ""}"
       data-motif=""
     >
       Tous
@@ -2174,7 +2286,7 @@ function renderMotifs(attente) {
 
   html += motifs.map(motif => `
     <div
-      class="chip ${motifAppelSelectionne === motif ? "active" : ""}"
+      class="chip ${filterMotifs.has(motif) ? "active" : ""}"
       data-motif="${escapeHtml(String(motif))}"
     >
       ${escapeHtml(String(motif))}
@@ -2191,8 +2303,14 @@ function renderMotifs(attente) {
 
       const motif = chip.dataset.motif;
 
-      motifAppelSelectionne =
-        motif === "" ? null : motif;
+      if (motif === "") {
+        // "Tous" : réinitialise le filtre
+        filterMotifs.clear();
+      } else if (filterMotifs.has(motif)) {
+        filterMotifs.delete(motif);
+      } else {
+        filterMotifs.add(motif);
+      }
 
       /*
         Recalcule l'affichage sans refaire
@@ -2223,7 +2341,52 @@ function renderMotifs(attente) {
 }
 
 
-/* ---------- BUREAUX ---------- */
+/* ---------- BUREAUX (référentiel temps réel, comme bureau.html) ---------- */
+
+let bureauMobileSelectionne = null;
+
+function initBureauxListenerMobile() {
+
+  const select = document.getElementById("bureauSelectMobile");
+
+  if (!select) return;
+
+  onSnapshot(doc(db, "referentiels", "bureau"), (docSnap) => {
+
+    select.innerHTML = "";
+
+    if (!docSnap.exists()) return;
+
+    const data = docSnap.data();
+
+    for (const bureauId in data) {
+
+      if (typeof data[bureauId] !== "object") continue;
+
+      const opt = document.createElement("option");
+      opt.value = bureauId;
+      opt.textContent = bureauId;
+      select.appendChild(opt);
+
+    }
+
+    // Conserve la sélection précédente si elle est toujours valide
+    if (
+      bureauMobileSelectionne &&
+      [...select.options].some(o => o.value === bureauMobileSelectionne)
+    ) {
+      select.value = bureauMobileSelectionne;
+    } else if (select.options.length > 0) {
+      bureauMobileSelectionne = select.options[0].value;
+    }
+
+  });
+
+  select.addEventListener("change", () => {
+    bureauMobileSelectionne = select.value;
+  });
+
+}
 
 function renderBureaux() {
 
@@ -2320,12 +2483,12 @@ async function appelerTicketSuivant() {
 
 
     /*
-      Application du filtre motif
+      Application du filtre motifs (multi-sélection)
     */
-    if (motifAppelSelectionne) {
+    if (filterMotifs.size > 0) {
 
       attente = attente.filter(t =>
-        getTicketMotif(t) === motifAppelSelectionne
+        filterMotifs.has(getTicketMotif(t))
       );
 
     }
@@ -2363,6 +2526,24 @@ async function appelerTicketSuivant() {
 
 
     /*
+      Termine les tickets précédemment "appelé"
+      (même comportement que le poste d'accueil bureau.html)
+    */
+    const anciens = await getDocs(
+      query(
+        collection(db, "accueil-1"),
+        where("statut", "==", "appele")
+      )
+    );
+
+    await Promise.all(
+      anciens.docs.map(d =>
+        updateDoc(d.ref, { statut: "termine" })
+      )
+    );
+
+
+    /*
       Mise à jour Firestore
     */
     const ticketRef =
@@ -2373,9 +2554,11 @@ async function appelerTicketSuivant() {
 
       statut: "appele",
 
-      bureauAppel: bureau,
+      bureau: bureau,
 
       dateAppel: serverTimestamp(),
+
+      afficheDepuis: serverTimestamp(),
 
       appelePar: auth.currentUser
         ? auth.currentUser.uid

@@ -7,6 +7,11 @@
 <title>GestUrg2 · Mobile</title>
 <link rel="icon" type="image/jpeg" href="logog2.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="dns-prefetch" href="https://unpkg.com">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -247,6 +252,28 @@ main.views{ flex:1; overflow:hidden; position:relative; }
 .stat-hero-row{ display:flex; gap:22px; margin-top:16px; }
 .stat-hero-mini{ font-size:1.15rem; font-weight:800; }
 .stat-hero-mini-lb{ font-size:.7rem; opacity:.8; font-weight:600; }
+
+/* ============ ticket appelé (carte résumé) ============ */
+.ticket-appele{
+  background:linear-gradient(155deg, var(--g-p0), #16a34a);
+  color:white; border-radius:var(--radius-lg); padding:18px 20px;
+  box-shadow:0 14px 30px rgba(22,163,74,.28); position:relative; overflow:hidden;
+}
+.ticket-appele::after{
+  content:""; position:absolute; width:180px; height:180px; border-radius:50%;
+  background:rgba(255,255,255,.09); right:-60px; top:-70px;
+}
+.ticket-appele-head{ display:flex; align-items:center; justify-content:space-between; position:relative; }
+.ticket-appele-label{ font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; opacity:.9; }
+.ticket-appele-num{ font-size:2.1rem; font-weight:800; line-height:1.1; margin-top:2px; }
+.ticket-appele-close{
+  width:30px; height:30px; border-radius:10px; border:none; background:rgba(255,255,255,.18); color:white;
+  font-size:.95rem; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+}
+.ticket-appele-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; position:relative; }
+.ticket-appele-kv{ background:rgba(255,255,255,.14); border-radius:12px; padding:9px 11px; }
+.ticket-appele-k{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; opacity:.85; }
+.ticket-appele-v{ font-size:.95rem; font-weight:700; margin-top:2px; word-break:break-word; }
 
 .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
 .mini-card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; }
@@ -544,6 +571,9 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 
     <!-- -------- APPELS (tickets accueil) -------- -->
     <section class="view" id="view-appels">
+
+      <div class="card pad hidden" id="ticketAppeleCard" style="margin-bottom:16px;"></div>
+
       <div class="section-title">File d'attente accueil</div>
       <div class="card pad" id="queueStatsCard">
         <div class="empty-state" style="padding:20px 10px;"><div class="ic">⏳</div><p>Chargement…</p></div>
@@ -623,7 +653,6 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 <div id="toastWrap"></div>
 <div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -1589,29 +1618,57 @@ let scannerRunning = false;
 let scannerStarting = false;
 let scanLocked = false;
 
-const SUPPORTED_FORMATS = (window.Html5QrcodeSupportedFormats) ? [
-  Html5QrcodeSupportedFormats.QR_CODE,
-  Html5QrcodeSupportedFormats.CODE_128,
-  Html5QrcodeSupportedFormats.CODE_39,
-  Html5QrcodeSupportedFormats.CODABAR,
-  Html5QrcodeSupportedFormats.ITF,
-  Html5QrcodeSupportedFormats.EAN_13,
-  Html5QrcodeSupportedFormats.EAN_8,
-  Html5QrcodeSupportedFormats.UPC_A,
-] : undefined;
+function getSupportedFormats(){
+  return (window.Html5QrcodeSupportedFormats) ? [
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.CODABAR,
+    Html5QrcodeSupportedFormats.ITF,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.UPC_A,
+  ] : undefined;
+}
 
 function setScanStatus(txt){
   const el = document.getElementById("scanStatus");
   if (el) el.textContent = txt;
 }
 
-function startScanner(){
+let qrLibPromise = null;
+
+function loadQrLib(){
+  if (typeof Html5Qrcode !== "undefined") return Promise.resolve();
+  if (qrLibPromise) return qrLibPromise;
+
+  qrLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+    s.onload = () => resolve();
+    s.onerror = () => { qrLibPromise = null; reject(new Error("qr-lib-load-failed")); };
+    document.head.appendChild(s);
+  });
+
+  return qrLibPromise;
+}
+
+async function startScanner(){
   if (scannerRunning || scannerStarting) return;
-  if (typeof Html5Qrcode === "undefined"){
-    setScanStatus("Le module de scan n'a pas pu se charger. Vérifiez votre connexion internet.");
-    return;
-  }
+
   scannerStarting = true;
+
+  if (typeof Html5Qrcode === "undefined"){
+    setScanStatus("Chargement du module de scan…");
+    try {
+      await loadQrLib();
+    } catch (e) {
+      setScanStatus("Le module de scan n'a pas pu se charger. Vérifiez votre connexion internet.");
+      scannerStarting = false;
+      return;
+    }
+  }
+
   scanLocked = false;
   document.getElementById("btnScanAgain").style.display = "none";
   setScanStatus("Initialisation de la caméra…");
@@ -1619,7 +1676,7 @@ function startScanner(){
   try{
     html5QrCode = new Html5Qrcode(
       "qr-reader",
-      SUPPORTED_FORMATS ? { formatsToSupport: SUPPORTED_FORMATS, verbose: false } : undefined
+      (function(){ const f = getSupportedFormats(); return f ? { formatsToSupport: f, verbose: false } : undefined; })()
     );
   }catch(e){
     console.error("Erreur création scanner :", e);
@@ -1874,6 +1931,76 @@ function getTicketCircuit(ticket) {
 }
 
 
+/* ---------- CARTE TICKET APPELÉ ---------- */
+
+function getTicketAppelDate(ticket) {
+  const d = ticket.dateAppel;
+  if (!d) return null;
+  if (d?.toDate) return d.toDate();
+  if (d instanceof Date) return d;
+  return null;
+}
+
+function renderTicketAppeleCard(ticket) {
+
+  const card = document.getElementById("ticketAppeleCard");
+  if (!card) return;
+
+  if (!ticket) {
+    card.classList.add("hidden");
+    card.innerHTML = "";
+    return;
+  }
+
+  const arrivee = getTicketDate(ticket);
+  const appel = getTicketAppelDate(ticket) || new Date();
+
+  // Temps d'attente réel = entre l'arrivée et l'appel (pas "maintenant")
+  const attenteReelle = arrivee
+    ? formatMinutes(Math.max(0, (appel.getTime() - arrivee.getTime()) / 60000))
+    : "—";
+
+  card.classList.remove("hidden");
+
+  card.innerHTML = `
+    <div class="ticket-appele">
+      <div class="ticket-appele-head">
+        <div>
+          <div class="ticket-appele-label">🔔 Ticket appelé</div>
+          <div class="ticket-appele-num">${escapeHtml(String(getTicketNumero(ticket)))}</div>
+        </div>
+        <button class="ticket-appele-close" id="btnFermerTicketAppele" title="Masquer">✕</button>
+      </div>
+      <div class="ticket-appele-grid">
+        <div class="ticket-appele-kv">
+          <div class="ticket-appele-k">Bureau</div>
+          <div class="ticket-appele-v">${escapeHtml(String(ticket.bureau ?? "—"))}</div>
+        </div>
+        <div class="ticket-appele-kv">
+          <div class="ticket-appele-k">Motif</div>
+          <div class="ticket-appele-v">${escapeHtml(String(getTicketMotif(ticket)))}</div>
+        </div>
+        <div class="ticket-appele-kv">
+          <div class="ticket-appele-k">Circuit</div>
+          <div class="ticket-appele-v">${escapeHtml(String(getTicketCircuit(ticket)))}</div>
+        </div>
+        <div class="ticket-appele-kv">
+          <div class="ticket-appele-k">Temps d'attente</div>
+          <div class="ticket-appele-v">${attenteReelle}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const btnClose = document.getElementById("btnFermerTicketAppele");
+  if (btnClose) {
+    btnClose.addEventListener("click", () => {
+      card.classList.add("hidden");
+      card.innerHTML = "";
+    });
+  }
+}
+
 /* ---------- CHARGEMENT DES TICKETS ---------- */
 
 async function chargerAppels() {
@@ -1900,7 +2027,13 @@ async function chargerAppels() {
       ...d.data()
     }));
 
-  
+
+    const ticketAppele = ticketsAccueil.find(t =>
+      String(t.statut || "").trim().toLowerCase() === "appele"
+    );
+    renderTicketAppeleCard(ticketAppele || null);
+
+
     const attente = ticketsAccueil.filter(t => {
 
       const statut = String(t.statut || "")

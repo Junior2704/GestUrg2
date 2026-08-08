@@ -411,106 +411,182 @@ button:disabled{
 
 
 
+<script type="module">
+  // ================= FIREBASE V10 =================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    query,
+    orderBy,
+    limit,
+    getDocs,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script>
-// ================= FIREBASE =================
-const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
     projectId: "urgences-a8ed4"
   };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-let verrou = false;
 
-// ================= PRENDRE TICKET =================
-async function prendreTicket(motif, circuit){
-  if(verrou) return;
-  verrou = true;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  // 🔹 Masquer les boutons
-  document.querySelector(".motifs").style.display = "none";
+  let verrou = false;
 
-  try{
-    // 🔢 Dernier numéro
-    const snap = await db.collection("accueil-1")
-      .orderBy("numero","desc")
-      .limit(1)
-      .get();
 
-    let numero = 1;
-    if(!snap.empty){
-      numero = snap.docs[0].data().numero + 1;
+  // ================= PRENDRE TICKET =================
+  async function prendreTicket(motif, circuit) {
+
+    if (verrou) return;
+
+    verrou = true;
+
+    // 🔹 Masquer les boutons
+    document.querySelector(".motifs").style.display = "none";
+
+    try {
+
+      // ================= DERNIER NUMÉRO =================
+      const accueilRef = collection(db, "accueil-1");
+
+      const q = query(
+        accueilRef,
+        orderBy("numero", "desc"),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+
+      let numero = 1;
+
+      if (!snap.empty) {
+        numero = snap.docs[0].data().numero + 1;
+      }
+
+
+      // ================= CRÉATION DU TICKET =================
+      const docRef = await addDoc(accueilRef, {
+
+        numero: numero,
+
+        motif: motif,
+
+        circuit: circuit,
+
+        statut: "attente",
+
+        dateArrivee: serverTimestamp(),
+
+        dateArriveeClient: Date.now()
+
+      });
+
+
+      // ================= ID DU DOCUMENT =================
+      const idDoc = docRef.id;
+
+
+      // ================= LIEN QR CODE =================
+      const qrLink =
+        "https://junior2704.github.io/GestUrg2/mytickets?id=" +
+        idDoc;
+
+
+      // ================= QR CODE DU TICKET =================
+      const qrTicket = new QRious({
+
+        element: document.getElementById("ticket-qr"),
+
+        value: qrLink,
+
+        size: 120
+
+      });
+
+
+      // ================= UI DU TICKET =================
+
+      document.getElementById("ticket-numero").innerText = numero;
+
+      document.getElementById("ticketMotif").innerText = motif;
+
+
+      const now = new Date();
+
+      document.getElementById("ticketDate").innerText =
+        now.toLocaleDateString("fr-FR") +
+        " " +
+        now.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+
+
+      // ================= MODALE : NUMÉRO =================
+
+      document.getElementById("modalNumero").innerText = numero;
+
+
+      // ================= QR CODE DE LA MODALE =================
+
+      new QRious({
+
+        element: document.getElementById("modal-qr"),
+
+        value: qrLink,
+
+        size: 150
+
+      });
+
+
+      // ================= IMPRESSION =================
+
+      // Affiche la modale
+      document.getElementById("modalWait").style.display = "flex";
+
+      document.body.style.pointerEvents = "none";
+
+
+      // Force le navigateur à rendre le ticket
+      document.getElementById("ticket").offsetHeight;
+
+
+      // Attendre que le canvas soit bien dessiné
+      setTimeout(() => {
+
+        window.print();
+
+      }, 1200);
+
+
+      // ================= RESET BORNE =================
+
+      setTimeout(() => {
+
+        location.reload();
+
+      }, 10000);
+
+
+    } catch (e) {
+
+      console.error("Erreur création ticket :", e);
+
+      alert("Erreur : " + e);
+
+      verrou = false;
+
     }
-
-    const docRef = await db.collection("accueil-1").add({
-      numero,
-      motif,
-      circuit,
-      statut: "attente",
-      dateArrivee: firebase.firestore.FieldValue.serverTimestamp(),
-      dateArriveeClient: Date.now()
-    });
-
-    const idDoc = docRef.id;
-    const qrLink = "https://junior2704.github.io/GestUrg2/mytickets?id=" + idDoc;
-
-    
-    // QR code pour le ticket
-// QR code pour le ticket (taille réduite)
-const qrTicket = new QRious({ 
-  element: document.getElementById('ticket-qr'), 
-  value: qrLink, 
-  size: 120 // <- réduit ici, avant c'était 250
-});
-
-    // 🎟️ UI
-    
-    
-    document.getElementById("ticket-numero").innerText = numero;
-    document.getElementById("ticketMotif").innerText = motif;
- const now = new Date();
-document.getElementById("ticketDate").innerText =
-  now.toLocaleDateString("fr-FR") + " " +
-  now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-
-    // Ajoute le bouton sous le QR code
-// ===== MODALE : numéro + QR =====
-document.getElementById("modalNumero").innerText = numero;
-
-// QR code pour la modale
-new QRious({
-  element: document.getElementById("modal-qr"),
-  value: qrLink,
-  size: 150
-});
-
-
-
-    // Impression automatique
-    // Affiche la modale
-document.getElementById("modalWait").style.display = "flex";
-document.body.style.pointerEvents = "none";
-
-// Force le navigateur à rendre le ticket
-document.getElementById("ticket").offsetHeight;
-
-// Attendre que le canvas soit bien dessiné
-setTimeout(() => {
-  window.print();
-}, 1200);
-
-
-    // 🔁 Reset borne après 10s (au cas où le bouton n’est pas cliqué)
-    setTimeout(() => location.reload(), 10000);
-
-  } catch(e){
-    alert("Erreur : " + e);
-    verrou = false;
   }
-}
+
+
+
+  window.prendreTicket = prendreTicket;
 
 </script>
-
 </body>
 </html>

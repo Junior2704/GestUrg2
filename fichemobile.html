@@ -1000,6 +1000,7 @@ onAuthStateChanged(auth, async (user) => {
   }catch(e){ /* pas bloquant */ }
 
   await initApp();
+  await initAppels();
 });
 
 /* =========================================================
@@ -1785,6 +1786,725 @@ function closeScanFrame(){
     try{ html5QrCode.resume(); }catch(e){}
   }
 }
+/* =========================================================
+   APPELS — FILE D'ATTENTE ACCUEIL
+========================================================= */
+
+let ticketsAccueil = [];
+let motifAppelSelectionne = null;
+let appelsRefreshTimer = null;
+
+
+/* ---------- UTILITAIRES ---------- */
+
+function getTicketDate(ticket) {
+  const d = ticket.dateCreation || ticket.createdAt || ticket.heureCreation || ticket.timestamp;
+
+  if (!d) return null;
+
+  if (d?.toDate) {
+    return d.toDate();
+  }
+
+  if (d instanceof Date) {
+    return d;
+  }
+
+  if (typeof d === "string") {
+    // JJ/MM/AAAA HH:MM:SS
+    const m = d.match(
+      /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+    );
+
+    if (m) {
+      return new Date(
+        Number(m[3]),
+        Number(m[2]) - 1,
+        Number(m[1]),
+        Number(m[4] || 0),
+        Number(m[5] || 0),
+        Number(m[6] || 0)
+      );
+    }
+
+    const parsed = new Date(d);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+
+  if (typeof d === "number") {
+    const parsed = new Date(d);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+
+  return null;
+}
+
+
+function formatAttente(date) {
+  if (!date) return "—";
+
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - date.getTime()) / 60000)
+  );
+
+  if (minutes < 1) return "moins d'1 min";
+  if (minutes === 1) return "1 min";
+
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+
+  if (h > 0) {
+    return `${h} h ${String(m).padStart(2, "0")}`;
+  }
+
+  return `${minutes} min`;
+}
+
+
+function getTicketNumero(ticket) {
+  return (
+    ticket.numero ??
+    ticket.ticket ??
+    ticket.numTicket ??
+    ticket.numeroTicket ??
+    ticket.code ??
+    "—"
+  );
+}
+
+
+function getTicketMotif(ticket) {
+  return (
+    ticket.motif ??
+    ticket.type ??
+    ticket.raison ??
+    "—"
+  );
+}
+
+
+function getTicketCircuit(ticket) {
+  return (
+    ticket.circuit ??
+    ticket.service ??
+    ticket.orientation ??
+    "—"
+  );
+}
+
+
+/* ---------- CHARGEMENT DES TICKETS ---------- */
+
+async function chargerAppels() {
+
+  const queueCard = document.getElementById("queueStatsCard");
+
+  if (!queueCard) return;
+
+  queueCard.innerHTML = `
+    <div class="empty-state" style="padding:20px 10px;">
+      <div class="ic">⏳</div>
+      <p>Chargement…</p>
+    </div>
+  `;
+
+  try {
+
+    const ref = collection(db, "accueil-1");
+
+    /*
+      On récupère les tickets.
+      Le filtrage du statut est fait en JavaScript
+      afin d'éviter de dépendre d'un index Firestore.
+    */
+    const snap = await getDocs(ref);
+
+    ticketsAccueil = snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    /*
+      Tickets actuellement en attente
+    */
+    const attente = ticketsAccueil.filter(t => {
+
+      const statut = String(t.statut || "")
+        .trim()
+        .toLowerCase();
+
+      return (
+        statut === "attente" ||
+        statut === "en attente" ||
+        statut === "attente_patient" ||
+        statut === "waiting"
+      );
+
+    });
+
+    renderAppels(attente);
+    renderMotifs(attente);
+    renderBureaux();
+
+    document.getElementById("appelStatusMobile").textContent =
+      `${attente.length} ticket(s) en attente`;
+
+  } catch (e) {
+
+    console.error("Erreur chargement appels :", e);
+
+    queueCard.innerHTML = `
+      <div class="empty-state" style="padding:20px 10px;">
+        <div class="ic">⚠️</div>
+        <p>Impossible de charger la file d'attente.</p>
+      </div>
+    `;
+
+    const status = document.getElementById("appelStatusMobile");
+
+    if (status) {
+      status.textContent =
+        "Erreur de chargement de la file d'attente.";
+    }
+  }
+}
+
+
+/* ---------- AFFICHAGE DE LA FILE ---------- */
+
+function renderAppels(attente) {
+
+  const container = document.getElementById("queueStatsCard");
+
+  if (!container) return;
+
+  let liste = [...attente];
+
+  /*
+    Filtre motif
+  */
+  if (motifAppelSelectionne) {
+
+    liste = liste.filter(t =>
+      getTicketMotif(t) === motifAppelSelectionne
+    );
+
+  }
+
+
+  /*
+    Tri par ancienneté
+  */
+  liste.sort((a, b) => {
+
+    const da = getTicketDate(a);
+    const db = getTicketDate(b);
+
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+
+    return da.getTime() - db.getTime();
+
+  });
+
+
+  if (liste.length === 0) {
+
+    container.innerHTML = `
+      <div class="empty-state" style="padding:20px 10px;">
+        <div class="ic">🎫</div>
+        <p>Aucun ticket en attente.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const total = attente.length;
+
+  container.innerHTML = `
+    <div class="stat-hero" style="margin-bottom:0;">
+      <div class="stat-hero-label">
+        Tickets en attente
+      </div>
+
+      <div class="stat-hero-num">
+        ${total}
+      </div>
+
+      <div class="stat-hero-row">
+
+        <div>
+          <div class="stat-hero-mini">
+            ${liste.length}
+          </div>
+          <div class="stat-hero-mini-lb">
+            Dans le filtre
+          </div>
+        </div>
+
+        <div>
+          <div class="stat-hero-mini">
+            ${liste.length ? formatAttente(getTicketDate(liste[0])) : "—"}
+          </div>
+          <div class="stat-hero-mini-lb">
+            Plus ancien
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+
+      ${liste.slice(0, 8).map((ticket, index) => {
+
+        const date = getTicketDate(ticket);
+        const attenteTxt = formatAttente(date);
+
+        return `
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:12px;
+              padding:12px 4px;
+              border-bottom:1px solid #e5e7eb;
+            "
+          >
+
+            <div
+              style="
+                min-width:58px;
+                height:48px;
+                border-radius:12px;
+                background:var(--blue-100);
+                color:var(--blue-700);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-weight:800;
+                font-size:18px;
+              "
+            >
+              ${escapeHtml(String(getTicketNumero(ticket)))}
+            </div>
+
+            <div style="flex:1; min-width:0;">
+
+              <div style="font-weight:700;">
+                ${escapeHtml(String(getTicketMotif(ticket)))}
+              </div>
+
+              <div
+                style="
+                  font-size:12px;
+                  color:#64748b;
+                  margin-top:3px;
+                "
+              >
+                ⏱️ ${escapeHtml(attenteTxt)}
+                ${getTicketCircuit(ticket) !== "—"
+                  ? ` · ${escapeHtml(String(getTicketCircuit(ticket)))}`
+                  : ""}
+              </div>
+
+            </div>
+
+          </div>
+        `;
+
+      }).join("")}
+
+      ${
+        liste.length > 8
+          ? `
+            <div
+              style="
+                text-align:center;
+                font-size:12px;
+                color:#64748b;
+                padding-top:10px;
+              "
+            >
+              + ${liste.length - 8} autre(s)
+            </div>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+}
+
+
+/* ---------- MOTIFS ---------- */
+
+function renderMotifs(attente) {
+
+  const container =
+    document.getElementById("motifFilterChips");
+
+  if (!container) return;
+
+  const motifs = [
+    ...new Set(
+      attente
+        .map(t => getTicketMotif(t))
+        .filter(m => m && m !== "—")
+    )
+  ].sort((a, b) =>
+    String(a).localeCompare(String(b), "fr")
+  );
+
+
+  let html = `
+    <div
+      class="chip ${motifAppelSelectionne === null ? "active" : ""}"
+      data-motif=""
+    >
+      Tous
+    </div>
+  `;
+
+
+  html += motifs.map(motif => `
+    <div
+      class="chip ${motifAppelSelectionne === motif ? "active" : ""}"
+      data-motif="${escapeHtml(String(motif))}"
+    >
+      ${escapeHtml(String(motif))}
+    </div>
+  `).join("");
+
+
+  container.innerHTML = html;
+
+
+  container.querySelectorAll(".chip").forEach(chip => {
+
+    chip.addEventListener("click", () => {
+
+      const motif = chip.dataset.motif;
+
+      motifAppelSelectionne =
+        motif === "" ? null : motif;
+
+      /*
+        Recalcule l'affichage sans refaire
+        une lecture Firestore.
+      */
+      const attente = ticketsAccueil.filter(t => {
+
+        const statut = String(t.statut || "")
+          .trim()
+          .toLowerCase();
+
+        return (
+          statut === "attente" ||
+          statut === "en attente" ||
+          statut === "attente_patient" ||
+          statut === "waiting"
+        );
+
+      });
+
+      renderMotifs(attente);
+      renderAppels(attente);
+
+    });
+
+  });
+
+}
+
+
+/* ---------- BUREAUX ---------- */
+
+function renderBureaux() {
+
+  const select =
+    document.getElementById("bureauSelectMobile");
+
+  if (!select) return;
+
+
+  /*
+    On essaie d'utiliser les bureaux présents
+    dans les tickets si aucun référentiel spécifique
+    n'est présent.
+  */
+
+  const bureaux = [
+    ...new Set(
+      ticketsAccueil
+        .map(t =>
+          t.bureau ??
+          t.bureauId ??
+          t.guichet ??
+          t.poste
+        )
+        .filter(Boolean)
+    )
+  ];
+
+
+  /*
+    Si aucun bureau n'est enregistré dans les tickets,
+    on crée un bureau par défaut.
+  */
+  if (bureaux.length === 0) {
+
+    select.innerHTML = `
+      <option value="bureau-1">
+        Bureau 1
+      </option>
+    `;
+
+    return;
+  }
+
+
+  select.innerHTML = bureaux.map(b => `
+    <option value="${escapeHtml(String(b))}">
+      ${escapeHtml(String(b))}
+    </option>
+  `).join("");
+
+}
+
+
+/* ---------- APPELER LE TICKET SUIVANT ---------- */
+
+async function appelerTicketSuivant() {
+
+  const btn =
+    document.getElementById("btnAppelerTicket");
+
+  const status =
+    document.getElementById("appelStatusMobile");
+
+  const bureau =
+    document.getElementById("bureauSelectMobile")?.value || "bureau-1";
+
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Appel en cours…";
+  }
+
+
+  try {
+
+    /*
+      On repart des données déjà chargées.
+    */
+    let attente = ticketsAccueil.filter(t => {
+
+      const statut = String(t.statut || "")
+        .trim()
+        .toLowerCase();
+
+      return (
+        statut === "attente" ||
+        statut === "en attente" ||
+        statut === "attente_patient" ||
+        statut === "waiting"
+      );
+
+    });
+
+
+    /*
+      Application du filtre motif
+    */
+    if (motifAppelSelectionne) {
+
+      attente = attente.filter(t =>
+        getTicketMotif(t) === motifAppelSelectionne
+      );
+
+    }
+
+
+    /*
+      Tri : premier arrivé = premier appelé
+    */
+    attente.sort((a, b) => {
+
+      const da = getTicketDate(a);
+      const db = getTicketDate(b);
+
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+
+      return da.getTime() - db.getTime();
+
+    });
+
+
+    if (attente.length === 0) {
+
+      if (status) {
+        status.textContent =
+          "Aucun ticket en attente pour ce filtre.";
+      }
+
+      return;
+    }
+
+
+    const ticket = attente[0];
+
+
+    /*
+      Mise à jour Firestore
+    */
+    const ticketRef =
+      doc(db, "accueil-1", ticket.id);
+
+
+    await updateDoc(ticketRef, {
+
+      statut: "appele",
+
+      bureauAppel: bureau,
+
+      dateAppel: serverTimestamp(),
+
+      appelePar: auth.currentUser
+        ? auth.currentUser.uid
+        : null
+
+    });
+
+
+    /*
+      Affichage du ticket appelé
+    */
+    afficherTicketAppele(ticket, bureau);
+
+
+    /*
+      Message
+    */
+    if (status) {
+
+      status.textContent =
+        `Ticket ${getTicketNumero(ticket)} appelé.`;
+
+    }
+
+
+    /*
+      Rechargement complet
+    */
+    await chargerAppels();
+
+
+  } catch (e) {
+
+    console.error("Erreur appel ticket :", e);
+
+    if (status) {
+      status.textContent =
+        "Erreur lors de l'appel du ticket.";
+    }
+
+    toast(
+      "Impossible d'appeler le ticket.",
+      "error"
+    );
+
+  } finally {
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      btn.textContent =
+        "📣 Appeler le ticket suivant";
+
+    }
+
+  }
+
+}
+
+
+/* ---------- AFFICHAGE DERNIER TICKET ---------- */
+
+function afficherTicketAppele(ticket, bureau) {
+
+  const card =
+    document.getElementById("ticketAppeleCard");
+
+  if (!card) return;
+
+
+  document.getElementById("ticketNumero").textContent =
+    getTicketNumero(ticket);
+
+  document.getElementById("ticketMotif").textContent =
+    getTicketMotif(ticket);
+
+  document.getElementById("ticketCircuit").textContent =
+    getTicketCircuit(ticket);
+
+  document.getElementById("ticketAttente").textContent =
+    formatAttente(getTicketDate(ticket));
+
+
+  card.classList.remove("hidden");
+
+}
+
+
+/* ---------- BOUTON ---------- */
+
+const btnAppelerTicket =
+  document.getElementById("btnAppelerTicket");
+
+if (btnAppelerTicket) {
+
+  btnAppelerTicket.addEventListener(
+    "click",
+    appelerTicketSuivant
+  );
+
+}
+
+
+/* ---------- INITIALISATION ---------- */
+
+async function initAppels() {
+
+  await chargerAppels();
+
+  /*
+    Actualisation toutes les 10 secondes
+  */
+  clearInterval(appelsRefreshTimer);
+
+  appelsRefreshTimer =
+    setInterval(() => {
+
+      /*
+        On ne recharge que si l'utilisateur
+        est sur l'onglet Appels.
+      */
+      if (state.currentTab === "appels") {
+        chargerAppels();
+      }
+
+    }, 10000);
+
+}
+
 
 </script>
 </body>

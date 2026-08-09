@@ -454,37 +454,57 @@
   text-align: center;
 }
 
-/* ===== METEO ===== */
-.meteo {
+/* ===== TEMPS AUX URGENCES ===== */
+.temps-urgences {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f1f6ff;
+  padding: 14px;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.temps-urgences-ligne {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #f1f6ff;
-  padding: 12px;
-  border-radius: 12px;
-  width: 100%;
-  justify-content: center;
-    display: flex;
-  flex-direction: column;
 }
 
-.meteo-icone {
-  font-size: 2.8rem;
+.temps-urgences-icone {
+  font-size: 2.2rem;
+  line-height: 1;
 }
 
-.meteo-texte {
+.temps-urgences-texte {
   text-align: left;
 }
 
-#meteo-temp {
-  font-size: 1.6rem;
+.temps-urgences-valeur {
+  font-size: 1.5rem;
   font-weight: 700;
   color: #003366;
+  line-height: 1.15;
 }
 
-#meteo-ville {
-  font-size: 0.95rem;
+.temps-urgences-label {
+  font-size: 0.85rem;
   color: #555;
+}
+
+.temps-urgences-sep {
+  height: 1px;
+  background: #dbe4f0;
+  margin: 2px 0;
+}
+
+#titleTempsUrgences {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: -10px;
+  margin-bottom: -4px;
 }
 #infos-gauche {
   overflow: visible;
@@ -601,14 +621,6 @@
   margin-top: -15px;
   margin-bottom: 28px;
 }
-#titlemeteo {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #003366;
-  margin-top: -10px;
-  margin-bottom: -10px;
-}
-
 #natureInfo {
   margin-top: 15px;
   font-size: 1rem;
@@ -981,20 +993,29 @@
 
   <div class="date" id="date-complete">--</div>
 
-<!-- === MÉTÉO MINI : meteoblue === -->
-<!-- === MÉTÉO + ACTU (Franceinfo) === -->
-
-<div class="meteo">
-<div id="titlemeteo">Votre météo :</div>
-
-  <iframe
-    width="100%"
-    height="150"
-    frameborder="0"
-    src="https://meteofrance.com/widget/prevision/751140##3D6AA2"
-    title="Prévisions Paris par Météo-France">
-  </iframe>
 <div id="feteTexte">--</div>
+
+<!-- === TEMPS AUX URGENCES === -->
+<div class="temps-urgences">
+  <div id="titleTempsUrgences">⏱️ Temps aux urgences</div>
+
+  <div class="temps-urgences-ligne">
+    <div class="temps-urgences-icone">🕒</div>
+    <div class="temps-urgences-texte">
+      <div class="temps-urgences-valeur" id="attente-actuelle">--</div>
+      <div class="temps-urgences-label">Attente moyenne actuelle</div>
+    </div>
+  </div>
+
+  <div class="temps-urgences-sep"></div>
+
+  <div class="temps-urgences-ligne">
+    <div class="temps-urgences-icone">📊</div>
+    <div class="temps-urgences-texte">
+      <div class="temps-urgences-valeur" id="duree-moyenne-jour">--</div>
+      <div class="temps-urgences-label">Durée moyenne de passage (aujourd'hui)</div>
+    </div>
+  </div>
 </div>
 
 <div id="relaxBox">
@@ -1033,7 +1054,8 @@
       onSnapshot,
       query,
       where,
-      orderBy
+      orderBy,
+      Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // --- CONFIG FIREBASE ---
@@ -1231,6 +1253,55 @@ document.getElementById("quizReponse2").style.opacity = 0;
   document.getElementById("saviez2Texte").textContent =
       infosSelectionnees[1].texte;
 }
+// === UTILITAIRES TEMPS (attente / durée de passage) ===
+
+// Parse "04/02/2026 14:58:44" -> objet Date. Sert de repli tant que
+// les champs Timestamp (dateDebutTS / dateFinTS) ne sont pas généralisés.
+function parseDateFR(str) {
+  if (!str || typeof str !== "string") return null;
+  const [datePart, timePart] = str.trim().split(" ");
+  if (!datePart) return null;
+  const [j, m, a] = datePart.split("/").map(Number);
+  if (!j || !m || !a) return null;
+  let h = 0, mi = 0, s = 0;
+  if (timePart) {
+    const parts = timePart.split(":").map(Number);
+    h = parts[0] || 0;
+    mi = parts[1] || 0;
+    s = parts[2] || 0;
+  }
+  const d = new Date(a, m - 1, j, h, mi, s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Date d'entrée d'une hospitalisation : privilégie le Timestamp Firestore
+// (dateDebutTS) s'il existe, sinon retombe sur le champ texte dateDebut.
+function getDateEntree(h) {
+  if (h?.dateDebutTS && typeof h.dateDebutTS.toDate === "function") {
+    return h.dateDebutTS.toDate();
+  }
+  return parseDateFR(h?.dateDebut);
+}
+
+// Date de sortie d'une hospitalisation : uniquement via Timestamp (dateFinTS),
+// nécessaire pour pouvoir interroger Firestore par plage de dates.
+function getDateSortie(h) {
+  if (h?.dateFinTS && typeof h.dateFinTS.toDate === "function") {
+    return h.dateFinTS.toDate();
+  }
+  return parseDateFR(h?.dateFin);
+}
+
+// Formate une durée en minutes -> "1 h 25 min" ou "45 min"
+function formatDuree(minutesTotal) {
+  if (minutesTotal == null || isNaN(minutesTotal) || minutesTotal < 0) return "--";
+  const minutes = Math.round(minutesTotal);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h <= 0) return `${m} min`;
+  return `${h} h ${String(m).padStart(2, "0")} min`;
+}
+
 async function majCompteursDepuisHospitalisations() {
   try {
     // 1️⃣ Patients présents
@@ -1258,6 +1329,11 @@ async function majCompteursDepuisHospitalisations() {
       psy: 0
     };
 
+    // Pour le calcul de l'attente moyenne actuelle
+    const maintenantCalc = new Date();
+    let sommeAttenteMin = 0;
+    let nbAttenteValide = 0;
+
     // 2️⃣ Pour chaque patient → lire patient + hospitalisation
     for (const patientDoc of patientsSnap.docs) {
       const patient = patientDoc.data();
@@ -1268,7 +1344,8 @@ async function majCompteursDepuisHospitalisations() {
 
       // 📍 POSITION = PATIENT
       const position = (patient.position || "").toLowerCase();
-      if (position.includes("attente") || position.includes("nv")) {
+      const enAttente = position.includes("attente") || position.includes("nv");
+      if (enAttente) {
         counts.attente++;
       }
 
@@ -1278,6 +1355,18 @@ async function majCompteursDepuisHospitalisations() {
       if (!hospSnap.exists()) continue;
 
       const h = hospSnap.data() || {};
+
+      // ⏱️ Attente écoulée depuis l'arrivée pour les patients en salle d'attente
+      if (enAttente) {
+        const dateEntree = getDateEntree(h);
+        if (dateEntree) {
+          const minutes = (maintenantCalc - dateEntree) / 60000;
+          if (minutes >= 0) {
+            sommeAttenteMin += minutes;
+            nbAttenteValide++;
+          }
+        }
+      }
       const gravite = (h.gravite || "").toLowerCase();
       const circuit = (h.circuit || "").toLowerCase();
 
@@ -1326,10 +1415,60 @@ async function majCompteursDepuisHospitalisations() {
     animateUpdate(document.getElementById("circuit-gyn"), circuits.gyn);
     animateUpdate(document.getElementById("circuit-psy"), circuits.psy);
 
+    // ⏱️ Attente moyenne actuelle
+    const attenteMoyenneEl = document.getElementById("attente-actuelle");
+    if (attenteMoyenneEl) {
+      attenteMoyenneEl.textContent = nbAttenteValide > 0
+        ? formatDuree(sommeAttenteMin / nbAttenteValide)
+        : "--";
+    }
+
     console.log("✅ Compteurs mis à jour");
 
   } catch (e) {
     console.error("❌ Erreur mise à jour compteurs :", e);
+  }
+}
+
+// === DURÉE MOYENNE DE PASSAGE DU JOUR ===
+// Nécessite un champ Firestore de type Timestamp "dateFinTS" renseigné à la
+// clôture de chaque hospitalisation (en plus du champ texte dateFin existant),
+// ainsi que "dateDebutTS" à l'ouverture. Tant que ces champs ne sont pas
+// généralisés sur les dossiers du jour, l'indicateur affiche "--".
+async function majDureeMoyennePassageJour() {
+  try {
+    const debutJour = new Date();
+    debutJour.setHours(0, 0, 0, 0);
+
+    const q = query(
+      collection(db, "hospitalisations"),
+      where("dateFinTS", ">=", Timestamp.fromDate(debutJour))
+    );
+    const snap = await getDocs(q);
+
+    let somme = 0;
+    let nb = 0;
+
+    snap.forEach(docSnap => {
+      const h = docSnap.data() || {};
+      const entree = getDateEntree(h);
+      const sortie = getDateSortie(h);
+      if (!entree || !sortie) return;
+      const minutes = (sortie - entree) / 60000;
+      if (minutes >= 0) {
+        somme += minutes;
+        nb++;
+      }
+    });
+
+    const el = document.getElementById("duree-moyenne-jour");
+    if (el) {
+      el.textContent = nb > 0 ? formatDuree(somme / nb) : "--";
+    }
+  } catch (e) {
+    console.error("❌ Erreur calcul durée moyenne de passage :", e);
+    const el = document.getElementById("duree-moyenne-jour");
+    if (el) el.textContent = "--";
   }
 }
 
@@ -1847,6 +1986,9 @@ let intervalCompteurs = null;
 function initAfficheur() {
   majCompteursDepuisHospitalisations();          // au chargement
   intervalCompteurs = setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
+
+  majDureeMoyennePassageJour();                  // au chargement
+  setInterval(majDureeMoyennePassageJour, 5 * 60000); // toutes les 5 minutes
 
   verifierActivationBureaux();
   ecouterAppels();

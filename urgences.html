@@ -1520,15 +1520,18 @@ async function nettoyerAccueil1() {
       return;
     }
 
-    // Trouver le document avec le numéro le plus élevé
+    // Trouver le ticket TERMINÉ avec le numéro le plus élevé
     let docAConserver = null;
     let numeroMax = -Infinity;
 
     snapshot.forEach((documentSnap) => {
       const data = documentSnap.data();
 
-      // Conversion en nombre pour éviter les problèmes
-      // si numéro est enregistré comme texte
+      // On ne traite QUE les tickets terminés
+      if (data.statut !== "termine") {
+        return;
+      }
+
       const numero = Number(data.numero);
 
       if (!isNaN(numero) && numero > numeroMax) {
@@ -1537,20 +1540,27 @@ async function nettoyerAccueil1() {
       }
     });
 
+    // Aucun ticket terminé
     if (!docAConserver) {
-      console.warn("⚠️ Aucun document avec un numéro valide trouvé.");
+      console.log("ℹ️ Aucun ticket avec statut = termine.");
       return;
     }
 
     console.log(
-      `✅ Conservation du document ${docAConserver.id} avec numéro ${numeroMax}`
+      `✅ Conservation du ticket terminé ${docAConserver.id} avec numéro ${numeroMax}`
     );
 
-    // Supprimer tous les autres documents
+    // Supprimer uniquement les autres tickets TERMINÉS
     const suppressions = [];
 
     snapshot.forEach((documentSnap) => {
-      if (documentSnap.id !== docAConserver.id) {
+      const data = documentSnap.data();
+
+      // On ne supprime QUE les tickets terminés
+      if (
+        data.statut === "termine" &&
+        documentSnap.id !== docAConserver.id
+      ) {
         suppressions.push(
           deleteDoc(doc(db, "accueil-1", documentSnap.id))
         );
@@ -1560,15 +1570,13 @@ async function nettoyerAccueil1() {
     await Promise.all(suppressions);
 
     console.log(
-      `🗑️ ${suppressions.length} document(s) supprimé(s).`
+      `🗑️ ${suppressions.length} ticket(s) terminé(s) supprimé(s).`
     );
 
   } catch (error) {
     console.error("❌ Erreur nettoyage accueil-1 :", error);
   }
-};
-
-   
+}
 function initialiserApp(){
 
   console.log("Initialisation application urgences...");

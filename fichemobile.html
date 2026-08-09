@@ -85,6 +85,15 @@ input, textarea, select{ font-family:inherit; }
   font-size:1rem; background:#f8fafc; transition:border-color .2s, box-shadow .2s;
 }
 .field input:focus{ outline:none; border-color:var(--blue-600); box-shadow:0 0 0 4px rgba(0,120,212,.12); background:white; }
+.field select{
+  width:100%; padding:15px 46px 15px 16px; border-radius:12px; border:1.5px solid var(--border);
+  font-size:1.08rem; font-weight:700; color:var(--text); background:#f8fafc;
+  appearance:none; -webkit-appearance:none; -moz-appearance:none; cursor:pointer;
+  transition:border-color .2s, box-shadow .2s;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat:no-repeat; background-position:right 14px center; background-size:20px;
+}
+.field select:focus{ outline:none; border-color:var(--blue-600); box-shadow:0 0 0 4px rgba(0,120,212,.12); background-color:white; }
 .btn-primary{
   width:100%; padding:14px; border:none; border-radius:12px; background:var(--blue-600); color:white;
   font-size:1rem; font-weight:700; cursor:pointer; transition:transform .15s, background .2s;
@@ -220,6 +229,13 @@ main.views{ flex:1; overflow:hidden; position:relative; }
 }
 .chip.active{ background:var(--text); color:white; border-color:var(--text); }
 
+/* ============ appel card (bureau + motifs + bouton) ============ */
+.call-card{ display:flex; flex-direction:column; gap:16px; }
+.call-card .field{ margin-bottom:0; }
+.call-card .field label{ display:flex; align-items:center; gap:6px; }
+.call-card .chips-row{ padding:0; margin-top:2px; }
+.call-card .scan-status{ padding:0; min-height:0; }
+
 .patient-row{
   display:flex; align-items:center; gap:12px; padding:13px 14px;
   background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
@@ -236,6 +252,8 @@ main.views{ flex:1; overflow:hidden; position:relative; }
 .empty-state{ text-align:center; padding:48px 20px; color:var(--text-muted); }
 .empty-state .ic{ font-size:2.4rem; margin-bottom:10px; }
 .empty-state p{ margin:4px 0; font-size:.9rem; }
+.empty-state.compact{ padding:20px 10px; }
+.empty-state.compact .ic{ font-size:1.8rem; margin-bottom:6px; }
 
 /* ============ stats ============ */
 .stat-hero{
@@ -572,25 +590,25 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <!-- -------- APPELS (tickets accueil) -------- -->
     <section class="view" id="view-appels">
 
-      <div class="card pad hidden" id="ticketAppeleCard" style="margin-bottom:16px;"></div>
+      <div class="card pad hidden" id="ticketAppeleCard"></div>
 
       <div class="section-title">File d'attente accueil</div>
       <div class="card pad" id="queueStatsCard">
-        <div class="empty-state" style="padding:20px 10px;"><div class="ic">⏳</div><p>Chargement…</p></div>
+        <div class="empty-state compact"><div class="ic">⏳</div><p>Chargement…</p></div>
       </div>
 
       <div class="section-title">Appeler un ticket</div>
-      <div class="card pad">
-        <div class="field" style="margin-bottom:12px;">
+      <div class="card pad call-card">
+        <div class="field">
           <label>🏢 Bureau</label>
           <select id="bureauSelectMobile"></select>
         </div>
-        <div class="field" style="margin-bottom:0;">
+        <div class="field">
           <label>Filtrer par motifs (optionnel, plusieurs choix possibles)</label>
-          <div class="chips-row" id="motifFilterChips" style="padding:6px 0 0;"></div>
+          <div class="chips-row" id="motifFilterChips"></div>
         </div>
-        <button class="btn-primary" id="btnAppelerTicket" style="margin-top:16px;">📣 Appeler le ticket suivant</button>
-        <div class="scan-status" id="appelStatusMobile" style="margin-top:10px; min-height:auto;"></div>
+        <button class="btn-primary" id="btnAppelerTicket">📣 Appeler le ticket suivant</button>
+        <div class="scan-status" id="appelStatusMobile"></div>
       </div>
 
     </section>
@@ -2010,7 +2028,7 @@ async function chargerAppels() {
   if (!queueCard) return;
 
   queueCard.innerHTML = `
-    <div class="empty-state" style="padding:20px 10px;">
+    <div class="empty-state compact">
       <div class="ic">⏳</div>
       <p>Chargement…</p>
     </div>
@@ -2060,7 +2078,7 @@ async function chargerAppels() {
     console.error("Erreur chargement appels :", e);
 
     queueCard.innerHTML = `
-      <div class="empty-state" style="padding:20px 10px;">
+      <div class="empty-state compact">
         <div class="ic">⚠️</div>
         <p>Impossible de charger la file d'attente.</p>
       </div>
@@ -2177,7 +2195,7 @@ function renderAppels(attente) {
   if (attente.length === 0) {
 
     container.innerHTML = `
-      <div class="empty-state" style="padding:20px 10px;">
+      <div class="empty-state compact">
         <div class="ic">🎫</div>
         <p>Aucun ticket en attente.</p>
       </div>

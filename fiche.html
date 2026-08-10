@@ -3881,7 +3881,17 @@ async function updateHospitalisationField(field, value) {
 
     // 3️⃣ Mise à jour DU CHAMP dans hospitalisations
     const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-    await updateDoc(hospiRef, { [field]: value });
+
+    const updatePayload = { [field]: value };
+    if (field === "dossierMedical" && value && typeof value.questionnaire === "string" && value.questionnaire.trim() !== "") {
+      const hospiSnapActuel = await getDoc(hospiRef);
+      const dejaVu = hospiSnapActuel.exists() && hospiSnapActuel.data()?.datePremierVuTS;
+      if (!dejaVu) {
+        updatePayload.datePremierVuTS = Timestamp.now();
+      }
+    }
+
+    await updateDoc(hospiRef, updatePayload);
 
     // Libellés lisibles pour l'historique
     const libellesChamps = {

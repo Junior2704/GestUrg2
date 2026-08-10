@@ -168,6 +168,13 @@
   font-weight: 600;
 }
 
+.circuit-duree {
+  font-size: 0.85rem;
+  color: #6b7d94;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
 /* --- Couleurs personnalisées --- */
 .circuit-card.general {
   border-top: 6px solid #1976D2; /* Bleu général */
@@ -873,12 +880,12 @@
 <section id="dashboard-circuits">
   <h2 class="section-title">🧭 Circuits</h2>
   <div class="circuits-grid">
-        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p><div class="circuit-attente" id="circuit-attente-general">Attente : --</div></div>
-    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p><div class="circuit-attente" id="circuit-attente-pediatrie">Attente : --</div></div>
-    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p><div class="circuit-attente" id="circuit-attente-traumato">Attente : --</div></div>
-    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p><div class="circuit-attente" id="circuit-attente-ophtalmo">Attente : --</div></div>
-    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p><div class="circuit-attente" id="circuit-attente-gyn">Attente : --</div></div>
-    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p><div class="circuit-attente" id="circuit-attente-psy">Attente : --</div></div>
+        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p><div class="circuit-attente" id="circuit-attente-general">Attente : --</div><div class="circuit-duree" id="circuit-duree-general">Durée : --</div></div>
+    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p><div class="circuit-attente" id="circuit-attente-pediatrie">Attente : --</div><div class="circuit-duree" id="circuit-duree-pediatrie">Durée : --</div></div>
+    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p><div class="circuit-attente" id="circuit-attente-traumato">Attente : --</div><div class="circuit-duree" id="circuit-duree-traumato">Durée : --</div></div>
+    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p><div class="circuit-attente" id="circuit-attente-ophtalmo">Attente : --</div><div class="circuit-duree" id="circuit-duree-ophtalmo">Durée : --</div></div>
+    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p><div class="circuit-attente" id="circuit-attente-gyn">Attente : --</div><div class="circuit-duree" id="circuit-duree-gyn">Durée : --</div></div>
+    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p><div class="circuit-attente" id="circuit-attente-psy">Attente : --</div><div class="circuit-duree" id="circuit-duree-psy">Durée : --</div></div>
   </div>
 </section>
 
@@ -1529,17 +1536,43 @@ async function majDureeMoyennePassageJour() {
     let somme = 0;
     let nb = 0;
 
+    const dureeParCircuit = {
+      general: { somme: 0, nb: 0 },
+      pediatrie: { somme: 0, nb: 0 },
+      traumato: { somme: 0, nb: 0 },
+      ophtalmo: { somme: 0, nb: 0 },
+      gyn: { somme: 0, nb: 0 },
+      psy: { somme: 0, nb: 0 }
+    };
+
     snap.forEach(docSnap => {
       const h = docSnap.data() || {};
       const entree = getDateEntree(h);
       const sortie = getDateSortie(h);
       if (!entree || !sortie) return;
       const minutes = (sortie - entree) / 60000;
-      if (minutes >= 0) {
-        somme += minutes;
-        nb++;
-      }
+      if (minutes < 0) return;
+
+      somme += minutes;
+      nb++;
+
+      const circuit = (h.circuit || "").toLowerCase();
+      let circuitKey = "general";
+      if (circuit.includes("ped")) circuitKey = "pediatrie";
+      else if (circuit.includes("trauma")) circuitKey = "traumato";
+      else if (circuit.includes("opht")) circuitKey = "ophtalmo";
+      else if (circuit.includes("gyn")) circuitKey = "gyn";
+      else if (circuit.includes("psy")) circuitKey = "psy";
+      dureeParCircuit[circuitKey].somme += minutes;
+      dureeParCircuit[circuitKey].nb++;
     });
+
+    for (const key of Object.keys(dureeParCircuit)) {
+      const el = document.getElementById(`circuit-duree-${key}`);
+      if (!el) continue;
+      const { somme: s, nb: n } = dureeParCircuit[key];
+      el.textContent = n > 0 ? `Durée : ${formatDuree(s / n)}` : "Durée : --";
+    }
 
     const el = document.getElementById("duree-moyenne-jour");
     if (el) {

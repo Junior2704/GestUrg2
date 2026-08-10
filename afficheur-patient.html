@@ -880,12 +880,12 @@
 <section id="dashboard-circuits">
   <h2 class="section-title">🧭 Circuits</h2>
   <div class="circuits-grid">
-        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p><div class="circuit-duree" id="circuit-duree-general">Durée : --</div></div>
-    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p><div class="circuit-duree" id="circuit-duree-pediatrie">Durée : --</div></div>
-    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p><div class="circuit-duree" id="circuit-duree-traumato">Durée : --</div></div>
-    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p><div class="circuit-duree" id="circuit-duree-ophtalmo">Durée : --</div></div>
-    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p><div class="circuit-duree" id="circuit-duree-gyn">Durée : --</div></div>
-    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p><div class="circuit-duree" id="circuit-duree-psy">Durée : --</div></div>
+        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p><div class="circuit-attente" id="circuit-attente-general">Attente : --</div><div class="circuit-duree" id="circuit-duree-general">Durée : --</div></div>
+    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p><div class="circuit-attente" id="circuit-attente-pediatrie">Attente : --</div><div class="circuit-duree" id="circuit-duree-pediatrie">Durée : --</div></div>
+    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p><div class="circuit-attente" id="circuit-attente-traumato">Attente : --</div><div class="circuit-duree" id="circuit-duree-traumato">Durée : --</div></div>
+    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p><div class="circuit-attente" id="circuit-attente-ophtalmo">Attente : --</div><div class="circuit-duree" id="circuit-duree-ophtalmo">Durée : --</div></div>
+    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p><div class="circuit-attente" id="circuit-attente-gyn">Attente : --</div><div class="circuit-duree" id="circuit-duree-gyn">Durée : --</div></div>
+    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p><div class="circuit-attente" id="circuit-attente-psy">Attente : --</div><div class="circuit-duree" id="circuit-duree-psy">Durée : --</div></div>
   </div>
 </section>
 
@@ -1011,25 +1011,16 @@
 
 <!-- === TEMPS AUX URGENCES === -->
 <div class="temps-urgences">
-  <div id="titleTempsUrgences">⏱️ Temps aux urgences</div>
+  <div id="titleTempsUrgences">⏱️ Attente aux Urgences</div>
 
   <div class="temps-urgences-ligne">
     <div class="temps-urgences-icone">🕒</div>
     <div class="temps-urgences-texte">
       <div class="temps-urgences-valeur" id="attente-actuelle">--</div>
-      <div class="temps-urgences-label">Attente moyenne actuelle</div>
+      <div class="temps-urgences-label">Attente avant 1ère prise en charge</div>
     </div>
   </div>
 
-  <div class="temps-urgences-sep"></div>
-
-  <div class="temps-urgences-ligne">
-    <div class="temps-urgences-icone">🩺</div>
-    <div class="temps-urgences-texte">
-      <div class="temps-urgences-valeur" id="delai-premier-vu">--</div>
-      <div class="temps-urgences-label">Délai avant 1ère prise en charge</div>
-    </div>
-  </div>
 
   <div class="temps-urgences-sep"></div>
 
@@ -1354,10 +1345,12 @@ async function majCompteursDepuisHospitalisations() {
     };
 
     // Pour le calcul de l'attente moyenne actuelle (globale + par circuit)
+    // On distingue : attente AVANT la 1ère prise en charge (pas encore vu par
+    // l'IAO) et attente APRÈS (déjà vu, mais en attente d'une étape suivante).
     const maintenantCalc = new Date();
-    let sommeAttenteMin = 0;
-    let nbAttenteValide = 0;
-    const attenteParCircuit = {
+    let sommeAttenteAvantMin = 0, nbAttenteAvant = 0;
+    let sommeAttenteApresMin = 0, nbAttenteApres = 0;
+    const attenteAvantParCircuit = {
       general: { somme: 0, nb: 0 },
       pediatrie: { somme: 0, nb: 0 },
       traumato: { somme: 0, nb: 0 },
@@ -1398,16 +1391,24 @@ async function majCompteursDepuisHospitalisations() {
       else if (circuit.includes("psy")) circuitKey = "psy";
       circuits[circuitKey]++;
 
-      // ⏱️ Attente écoulée depuis l'arrivée pour les patients en salle d'attente
+      // ⏱️ Attente écoulée depuis l'arrivée pour les patients en salle d'attente,
+      // en distinguant avant / après la 1ère prise en charge (IAO)
       if (enAttente) {
         const dateEntree = getDateEntree(h);
+        const dejaVu = !!(h.datePremierVuTS && typeof h.datePremierVuTS.toDate === "function");
+
         if (dateEntree) {
           const minutes = (maintenantCalc - dateEntree) / 60000;
           if (minutes >= 0) {
-            sommeAttenteMin += minutes;
-            nbAttenteValide++;
-            attenteParCircuit[circuitKey].somme += minutes;
-            attenteParCircuit[circuitKey].nb++;
+            if (!dejaVu) {
+              sommeAttenteAvantMin += minutes;
+              nbAttenteAvant++;
+              attenteAvantParCircuit[circuitKey].somme += minutes;
+              attenteAvantParCircuit[circuitKey].nb++;
+            } else {
+              sommeAttenteApresMin += minutes;
+              nbAttenteApres++;
+            }
           }
         }
       }
@@ -1450,14 +1451,22 @@ async function majCompteursDepuisHospitalisations() {
     animateUpdate(document.getElementById("circuit-gyn"), circuits.gyn);
     animateUpdate(document.getElementById("circuit-psy"), circuits.psy);
 
-    // ⏱️ Attente moyenne actuelle (globale)
-    const attenteMoyenneEl = document.getElementById("attente-actuelle");
-    if (attenteMoyenneEl) {
-      attenteMoyenneEl.textContent = nbAttenteValide > 0
-        ? formatDuree(sommeAttenteMin / nbAttenteValide)
+    // ⏱️ Attente moyenne actuelle (avant / après 1ère PEC)
+    const attenteAvantEl = document.getElementById("attente-actuelle");
+    if (attenteAvantEl) {
+      attenteAvantEl.textContent = nbAttenteAvant > 0
+        ? formatDuree(sommeAttenteAvantMin / nbAttenteAvant)
         : "--";
     }
+   
 
+    // ⏱️ Attente moyenne par circuit (avant 1ère PEC, affichée sous chaque carte)
+    for (const key of Object.keys(attenteAvantParCircuit)) {
+      const el = document.getElementById(`circuit-attente-${key}`);
+      if (!el) continue;
+      const { somme, nb } = attenteAvantParCircuit[key];
+      el.textContent = nb > 0 ? `Attente : ${formatDuree(somme / nb)}` : "Attente : --";
+    }
 
     console.log("✅ Compteurs mis à jour");
 
@@ -1499,10 +1508,7 @@ async function majDelaiPremierVu() {
       }
     });
 
-    const el = document.getElementById("delai-premier-vu");
-    if (el) {
-      el.textContent = nb > 0 ? formatDuree(somme / nb) : "--";
-    }
+   
   } catch (e) {
     console.error("❌ Erreur calcul délai avant 1ère prise en charge :", e);
     const el = document.getElementById("delai-premier-vu");

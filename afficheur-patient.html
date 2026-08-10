@@ -161,6 +161,13 @@
   margin-top: 4px;
 }
 
+.circuit-attente {
+  font-size: 0.85rem;
+  color: #47607f;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
 /* --- Couleurs personnalisées --- */
 .circuit-card.general {
   border-top: 6px solid #1976D2; /* Bleu général */
@@ -866,12 +873,12 @@
 <section id="dashboard-circuits">
   <h2 class="section-title">🧭 Circuits</h2>
   <div class="circuits-grid">
-        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p></div>
-    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p></div>
-    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p></div>
-    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p></div>
-    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p></div>
-    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p></div>
+        <div class="circuit-card general"><h3 id="circuit-general">--</h3><p>🩺 Général</p><div class="circuit-attente" id="circuit-attente-general">Attente : --</div></div>
+    <div class="circuit-card pediatrie"><h3 id="circuit-pediatrie">--</h3><p>👶 Pédiatrie</p><div class="circuit-attente" id="circuit-attente-pediatrie">Attente : --</div></div>
+    <div class="circuit-card traumato"><h3 id="circuit-traumato">--</h3><p>🦴 Traumatologie</p><div class="circuit-attente" id="circuit-attente-traumato">Attente : --</div></div>
+    <div class="circuit-card ophtalmo"><h3 id="circuit-ophtalmo">--</h3><p>👀 Ophtalmologie</p><div class="circuit-attente" id="circuit-attente-ophtalmo">Attente : --</div></div>
+    <div class="circuit-card gyn"><h3 id="circuit-gyn">--</h3><p>🤰 Gynécologie</p><div class="circuit-attente" id="circuit-attente-gyn">Attente : --</div></div>
+    <div class="circuit-card psy"><h3 id="circuit-psy">--</h3><p>🧠 Psychiatrie</p><div class="circuit-attente" id="circuit-attente-psy">Attente : --</div></div>
   </div>
 </section>
 
@@ -1004,6 +1011,16 @@
     <div class="temps-urgences-texte">
       <div class="temps-urgences-valeur" id="attente-actuelle">--</div>
       <div class="temps-urgences-label">Attente moyenne actuelle</div>
+    </div>
+  </div>
+
+  <div class="temps-urgences-sep"></div>
+
+  <div class="temps-urgences-ligne">
+    <div class="temps-urgences-icone">🩺</div>
+    <div class="temps-urgences-texte">
+      <div class="temps-urgences-valeur" id="delai-premier-vu">--</div>
+      <div class="temps-urgences-label">Délai avant 1ère prise en charge</div>
     </div>
   </div>
 
@@ -1329,10 +1346,18 @@ async function majCompteursDepuisHospitalisations() {
       psy: 0
     };
 
-    // Pour le calcul de l'attente moyenne actuelle
+    // Pour le calcul de l'attente moyenne actuelle (globale + par circuit)
     const maintenantCalc = new Date();
     let sommeAttenteMin = 0;
     let nbAttenteValide = 0;
+    const attenteParCircuit = {
+      general: { somme: 0, nb: 0 },
+      pediatrie: { somme: 0, nb: 0 },
+      traumato: { somme: 0, nb: 0 },
+      ophtalmo: { somme: 0, nb: 0 },
+      gyn: { somme: 0, nb: 0 },
+      psy: { somme: 0, nb: 0 }
+    };
 
     // 2️⃣ Pour chaque patient → lire patient + hospitalisation
     for (const patientDoc of patientsSnap.docs) {
@@ -1355,6 +1380,16 @@ async function majCompteursDepuisHospitalisations() {
       if (!hospSnap.exists()) continue;
 
       const h = hospSnap.data() || {};
+      const circuit = (h.circuit || "").toLowerCase();
+
+      // === CIRCUITS ===
+      let circuitKey = "general";
+      if (circuit.includes("ped")) circuitKey = "pediatrie";
+      else if (circuit.includes("trauma")) circuitKey = "traumato";
+      else if (circuit.includes("opht")) circuitKey = "ophtalmo";
+      else if (circuit.includes("gyn")) circuitKey = "gyn";
+      else if (circuit.includes("psy")) circuitKey = "psy";
+      circuits[circuitKey]++;
 
       // ⏱️ Attente écoulée depuis l'arrivée pour les patients en salle d'attente
       if (enAttente) {
@@ -1364,11 +1399,12 @@ async function majCompteursDepuisHospitalisations() {
           if (minutes >= 0) {
             sommeAttenteMin += minutes;
             nbAttenteValide++;
+            attenteParCircuit[circuitKey].somme += minutes;
+            attenteParCircuit[circuitKey].nb++;
           }
         }
       }
       const gravite = (h.gravite || "").toLowerCase();
-      const circuit = (h.circuit || "").toLowerCase();
 
       // === ADMIN ===
       if (gravite.includes("admin")) {
@@ -1388,14 +1424,6 @@ async function majCompteursDepuisHospitalisations() {
       ) {
         counts.critique++;
       }
-
-      // === CIRCUITS ===
-      if (circuit.includes("ped")) circuits.pediatrie++;
-      else if (circuit.includes("trauma")) circuits.traumato++;
-      else if (circuit.includes("opht")) circuits.ophtalmo++;
-      else if (circuit.includes("gyn")) circuits.gyn++;
-      else if (circuit.includes("psy")) circuits.psy++;
-      else circuits.general++;
     }
 
     const pec = Math.max(counts.total - counts.attente, 0);
@@ -1415,7 +1443,7 @@ async function majCompteursDepuisHospitalisations() {
     animateUpdate(document.getElementById("circuit-gyn"), circuits.gyn);
     animateUpdate(document.getElementById("circuit-psy"), circuits.psy);
 
-    // ⏱️ Attente moyenne actuelle
+    // ⏱️ Attente moyenne actuelle (globale)
     const attenteMoyenneEl = document.getElementById("attente-actuelle");
     if (attenteMoyenneEl) {
       attenteMoyenneEl.textContent = nbAttenteValide > 0
@@ -1423,10 +1451,62 @@ async function majCompteursDepuisHospitalisations() {
         : "--";
     }
 
+    // ⏱️ Attente moyenne par circuit (affichée sous chaque carte)
+    for (const key of Object.keys(attenteParCircuit)) {
+      const el = document.getElementById(`circuit-attente-${key}`);
+      if (!el) continue;
+      const { somme, nb } = attenteParCircuit[key];
+      el.textContent = nb > 0 ? `Attente : ${formatDuree(somme / nb)}` : "Attente : --";
+    }
+
     console.log("✅ Compteurs mis à jour");
 
   } catch (e) {
     console.error("❌ Erreur mise à jour compteurs :", e);
+  }
+}
+
+// === DÉLAI MOYEN AVANT 1ÈRE PRISE EN CHARGE ===
+// Nécessite un champ Firestore Timestamp "datePremierVuTS", posé côté fiche.html
+// la toute première fois que le dossier médical (auscultation/IAO/etc.) est
+// renseigné pour une hospitalisation. Tant qu'il n'est pas généralisé,
+// l'indicateur affiche "--".
+async function majDelaiPremierVu() {
+  try {
+    const debutJour = new Date();
+    debutJour.setHours(0, 0, 0, 0);
+
+    const q = query(
+      collection(db, "hospitalisations"),
+      where("datePremierVuTS", ">=", Timestamp.fromDate(debutJour))
+    );
+    const snap = await getDocs(q);
+
+    let somme = 0;
+    let nb = 0;
+
+    snap.forEach(docSnap => {
+      const h = docSnap.data() || {};
+      const entree = getDateEntree(h);
+      const premierVu = h.datePremierVuTS && typeof h.datePremierVuTS.toDate === "function"
+        ? h.datePremierVuTS.toDate()
+        : null;
+      if (!entree || !premierVu) return;
+      const minutes = (premierVu - entree) / 60000;
+      if (minutes >= 0) {
+        somme += minutes;
+        nb++;
+      }
+    });
+
+    const el = document.getElementById("delai-premier-vu");
+    if (el) {
+      el.textContent = nb > 0 ? formatDuree(somme / nb) : "--";
+    }
+  } catch (e) {
+    console.error("❌ Erreur calcul délai avant 1ère prise en charge :", e);
+    const el = document.getElementById("delai-premier-vu");
+    if (el) el.textContent = "--";
   }
 }
 
@@ -1989,6 +2069,9 @@ function initAfficheur() {
 
   majDureeMoyennePassageJour();                  // au chargement
   setInterval(majDureeMoyennePassageJour, 5 * 60000); // toutes les 5 minutes
+
+  majDelaiPremierVu();                            // au chargement
+  setInterval(majDelaiPremierVu, 5 * 60000);      // toutes les 5 minutes
 
   verifierActivationBureaux();
   ecouterAppels();

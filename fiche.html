@@ -2472,7 +2472,10 @@ z-index: 3000;
   <label>Sexe</label>
   <span id="sexe"></span>
 </div>
-
+<div>
+  <label>Civilité</label>
+  <span id="civilite"></span>
+</div>
 <div>
   <label>Âge</label>
   <span id="age"></span>
@@ -2948,11 +2951,17 @@ z-index: 3000;
 	<label for="adminSexe">Sexe</label>
 	<select id="adminSexe" >
   <option value="">-- Sélectionnez --</option>
+  <option value="H">H</option>
+  <option value="F">F</option>
+</select>
+	
+	<label for="adminCivilite">Civilité</label>
+	<select id="adminCivilite" >
+  <option value="">-- Sélectionnez --</option>
   <option value="M">M</option>
   <option value="Mme">Mme</option>
   <option value="L'enfant">L'enfant</option>
 </select>
-
 	<label for="adminNaissance">Date de naissance</label>
 <input type="date" id="adminNaissance"  />
 
@@ -3681,6 +3690,7 @@ async function chargerPatient(patientId) {
     document.getElementById("nom").textContent = patient.nom || "";
     document.getElementById("prenom").textContent = patient.prenom || "";
     document.getElementById("sexe").textContent = patient.sexe || "";
+    document.getElementById("civilite").textContent = patient.civilite || "";
 
 
     document.getElementById("allergies").value = patient.allergies || "aucune";
@@ -4753,6 +4763,7 @@ btnAdmin.addEventListener("click", async () => {
     document.getElementById("adminNom").value = data.nom || "";
     document.getElementById("adminPrenom").value = data.prenom || "";
     document.getElementById("adminSexe").value = data.sexe || "";
+    document.getElementById("adminCivilite").value = data.civilite || "";
     document.getElementById("adminNaissance").value = data.dateNaissance || "";
     document.getElementById("adminAdresse").value = data.adresse || "";
     document.getElementById("adminTelephone").value = data.telephone || "";
@@ -4786,6 +4797,7 @@ btnEnregistrerAdmin.addEventListener("click", async () => {
   const telephone = document.getElementById("adminTelephone").value.trim();
   const email = document.getElementById("adminEmail").value.trim();
   const sexe = document.getElementById("adminSexe").value;
+  const civilite = document.getElementById("adminCivilite").value;
 const dateNaissance = document.getElementById("adminNaissance").value.trim();
 
 
@@ -4801,7 +4813,7 @@ if (telephone && !telephoneValide(telephone)) {
 }
  try {
   const patientRef = doc(db, "patients", patientId);
-  await updateDoc(patientRef, { adresse, telephone, email, sexe, dateNaissance });
+  await updateDoc(patientRef, { adresse, telephone, email, sexe, civilite, dateNaissance });
   afficherBulle("✔️ Coordonnées mises à jour", "success");
  modalAdmin.classList.remove("show");
 } catch (e) {

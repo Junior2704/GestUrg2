@@ -1610,9 +1610,32 @@ editor.style.cursor = "not-allowed";
   // 🔹 Création du .ord
   const ord = construireORD();
 
-  // 🔹 Génération PDF (optionnel)
-
   const patientId = getIdFromURL();
+
+  // 🔒 Filet de sécurité : si les champs patient sont vides côté formulaire
+  // (ex: non encore synchronisés), on va rechercher les infos directement
+  // dans Firestore avant de sauvegarder.
+  if (patientId && (!ord.patient.nom || !ord.patient.prenom)) {
+    try {
+      const patientSnapVal = await getDoc(doc(db, "patients", patientId));
+      if (patientSnapVal.exists()) {
+        const pdata = patientSnapVal.data();
+        ord.patient = {
+          nom: ord.patient.nom || pdata.nom || "",
+          prenom: ord.patient.prenom || pdata.prenom || "",
+          date_Naissance: ord.patient.date_Naissance || pdata.dateNaissance || "",
+          sexe: ord.patient.sexe || pdata.sexe || ""
+        };
+        console.log("🔎 [debug] Patient complété via filet de sécurité Firestore :", ord.patient);
+      } else {
+        console.warn("⚠️ [debug] Filet de sécurité : aucun patient trouvé pour", patientId);
+      }
+    } catch (e) {
+      console.error("Erreur filet de sécurité patient :", e);
+    }
+  }
+
+  // 🔹 Génération PDF (optionnel)
 
   if (patientId) {
 
@@ -1973,7 +1996,11 @@ editor.addEventListener("input", updateBoldButton);
 
 async function remplirInfosPatientDepuisFirestore() {
   const id = getIdFromURL();
-  if (!id) return;
+  console.log("🔎 [debug] ID patient récupéré depuis l'URL :", id);
+  if (!id) {
+    console.warn("⚠️ [debug] Aucun ID dans l'URL — impossible de charger le patient.");
+    return;
+  }
 
   try {
     const docRef = doc(db, "patients", id);
@@ -1981,6 +2008,7 @@ const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
+      console.log("🔎 [debug] Données patient reçues de Firestore :", data);
       document.getElementById("patient-first-name").value = data.prenom || "";
       document.getElementById("patient-last-name").value = data.nom || "";
       document.getElementById("patient-birthdate").value = data.dateNaissance || "";
@@ -1991,7 +2019,7 @@ const docSnap = await getDoc(docRef);
       masquerLoader();
       await chargerAnciennesOrdonnances();
     } else {
-      console.warn("Aucun patient trouvé avec cet ID");
+      console.warn("⚠️ [debug] Aucun document patient trouvé dans Firestore pour l'ID :", id);
     }
 
   } catch (error) {
@@ -2209,6 +2237,24 @@ const patientSnap = await getDoc(patientRef);
     const fileName = `Ordonnance - ${firstName} ${lastName}.pdf`;
 
     const ord = construireORD();
+
+    // 🔒 Sécurise les infos patient avec les données Firestore fraîchement
+    // récupérées (data), au cas où les champs du formulaire ne seraient pas
+    // synchronisés à ce moment précis.
+    ord.patient = {
+      nom: lastName || ord.patient.nom || "",
+      prenom: firstName || ord.patient.prenom || "",
+      date_Naissance: data.dateNaissance || ord.patient.date_Naissance || "",
+      sexe: data.sexe || ord.patient.sexe || ""
+    };
+
+    console.log("🔎 [debug] ord.patient juste avant sauvegarde :", ord.patient);
+    console.log("🔎 [debug] valeurs brutes des champs DOM :", {
+      prenom: document.getElementById("patient-first-name")?.value,
+      nom: document.getElementById("patient-last-name")?.value,
+      naissance: document.getElementById("patient-birthdate")?.value,
+      sexe: document.getElementById("sexe")?.value
+    });
 
     // 💾 Firestore save
     await setDoc(

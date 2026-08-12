@@ -1639,19 +1639,19 @@ function afficherBulle(message, typeBulle){
 /* relais : si ce code lui-même iframe d'autres codes qui
    demandent une bulle, on transmet plus haut à notre tour */
 
-window.addEventListener("message",(event)=>{
+if (!window.__bulleRelaisInit) {
+  window.__bulleRelaisInit = true;
 
-  if(
-    event.data &&
-    event.data.source==="notification-bulle" &&
-    window.parent!==window
-  ){
-
-    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
-
-  }
-
-});
+  window.addEventListener("message", (event) => {
+    if (
+      event.data &&
+      event.data.source === "notification-bulle" &&
+      window.parent !== window
+    ) {
+      window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+    }
+  });
+}
 
 function sansAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

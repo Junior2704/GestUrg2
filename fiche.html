@@ -3349,8 +3349,11 @@ function afficherBulle(message, typeBulle){
 /* relais : si ce code lui-même iframe d'autres codes qui
    demandent une bulle, on transmet plus haut à notre tour */
 
+console.log("Init relais dans fiche.html, guard actuel:", window.__bulleRelaisInit);
+
 if (!window.__bulleRelaisInit) {
   window.__bulleRelaisInit = true;
+  console.log("→ premier enregistrement du listener relais");
 
   window.addEventListener("message", (event) => {
     if (
@@ -3358,9 +3361,12 @@ if (!window.__bulleRelaisInit) {
       event.data.source === "notification-bulle" &&
       window.parent !== window
     ) {
+      console.log("RELAY depuis fiche.html pour :", event.data.message);
       window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
     }
   });
+} else {
+  console.log("→ garde actif, listener PAS réenregistré (normal si déjà fait)");
 }
 
 

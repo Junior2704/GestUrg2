@@ -1538,13 +1538,14 @@ function filterMedicaments() {
   afficherMedicaments(filtres);
 }
 async function imprimer() {
-
+afficherLoader();
     // Vérifie que l'ID du document existe
     if (!window.pdfIdExistante) {
         afficherBulle(
             "❌ Aucun document disponible pour impression",
             "alerte"
         );
+        masquerLoader();
         return;
     }
 
@@ -1559,6 +1560,7 @@ async function imprimer() {
                 "❌ Document introuvable",
                 "alerte"
             );
+            masquerLoader();
             return;
         }
 
@@ -1570,6 +1572,7 @@ async function imprimer() {
                 "❌ Ce document ne contient pas de fichier ORD",
                 "alerte"
             );
+            masquerLoader();
             return;
         }
 
@@ -1580,6 +1583,7 @@ async function imprimer() {
                 "alerte"
             );
             console.error("ordToPDF n'est pas disponible");
+            masquerLoader();
             return;
         }
 
@@ -1608,7 +1612,7 @@ async function imprimer() {
 
         // Crée une URL temporaire vers le PDF
         const pdfUrl = URL.createObjectURL(pdfBlob);
-
+masquerLoader();
         // Ouvre DIRECTEMENT le PDF
         const nouvelOnglet = window.open(
             pdfUrl,
@@ -1621,7 +1625,7 @@ async function imprimer() {
                 "❌ Le navigateur a bloqué l'ouverture du PDF",
                 "alerte"
             );
-
+masquerLoader();
             URL.revokeObjectURL(pdfUrl);
             return;
         }
@@ -1646,6 +1650,7 @@ async function imprimer() {
             "❌ Impossible de générer le PDF",
             "alerte"
         );
+        masquerLoader();
     }
 }
 window.imprimer=imprimer;

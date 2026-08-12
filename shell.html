@@ -1979,6 +1979,15 @@ const snap = await getDoc(doc(db, "medecins", user.uid));
     }, "*");
   });
 });
+window.addEventListener("message",(event)=>{
+
+  if(event.data && event.data.source==="notification-bulle"){
+
+    afficherBulle(event.data.message, event.data.typeBulle);
+
+  }
+
+});
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
   notificationContainer = document.createElement('div');
@@ -1993,6 +2002,7 @@ if (!notificationContainer) {
   document.body.appendChild(notificationContainer);
 }
 function afficherBulle(msg, type = 'info') {
+   console.trace("afficherBulle appelée avec :", msg, type);
   const el = document.createElement('div');
   el.textContent = msg;
   el.style.padding = '10px 14px';
@@ -2497,13 +2507,6 @@ if(premierChargement){
 
 surveillerMessagesNonLus();
 
-
-
-window.addEventListener("message", (event) => {
-  if (event.data?.source === "notification-bulle") {
-    console.trace("Reçu bulle dans", window.location.href, event.data.message);
-  }
-});
 </script>
 
 </body>

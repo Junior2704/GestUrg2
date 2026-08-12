@@ -1027,7 +1027,26 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
 
 function ouvrirModal(blob, nom) {
     const url = URL.createObjectURL(blob);
-    window.open(url, nom);
+    const nouvelOnglet = window.open(url, "_blank");
+    if (!nouvelOnglet) {
+
+            afficherBulle(
+                "❌ Le navigateur a bloqué l'ouverture du PDF",
+                "alerte"
+            );
+masquerLoader();
+            URL.revokeObjectURL(url);
+            return;
+        }
+
+        // Titre de l'onglet
+        nouvelOnglet.document.title =
+            nom;
+
+        // Nettoyage de l'URL temporaire
+        setTimeout(() => {
+            URL.revokeObjectURL(pdfUrl);
+        }, 60000);
 }
 
 window.fermerModal = function() {

@@ -1537,26 +1537,115 @@ function filterMedicaments() {
   const filtres = medicaments.filter(m => m.toLowerCase().includes(search));
   afficherMedicaments(filtres);
 }
-
-function imprimer() {
+async function imprimer() {
 
     // Vérifie que l'ID du document existe
     if (!window.pdfIdExistante) {
-        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+        afficherBulle(
+            "❌ Aucun document disponible pour impression",
+            "alerte"
+        );
         return;
     }
 
-    // Ouvre le document dans un nouvel onglet
-    const nouvelOnglet = window.open(
-        `viewer.html?docId=${encodeURIComponent(window.pdfIdExistante)}`,
-        "_blank"
-    );
+    try {
 
-    // Si l'ouverture est autorisée
-    if (nouvelOnglet) {
+        // Récupération du document Firestore
+        const ref = doc(db, "documents", window.pdfIdExistante);
+        const snap = await getDoc(ref);
 
-        // Donne le titre à l'onglet
-        nouvelOnglet.document.title = "Ordonnance médicale";
+        if (!snap.exists()) {
+            afficherBulle(
+                "❌ Document introuvable",
+                "alerte"
+            );
+            return;
+        }
+
+        const data = snap.data();
+
+        // Vérifie qu'il s'agit bien d'un document .ord
+        if (!data.ord) {
+            afficherBulle(
+                "❌ Ce document ne contient pas de fichier ORD",
+                "alerte"
+            );
+            return;
+        }
+
+        // Vérifie que le module de conversion est disponible
+        if (!window.ordToPDF) {
+            afficherBulle(
+                "❌ Module ordonnance non chargé",
+                "alerte"
+            );
+            console.error("ordToPDF n'est pas disponible");
+            return;
+        }
+
+        // Génère le HTML à partir du .ord
+        const html = generateHTML(data.ord);
+
+        // Conteneur temporaire
+        const container = document.createElement("div");
+        container.innerHTML = html;
+
+        // Génération du PDF
+        const pdfBlob = await html2pdf()
+            .set({
+                margin: 0,
+                html2canvas: {
+                    scale: 2
+                },
+                jsPDF: {
+                    unit: "mm",
+                    format: "a4",
+                    orientation: "portrait"
+                }
+            })
+            .from(container)
+            .outputPdf("blob");
+
+        // Crée une URL temporaire vers le PDF
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        // Ouvre DIRECTEMENT le PDF
+        const nouvelOnglet = window.open(
+            pdfUrl,
+            "_blank"
+        );
+
+        if (!nouvelOnglet) {
+
+            afficherBulle(
+                "❌ Le navigateur a bloqué l'ouverture du PDF",
+                "alerte"
+            );
+
+            URL.revokeObjectURL(pdfUrl);
+            return;
+        }
+
+        // Titre de l'onglet
+        nouvelOnglet.document.title =
+            "Ordonnance médicale";
+
+        // Nettoyage de l'URL temporaire
+        setTimeout(() => {
+            URL.revokeObjectURL(pdfUrl);
+        }, 60000);
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur génération/ouverture du PDF :",
+            error
+        );
+
+        afficherBulle(
+            "❌ Impossible de générer le PDF",
+            "alerte"
+        );
     }
 }
 window.imprimer=imprimer;
@@ -2104,7 +2193,7 @@ window.afficherLoader = function() {
     document.body.appendChild(loader);
   }
 
-  loader.style.display = "flex";
+  loader.style.display = "block";
   loader.style.opacity = "1";
 };
 

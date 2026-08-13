@@ -2044,7 +2044,118 @@ document.addEventListener("keydown", (e) => {
     }
 
 });
+let bureauActuelIframe = null;
+ 
+  window.addEventListener("message", (event) => {
+    if (event.data?.source === "bureau-actuel") {
+      bureauActuelIframe = event.data.bureau;
+      console.log("📥 Bureau reçu depuis l'iframe :", bureauActuelIframe);
+    }
+  });
+ 
+  // Retrouve l'iframe bureau.html actuellement présente dans la page
+  function getBureauIframe() {
+    return [...document.querySelectorAll("iframe")]
+      .find(iframe => iframe.src.includes("bureau.html"));
+  }
+ 
+  // Redemande explicitement à l'iframe sa valeur actuelle (utile si le parent
+  // n'a pas encore reçu de message, par ex. juste après l'ouverture de l'iframe).
+  function demanderBureauActuel(iframeEl) {
+    iframeEl.contentWindow.postMessage({ type: "GET_BUREAU_ACTUEL" }, "*");
+  }
+ 
+  // ===== Inversion automatique du statut du bureau sélectionné =====
+  async function inverserStatutBureauActuel() {
+    const bureauIframe = getBureauIframe();
+ 
+    if (!bureauIframe) {
+      console.log("ℹ️ bureau.html n'est pas ouvert.");
+      afficherBulle("Veuillez ouvrir le gestionnaire des appels", "error");
+      return;
+    }
+ 
+    // Si on n'a pas encore reçu la valeur du bureau, on la redemande
+    // et on laisse une courte fenêtre pour la réponse.
+    if (!bureauActuelIframe) {
+      demanderBureauActuel(bureauIframe);
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+ 
+    if (!bureauActuelIframe) {
+      afficherBulle("Impossible de déterminer le bureau sélectionné", "error");
+      return;
+    }
+ 
+    try {
+      // On relit la valeur réelle dans Firestore avant d'inverser, pour éviter
+      // toute désynchronisation (ex : un autre écran a changé le statut entre-temps).
+      const refBureau = doc(db, "referentiels", "bureau");
+      const snap = await getDoc(refBureau);
+ 
+      if (!snap.exists()) {
+        afficherBulle("Référentiel des bureaux introuvable", "error");
+        return;
+      }
+ 
+      const data = snap.data();
+      const infoBureau = data[bureauActuelIframe];
+ 
+      if (!infoBureau || typeof infoBureau !== "object") {
+        afficherBulle(`Bureau "${bureauActuelIframe}" introuvable dans Firestore`, "error");
+        return;
+      }
+ 
+      const statutActuel = infoBureau.statut === "ferme" ? "ferme" : "ouvert";
+      const nouveauStatut = statutActuel === "ferme" ? "ouvert" : "ferme";
+ 
+      await updateDoc(refBureau, {
+        [`${bureauActuelIframe}.statut`]: nouveauStatut
+      });
+ 
+      afficherBulle(
+        `Bureau ${bureauActuelIframe} : ${nouveauStatut === "ferme" ? "fermé 🔴" : "ouvert 🟢"}`,
+        "success"
+      );
+    } catch (err) {
+      console.error("Erreur lors de l'inversion du statut :", err);
+      afficherBulle("Erreur lors de la mise à jour du statut du bureau", "error");
+    }
+  }
+ 
+  // ===== RACCOURCI CLAVIER : CTRL + SHIFT + X, puis F =====
+  let raccourciStatut = false;
+ 
+  document.addEventListener("keydown", (e) => {
+ 
 
+    if (
+      e.ctrlKey &&
+      e.shiftKey &&
+      e.key.toLowerCase() === "x"
+    ) {
+      e.preventDefault();
+ 
+      raccourciStatut = true;
+ 
+      // Sécurité : la touche suivante doit arriver rapidement
+      setTimeout(() => {
+        raccourciStatut = false;
+      }, 1000);
+ 
+      return;
+    }
+ 
+    // Puis F (Fermer/ouvrir → inverse le statut)
+    if (
+      raccourciStatut &&
+      e.key.toLowerCase() === "f"
+    ) {
+      e.preventDefault();
+      raccourciStatut = false;
+      inverserStatutBureauActuel();
+    }
+  });
 
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {

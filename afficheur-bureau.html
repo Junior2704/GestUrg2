@@ -477,9 +477,9 @@
         <div style="color:#7a8ba3;">Chargement des guichets…</div>
       </div>
       <div class="panel-actions">
-        <button class="btn-id btn-id-c" onclick="fermerGuichet()">🚪 Fermer ce guichet</button>
+        <button id="btnToggleStatut" class="btn-id btn-id-c" onclick="toggleStatutGuichet()">🚪 Fermer ce guichet</button>
         <button class="btn-id" onclick="basculerPleinEcran()">⛶ Plein écran</button>
-        <button class="btn-id" onclick="fermerPanel()">✖ Fermer</button>
+        <button id="btnFermerPanel" class="btn-id" onclick="fermerPanel()">✖ Fermer</button>
       </div>
     </div>
   </div>
@@ -496,6 +496,7 @@
     collection,
     doc,
     getDoc,
+    updateDoc,
     onSnapshot,
     query,
     where
@@ -512,8 +513,10 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  const STORAGE_KEY = "afficheurBureau_guichetActuel";
-  const FERME = "__FERME__";
+  // Le statut (ouvert / fermé) n'est plus stocké localement : il vient toujours
+  // du champ "statut" du bureau choisi, dans referentiels/bureau (Firestore).
+  const STATUT_FERME = "ferme";
+  const STATUT_OUVERT = "ouvert";
 
   // --- LOADER ---
   function afficherLoader() {
@@ -585,8 +588,14 @@
   function ouvrirPanel() {
     panelBureau.style.display = "flex";
     surlignerBureauActif();
+    mettreAJourBoutonToggle();
+    // Tant qu'aucun guichet n'a été choisi, on empêche de fermer le panneau
+    // sans faire de choix (sélection obligatoire à l'ouverture de l'écran).
+    const btnFermerPanel = document.getElementById("btnFermerPanel");
+    if (btnFermerPanel) btnFermerPanel.style.display = guichetActuel ? "inline-flex" : "none";
   }
   function fermerPanel() {
+    if (!guichetActuel) return; // choix du guichet obligatoire avant de pouvoir fermer le panneau
     panelBureau.style.display = "none";
   }
   window.fermerPanel = fermerPanel;
@@ -598,15 +607,29 @@
   }
 
   // ===== GESTION DU GUICHET ACTUEL =====
-  let guichetActuel = localStorage.getItem(STORAGE_KEY) || null;
+  // Aucun guichet n'est retenu d'une session à l'autre : à chaque ouverture de
+  // la page, l'opérateur doit obligatoirement en choisir un (voir initAfficheurBureau).
+  let guichetActuel = null;
+  let statutConnu = null; // dernier statut appliqué à l'affichage, pour éviter de relancer l'écoute des appels inutilement
   let unsubAppel = null;
-  let bureauxData = {}; // { nomBureau: {message, importance, ...} } issu de referentiels/bureau
+  let bureauxData = {}; // { nomBureau: {message, importance, statut, ...} } issu de referentiels/bureau
+
+  // Statut du guichet actuellement sélectionné, déduit de Firestore.
+  // Par défaut (champ "statut" absent), un guichet est considéré ouvert.
+  function statutDuGuichet(id) {
+    const info = bureauxData[id];
+    return info?.statut === STATUT_FERME ? STATUT_FERME : STATUT_OUVERT;
+  }
+
+  function guichetEstFerme() {
+    return !guichetActuel || statutDuGuichet(guichetActuel) === STATUT_FERME;
+  }
 
   function appliquerAffichage() {
     const ecranFerme = document.getElementById("ecranFerme");
     const guichetNomEl = document.getElementById("guichetNom");
 
-    if (!guichetActuel || guichetActuel === FERME) {
+    if (guichetEstFerme()) {
       ecranFerme.style.display = "flex";
     } else {
       ecranFerme.style.display = "none";
@@ -615,6 +638,7 @@
 
     afficherMessageGuichet();
     surlignerBureauActif();
+    mettreAJourBoutonToggle();
   }
 
   function afficherMessageGuichet() {
@@ -623,7 +647,7 @@
 
     messageEl.classList.remove("importance-faible", "importance-moyenne", "importance-forte", "visible");
 
-    if (!guichetActuel || guichetActuel === FERME) {
+    if (!guichetActuel) {
       texteEl.textContent = "";
       return;
     }
@@ -642,6 +666,25 @@
     messageEl.classList.add("importance-" + importance, "visible");
   }
 
+  // Met à jour le libellé du bouton "Fermer / Ouvrir ce guichet" dans le panneau,
+  // et le masque tant qu'aucun guichet n'est sélectionné.
+  function mettreAJourBoutonToggle() {
+    const btn = document.getElementById("btnToggleStatut");
+    if (!btn) return;
+
+    if (!guichetActuel) {
+      btn.style.display = "none";
+      return;
+    }
+
+    btn.style.display = "inline-flex";
+    if (statutDuGuichet(guichetActuel) === STATUT_FERME) {
+      btn.textContent = "🟢 Ouvrir ce guichet";
+    } else {
+      btn.textContent = "🚪 Fermer ce guichet";
+    }
+  }
+
   function ecouterAppelGuichet() {
     if (unsubAppel) {
       unsubAppel();
@@ -654,7 +697,8 @@
     zoneAppel.classList.remove("appel-actif");
     numeroEl.textContent = "—";
 
-    if (!guichetActuel || guichetActuel === FERME) return;
+    // Un guichet fermé n'affiche pas d'appel en cours
+    if (guichetEstFerme()) return;
 
     const q = query(
       collection(db, "accueil-1"),
@@ -687,23 +731,39 @@
     });
   }
 
+  // Sélection d'un guichet : le statut (ouvert/fermé) est immédiatement déduit
+  // des données déjà reçues via l'écoute de referentiels/bureau.
   function choisirGuichet(id) {
     guichetActuel = id;
-    localStorage.setItem(STORAGE_KEY, id);
+    statutConnu = statutDuGuichet(id);
     appliquerAffichage();
     ecouterAppelGuichet();
     fermerPanel();
   }
   window.choisirGuichet = choisirGuichet;
 
-  function fermerGuichet() {
-    guichetActuel = FERME;
-    localStorage.setItem(STORAGE_KEY, FERME);
-    appliquerAffichage();
-    ecouterAppelGuichet();
+  // Bascule le statut du guichet sélectionné dans Firestore.
+  // L'affichage n'est pas modifié directement ici : c'est l'écoute en temps
+  // réel (onSnapshot sur referentiels/bureau) qui appliquera le changement
+  // dès que Firestore aura confirmé la mise à jour.
+  async function toggleStatutGuichet() {
+    if (!guichetActuel) return;
+
+    const nouveauStatut = statutDuGuichet(guichetActuel) === STATUT_FERME ? STATUT_OUVERT : STATUT_FERME;
+
+    try {
+      await updateDoc(doc(db, "referentiels", "bureau"), {
+        [`${guichetActuel}.statut`]: nouveauStatut
+      });
+    } catch (err) {
+      console.error("Erreur mise à jour du statut du guichet :", err);
+      alert("Impossible de mettre à jour le statut du guichet. Veuillez réessayer.");
+      return;
+    }
+
     fermerPanel();
   }
-  window.fermerGuichet = fermerGuichet;
+  window.toggleStatutGuichet = toggleStatutGuichet;
 
   // ===== LISTE DES GUICHETS (referentiels/bureau) =====
   function initBureauxListener() {
@@ -736,8 +796,20 @@
         bureauListe.appendChild(item);
       });
 
+      // Si le guichet actuellement affiché a changé de statut côté Firestore
+      // (ouvert/fermé), on met l'affichage à jour en direct.
+      if (guichetActuel) {
+        const nouveauStatut = statutDuGuichet(guichetActuel);
+        if (nouveauStatut !== statutConnu) {
+          statutConnu = nouveauStatut;
+          appliquerAffichage();
+          ecouterAppelGuichet();
+        }
+      }
+
       surlignerBureauActif();
       afficherMessageGuichet(); // reflète en direct un changement de message/importance
+      mettreAJourBoutonToggle();
     }, (err) => {
       console.error("Erreur chargement guichets :", err);
       bureauListe.innerHTML = `<div style="color:#d32f2f;">Erreur de chargement des guichets</div>`;
@@ -749,10 +821,9 @@
     appliquerAffichage();
     ecouterAppelGuichet();
 
-    // Si aucun guichet n'a encore été choisi sur cet écran, on ouvre le panneau
-    if (!guichetActuel) {
-      ouvrirPanel();
-    }
+    // Choix du guichet obligatoire à chaque ouverture de l'écran : on ne
+    // restaure jamais un guichet précédemment sélectionné.
+    ouvrirPanel();
   }
 
   // ===== MODALE NON CONNECTÉ : redirection au clic sur OK =====

@@ -900,76 +900,50 @@ document
     .getElementById("activerNotifications")
     .addEventListener("click", async () => {
 
-        const afficher = (message) => {
-            console.log(message);
-
-            let debug = document.getElementById("debugNotifications");
-
-            if (!debug) {
-                debug = document.createElement("pre");
-                debug.id = "debugNotifications";
-                debug.style.cssText = `
-                    position: fixed;
-                    bottom: 10px;
-                    left: 10px;
-                    right: 10px;
-                    z-index: 999999;
-                    background: #111;
-                    color: #0f0;
-                    padding: 15px;
-                    border-radius: 10px;
-                    font-size: 12px;
-                    white-space: pre-wrap;
-                    max-height: 50vh;
-                    overflow: auto;
-                `;
-                document.body.appendChild(debug);
-            }
-
-            debug.textContent += message + "\n";
-        };
-
         try {
-  const messaging = getMessaging(app);
-            afficher("🔔 Demande d'autorisation...");
 
-            const permission = await Notification.requestPermission();
+            const permission =
+                await Notification.requestPermission();
 
-            afficher("Permission : " + permission);
+            console.log("Permission :", permission);
 
             if (permission !== "granted") {
-                afficher("❌ Notifications refusées");
+                console.log("❌ Notifications refusées");
                 return;
             }
-
-            afficher("✅ Permission accordée");
 
             const registration =
                 await navigator.serviceWorker.register(
                     "/firebase-messaging-sw.js"
                 );
 
-            afficher("✅ Service Worker enregistré");
+            console.log(
+                "✅ Service Worker enregistré"
+            );
+
+            // 🔥 Initialisation FCM uniquement ici
+            const messaging = getMessaging(app);
 
             const token = await getToken(messaging, {
                 vapidKey: "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI",
                 serviceWorkerRegistration: registration
             });
 
-            if (token) {
-                afficher("🔥 TOKEN FCM :\n" + token);
-            } else {
-                afficher("❌ Aucun token FCM obtenu");
-            }
+            console.log(
+                "🔥 TOKEN FCM :",
+                token
+            );
 
         } catch (error) {
 
-            afficher("❌ ERREUR :\n" + error.message);
-            afficher(JSON.stringify(error, Object.getOwnPropertyNames(error)));
+            console.error(
+                "❌ Erreur notifications :",
+                error
+            );
 
         }
-    });
-    /* =========================================================
+
+    });  /* =========================================================
    ACTES & MÉDICAMENTS (lecture seule)
    Structure identique à l'app bureau : hospi.actes[] et hospi.meds[],
    chacun avec { product, comment, createdAt, dueAt, status, ... }

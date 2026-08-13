@@ -1988,6 +1988,63 @@ window.addEventListener("message",(event)=>{
   }
 
 });
+
+
+let raccourciAppel = false;
+
+document.addEventListener("keydown", (e) => {
+
+    // CTRL + SHIFT + I
+    if (
+        e.ctrlKey &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "i"
+    ) {
+        e.preventDefault();
+
+        raccourciAppel = true;
+
+        // Sécurité : le "A" doit arriver rapidement
+        setTimeout(() => {
+            raccourciAppel = false;
+        }, 1000);
+
+        return;
+    }
+
+    // Puis A
+    if (
+        raccourciAppel &&
+        e.key.toLowerCase() === "a"
+    ) {
+        e.preventDefault();
+
+        raccourciAppel = false;
+
+        const bureauIframe = [...document.querySelectorAll("iframe")]
+            .find(iframe => iframe.src.includes("bureau.html"));
+
+        if (bureauIframe) {
+
+            bureauIframe.contentWindow.postMessage(
+                {
+                    type: "APPELER_TICKET"
+                },
+                "*"
+            );
+
+            console.log("📞 APPELER_TICKET envoyé à bureau.html");
+
+        } else {
+
+            console.log("ℹ️ bureau.html n'est pas ouvert.");
+
+        }
+    }
+
+});
+
+
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
   notificationContainer = document.createElement('div');

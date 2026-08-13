@@ -694,6 +694,7 @@ import {
   where,
   onSnapshot,
   updateDoc,
+  setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -902,6 +903,7 @@ document
 
         try {
 
+            // 🔔 Demande d'autorisation
             const permission =
                 await Notification.requestPermission();
 
@@ -912,26 +914,76 @@ document
                 return;
             }
 
+            // 📡 Enregistrement du Service Worker
             const registration =
-    await navigator.serviceWorker.register(
-        "/GestUrg2/firebase-messaging-sw.js"
-    );
+                await navigator.serviceWorker.register(
+                    "/GestUrg2/firebase-messaging-sw.js"
+                );
 
             console.log(
                 "✅ Service Worker enregistré"
             );
 
-            // 🔥 Initialisation FCM uniquement ici
+            // 🔥 Initialisation FCM
             const messaging = getMessaging(app);
 
+            // 🔑 Récupération du token
             const token = await getToken(messaging, {
-                vapidKey: "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI",
+                vapidKey: "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI"
+                ,
                 serviceWorkerRegistration: registration
             });
+
+            if (!token) {
+                console.error("❌ Aucun token FCM obtenu");
+                return;
+            }
 
             console.log(
                 "🔥 TOKEN FCM :",
                 token
+            );
+
+
+            // 👤 Utilisateur actuellement connecté
+            const user = auth.currentUser;
+
+            if (!user) {
+                console.error(
+                    "❌ Aucun utilisateur Firebase connecté"
+                );
+                return;
+            }
+
+            console.log(
+                "👤 Utilisateur :",
+                user.uid
+            );
+
+
+            // 💾 Document Firestore
+            const tokenRef = doc(
+                db,
+                "fcmTokens",
+                token
+            );
+
+            await setDoc(
+                tokenRef,
+                {
+                    token: token,
+                    userId: user.uid,
+                    email: user.email || null,
+                    plateforme: "web",
+                    updatedAt: serverTimestamp()
+                },
+                {
+                    merge: true
+                }
+            );
+
+            console.log(
+                "✅ Token FCM enregistré dans Firestore"
             );
 
         } catch (error) {
@@ -943,12 +995,7 @@ document
 
         }
 
-    });  /* =========================================================
-   ACTES & MÉDICAMENTS (lecture seule)
-   Structure identique à l'app bureau : hospi.actes[] et hospi.meds[],
-   chacun avec { product, comment, createdAt, dueAt, status, ... }
-   au format "JJ/MM/AAAA HH:MM:SS".
-========================================================= */
+    });
 const STATUS_LABELS_FR = {
   "a-faire": "À faire",
   "a-donner": "À donner",

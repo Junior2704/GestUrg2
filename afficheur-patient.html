@@ -1742,9 +1742,28 @@ if (age > DUREE_AFFICHAGE) continue;
   });
 }
 
-function appelerPatient(numero, destination) {
 
+const VOIX_PREFEREES = [
+    "Google français",              // Chrome/Chrome OS - très naturelle
+    "Microsoft Denise Online (Natural) - French (France)", // Edge - voix neurale
+    "Microsoft Henri Online (Natural) - French (France)",  // Edge - voix neurale
+    "Microsoft Hortense Desktop - French (France)",
+    "Amélie",                       // macOS/iOS
+    "Thomas",                       // macOS/iOS
+    "French"
+];
+
+function choisirMeilleureVoix() {
     const voix = speechSynthesis.getVoices();
+    for (const nomPrefere of VOIX_PREFEREES) {
+        const trouvee = voix.find(v => v.name === nomPrefere);
+        if (trouvee) return trouvee;
+    }
+    // Repli : première voix française disponible
+    return voix.find(v => v.lang && v.lang.toLowerCase().startsWith("fr"));
+}
+
+function appelerPatient(numero, destination) {
 
     let texteDestination = "";
 
@@ -1765,18 +1784,22 @@ function appelerPatient(numero, destination) {
         "Le numéro " + numero +
         ", est attendu " + texteDestination
     );
-message.voice = speechSynthesis.getVoices().find(v =>
-    v.name === "Google français"
-);
-    message.lang = "fr-FR";
 
-    message.voice = voix.find(v =>
-        v.lang && v.lang.startsWith("fr")
-    );
-message.rate = 0.8;   
-message.pitch = 1;   
-message.volume = 1;
+    message.lang = "fr-FR";
+    message.voice = choisirMeilleureVoix();
+    message.rate = 0.95;
+    message.pitch = 1;
+    message.volume = 1;
     speechSynthesis.speak(message);
+}
+
+/* Sur certains navigateurs (Chrome notamment), la liste des voix se
+   charge de façon asynchrone après le chargement de la page. On force
+   un premier chargement pour que la meilleure voix soit disponible
+   dès le premier appel. */
+if (typeof speechSynthesis !== "undefined") {
+    speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 }
 
 async function verifierActivationBureaux() {

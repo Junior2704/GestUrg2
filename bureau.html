@@ -556,6 +556,7 @@ function initBureauxListener(){
       if(!bureauActuel && bureauSelect.options.length > 0){
         bureauActuel = bureauSelect.options[0].value;
         bureauLabel.innerText = bureauActuel;
+        notifierBureauParent();
       }
     });
 }
@@ -563,6 +564,7 @@ function initBureauxListener(){
 function changerBureau(val){
   bureauActuel = val;
   bureauLabel.innerText = val;
+  notifierBureauParent();
 }
 window.changerBureau=changerBureau;
 async function updateAttenteStats() {
@@ -677,6 +679,12 @@ window.addEventListener("message", (event) => {
         }
     }
 
+    // Le parent peut demander la valeur du bureau actuel à tout moment
+    // (par ex. juste après le chargement de l'iframe, avant tout changement).
+    if (event.data?.type === "GET_BUREAU_ACTUEL") {
+        notifierBureauParent();
+    }
+
 });
 
 function afficherBulle(message, typeBulle){
@@ -702,6 +710,25 @@ function afficherBulle(message, typeBulle){
   );
 
 }
+
+// Informe la page parente du bureau actuellement sélectionné dans l'iframe.
+// Appelée à chaque changement (sélection auto, changement manuel, entrée dans
+// le poste) afin que le parent ait toujours la valeur à jour, sans avoir à la
+// redemander.
+function notifierBureauParent(){
+  if(window.parent === window){
+    console.warn("notifierBureauParent appelée sans parent, valeur non transmise :", bureauActuel);
+    return;
+  }
+  window.parent.postMessage(
+    {
+      source: "bureau-actuel",
+      bureau: bureauActuel
+    },
+    ORIGINE_PARENT_BULLE
+  );
+}
+window.notifierBureauParent = notifierBureauParent;
 // ================= FILTRAGE DANS APPELER TICKET =================
 async function appelerTicket(){
  try {
@@ -866,6 +893,7 @@ function entrerPoste(){
   bureauActuel = bureauId;
   bureauLabel.innerText = bureauId;
   afficherBulle("Bureau "+bureauId+" activé", "success");
+  notifierBureauParent();
 
   showAccueil();
 }

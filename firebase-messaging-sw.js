@@ -16,23 +16,3 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-    console.log(
-        "[firebase-messaging-sw.js] Notification reçue :",
-        payload
-    );
-
-    const notificationTitle =
-        payload.notification?.title || "Nouvelle notification";
-
-    const notificationOptions = {
-        body: payload.notification?.body || "",
-        icon: "/logog2.png"
-    };
-
-    self.registration.showNotification(
-        notificationTitle,
-        notificationOptions
-    );
-});

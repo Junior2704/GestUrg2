@@ -476,10 +476,12 @@ const modal = document.getElementById("modal-no-access");
           if (modal) {
           modal.style.display = "flex";       
           console.warn("Accès refusé à", currentPage);
+          afficherBulle("Accès refusé à cette page", "warning");
           }
         }
       } else {
         // Document inexistant — redirection
+        afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.", "error");
         alert("Utilisateur non trouvé, veuillez vous reconnecter.");
         return;
       }
@@ -489,10 +491,16 @@ const modal = document.getElementById("modal-no-access");
           if (modal) 
           modal.style.display = "flex"; 
       console.error("Erreur chargement médecin :", error);
+      afficherBulle("Erreur lors du chargement du médecin", "error");
       
     }
   }
 });
+
+// Origine de la page parente qui affichera les bulles de notification.
+// ⚠️ Remplace "*" par l'origine exacte de ton site (ex: "https://tonsite.com") dès que possible,
+// c'est plus sûr que "*" (qui envoie le message à n'importe quelle origine).
+const ORIGINE_PARENT_BULLE = "*";
 
 let bureauActuel = null;
 
@@ -696,6 +704,7 @@ function afficherBulle(message, typeBulle){
 }
 // ================= FILTRAGE DANS APPELER TICKET =================
 async function appelerTicket(){
+ try {
 
   const snap = await getDocs(
     query(
@@ -707,6 +716,7 @@ async function appelerTicket(){
 
   if(snap.empty){
     afficher("Aucun patient en attente",false);
+    afficherBulle("Aucun patient en attente", "warning");
     return;
   }
 
@@ -751,6 +761,7 @@ async function appelerTicket(){
 
   if(!docChoisi){
     afficher("Aucun patient correspondant aux filtres",false);
+    afficherBulle("Aucun patient correspondant aux filtres", "warning");
     return;
   }
 
@@ -832,7 +843,13 @@ async function appelerTicket(){
 
 
   afficher("Ticket appelé",true);
+  afficherBulle("Ticket appelé avec succès ✅", "success");
 
+ } catch (error) {
+    console.error("Erreur dans appelerTicket :", error);
+    afficher("Erreur lors de l'appel du ticket", false);
+    afficherBulle("Erreur lors de l'appel du ticket", "error");
+ }
 }
 window.appelerTicket = appelerTicket;
 // ================= INITIALISATION =================
@@ -842,11 +859,13 @@ function entrerPoste(){
 
   if(!bureauId){
     loginStatus.innerText = "Veuillez sélectionner un bureau";
+    afficherBulle("Veuillez sélectionner un bureau", "warning");
     return;
   }
 
   bureauActuel = bureauId;
   bureauLabel.innerText = bureauId;
+  afficherBulle("Bureau "+bureauId+" activé", "success");
 
   showAccueil();
 }

@@ -39,6 +39,57 @@
     li {
       margin-bottom: 8px;
     }
+    #bureauxList {
+      list-style: none;
+      padding-left: 0;
+    }
+    .bureau-row {
+      background: #f7f9fc;
+      border: 1px solid #e1e6ee;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .bureau-row-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .bureau-row-top input[type="text"] {
+      margin: 0;
+      max-width: none;
+      flex: 1;
+      font-weight: 600;
+    }
+    .bureau-row-message {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .bureau-row-message input[type="text"] {
+      margin: 0;
+      max-width: none;
+      flex: 1;
+      min-width: 200px;
+    }
+    .bureau-row-message select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    .badge-importance {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-faible { background: #e5eaf1; color: #55627a; }
+    .badge-moyenne { background: #fff2d6; color: #9a6a00; }
+    .badge-forte { background: #fde2e1; color: #c62828; }
     .btn {
       padding: 6px 12px;
       border: none;
@@ -1119,17 +1170,57 @@ toggleBureaux.addEventListener("change", async () => {
 });
 
 loadModeSysteme();
+function escAttr(str) {
+  return String(str ?? "").replace(/"/g, "&quot;");
+}
+
 function renderBureaux() {
   bureauxListEl.innerHTML = "";
   Object.entries(bureaux).forEach(([nom, info]) => {
+    const message = info.message || "";
+    const importance = info.importance || "faible";
+
     const li = document.createElement("li");
+    li.className = "bureau-row";
     li.innerHTML = `
-      <input value="${nom.replace(/"/g,'&quot;')}" onchange="updateBureauName('${nom}', this.value)" />
-      <button class="btn btn-del" onclick="deleteBureau('${nom}')">❌</button>
+      <div class="bureau-row-top">
+        <input type="text" value="${escAttr(nom)}" onchange="updateBureauName('${escAttr(nom)}', this.value)" />
+        <button class="btn btn-del" onclick="deleteBureau('${escAttr(nom)}')">❌</button>
+      </div>
+      <div class="bureau-row-message">
+        <input type="text" placeholder="Message affiché sous le nom du guichet (optionnel)..."
+          value="${escAttr(message)}"
+          onchange="updateBureauMessage('${escAttr(nom)}', this.value)" />
+        <select onchange="updateBureauImportance('${escAttr(nom)}', this.value)">
+          <option value="faible" ${importance === "faible" ? "selected" : ""}>🔵 Peu important</option>
+          <option value="moyenne" ${importance === "moyenne" ? "selected" : ""}>🟠 Moyennement important</option>
+          <option value="forte" ${importance === "forte" ? "selected" : ""}>🔴 Très important</option>
+        </select>
+        <span class="badge-importance badge-${importance}">${
+          importance === "forte" ? "🔴 Très important" :
+          importance === "moyenne" ? "🟠 Moyennement important" :
+          "🔵 Peu important"
+        }</span>
+      </div>
     `;
     bureauxListEl.appendChild(li);
   });
 }
+
+// --- Modifier le message affiché sous le nom du guichet ---
+window.updateBureauMessage = async (nom, valeur) => {
+  if (!bureaux[nom]) return;
+  bureaux[nom].message = valeur.trim();
+  await saveBureaux();
+};
+
+// --- Modifier l'importance du message ---
+window.updateBureauImportance = async (nom, valeur) => {
+  if (!bureaux[nom]) return;
+  bureaux[nom].importance = valeur;
+  await saveBureaux();
+  renderBureaux();
+};
 
 // --- Ajouter un nouveau bureau ---
 window.openModalBureau = () => {
@@ -1147,7 +1238,7 @@ window.confirmModalBureau = async () => {
   if (!name) return;
 
   if (!bureaux[name]) {
-    bureaux[name] = { agentEmail: null, agentUid: null, connecte: false, connexionAt: null };
+    bureaux[name] = { agentEmail: null, agentUid: null, connecte: false, connexionAt: null, message: "", importance: "faible" };
   }
 
   await saveBureaux();
@@ -1423,4 +1514,3 @@ loadMessagesAccueil();
 
 </body>
 </html>
-

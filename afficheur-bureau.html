@@ -77,7 +77,57 @@
     color: #004b8d;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 30px;
+    margin-bottom: 8px;
+  }
+
+  /* ===== MESSAGE DU GUICHET (selon importance) ===== */
+  #guichetMessage {
+    display: none;
+    margin: 0 auto 30px;
+    max-width: 900px;
+  }
+
+  #guichetMessage.visible {
+    display: inline-block;
+  }
+
+  #guichetMessage .msg-texte {
+    display: inline-block;
+  }
+
+  /* Peu important : discret, gris, léger */
+  #guichetMessage.importance-faible .msg-texte {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  /* Moyennement important : bleu, un peu plus marqué, avec pastille */
+  #guichetMessage.importance-moyenne .msg-texte {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: #0078d4;
+    padding: 10px 22px;
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(0,120,212,0.35);
+  }
+
+  /* Très important : rouge, grand, mis en évidence, clignotant */
+  #guichetMessage.importance-forte .msg-texte {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #dc3545;
+    padding: 14px 30px;
+    border-radius: 16px;
+    box-shadow: 0 6px 22px rgba(220,53,69,0.45);
+    animation: clignoterMessage 1.4s ease-in-out infinite;
+  }
+
+  @keyframes clignoterMessage {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.03); }
   }
 
   #zoneAppel {
@@ -408,8 +458,9 @@
 
   <main>
     <div id="guichetNom">—</div>
+    <div id="guichetMessage"><span class="msg-texte"></span></div>
     <div id="zoneAppel">
-      <div id="labelAttente">Aucun ticket appelé pour le moment</div>
+      <div id="labelAttente">En attente d'appel…</div>
       <div id="labelAppel">Numéro appelé</div>
       <div id="numeroAppele">—</div>
     </div>
@@ -550,6 +601,7 @@
   // ===== GESTION DU GUICHET ACTUEL =====
   let guichetActuel = localStorage.getItem(STORAGE_KEY) || null;
   let unsubAppel = null;
+  let bureauxData = {}; // { nomBureau: {message, importance, ...} } issu de referentiels/bureau
 
   function appliquerAffichage() {
     const ecranFerme = document.getElementById("ecranFerme");
@@ -562,7 +614,33 @@
       guichetNomEl.textContent = guichetActuel;
     }
 
+    afficherMessageGuichet();
     surlignerBureauActif();
+  }
+
+  function afficherMessageGuichet() {
+    const messageEl = document.getElementById("guichetMessage");
+    const texteEl = messageEl.querySelector(".msg-texte");
+
+    messageEl.classList.remove("importance-faible", "importance-moyenne", "importance-forte", "visible");
+
+    if (!guichetActuel || guichetActuel === FERME) {
+      texteEl.textContent = "";
+      return;
+    }
+
+    const info = bureauxData[guichetActuel];
+    const message = info?.message ? String(info.message).trim() : "";
+
+    if (!message) {
+      texteEl.textContent = "";
+      return;
+    }
+
+    const importance = ["faible", "moyenne", "forte"].includes(info?.importance) ? info.importance : "faible";
+
+    texteEl.textContent = message;
+    messageEl.classList.add("importance-" + importance, "visible");
   }
 
   function ecouterAppelGuichet() {
@@ -639,10 +717,14 @@
       }
 
       const data = docSnap.data();
-      const ids = Object.keys(data).filter(k => typeof data[k] === "object");
+      const ids = Object.keys(data).filter(k => typeof data[k] === "object" && k !== "general");
+
+      bureauxData = {};
+      ids.forEach(id => { bureauxData[id] = data[id]; });
 
       if (ids.length === 0) {
         bureauListe.innerHTML = `<div style="color:#7a8ba3;">Aucun guichet configuré</div>`;
+        afficherMessageGuichet();
         return;
       }
 
@@ -656,6 +738,7 @@
       });
 
       surlignerBureauActif();
+      afficherMessageGuichet(); // reflète en direct un changement de message/importance
     }, (err) => {
       console.error("Erreur chargement guichets :", err);
       bureauListe.innerHTML = `<div style="color:#d32f2f;">Erreur de chargement des guichets</div>`;
@@ -697,7 +780,6 @@
         if (docSnap.exists()) {
           const data = docSnap.data();
 
-          
         } else {
           masquerLoader();
           alert("Utilisateur non trouvé, veuillez vous reconnecter.");

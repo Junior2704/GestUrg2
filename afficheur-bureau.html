@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="icon" type="image/jpeg" href="logog2.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Affichage Guichet - Urgences</title>
+  <link rel="preconnect" href="https://www.gstatic.com">
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #f0f7ff, #e6eef8);
+    color: #0b2240;
+    overflow: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    background: linear-gradient(90deg, #0b2240 0%, #004b8d 50%, #0078d4 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 14px;
+    z-index: 50;
+  }
+
+  header img {
+    height: 60px;
+    width: auto;
+    border-radius: 8px;
+    object-fit: contain;
+  }
+
+  header h1 {
+    flex: 1;
+    text-align: center;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  #datetime {
+    font-size: 1.15rem;
+    color: #e0ecff;
+    text-align: right;
+    min-width: 210px;
+  }
+
+  /* ===== ÉCRAN PRINCIPAL ===== */
+  main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 160px 40px 40px;
+    box-sizing: border-box;
+  }
+
+  #guichetNom {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #004b8d;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+  }
+
+  #zoneAppel {
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+    padding: 60px 90px;
+    min-width: 420px;
+  }
+
+  #zoneAppel.appel-actif {
+    background: linear-gradient(135deg, #003366, #0078d4);
+    box-shadow: 0 10px 50px rgba(0,90,180,0.45);
+    animation: pulseAppel 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulseAppel {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  #labelAttente {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #7a8ba3;
+  }
+
+  #labelAppel {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff;
+    opacity: 0.9;
+    margin-bottom: 10px;
+    display: none;
+  }
+
+  #numeroAppele {
+    font-size: 8rem;
+    font-weight: 900;
+    color: #dc3545;
+    line-height: 1;
+    display: none;
+  }
+
+  #zoneAppel.appel-actif #labelAppel,
+  #zoneAppel.appel-actif #numeroAppele {
+    display: block;
+  }
+
+  #zoneAppel.appel-actif #numeroAppele {
+    color: #ffffff;
+  }
+
+  #zoneAppel.appel-actif #labelAttente {
+    display: none;
+  }
+
+  @media (min-width: 1700px) {
+    #guichetNom { font-size: 3.8rem; }
+    #numeroAppele { font-size: 10rem; }
+  }
+
+  /* ===== ÉCRAN GUICHET FERMÉ ===== */
+  #ecranFerme {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #37424f, #1c2530);
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 40;
+  }
+
+  #ecranFerme .icone {
+    font-size: 5rem;
+    margin-bottom: 20px;
+  }
+
+  #ecranFerme h2 {
+    font-size: 2.8rem;
+    margin: 0 0 12px;
+    letter-spacing: 1px;
+  }
+
+  #ecranFerme p {
+    font-size: 1.3rem;
+    color: #c7d2e0;
+    margin: 0;
+  }
+
+  /* ===== BOUTON FLOTTANT DE RÉGLAGE ===== */
+  #controlBtn {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(11,34,64,0.85);
+    color: #fff;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  #controlBtn.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ===== PANNEAU DE SÉLECTION DU GUICHET ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 34, 64, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100001;
+  }
+
+  .modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px 40px;
+    max-width: 520px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .modal-box .modal-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+  }
+
+  .modal-box h2 {
+    color: #0b2240;
+    margin: 0 0 12px;
+    font-size: 1.5rem;
+  }
+
+  .modal-box p {
+    color: #364152;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    margin: 0 0 20px;
+  }
+
+  #panelBureau .modal-box {
+    max-width: 460px;
+  }
+
+  .bureau-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+  }
+
+  .bureau-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px solid #d6e0ee;
+    background: #f8fbff;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #0b2240;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+  }
+
+  .bureau-item:hover {
+    border-color: #0078d4;
+    background: #eaf3ff;
+  }
+
+  .bureau-item.actif {
+    border-color: #0078d4;
+    background: #dbeaff;
+    color: #004b8d;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* ===== BOUTONS COMMUNS ===== */
+  .btn-id {
+    all: unset;
+    background: transparent;
+    color: #000;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    box-sizing: border-box;
+  }
+
+  .btn-id:hover {
+    background: rgba(0, 120, 255, 0.12);
+    border-color: rgba(0, 120, 255, 0.6);
+    color: #0078ff;
+  }
+
+  .btn-id-c {
+    color: #d32f2f;
+    border-color: rgba(211,47,47,0.4);
+  }
+
+  .btn-id-c:hover {
+    background: rgba(255, 0, 0, 0.10);
+    border-color: rgba(255, 0, 0, 0.6);
+    color: #e60000;
+  }
+
+  .btn-id-v:hover {
+    background: rgba(0, 200, 80, 0.12);
+    border-color: rgba(0, 200, 80, 0.6);
+    color: #00b35a;
+  }
+
+  /* ===== LOADER ===== */
+  #loader-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 34, 64, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    z-index: 100000;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  #loader-overlay .spinner {
+    width: 56px;
+    height: 56px;
+    border: 6px solid rgba(255,255,255,0.25);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #2196f3, #1565c0); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+  <!-- ===== LOADER ===== -->
+  <div id="loader-overlay">
+    <div class="spinner"></div>
+    <div>Chargement en cours…</div>
+  </div>
+
+  <!-- ===== MODALE NON CONNECTÉ / REDIRECTION ===== -->
+  <div id="modal-redirect-login" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">🔒</div>
+      <h2>Session expirée</h2>
+      <p>Vous n'êtes pas connecté(e). Vous allez être redirigé(e) vers la page de connexion.</p>
+      <button id="btn-redirect-login" class="btn-id btn-id-v">✔ OK</button>
+    </div>
+  </div>
+
+  <!-- ===== MODALE ACCÈS REFUSÉ ===== -->
+  <div id="modal-no-access" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">🚫</div>
+      <h2>Accès refusé</h2>
+      <p>Votre compte n'a pas accès à cette page. Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+    </div>
+  </div>
+
+  <!-- ===== MODALE ERREUR ===== -->
+  <div id="modal-error" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h2>Erreur de chargement</h2>
+      <p>Une erreur est survenue lors du chargement. Veuillez recharger la page ou contacter un administrateur.</p>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN GUICHET FERMÉ ===== -->
+  <div id="ecranFerme">
+    <div class="icone">🚪</div>
+    <h2>Guichet actuellement fermé</h2>
+    <p>Merci de patienter, un agent va bientôt vous recevoir.</p>
+  </div>
+
+  <!-- ===== ÉCRAN PRINCIPAL ===== -->
+  <header>
+    <img src="logo.png" alt="Logo hôpital">
+    <h1>Service des Urgences</h1>
+    <div id="datetime"></div>
+  </header>
+
+  <main>
+    <div id="guichetNom">—</div>
+    <div id="zoneAppel">
+      <div id="labelAttente">En attente d'appel…</div>
+      <div id="labelAppel">Numéro appelé</div>
+      <div id="numeroAppele">—</div>
+    </div>
+  </main>
+
+  <!-- ===== BOUTON FLOTTANT ===== -->
+  <button id="controlBtn" title="Choisir le guichet">⚙️</button>
+
+  <!-- ===== PANNEAU CHOIX DU GUICHET ===== -->
+  <div id="panelBureau" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">🏢</div>
+      <h2>Choisir le guichet</h2>
+      <div id="bureauListe" class="bureau-liste">
+        <div style="color:#7a8ba3;">Chargement des guichets…</div>
+      </div>
+      <div class="panel-actions">
+        <button class="btn-id btn-id-c" onclick="fermerGuichet()">🚪 Fermer ce guichet</button>
+        <button class="btn-id" onclick="basculerPleinEcran()">⛶ Plein écran</button>
+        <button class="btn-id" onclick="fermerPanel()">✖ Fermer</button>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+  // --- IMPORTS FIREBASE v10 (modulaire) ---
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    doc,
+    getDoc,
+    onSnapshot,
+    query,
+    where
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // --- CONFIG FIREBASE ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const STORAGE_KEY = "afficheurBureau_guichetActuel";
+  const FERME = "__FERME__";
+
+  // --- LOADER ---
+  function afficherLoader() {
+    const el = document.getElementById("loader-overlay");
+    if (el) el.style.display = "flex";
+  }
+  function masquerLoader() {
+    const el = document.getElementById("loader-overlay");
+    if (el) el.style.display = "none";
+  }
+
+  // --- HORLOGE ---
+  function updateClock() {
+    const now = new Date();
+    const optsDate = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+    const dateStr = now.toLocaleDateString("fr-FR", optsDate);
+    const timeStr = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    document.getElementById("datetime").textContent = `${dateStr} – ${timeStr}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // --- PLEIN ÉCRAN ---
+  function basculerPleinEcran() {
+    const rootEl = document.documentElement;
+    if (!document.fullscreenElement) {
+      if (rootEl.requestFullscreen) rootEl.requestFullscreen();
+      else if (rootEl.webkitRequestFullscreen) rootEl.webkitRequestFullscreen();
+      else if (rootEl.msRequestFullscreen) rootEl.msRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+    }
+  }
+  window.basculerPleinEcran = basculerPleinEcran;
+
+  // Passage en plein écran au premier clic
+  function goFullScreenOnce() {
+    const rootEl = document.documentElement;
+    if (rootEl.requestFullscreen) rootEl.requestFullscreen().catch(() => {});
+    window.removeEventListener("click", goFullScreenOnce);
+  }
+  window.addEventListener("click", goFullScreenOnce);
+  window.addEventListener("touchstart", goFullScreenOnce);
+
+  // ===== BOUTON FLOTTANT (apparaît au mouvement de la souris) =====
+  const controlBtn = document.getElementById("controlBtn");
+  let hideTimer = null;
+
+  function afficherControlBtn() {
+    controlBtn.classList.add("visible");
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      controlBtn.classList.remove("visible");
+    }, 3000);
+  }
+
+  window.addEventListener("mousemove", afficherControlBtn);
+  window.addEventListener("touchstart", afficherControlBtn);
+
+  controlBtn.addEventListener("click", () => {
+    ouvrirPanel();
+    afficherControlBtn();
+  });
+
+  // ===== PANNEAU DE CHOIX DU GUICHET =====
+  const panelBureau = document.getElementById("panelBureau");
+  const bureauListe = document.getElementById("bureauListe");
+
+  function ouvrirPanel() {
+    panelBureau.style.display = "flex";
+    surlignerBureauActif();
+  }
+  function fermerPanel() {
+    panelBureau.style.display = "none";
+  }
+  window.fermerPanel = fermerPanel;
+
+  function surlignerBureauActif() {
+    document.querySelectorAll(".bureau-item").forEach(el => {
+      el.classList.toggle("actif", el.dataset.bureau === guichetActuel);
+    });
+  }
+
+  // ===== GESTION DU GUICHET ACTUEL =====
+  let guichetActuel = localStorage.getItem(STORAGE_KEY) || null;
+  let unsubAppel = null;
+
+  function appliquerAffichage() {
+    const ecranFerme = document.getElementById("ecranFerme");
+    const guichetNomEl = document.getElementById("guichetNom");
+
+    if (!guichetActuel || guichetActuel === FERME) {
+      ecranFerme.style.display = "flex";
+    } else {
+      ecranFerme.style.display = "none";
+      guichetNomEl.textContent = guichetActuel;
+    }
+
+    surlignerBureauActif();
+  }
+
+  function ecouterAppelGuichet() {
+    if (unsubAppel) {
+      unsubAppel();
+      unsubAppel = null;
+    }
+
+    const zoneAppel = document.getElementById("zoneAppel");
+    const numeroEl = document.getElementById("numeroAppele");
+
+    zoneAppel.classList.remove("appel-actif");
+    numeroEl.textContent = "—";
+
+    if (!guichetActuel || guichetActuel === FERME) return;
+
+    const q = query(
+      collection(db, "accueil-1"),
+      where("statut", "==", "appele"),
+      where("bureau", "==", guichetActuel)
+    );
+
+    unsubAppel = onSnapshot(q, (snap) => {
+      if (snap.empty) {
+        zoneAppel.classList.remove("appel-actif");
+        numeroEl.textContent = "—";
+        return;
+      }
+
+      // S'il y a plusieurs documents, on garde le plus récent
+      let docChoisi = snap.docs[0];
+      snap.docs.forEach(d => {
+        const dataD = d.data();
+        const dataChoisi = docChoisi.data();
+        const tD = dataD.afficheDepuis ? dataD.afficheDepuis.toMillis() : 0;
+        const tC = dataChoisi.afficheDepuis ? dataChoisi.afficheDepuis.toMillis() : 0;
+        if (tD > tC) docChoisi = d;
+      });
+
+      const data = docChoisi.data();
+      numeroEl.textContent = "N° " + data.numero;
+      zoneAppel.classList.add("appel-actif");
+    }, (err) => {
+      console.error("Erreur écoute appel guichet :", err);
+    });
+  }
+
+  function choisirGuichet(id) {
+    guichetActuel = id;
+    localStorage.setItem(STORAGE_KEY, id);
+    appliquerAffichage();
+    ecouterAppelGuichet();
+    fermerPanel();
+  }
+  window.choisirGuichet = choisirGuichet;
+
+  function fermerGuichet() {
+    guichetActuel = FERME;
+    localStorage.setItem(STORAGE_KEY, FERME);
+    appliquerAffichage();
+    ecouterAppelGuichet();
+    fermerPanel();
+  }
+  window.fermerGuichet = fermerGuichet;
+
+  // ===== LISTE DES GUICHETS (referentiels/bureau) =====
+  function initBureauxListener() {
+    onSnapshot(doc(db, "referentiels", "bureau"), (docSnap) => {
+      bureauListe.innerHTML = "";
+
+      if (!docSnap.exists()) {
+        bureauListe.innerHTML = `<div style="color:#7a8ba3;">Aucun guichet configuré</div>`;
+        return;
+      }
+
+      const data = docSnap.data();
+      const ids = Object.keys(data).filter(k => typeof data[k] === "object");
+
+      if (ids.length === 0) {
+        bureauListe.innerHTML = `<div style="color:#7a8ba3;">Aucun guichet configuré</div>`;
+        return;
+      }
+
+      ids.forEach(id => {
+        const item = document.createElement("div");
+        item.className = "bureau-item";
+        item.dataset.bureau = id;
+        item.textContent = id;
+        item.onclick = () => choisirGuichet(id);
+        bureauListe.appendChild(item);
+      });
+
+      surlignerBureauActif();
+    }, (err) => {
+      console.error("Erreur chargement guichets :", err);
+      bureauListe.innerHTML = `<div style="color:#d32f2f;">Erreur de chargement des guichets</div>`;
+    });
+  }
+
+  function initAfficheurBureau() {
+    initBureauxListener();
+    appliquerAffichage();
+    ecouterAppelGuichet();
+
+    // Si aucun guichet n'a encore été choisi sur cet écran, on ouvre le panneau
+    if (!guichetActuel) {
+      ouvrirPanel();
+    }
+  }
+
+  // ===== MODALE NON CONNECTÉ : redirection au clic sur OK =====
+  document.getElementById("btn-redirect-login")?.addEventListener("click", () => {
+    window.location.href = "connexion.html?page=afficheur-bureau";
+  });
+
+  // ===== AUTHENTIFICATION & VÉRIFICATION D'ACCÈS =====
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      masquerLoader();
+      const modal = document.getElementById("modal-redirect-login");
+      if (modal) {
+        modal.style.display = "flex";
+      } else {
+        window.location.href = "connexion.html?page=afficheur-bureau";
+      }
+    } else {
+      try {
+        afficherLoader();
+        const docRef = doc(db, "medecins", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // --- Vérification d'accès à la page ---
+          const pages = data.pages || {};
+          const currentPath = window.location.pathname;
+          const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+          if (!pages[currentPage]) {
+            masquerLoader();
+            const modal = document.getElementById("modal-no-access");
+            if (modal) {
+              modal.style.display = "flex";
+              console.warn("Accès refusé à", currentPage);
+            }
+            return;
+          }
+        } else {
+          masquerLoader();
+          alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+          return;
+        }
+
+        masquerLoader();
+        initAfficheurBureau();
+      } catch (error) {
+        masquerLoader();
+        const modal = document.getElementById("modal-error");
+        if (modal) modal.style.display = "flex";
+        console.error("Erreur chargement guichet :", error);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

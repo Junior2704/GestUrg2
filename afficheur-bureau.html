@@ -311,6 +311,46 @@
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .bureau-statut {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .bureau-statut::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .bureau-statut.ouvert {
+    color: #157a3d;
+    background: rgba(25, 170, 90, 0.12);
+  }
+
+  .bureau-statut.ouvert::before {
+    background: #22b25a;
+  }
+
+  .bureau-statut.ferme {
+    color: #b91c2c;
+    background: rgba(220, 53, 69, 0.12);
+  }
+
+  .bureau-statut.ferme::before {
+    background: #dc3545;
   }
 
   .bureau-item:hover {
@@ -625,6 +665,16 @@
     return !guichetActuel || statutDuGuichet(guichetActuel) === STATUT_FERME;
   }
 
+  // Crée le petit badge "Ouvert" / "Fermé" affiché à côté du nom d'un guichet
+  // dans la liste de sélection.
+  function creerBadgeStatut(id) {
+    const badge = document.createElement("span");
+    const ferme = statutDuGuichet(id) === STATUT_FERME;
+    badge.className = "bureau-statut " + (ferme ? "ferme" : "ouvert");
+    badge.textContent = ferme ? "Fermé" : "Ouvert";
+    return badge;
+  }
+
   function appliquerAffichage() {
     const ecranFerme = document.getElementById("ecranFerme");
     const guichetNomEl = document.getElementById("guichetNom");
@@ -791,8 +841,14 @@
         const item = document.createElement("div");
         item.className = "bureau-item";
         item.dataset.bureau = id;
-        item.textContent = id;
         item.onclick = () => choisirGuichet(id);
+
+        const nomEl = document.createElement("span");
+        nomEl.textContent = id;
+        item.appendChild(nomEl);
+
+        item.appendChild(creerBadgeStatut(id));
+
         bureauListe.appendChild(item);
       });
 

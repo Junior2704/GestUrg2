@@ -1742,7 +1742,10 @@ if (age > DUREE_AFFICHAGE) continue;
   });
 }
 
-
+/* Liste des voix françaises préférées, de la meilleure à la moins bonne.
+   On essaie chaque nom dans l'ordre et on prend la première trouvée
+   sur l'appareil. Si aucune ne correspond, on retombe sur n'importe
+   quelle voix dont la langue commence par "fr". */
 const VOIX_PREFEREES = [
     "Google français",              // Chrome/Chrome OS - très naturelle
     "Microsoft Denise Online (Natural) - French (France)", // Edge - voix neurale
@@ -1763,6 +1766,12 @@ function choisirMeilleureVoix() {
     return voix.find(v => v.lang && v.lang.toLowerCase().startsWith("fr"));
 }
 
+/* Anti-doublon : Edge (voix "Online/Natural") a un bug connu qui peut
+   déclencher la même lecture deux fois. On mémorise le dernier texte
+   lu et on ignore une demande identique si elle arrive trop vite après. */
+let dernierTexteParle = "";
+let dernierTempsParle = 0;
+
 function appelerPatient(numero, destination) {
 
     let texteDestination = "";
@@ -1780,10 +1789,21 @@ function appelerPatient(numero, destination) {
         texteDestination = "au, " + destination;
     }
 
-    const message = new SpeechSynthesisUtterance(
-        "Le numéro " + numero +
-        ", est attendu " + texteDestination
-    );
+    const texte = "Le numéro " + numero + ", est attendu " + texteDestination;
+
+    /* Anti-doublon : on ignore une lecture identique demandée
+       moins de 4 secondes après la précédente (bug Edge). */
+    const maintenant = Date.now();
+    if (texte === dernierTexteParle && (maintenant - dernierTempsParle) < 4000) {
+        return;
+    }
+    dernierTexteParle = texte;
+    dernierTempsParle = maintenant;
+
+    /* On vide toute lecture fantôme restée en file avant de parler. */
+    speechSynthesis.cancel();
+
+    const message = new SpeechSynthesisUtterance(texte);
 
     message.lang = "fr-FR";
     message.voice = choisirMeilleureVoix();

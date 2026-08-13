@@ -565,6 +565,9 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <!-- -------- STATS -------- -->
     <section class="view" id="view-stats">
       <div id="statsContent"></div>
+      <button id="activerNotifications">
+    🔔 Activer les notifications
+</button>
     </section>
 
     <!-- -------- SCAN -------- -->
@@ -873,7 +876,45 @@ function textBlock(val, emptyLabel="Non renseigné."){
     ? `<div class="txt-block">${escapeHtml(v)}</div>`
     : `<div class="txt-block empty">${emptyLabel}</div>`;
 }
+document
+    .getElementById("activerNotifications")
+    .addEventListener("click", async () => {
 
+        try {
+
+            const permission = await Notification.requestPermission();
+
+            console.log("Permission :", permission);
+
+            if (permission !== "granted") {
+                console.log("❌ Notifications refusées");
+                return;
+            }
+
+            const registration =
+                await navigator.serviceWorker.register(
+                    "/firebase-messaging-sw.js"
+                );
+
+            console.log("✅ Service Worker enregistré");
+
+            const token = await getToken(messaging, {
+                vapidKey: "TA_CLE_VAPID",
+                serviceWorkerRegistration: registration
+            });
+
+            console.log("🔥 TOKEN FCM :", token);
+
+        } catch (error) {
+
+            console.error(
+                "❌ Erreur notifications :",
+                error
+            );
+
+        }
+
+    });
 /* =========================================================
    ACTES & MÉDICAMENTS (lecture seule)
    Structure identique à l'app bureau : hospi.actes[] et hospi.meds[],

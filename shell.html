@@ -1946,7 +1946,60 @@ import {
         afficherBulle("Erreur de déconnexion" ,"error");
       });
   });
+async function envoyerNotification(titre, contenu) {
 
+    try {
+
+        const user = auth.currentUser;
+
+        if (!user) {
+            console.error("❌ Aucun utilisateur connecté");
+            return false;
+        }
+
+        const response = await fetch(
+            "https://firebase-notification-server.onrender.com/send-notification-user",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId: user.uid,
+                    title: titre,
+                    body: contenu
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(
+                "❌ Erreur serveur notification :",
+                result
+            );
+            return false;
+        }
+
+        console.log(
+            "🔔 Notification envoyée :",
+            result
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur envoi notification :",
+            error
+        );
+
+        return false;
+    }
+}
+window.envoyerNotification = envoyerNotification;
   // Auth state + récupération du médecin
  onAuthStateChanged(auth, async (user) => {
 if (user) {

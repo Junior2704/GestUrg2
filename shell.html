@@ -1950,6 +1950,31 @@ import {
         afficherBulle("Erreur de déconnexion" ,"error");
       });
   });
+  window.addEventListener("message", async (event) => {
+
+    // Sécurité : on n'accepte que les messages venant
+    // de notre propre site
+    if (event.origin !== "https://junior2704.github.io") {
+        return;
+    }
+
+    const data = event.data;
+
+    if (!data || data.type !== "NOTIFICATION") {
+        return;
+    }
+
+    console.log(
+        "🔔 Demande de notification reçue :",
+        data
+    );
+
+    await envoyerNotification(
+        data.titre,
+        data.contenu
+    );
+
+});
 async function envoyerNotification(titre, contenu) {
 
     try {

@@ -650,13 +650,23 @@ function applyParams(){
 }
 window.addEventListener("message", (event) => {
 
-    if (!event.data) return;
+    console.log("📨 MESSAGE REÇU DANS BUREAU :", event.data);
 
-    if (event.data.type === "APPELER_TICKET") {
+    if (event.data?.type === "APPELER_TICKET") {
 
-        console.log("📞 Raccourci clavier reçu");
+        console.log("📞 Demande APPELER_TICKET reçue !");
 
-        appelerTicket();
+        if (typeof appelerTicket === "function") {
+
+            console.log("✅ appelerTicket existe, exécution...");
+
+            appelerTicket();
+
+        } else {
+
+            console.error("❌ appelerTicket n'existe pas dans bureau.html");
+
+        }
     }
 
 });

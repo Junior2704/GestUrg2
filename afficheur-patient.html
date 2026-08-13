@@ -1679,15 +1679,21 @@ const vide = document.getElementById("aucunAppel");
 const panneau = document.getElementById("appels");
 
 let appelsConnus = new Set();
+let desabonnerAppels = null; // sécurité : évite d'empiler plusieurs écouteurs Firestore
 
 /* ===== ÉCOUTE DES APPELS ===== */
 function ecouterAppels() {
+  if (desabonnerAppels) {
+    desabonnerAppels();
+    desabonnerAppels = null;
+  }
+
   const q = query(
     collection(db, "accueil-1"),
     where("statut", "==", "appele")
   );
 
-  onSnapshot(q, async snapshot => {
+  desabonnerAppels = onSnapshot(q, async snapshot => {
 
     liste.innerHTML = "";
     let affiches = 0;
@@ -1710,6 +1716,7 @@ if (age > DUREE_AFFICHAGE) continue;
 
       const estNouveau = !appelsConnus.has(docSnap.id);
       appelsConnus.add(docSnap.id);
+      console.log("[DIAGNOSTIC]", new Date().toISOString(), "doc:", docSnap.id, "nouveau:", estNouveau);
 
       /* ===== Création DOM ===== */
       const el = document.createElement("div");
@@ -1729,6 +1736,7 @@ if (age > DUREE_AFFICHAGE) continue;
     const sonBulle = new Audio('notification-appel.mp3');
     sonBulle.volume = 0.5;
     sonBulle.currentTime = 0;
+    console.log("[DIAGNOSTIC] lecture du son de notification à", new Date().toISOString());
     sonBulle.play().catch(err => console.log("Erreur lecture son :", err));
 	setTimeout(() => {
     appelerPatient(d.numero, d.bureau);
@@ -1773,6 +1781,7 @@ let dernierTexteParle = "";
 let dernierTempsParle = 0;
 
 function appelerPatient(numero, destination) {
+    console.log("[DIAGNOSTIC] appelerPatient() appelée à", new Date().toISOString(), "pour le numéro", numero);
 
     let texteDestination = "";
 
@@ -2088,8 +2097,12 @@ setInterval(afficherCitation, 12000);
 
 // === INITIALISATION DES DONNÉES FIRESTORE (après vérification d'accès) ===
 let intervalCompteurs = null;
+let afficheurDejaInitialise = false; // évite les écouteurs Firestore en double
 
 function initAfficheur() {
+  if (afficheurDejaInitialise) return;
+  afficheurDejaInitialise = true;
+
   majCompteursDepuisHospitalisations();          // au chargement
   intervalCompteurs = setInterval(majCompteursDepuisHospitalisations, 60000); // toutes les minutes
 

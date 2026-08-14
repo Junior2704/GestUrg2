@@ -1,61 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <title>Mon compte</title>
   <link rel="icon" href="logo.png" type="image/jpeg" />
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // --- Configuration Firebase ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-      authDomain: "urgences-a8ed4.firebaseapp.com",
-      projectId: "urgences-a8ed4"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // --- Affiche les infos utilisateur ---
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      try {
-        const ref = doc(db, "medecins", user.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          const data = snap.data();
-          document.getElementById("nom").value = data.nom || "";
-          document.getElementById("email").value = data.email || "";
-          document.getElementById("type").value = data.type || "";
-          document.getElementById("specialite").value = data.specialite || "";
-          document.getElementById("lieu").value = data.lieu || "";
-              document.getElementById("connexion").value = data.préférenceConnexion || "";
-
-        } else {
-          document.getElementById("message").textContent = "Aucune donnée trouvée pour ce compte.";
-        }
-      } catch (err) {
-        document.getElementById("message").textContent = "Erreur de chargement : " + err.message;
-      }
-    });
-
-    // --- Bouton de déconnexion ---
-    window.seDeconnecter = async function () {
-      await signOut(auth);
-      window.location.href = "index.html";
-    };
-    document.getElementById("connexion").addEventListener("change", async (e) => {
-      const ref = doc(db, "medecins", user.uid);
-   await updateDoc(ref, {préférenceConnexion : e})
-});
-  </script>
 
   <style>
     body {
@@ -68,125 +17,450 @@
       background: #f4f4f4;
       margin: 0;
     }
+
     #accountBox {
       background: white;
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
       width: 400px;
       text-align: center;
     }
+
     h2 {
       margin-bottom: 20px;
     }
-    input {
+
+    input,
+    select {
       width: 100%;
-      padding: 10px;
+      box-sizing: border-box;
+      padding: 11px 14px;
       margin-bottom: 12px;
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 1rem;
+      font-family: inherit;
       background: #f9f9f9;
       color: #555;
     }
+
     input:disabled {
       background: #eee;
     }
+
+    /* =========================
+       SELECT
+       ========================= */
+
+    #connexion {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+
+      background-color: #f9f9f9;
+
+      /* Flèche */
+      background-image:
+        linear-gradient(45deg, transparent 50%, #0078d4 50%),
+        linear-gradient(135deg, #0078d4 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 12px) 50%;
+      background-size:
+        6px 6px,
+        6px 6px;
+      background-repeat: no-repeat;
+
+      border: 1px solid #ccc;
+      color: #333;
+      font-weight: 500;
+      cursor: pointer;
+
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+    }
+
+    #connexion:hover {
+      border-color: #0078d4;
+      background-color: #fff;
+    }
+
+    #connexion:focus {
+      outline: none;
+      border-color: #0078d4;
+      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
+      background-color: #fff;
+    }
+
+    #connexion option {
+      font-family: inherit;
+      font-size: 1rem;
+      color: #333;
+      background: white;
+    }
+
+    /* =========================
+       BOUTONS
+       ========================= */
+
     button {
       padding: 10px 20px;
       margin-top: 8px;
       border: none;
       border-radius: 8px;
       font-size: 1rem;
+      font-family: inherit;
       cursor: pointer;
       width: 100%;
+      transition:
+        background 0.2s ease,
+        transform 0.1s ease;
     }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
     #changeBtn {
       background: #0078d4;
       color: white;
     }
+
     #changeBtn:hover {
       background: #005ea1;
     }
+
     #logoutBtn {
       background: #d9534f;
       color: white;
     }
+
     #logoutBtn:hover {
       background: #c9302c;
     }
-      #retourBtn {
-    background: #6c757d; 
-    color: white;
-  }
 
-  #retourBtn:hover {
-    background: #5a6268; /* gris plus foncé au survol */
-  }
+    #retourBtn {
+      background: #6c757d;
+      color: white;
+    }
+
+    #retourBtn:hover {
+      background: #5a6268;
+    }
+
     #message {
       margin-top: 10px;
       color: red;
       font-weight: bold;
     }
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
 
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
+    /* =========================
+       SCROLLBAR
+       ========================= */
 
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
 
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
+    ::-webkit-scrollbar-track {
+      background: #eef3ff;
+      border-radius: 10px;
+    }
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2196f3, #1565c0);
+      border-radius: 10px;
+      border: 2px solid #eef3ff;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #42a5f5, #1976d2);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #2196f3 #eef3ff;
+    }
+  </style>
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    // =========================
+    // FIREBASE
+    // =========================
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKp5-7NN0yGyl0tNbDgD-BxucYdg8ArWo",
+      authDomain: "urgences-a8ed4.firebaseapp.com",
+      projectId: "urgences-a8ed4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+
+    // =========================
+    // CHARGEMENT DU COMPTE
+    // =========================
+
+    onAuthStateChanged(auth, async (user) => {
+
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+
+        const ref = doc(db, "medecins", user.uid);
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+
+          const data = snap.data();
+
+          document.getElementById("nom").value =
+            data.nom || "";
+
+          document.getElementById("email").value =
+            data.email || "";
+
+          document.getElementById("type").value =
+            data.type || "";
+
+          document.getElementById("specialite").value =
+            data.specialite || "";
+
+          document.getElementById("lieu").value =
+            data.lieu || "";
+
+          document.getElementById("connexion").value =
+            data.préférenceConnexion || "mdp";
+
+        } else {
+
+          document.getElementById("message").textContent =
+            "Aucune donnée trouvée pour ce compte.";
+
+        }
+
+      } catch (err) {
+
+        console.error(err);
+
+        document.getElementById("message").textContent =
+          "Erreur de chargement : " + err.message;
+      }
+
+    });
+
+
+    // =========================
+    // CHANGEMENT DE MÉTHODE
+    // =========================
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+      const selectConnexion =
+        document.getElementById("connexion");
+
+      selectConnexion.addEventListener("change", async (e) => {
+
+        const user = auth.currentUser;
+
+        if (!user) {
+          return;
+        }
+
+        try {
+
+          const ref = doc(db, "medecins", user.uid);
+
+          await updateDoc(ref, {
+            préférenceConnexion: e.target.value
+          });
+
+          console.log(
+            "Préférence de connexion enregistrée :",
+            e.target.value
+          );
+
+        } catch (err) {
+
+          console.error(
+            "Erreur lors de l'enregistrement :",
+            err
+          );
+
+          document.getElementById("message").textContent =
+            "Impossible d'enregistrer la préférence.";
+
+        }
+
+      });
+
+    });
+
+
+    // =========================
+    // DÉCONNEXION
+    // =========================
+
+    window.seDeconnecter = async function () {
+
+      try {
+
+        await signOut(auth);
+        window.location.href = "index.html";
+
+      } catch (err) {
+
+        console.error(
+          "Erreur de déconnexion :",
+          err
+        );
+
+      }
+
+    };
+
+  </script>
+
 </head>
 
+
 <body>
+
   <div id="accountBox">
+
     <h2>👤 Mon compte</h2>
 
+    <input
+      type="text"
+      id="nom"
+      placeholder="Nom complet"
+      disabled
+    />
 
-    <input type="text" id="nom" placeholder="Nom complet" disabled />
-    <input type="email" id="email" placeholder="Email" disabled />
-    <input type="text" id="type" placeholder="Type d'utilisateur" disabled />
-    <input type="text" id="specialite" placeholder="Spécialité" disabled />
-    <input type="text" id="lieu" placeholder="Lieu d'exercice" disabled />
-<p style="background:#fff3cd; color:#856404; padding:10px; border-radius:8px; border:1px solid #ffeeba; margin-bottom:15px;">
-  ℹ️ Pour modifier ces informations, merci de contacter un administrateur.
-</p>
-<label for="connexion">Méthode de connexion favorite :</label>
-<select id="connexion" class="text">
-  <option value="mdp">Mot de passe</option>
-  <option value="badge">Badge</option>
+    <input
+      type="email"
+      id="email"
+      placeholder="Email"
+      disabled
+    />
 
-</select>
-    <button id="changeBtn" onclick="window.location.href='changer_mot_passe.html'">
+    <input
+      type="text"
+      id="type"
+      placeholder="Type d'utilisateur"
+      disabled
+    />
+
+    <input
+      type="text"
+      id="specialite"
+      placeholder="Spécialité"
+      disabled
+    />
+
+    <input
+      type="text"
+      id="lieu"
+      placeholder="Lieu d'exercice"
+      disabled
+    />
+
+
+    <p style="
+      background:#fff3cd;
+      color:#856404;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #ffeeba;
+      margin-bottom:15px;
+    ">
+      ℹ️ Pour modifier ces informations,
+      merci de contacter un administrateur.
+    </p>
+
+
+    <label
+      for="connexion"
+      style="
+        display:block;
+        text-align:left;
+        margin-bottom:6px;
+        font-weight:600;
+        color:#444;
+      "
+    >
+      Méthode de connexion favorite :
+    </label>
+
+    <select id="connexion">
+
+      <option value="mdp">
+        🔑 Mot de passe
+      </option>
+
+      <option value="badge">
+        💳 Badge
+      </option>
+
+    </select>
+
+
+    <button
+      id="changeBtn"
+      onclick="window.location.href='changer_mot_passe.html'"
+    >
       🔑 Changer mon mot de passe
     </button>
-    
-    <button id="logoutBtn" onclick="seDeconnecter()">
+
+
+    <button
+      id="logoutBtn"
+      onclick="seDeconnecter()"
+    >
       🚪 Déconnexion
     </button>
-    <button id="retourBtn" onclick="window.history.back()">
+
+
+    <button
+      id="retourBtn"
+      onclick="window.history.back()"
+    >
       ⬅️ Retour
     </button>
 
+
     <div id="message"></div>
+
   </div>
+
 </body>
+
 </html>

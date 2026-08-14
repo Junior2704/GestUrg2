@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Messagerie - GestUrg2 (mobile)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    box-sizing:border-box;
+    font-family:Inter,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    margin:0;
+    height:100%;
+    background:#f4f7fa;
+    color:#222;
+    overscroll-behavior:none;
+    overflow:hidden;
+}
+
+
+/* CONTENEUR
+   Sur mobile, sidebar (liste) et chat sont deux panneaux plein écran
+   empilés dans un rail que l'on translate horizontalement plutôt que
+   de les afficher côte à côte comme sur desktop. */
+
+#app{
+    height:100vh;
+    height:100dvh;
+    width:200%;
+    display:flex;
+    transform:translateX(0);
+    transition:transform .28s cubic-bezier(.32,.72,0,1);
+    overflow:hidden;
+}
+
+#app.vue-chat{
+    transform:translateX(-50%);
+}
+
+
+/* LISTE DISCUSSIONS */
+
+#sidebar{
+
+    width:50%;
+    height:100%;
+    background:white;
+    border-right:1px solid #ddd;
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+}
+
+
+.header{
+
+    padding:16px 18px;
+    font-size:20px;
+    font-weight:600;
+    color:#0078d4;
+    border-bottom:1px solid #eee;
+    flex-shrink:0;
+
+}
+
+
+#search{
+
+    margin:12px 15px;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    font-size:16px;
+    flex-shrink:0;
+}
+
+
+
+/* conversations */
+
+#conversations{
+
+    overflow:auto;
+}
+
+
+.conversation{
+
+    padding:14px 15px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    cursor:pointer;
+    border-bottom:1px solid #eee;
+    -webkit-user-select:none;
+    user-select:none;
+}
+
+
+.conversation:active{
+
+    background:#f0f7ff;
+
+}
+
+
+.conversation.non-lue{
+
+    background:#eaf4ff;
+    border-left:4px solid #0078d4;
+
+}
+
+
+.conversation.non-lue .conv-title{
+
+    font-weight:700;
+    color:#0078d4;
+
+}
+
+
+.conversation.non-lue .conv-last{
+
+    color:#333;
+    font-weight:600;
+
+}
+
+
+.avatar{
+
+    width:45px;
+    height:45px;
+    border-radius:50%;
+    background:#0078d4;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+
+}
+
+
+.conv-text{
+
+    flex:1;
+
+}
+
+
+.conv-title{
+
+    font-weight:600;
+
+}
+
+
+.conv-last{
+
+    font-size:13px;
+    color:#777;
+    margin-top:4px;
+
+}
+
+
+.badge{
+
+    background:#d93025;
+    color:white;
+    border-radius:20px;
+    padding:2px 8px;
+    font-size:12px;
+    align-self:center;
+    height:fit-content;
+
+}
+
+
+/* CHAT */
+
+
+#chat{
+
+    width:50%;
+    height:100%;
+    background:#f4f7fa;
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+}
+
+
+#chat-header{
+
+    min-height:56px;
+    background:white;
+    border-bottom:1px solid #ddd;
+    padding:12px 16px;
+    font-size:16px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-shrink:0;
+
+}
+
+
+#btn-retour-conversations{
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    flex-shrink:0;
+    border:none;
+    background:none;
+    color:#0078d4;
+    font-size:22px;
+    padding:0;
+    cursor:pointer;
+
+}
+
+
+#chat-header-titre{
+
+    flex:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+
+}
+
+
+#messages{
+
+    flex:1;
+    padding:16px;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+
+}
+
+
+
+.message{
+
+    max-width:82%;
+    margin-bottom:12px;
+    padding:10px 14px;
+    border-radius:15px;
+    background:white;
+    box-shadow:0 2px 8px #0001;
+    font-size:15px;
+
+}
+
+
+.message.mine{
+
+    margin-left:auto;
+    background:#0078d4;
+    color:white;
+
+}
+
+
+
+.author{
+
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:5px;
+
+}
+
+
+.date{
+
+    font-size:11px;
+    opacity:.7;
+    margin-top:5px;
+
+}
+
+
+
+
+#input-zone{
+
+    background:white;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    display:flex;
+    gap:10px;
+    border-top:1px solid #ddd;
+    flex-shrink:0;
+
+}
+
+
+#message-input{
+
+    flex:1;
+    padding:12px 14px;
+    border-radius:20px;
+    border:1px solid #ccc;
+    font-size:16px;
+
+}
+
+
+button{
+
+    border:none;
+    background:#0078d4;
+    color:white;
+    padding:12px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+
+}
+
+
+
+.empty{
+
+    margin:auto;
+    color:#777;
+
+}
+
+
+/* SONDAGES */
+
+.sondage{
+
+    margin-top:8px;
+
+}
+
+.sondage-question{
+
+    font-weight:600;
+    margin-bottom:8px;
+
+}
+
+.sondage-option{
+
+    display:block;
+    width:100%;
+    text-align:left;
+    background:#f0f7ff;
+    color:#0078d4;
+    border:1px solid #cfe4fb;
+    border-radius:10px;
+    padding:8px 12px;
+    margin-bottom:6px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    font-size:14px;
+
+}
+
+.sondage-option:hover{
+
+    background:#e2f0ff;
+
+}
+
+.sondage-option.voted-option{
+
+    cursor:default;
+
+}
+
+.sondage-bar{
+
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    background:#cfe4fb;
+    z-index:0;
+
+}
+
+.sondage-option-label{
+
+    position:relative;
+    z-index:1;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+
+}
+
+.sondage-note{
+
+    font-size:12px;
+    opacity:.7;
+    margin-top:4px;
+
+}
+
+
+.sondage-tag{
+
+    font-size:11px;
+    font-weight:500;
+    background:#eef4fb;
+    color:#0078d4;
+    padding:2px 8px;
+    border-radius:8px;
+    margin-left:8px;
+    vertical-align:middle;
+
+}
+
+
+.sondage-checkbox-ligne{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#f0f7ff;
+    border:1px solid #cfe4fb;
+    border-radius:10px;
+    padding:8px 12px;
+    margin-bottom:6px;
+    font-size:14px;
+    cursor:pointer;
+
+}
+
+
+.sondage-checkbox-ligne input{
+
+    width:auto;
+
+}
+
+
+.sondage-valider{
+
+    margin-top:4px;
+
+}
+
+
+.zone-reponse{
+
+    margin-top:10px;
+
+}
+
+
+.reponse-donnee{
+
+    background:#f0f7ff;
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:13px;
+    margin-bottom:6px;
+
+}
+
+
+.reponse-label{
+
+    font-weight:600;
+    color:#0078d4;
+    margin-right:4px;
+
+}
+
+
+.reponse-note{
+
+    font-size:12px;
+    opacity:.7;
+
+}
+
+
+.lien-reponse{
+
+    background:none;
+    border:none;
+    color:#0078d4;
+    font-size:13px;
+    font-weight:600;
+    padding:0;
+    cursor:pointer;
+    text-decoration:underline;
+
+}
+
+
+.formulaire-reponse{
+
+    margin-top:8px;
+
+}
+
+
+.reponse-textarea{
+
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    resize:vertical;
+    min-height:70px;
+    font-family:Inter,sans-serif;
+    font-size:16px;
+
+}
+
+
+.compteur-caracteres{
+
+    font-size:11px;
+    color:#999;
+    text-align:right;
+    margin-top:2px;
+
+}
+
+
+.formulaire-reponse button{
+
+    margin-top:6px;
+    padding:8px 16px;
+    font-size:13px;
+
+}
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eef3ff;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2196f3, #1565c0);
+    border-radius: 10px;
+    border: 2px solid #eef3ff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #42a5f5, #1976d2);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2196f3 #eef3ff;
+}
+.btn-id {
+  all: unset;
+  background: transparent;
+  color: #000;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(2px);
+}
+
+.btn-id:hover {
+  background: rgba(0, 120, 255, 0.12);
+  border-color: rgba(0, 120, 255, 0.6);
+  color: #0078ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+}
+
+.btn-id:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+}
+
+.btn-id:focus {
+  outline: none;
+  border-color: rgba(0, 120, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+}
+.btn-id-c:hover {
+  background: rgba(255, 0, 0, 0.10);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #e60000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+}
+
+.btn-id-c:focus {
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+.btn-id-v:hover {
+  background: rgba(0, 200, 80, 0.12);
+  border-color: rgba(0, 200, 80, 0.6);
+  color: #00b35a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+}
+
+.btn-id-v:focus {
+  border-color: rgba(0, 200, 80, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+}
+</style>
+
+</head>
+
+
+<body>
+
+
+<div id="app">
+
+
+<div id="sidebar">
+
+<div class="header">
+💬 Messagerie
+</div>
+
+
+<input id="search" placeholder="Rechercher...">
+
+
+<div id="conversations"></div>
+
+
+</div>
+
+
+
+<div id="chat">
+
+
+<div id="chat-header">
+
+<button id="btn-retour-conversations" onclick="retourListeConversations()" aria-label="Retour">‹</button>
+
+<div id="chat-header-titre">
+Sélectionnez une discussion
+</div>
+
+</div>
+
+
+<div id="messages">
+
+<div class="empty">
+Aucune conversation sélectionnée
+</div>
+
+</div>
+
+
+<!--<div id="input-zone">
+
+<input id="message-input"
+placeholder="Votre message...">
+
+<button onclick="envoyerMessage()">
+Envoyer
+</button>
+
+</div>
+-->
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+<script type="module">
+
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+import {
+
+getFirestore,
+doc,
+getDoc,
+collection,
+query,
+where,
+onSnapshot,
+addDoc,
+updateDoc,
+serverTimestamp,
+arrayUnion,
+increment,
+orderBy
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+import {
+
+getAuth,
+onAuthStateChanged
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4",
+  storageBucket: "urgences-a8ed4.firebasestorage.app",
+  messagingSenderId: "392921498200",
+  appId: "1:392921498200:web:7ccce767332c67c697c02d",
+  measurementId: "G-C74MK2KYDL"
+};
+
+
+
+const app=initializeApp(firebaseConfig);
+
+const db=getFirestore(app);
+
+const auth=getAuth(app);
+
+
+
+let utilisateur=null;
+let utilisateurNom="";
+
+let conversationActive=null;
+let participantsActifs=[];
+
+
+/* à adapter : origine exacte de la page parente
+   qui iframe messagerie.html (remplacer "*" par
+   ex. "https://mon-domaine.fr" en production) */
+
+const ORIGINE_PARENT="*";
+
+
+
+
+
+/*
+===========================
+CONNEXION
+===========================
+*/
+
+
+onAuthStateChanged(auth,async(user)=>{
+
+
+if(!user)
+return;
+
+
+utilisateur=user;
+
+
+const snap=
+await getDoc(
+doc(db,"medecins",user.uid)
+);
+
+
+if(snap.exists()){
+
+const data=snap.data();
+
+utilisateurNom=
+data.nom || "Utilisateur";
+
+
+}
+
+
+chargerConversations();
+
+
+});
+
+
+
+
+
+/*
+===========================
+LISTE CONVERSATIONS
+===========================
+*/
+
+
+function chargerConversations(){
+
+
+const q=query(
+
+collection(db,"messageries"),
+
+where(
+"participants",
+"array-contains",
+utilisateur.uid
+)
+
+);
+
+
+
+onSnapshot(q,(snap)=>{
+
+
+const zone=
+document.getElementById("conversations");
+
+
+zone.innerHTML="";
+
+
+let totalNonLus=0;
+
+
+snap.forEach(docSnap=>{
+
+
+const c=docSnap.data();
+
+
+const nonLus=
+(c.nonLus && c.nonLus[utilisateur.uid]) ?
+c.nonLus[utilisateur.uid] :
+0;
+
+
+totalNonLus+=nonLus;
+
+
+const div=
+document.createElement("div");
+
+
+div.className=
+"conversation"+
+(nonLus>0 ? " non-lue" : "");
+
+
+div.innerHTML=`
+
+<div class="avatar">
+${c.icon || "💬"}
+</div>
+
+<div class="conv-text">
+
+<div class="conv-title">
+${c.titre || "Discussion"}
+</div>
+
+
+<div class="conv-last">
+${c.lastMessage || ""}
+</div>
+
+
+</div>
+
+${nonLus>0 ?
+`<div class="badge">${nonLus}</div>` :
+""}
+
+`;
+
+
+
+div.onclick=()=>ouvrirConversation(
+docSnap.id,
+c
+);
+
+
+
+zone.appendChild(div);
+
+
+
+});
+
+
+envoyerNonLusAuParent(totalNonLus);
+
+
+});
+
+
+}
+
+
+
+function envoyerNonLusAuParent(total){
+
+
+try{
+
+window.parent.postMessage(
+
+{
+
+source:"messagerie",
+type:"non-lus",
+nonLus:total
+
+},
+
+ORIGINE_PARENT
+
+);
+
+}catch(e){
+
+/* pas de fenêtre parente, ou postMessage indisponible :
+   on ignore silencieusement */
+
+}
+
+
+}
+
+
+
+
+
+
+/*
+===========================
+OUVERTURE CHAT
+===========================
+*/
+
+
+function ouvrirConversation(id,data){
+
+
+conversationActive=id;
+
+participantsActifs=
+data.participants || [];
+
+
+document.getElementById("chat-header-titre")
+.innerHTML=
+`${data.icon || "💬"} ${data.titre}`;
+
+
+/* on passe à la vue "chat" (glissement plein écran sur mobile) */
+
+document.getElementById("app")
+.classList.add("vue-chat");
+
+
+/* on marque la conversation comme lue dès l'ouverture */
+
+updateDoc(
+
+doc(db,"messageries",id),
+
+{
+
+[`nonLus.${utilisateur.uid}`]:
+0
+
+}
+
+).catch(()=>{});
+
+
+chargerMessages();
+
+
+
+}
+
+
+
+window.retourListeConversations=()=>{
+
+document.getElementById("app")
+.classList.remove("vue-chat");
+
+};
+
+
+
+
+
+function chargerMessages(){
+
+
+const zone=
+document.getElementById("messages");
+
+
+zone.innerHTML="";
+
+
+const q=query(
+
+collection(
+db,
+"messageries",
+conversationActive,
+"messages"
+),
+
+orderBy("date","asc")
+
+);
+
+
+
+onSnapshot(q,async(snap)=>{
+
+
+zone.innerHTML="";
+
+
+/* on repère d'abord les messages de type "sondage",
+   ou portant une demande de réponse, pour charger les
+   documents correspondants */
+
+const idsSondages=[];
+const idsDemandesReponse=[];
+
+snap.forEach(m=>{
+
+const msg=m.data();
+
+if(msg.type==="sondage" && msg.sondageId){
+
+idsSondages.push(msg.sondageId);
+
+}
+
+if(msg.demandeReponseId){
+
+idsDemandesReponse.push(msg.demandeReponseId);
+
+}
+
+});
+
+
+const sondagesData={};
+
+await Promise.all(
+
+idsSondages.map(async(id)=>{
+
+const s=
+await getDoc(
+doc(db,"sondages",id)
+);
+
+if(s.exists()){
+
+sondagesData[id]=s.data();
+
+}
+
+})
+
+);
+
+
+const demandesReponseData={};
+
+await Promise.all(
+
+idsDemandesReponse.map(async(id)=>{
+
+const d=
+await getDoc(
+doc(db,"demandes-reponse",id)
+);
+
+if(d.exists()){
+
+demandesReponseData[id]=d.data();
+
+}
+
+})
+
+);
+
+
+
+snap.forEach(m=>{
+
+
+const msg=m.data();
+
+
+const div=
+document.createElement("div");
+
+
+div.className=
+"message "+
+(msg.auteur==utilisateur.uid?"mine":"");
+
+
+let contenuHTML="";
+
+
+if(
+msg.type==="sondage" &&
+msg.sondageId &&
+sondagesData[msg.sondageId]
+){
+
+contenuHTML=
+creerSondageHTML(
+sondagesData[msg.sondageId],
+msg.sondageId
+);
+
+}else{
+
+contenuHTML=
+`<div>${msg.texte || ""}</div>`;
+
+}
+
+
+
+let zoneReponseHTML="";
+
+if(
+msg.demandeReponseId &&
+demandesReponseData[msg.demandeReponseId]
+){
+
+zoneReponseHTML=
+creerZoneReponseHTML(
+demandesReponseData[msg.demandeReponseId],
+msg.demandeReponseId
+);
+
+}
+
+
+
+div.innerHTML=`
+
+<div class="author">
+
+${msg.auteurNom || ""}
+
+</div>
+
+
+${contenuHTML}
+
+${zoneReponseHTML}
+
+
+<div class="date">
+
+${msg.date?.toDate?
+msg.date.toDate().toLocaleString():
+""}
+
+</div>
+
+`;
+
+
+
+zone.appendChild(div);
+
+
+
+if(
+msg.luPar &&
+!msg.luPar.includes(utilisateur.uid)
+){
+
+
+updateDoc(
+doc(
+db,
+"messageries",
+conversationActive,
+"messages",
+m.id
+),
+{
+
+luPar:
+arrayUnion(utilisateur.uid)
+
+}
+
+);
+
+
+if(msg.diffusionId){
+
+updateDoc(
+
+doc(db,"diffusions",msg.diffusionId),
+
+{
+
+[`statuts.${utilisateur.uid}.lu`]:
+true,
+
+[`statuts.${utilisateur.uid}.luLe`]:
+serverTimestamp()
+
+}
+
+).catch(()=>{});
+
+}
+
+
+if(msg.type==="sondage" && msg.sondageId){
+
+updateDoc(
+
+doc(db,"sondages",msg.sondageId),
+
+{
+
+[`statuts.${utilisateur.uid}.lu`]:
+true,
+
+[`statuts.${utilisateur.uid}.luLe`]:
+serverTimestamp()
+
+}
+
+).catch(()=>{});
+
+}
+
+
+}
+
+
+
+});
+
+
+zone.scrollTop=
+zone.scrollHeight;
+
+
+
+});
+
+
+}
+
+
+
+
+
+/*
+===========================
+AFFICHAGE / VOTE SONDAGES
+===========================
+*/
+
+
+function optionEstChoisie(monChoix,optionIndex){
+
+if(Array.isArray(monChoix)){
+return monChoix.includes(optionIndex);
+}
+
+return monChoix===optionIndex;
+
+}
+
+
+
+function nbVoixPourOption(reponses,optionIndex){
+
+return Object.values(reponses)
+.filter(v=>{
+
+if(Array.isArray(v)){
+return v.includes(optionIndex);
+}
+
+return v===optionIndex;
+
+}).length;
+
+}
+
+
+
+function creerOptionSondageHTML(sondageId,optionIndex,optionTexte,dejaVote,monChoix,pourcentage,nbVoix){
+
+
+if(dejaVote){
+
+const estMonChoix=
+optionEstChoisie(monChoix,optionIndex);
+
+return `
+
+<div class="sondage-option voted-option">
+
+<div class="sondage-bar" style="width:${pourcentage}%;"></div>
+
+<div class="sondage-option-label">
+<span>${optionTexte}${estMonChoix?" ✓":""}</span>
+<span>${pourcentage}% (${nbVoix})</span>
+</div>
+
+</div>
+
+`;
+
+}
+
+
+return `
+
+<button type="button" class="sondage-option"
+onclick="voterSondage('${sondageId}',${optionIndex})">
+
+${optionTexte}
+
+</button>
+
+`;
+
+
+}
+
+
+
+function creerSondageHTML(sondage,sondageId){
+
+
+const reponses=
+sondage.reponses || {};
+
+
+const estMultiple=
+sondage.type==="multiple";
+
+
+const dejaVote=
+!!utilisateur &&
+Object.prototype.hasOwnProperty.call(
+reponses,
+utilisateur.uid
+);
+
+
+const monChoix=
+dejaVote ? reponses[utilisateur.uid] : null;
+
+
+const totalReponses=
+Object.keys(reponses).length;
+
+
+let optionsHTML;
+
+
+if(dejaVote || !estMultiple){
+
+/* résultats déjà votés (simple ou multiple),
+   ou vote à choix simple (clic direct) */
+
+optionsHTML=
+(sondage.options || [])
+.map((opt,i)=>{
+
+const nbVoix=
+nbVoixPourOption(reponses,i);
+
+const pourcentage=
+totalReponses>0 ?
+Math.round((nbVoix/totalReponses)*100) :
+0;
+
+return creerOptionSondageHTML(
+sondageId,
+i,
+opt,
+dejaVote,
+monChoix,
+pourcentage,
+nbVoix
+);
+
+})
+.join("");
+
+
+}else{
+
+/* vote à choix multiple, pas encore répondu :
+   cases à cocher + bouton de validation */
+
+const casesHTML=
+(sondage.options || [])
+.map((opt,i)=>`
+
+<label class="sondage-checkbox-ligne">
+<input type="checkbox" class="sondage-checkbox" value="${i}">
+<span>${opt}</span>
+</label>
+
+`)
+.join("");
+
+
+optionsHTML=`
+
+<div class="sondage-choix-multiple">
+
+${casesHTML}
+
+<button type="button" class="sondage-valider"
+onclick="voterSondageMultiple('${sondageId}')">
+
+Valider mes réponses
+
+</button>
+
+</div>
+
+`;
+
+
+}
+
+
+
+return `
+
+<div class="sondage" data-sondage-id="${sondageId}">
+
+<div class="sondage-question">
+📊 ${sondage.question || ""}
+${estMultiple?
+`<span class="sondage-tag">choix multiple</span>`:
+""}
+</div>
+
+${optionsHTML}
+
+<div class="sondage-note">
+${dejaVote ?
+"Vous avez déjà répondu à ce sondage." :
+(estMultiple ?
+"Cochez une ou plusieurs options puis validez." :
+"Cliquez sur une option pour répondre.")}
+</div>
+
+</div>
+
+`;
+
+
+}
+
+
+
+window.voterSondage=async(sondageId,optionIndex)=>{
+
+
+if(!utilisateur)
+return;
+
+
+await updateDoc(
+
+doc(db,"sondages",sondageId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+optionIndex
+
+}
+
+);
+
+
+await rafraichirSondage(sondageId);
+
+
+};
+
+
+
+window.voterSondageMultiple=async(sondageId)=>{
+
+
+if(!utilisateur)
+return;
+
+
+const container=
+document.querySelector(
+`.sondage[data-sondage-id="${sondageId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const indices=
+Array.from(
+container.querySelectorAll(".sondage-checkbox:checked")
+)
+.map(c=>parseInt(c.value,10));
+
+
+if(indices.length===0){
+alert("Veuillez cocher au moins une option.");
+return;
+}
+
+
+await updateDoc(
+
+doc(db,"sondages",sondageId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+indices
+
+}
+
+);
+
+
+await rafraichirSondage(sondageId);
+
+
+};
+
+
+
+async function rafraichirSondage(sondageId){
+
+
+const snap=
+await getDoc(
+doc(db,"sondages",sondageId)
+);
+
+
+if(!snap.exists())
+return;
+
+
+const sondage=
+snap.data();
+
+
+document
+.querySelectorAll(`[data-sondage-id="${sondageId}"]`)
+.forEach(el=>{
+
+el.outerHTML=
+creerSondageHTML(sondage,sondageId);
+
+});
+
+
+}
+
+
+
+/*
+===========================
+DEMANDES DE RÉPONSE
+===========================
+*/
+
+
+function echapperHTML(texte){
+
+
+const div=
+document.createElement("div");
+
+div.textContent=
+texte || "";
+
+return div.innerHTML;
+
+
+}
+
+
+
+function creerZoneReponseHTML(demande,demandeId){
+
+
+const reponses=
+demande.reponses || {};
+
+
+const dejaRepondu=
+!!utilisateur &&
+Object.prototype.hasOwnProperty.call(
+reponses,
+utilisateur.uid
+);
+
+
+const monTexte=
+dejaRepondu ?
+(reponses[utilisateur.uid].texte || "") :
+"";
+
+
+const maxAttr=
+demande.maxCaracteres ?
+`maxlength="${demande.maxCaracteres}"` :
+"";
+
+
+const compteurHTML=
+demande.maxCaracteres ?
+`<div class="compteur-caracteres" data-max="${demande.maxCaracteres}">${monTexte.length}/${demande.maxCaracteres}</div>` :
+"";
+
+
+const formulaireHTML=`
+
+<div class="formulaire-reponse" style="display:none;">
+
+<textarea class="reponse-textarea" ${maxAttr}
+oninput="miseAJourCompteurReponse(this)">${echapperHTML(monTexte)}</textarea>
+
+${compteurHTML}
+
+<button type="button"
+onclick="envoyerReponse('${demandeId}')">
+Envoyer la réponse
+</button>
+
+</div>
+
+`;
+
+
+
+if(dejaRepondu){
+
+
+const peutModifier=
+demande.modifiable===true;
+
+
+return `
+
+<div class="zone-reponse" data-demande-id="${demandeId}">
+
+<div class="reponse-donnee">
+<span class="reponse-label">Votre réponse :</span>
+${echapperHTML(monTexte)}
+</div>
+
+${peutModifier ?
+`<button type="button" class="lien-reponse"
+onclick="basculerFormulaireReponse('${demandeId}')">
+Modifier ma réponse
+</button>` :
+`<div class="reponse-note">Réponse enregistrée, non modifiable.</div>`
+}
+
+${formulaireHTML}
+
+</div>
+
+`;
+
+
+}
+
+
+
+return `
+
+<div class="zone-reponse" data-demande-id="${demandeId}">
+
+<button type="button" class="lien-reponse"
+onclick="basculerFormulaireReponse('${demandeId}')">
+Répondre
+</button>
+
+${formulaireHTML}
+
+</div>
+
+`;
+
+
+}
+
+
+
+window.miseAJourCompteurReponse=(textarea)=>{
+
+
+const zone=
+textarea.parentElement.querySelector(".compteur-caracteres");
+
+
+if(!zone)
+return;
+
+
+const max=
+zone.dataset.max;
+
+
+zone.textContent=
+`${textarea.value.length}/${max}`;
+
+
+};
+
+
+
+window.basculerFormulaireReponse=(demandeId)=>{
+
+
+const container=
+document.querySelector(
+`.zone-reponse[data-demande-id="${demandeId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const formulaire=
+container.querySelector(".formulaire-reponse");
+
+
+formulaire.style.display=
+(formulaire.style.display==="none") ?
+"block" :
+"none";
+
+
+};
+
+
+
+window.envoyerReponse=async(demandeId)=>{
+
+
+if(!utilisateur)
+return;
+
+
+const container=
+document.querySelector(
+`.zone-reponse[data-demande-id="${demandeId}"]`
+);
+
+
+if(!container)
+return;
+
+
+const textarea=
+container.querySelector(".reponse-textarea");
+
+
+const texte=
+textarea.value.trim();
+
+
+if(!texte){
+alert("Veuillez saisir une réponse avant d'envoyer.");
+return;
+}
+
+
+await updateDoc(
+
+doc(db,"demandes-reponse",demandeId),
+
+{
+
+[`reponses.${utilisateur.uid}`]:
+{
+
+texte,
+date:
+serverTimestamp()
+
+}
+
+}
+
+);
+
+
+await rafraichirZoneReponse(demandeId);
+
+
+};
+
+
+
+async function rafraichirZoneReponse(demandeId){
+
+
+const snap=
+await getDoc(
+doc(db,"demandes-reponse",demandeId)
+);
+
+
+if(!snap.exists())
+return;
+
+
+const demande=
+snap.data();
+
+
+document
+.querySelectorAll(`.zone-reponse[data-demande-id="${demandeId}"]`)
+.forEach(el=>{
+
+el.outerHTML=
+creerZoneReponseHTML(demande,demandeId);
+
+});
+
+
+}
+
+
+
+
+
+
+/*
+===========================
+ENVOI MESSAGE
+===========================
+*/
+
+
+window.envoyerMessage=async()=>{
+
+
+if(!conversationActive)
+return;
+
+
+const input=
+document.getElementById("message-input");
+
+
+const texte=
+input.value.trim();
+
+
+
+if(!texte)
+return;
+
+
+
+await addDoc(
+
+collection(
+db,
+"messageries",
+conversationActive,
+"messages"
+),
+
+{
+
+auteur:
+utilisateur.uid,
+
+auteurNom:
+utilisateurNom,
+
+texte,
+
+date:
+serverTimestamp(),
+
+luPar:
+[
+utilisateur.uid
+]
+
+}
+
+);
+
+
+
+const autresParticipants=
+participantsActifs.filter(
+uid=>uid!==utilisateur.uid
+);
+
+
+const misAJourNonLus={};
+
+autresParticipants.forEach(uid=>{
+
+misAJourNonLus[`nonLus.${uid}`]=
+increment(1);
+
+});
+
+
+
+await updateDoc(
+
+doc(
+db,
+"messageries",
+conversationActive
+),
+
+{
+
+lastMessage:
+texte,
+
+updatedAt:
+serverTimestamp(),
+
+...misAJourNonLus
+
+}
+
+);
+
+
+
+input.value="";
+
+
+};
+
+
+
+</script>
+
+
+</body>
+</html>

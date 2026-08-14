@@ -161,7 +161,40 @@ async function verifierAutorisation() {
  * @param {string[]} options.destinataires - uids (collection medecins) des destinataires
  * @returns {Promise<string>} l'identifiant de la diffusion créée
  */
+async function envoyerNotification(userId, title, body) {
 
+    try {
+
+        const response = await fetch(
+            "https://firebase-notification-server.onrender.com/send-notification-user",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId,
+                    title,
+                    body
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        console.log("🔔 Notification :", result);
+
+        return result;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur notification :",
+            error
+        );
+
+    }
+}window.envoyerNotification = envoyerNotification;
 export async function envoyerMessageSysteme({ compteId, texte, destinataires }){
 
   await verifierAutorisation();
@@ -232,6 +265,8 @@ export async function envoyerMessageSysteme({ compteId, texte, destinataires }){
     );
 
 
+ 
+
     await updateDoc(
 
       doc(db,"messageries",convId),
@@ -245,7 +280,7 @@ export async function envoyerMessageSysteme({ compteId, texte, destinataires }){
       }
 
     );
-
+ await envoyerNotifcation(uid, "🔔 Nouveau message", "Ouvrez GestUrg2 pour le consulter !")
 
   }
 

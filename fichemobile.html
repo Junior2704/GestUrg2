@@ -54,10 +54,20 @@ input, textarea, select{ font-family:inherit; }
 
 .hidden{ display:none !important; }
 
+/* ============ SPLASH (vérification session) ============ */
+#authCheckScreen{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--bg);
+  z-index:6000;
+  transition:opacity .2s ease;
+}
+#authCheckScreen.fade-out{ opacity:0; pointer-events:none; }
+
 /* ============ LOGIN ============ */
 #loginScreen{
   position:fixed; inset:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
   padding:32px 24px calc(32px + var(--safe-bottom));
   background:
     radial-gradient(120% 90% at 20% -10%, #eaf3ff 0%, transparent 60%),
@@ -537,6 +547,11 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
   <div class="offline-block-title">Pas de connexion internet</div>
   <div class="offline-block-sub">Impossible de charger les données de l'application. Vérifiez votre connexion puis réessayez.</div>
   <button class="btn-primary" id="btnRetryConnection" style="max-width:220px;">Réessayer</button>
+</div>
+
+<!-- ================= VERIFICATION SESSION ================= -->
+<div id="authCheckScreen">
+  <div class="spinner"></div>
 </div>
 
 <!-- ================= LOGIN ================= -->
@@ -1343,14 +1358,23 @@ document.getElementById("btnLogout").addEventListener("click", async () => {
   await signOut(auth);
 });
 
+function masquerEcranVerification(){
+  const splash = document.getElementById("authCheckScreen");
+  if (!splash) return;
+  splash.classList.add("fade-out");
+  setTimeout(() => { splash.style.display = "none"; }, 200);
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user){
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("appRoot").classList.remove("active");
+    masquerEcranVerification();
     return;
   }
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("appRoot").classList.add("active");
+  masquerEcranVerification();
 
   try{
     const medRef = doc(db, "medecins", user.uid);

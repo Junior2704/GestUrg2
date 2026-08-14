@@ -5512,6 +5512,12 @@ async function saveEquipe(roleKey, equipeData) {
   let patientNom = "Patient inconnu";
   let personneAffectante = "Utilisateur inconnu";
 
+  // UID des personnes avant modification
+  let anciensUids = [];
+
+  // UID des personnes après modification
+  let nouveauxUids = [];
+
   await runTransaction(db, async (tx) => {
 
     const snap = await tx.get(hospiRef);
@@ -5540,6 +5546,48 @@ async function saveEquipe(roleKey, equipeData) {
       "Utilisateur inconnu";
 
 
+    // =====================================================
+    // 👥 ANCIENNE ÉQUIPE
+    // =====================================================
+
+    const ancienneEquipe = data.equipe?.[roleKey] || [];
+
+
+    // =====================================================
+    // 👥 NOUVELLE ÉQUIPE
+    // =====================================================
+
+    // On accepte :
+    // - une personne seule
+    // - un tableau de personnes
+
+    const ancienneListe = Array.isArray(ancienneEquipe)
+      ? ancienneEquipe
+      : ancienneEquipe
+        ? [ancienneEquipe]
+        : [];
+
+    const nouvelleListe = Array.isArray(equipeData)
+      ? equipeData
+      : equipeData
+        ? [equipeData]
+        : [];
+
+
+    // Récupération des UID
+    anciensUids = ancienneListe
+      .map(personne => personne?.uid)
+      .filter(Boolean);
+
+    nouveauxUids = nouvelleListe
+      .map(personne => personne?.uid)
+      .filter(Boolean);
+
+
+    // =====================================================
+    // 💾 MISE À JOUR FIRESTORE
+    // =====================================================
+
     const hospitalisationUpdate = {
       ...data,
       equipe: {
@@ -5556,9 +5604,25 @@ async function saveEquipe(roleKey, equipeData) {
   });
 
 
-  // 📝 Historique
+  // =====================================================
+  // 🔎 PERSONNES AJOUTÉES / RETIRÉES
+  // =====================================================
+
+  const personnesAjoutees = nouveauxUids.filter(
+    uid => !anciensUids.includes(uid)
+  );
+
+  const personnesRetirees = anciensUids.filter(
+    uid => !nouveauxUids.includes(uid)
+  );
+
+
+  // =====================================================
+  // 📝 HISTORIQUE
+  // =====================================================
+
   ajouterEntreeHistorique(
-    `Affectation équipe (${roleKey}) : ${equipeData?.nom || "—"}`,
+    `Modification équipe (${roleKey})`,
     {
       hospitalisationId: hospiRef.id,
       silencieux: true
@@ -5566,17 +5630,40 @@ async function saveEquipe(roleKey, equipeData) {
   );
 
 
-  // 🔔 NOTIFICATION
-  await demanderNotification(
-    "👥 Nouvelle affectation vous concernant",
-    `Patient : ${patientNom}\n` +
-    `Rôle : ${roleKey}\n` +
-    `Personne affectée : ${equipeData?.nom || "—"}\n` +
-    `Affecté par : ${personneAffectante}`
-  );
+  // =====================================================
+  // 🔔 NOTIFICATIONS
+  // =====================================================
 
-}
-async function removeEquipe(roleKey) {
+  // 👥 Personnes ajoutées
+  for (const uid of personnesAjoutees) {
+
+    await demanderNotification(
+      uid,
+      "👥 Vous avez été ajouté à une équipe",
+      `Patient : ${patientNom}\n` +
+      `Rôle : ${roleKey}\n` +
+      `Affecté par : ${personneAffectante}`
+      
+    );
+
+  }
+
+
+  // 👤 Personnes retirées
+  for (const uid of personnesRetirees) {
+
+    await demanderNotification(
+      uid,
+      "👥 Vous avez été retiré d'une équipe",
+      `Patient : ${patientNom}\n` +
+      `Rôle : ${roleKey}\n` +
+      `Retiré par : ${personneAffectante}`
+      
+    );
+
+  }
+
+}async function removeEquipe(roleKey) {
 
   const { hospiRef } = await getHospActive();
 

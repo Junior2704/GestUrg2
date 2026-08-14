@@ -1970,21 +1970,15 @@ import {
     );
 
     await envoyerNotification(
+      data.userId,
         data.titre,
         data.contenu
     );
 
 });
-async function envoyerNotification(titre, contenu) {
+async function envoyerNotification(userId, title, body) {
 
     try {
-
-        const user = auth.currentUser;
-
-        if (!user) {
-            console.error("❌ Aucun utilisateur connecté");
-            return false;
-        }
 
         const response = await fetch(
             "https://firebase-notification-server.onrender.com/send-notification-user",
@@ -1994,41 +1988,28 @@ async function envoyerNotification(titre, contenu) {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    userId: user.uid,
-                    title: titre,
-                    body: contenu
+                    userId,
+                    title,
+                    body
                 })
             }
         );
 
         const result = await response.json();
 
-        if (!response.ok) {
-            console.error(
-                "❌ Erreur serveur notification :",
-                result
-            );
-            return false;
-        }
+        console.log("🔔 Notification :", result);
 
-        console.log(
-            "🔔 Notification envoyée :",
-            result
-        );
-
-        return true;
+        return result;
 
     } catch (error) {
 
         console.error(
-            "❌ Erreur envoi notification :",
+            "❌ Erreur notification :",
             error
         );
 
-        return false;
     }
-}
-window.envoyerNotification = envoyerNotification;
+}window.envoyerNotification = envoyerNotification;
   // Auth state + récupération du médecin
  onAuthStateChanged(auth, async (user) => {
 if (user) {

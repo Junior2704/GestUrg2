@@ -187,9 +187,7 @@
     }
   </style>
 
-```html
 <script type="module">
-
   import {
     initializeApp
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -207,11 +205,9 @@
     updateDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-
   // =========================
-  // FIREBASE
+  // FIREBASE CONFIG
   // =========================
-
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NN0yGyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -222,19 +218,18 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // Variable pour ignorer la toute première vérification à vide si nécessaire
+  let isInitialLoad = true;
 
   // =========================
   // ÉTAT AUTHENTIFICATION
   // =========================
-
   onAuthStateChanged(auth, async (user) => {
-
     console.log("🔐 État Firebase Auth :", user);
 
     if (!user) {
-
       console.warn("❌ Aucun utilisateur Firebase connecté");
-
+      // Redirige seulement si l'absence d'utilisateur est confirmée
       window.location.href = "index.html";
       return;
     }
@@ -242,127 +237,66 @@
     console.log("✅ Utilisateur connecté :", user.uid);
     console.log("📧 Email :", user.email);
 
-
     try {
-
       const ref = doc(db, "medecins", user.uid);
       const snap = await getDoc(ref);
 
       console.log("📄 Document médecin :", snap.exists());
 
       if (snap.exists()) {
-
         const data = snap.data();
-
         console.log("👨‍⚕️ Données médecin :", data);
 
-        document.getElementById("nom").value =
-          data.nom || "";
-
-        document.getElementById("email").value =
-          data.email || user.email || "";
-
-        document.getElementById("type").value =
-          data.type || "";
-
-        document.getElementById("specialite").value =
-          data.specialite || "";
-
-        document.getElementById("lieu").value =
-          data.lieu || "";
-
-        document.getElementById("connexion").value =
-          data.préférenceConnexion || "mdp";
-
+        document.getElementById("nom").value = data.nom || "";
+        document.getElementById("email").value = data.email || user.email || "";
+        document.getElementById("type").value = data.type || "";
+        document.getElementById("specialite").value = data.specialite || "";
+        document.getElementById("lieu").value = data.lieu || "";
+        document.getElementById("connexion").value = data.préférenceConnexion || "mdp";
       } else {
-
-        document.getElementById("message").textContent =
-          "Aucune donnée trouvée pour ce compte.";
-
+        document.getElementById("message").textContent = "Aucune donnée trouvée pour ce compte.";
       }
-
     } catch (err) {
-
       console.error("❌ Erreur Firestore :", err);
-
-      document.getElementById("message").textContent =
-        "Erreur de chargement : " + err.message;
+      document.getElementById("message").textContent = "Erreur de chargement : " + err.message;
     }
-
   });
-
 
   // =========================
   // PRÉFÉRENCE DE CONNEXION
   // =========================
-
   document.getElementById("connexion").addEventListener("change", async (e) => {
-
     const user = auth.currentUser;
 
-    console.log("🔄 Changement de préférence :", e.target.value);
-    console.log("👤 Utilisateur actuel :", user);
-
     if (!user) {
-
       console.error("❌ Aucun utilisateur connecté");
-
       return;
     }
 
     try {
-
       const ref = doc(db, "medecins", user.uid);
-
       await updateDoc(ref, {
         préférenceConnexion: e.target.value
       });
-
-      console.log(
-        "✅ Préférence enregistrée :",
-        e.target.value
-      );
-
+      console.log("✅ Préférence enregistrée :", e.target.value);
     } catch (err) {
-
-      console.error(
-        "❌ Erreur lors de l'enregistrement :",
-        err
-      );
-
-      document.getElementById("message").textContent =
-        "Impossible d'enregistrer la préférence.";
+      console.error("❌ Erreur lors de l'enregistrement :", err);
+      document.getElementById("message").textContent = "Impossible d'enregistrer la préférence.";
     }
-
   });
-
 
   // =========================
   // DÉCONNEXION
   // =========================
-
   window.seDeconnecter = async function () {
-
     try {
-
       await signOut(auth);
-
       window.location.href = "index.html";
-
     } catch (err) {
-
-      console.error(
-        "❌ Erreur de déconnexion :",
-        err
-      );
-
+      console.error("❌ Erreur de déconnexion :", err);
     }
-
   };
-
 </script>
-
-
 
 </head>
 

@@ -155,6 +155,17 @@ input, textarea, select{ font-family:inherit; }
 .btn-notif.is-on{ background:var(--blue-100); border-color:var(--blue-600); color:var(--blue-700); }
 .btn-notif.is-off{ background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
 .notif-status{ font-size:.78rem; color:var(--text-muted); margin-top:10px; text-align:center; }
+.profile-link-btn{
+  width:100%; padding:14px; border-radius:12px; border:1.5px solid var(--border); background:#f8fafc;
+  font-size:.95rem; font-weight:700; color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:18px;
+}
+.profile-link-btn:active{ transform:scale(.98); }
+.profile-badge{
+  min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#ef4444; color:#fff;
+  font-size:.72rem; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1;
+}
+.profile-badge.hidden{ display:none; }
 
 .pulse-bar{
   height:5px; width:100%; background:#e2e8f0; position:relative; overflow:hidden;
@@ -176,13 +187,18 @@ main.views{ flex:1; overflow:hidden; position:relative; }
   display:flex; padding: 6px 10px calc(8px + var(--safe-bottom));
 }
 .tabbar-btn{
-  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; position:relative;
   background:none; border:none; padding:8px 4px 6px; color:#94a3b8; cursor:pointer; border-radius:12px;
 }
 .tabbar-btn .ic{ font-size:1.25rem; line-height:1; }
 .tabbar-btn .lb{ font-size:.68rem; font-weight:700; letter-spacing:.01em; }
 .tabbar-btn.active{ color:var(--blue-600); }
 .tabbar-btn.active .ic{ transform:translateY(-1px); }
+.tab-badge{
+  position:absolute; top:2px; right:20%; min-width:16px; height:16px; padding:0 4px; border-radius:8px;
+  background:#ef4444; color:#fff; font-size:.62rem; font-weight:800; line-height:16px; text-align:center;
+}
+.tab-badge.hidden{ display:none; }
 
 /* ============ generic sections/cards ============ */
 .section-title{
@@ -656,6 +672,10 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <button class="tabbar-btn" data-view="appels">
       <span class="ic">📣</span><span class="lb">Appels</span>
     </button>
+    <button class="tabbar-btn" data-view="messagerie">
+      <span class="ic">💬</span><span class="lb">Messages</span>
+      <span class="tab-badge hidden" id="tabBadgeMessagerie">0</span>
+    </button>
   </div>
 
   <!-- ---- Bottom sheet salle ---- -->
@@ -685,11 +705,18 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
           <div class="profile-email" id="profileEmail">—</div>
         </div>
       </div>
+      <button class="profile-link-btn" id="btnProfileMessagerie">
+        <span>💬 Messagerie</span>
+        <span class="profile-badge hidden" id="profileBadgeMessagerie">0</span>
+      </button>
       <div class="profile-section-label">Notifications</div>
       <button class="btn-notif" id="btnToggleNotifications">🔔 Activer les notifications</button>
       <div class="notif-status" id="notifStatusText"></div>
     </div>
   </div>
+
+  <!-- ---- Suivi non-lus messagerie en arrière-plan ---- -->
+  <iframe id="messagerieBadgeFrame" src="about:blank" style="display:none;" title="Suivi messagerie"></iframe>
 
   <!-- ---- Fiche patient (plein écran) ---- -->
   <div id="patientDetail">
@@ -1312,6 +1339,7 @@ async function doLogin(){
 document.getElementById("btnLogout").addEventListener("click", async () => {
   clearInterval(state.refreshTimer);
   stopScanner();
+  stopMessagerieBadgeFrame();
   await signOut(auth);
 });
 
@@ -1336,6 +1364,7 @@ onAuthStateChanged(auth, async (user) => {
 
   updateProfilePanel();
   updateNotifButtonUI();
+  ensureMessagerieBadgeFrame();
 
   await initApp();
   await initAppels();
@@ -1418,6 +1447,10 @@ document.querySelectorAll(".tabbar-btn").forEach(btn => {
   btn.addEventListener("click", () => switchTab(btn.dataset.view));
 });
 function switchTab(view){
+  if (view === "messagerie"){
+    openMessagerie();
+    return; // ouvre l'overlay par-dessus l'onglet actif, sans changer la navigation
+  }
   state.currentTab = view;
   document.querySelectorAll(".tabbar-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
@@ -2153,6 +2186,51 @@ function closeScanFrame(){
     try{ html5QrCode.resume(); }catch(e){}
   }
 }
+
+/* =========================================================
+   MESSAGERIE
+========================================================= */
+const MESSAGERIE_URL = "messagerie.html";
+
+function openMessagerie(){
+  closeProfileSheet();
+  document.getElementById("scanFrameTitle").textContent = "💬 Messagerie";
+  document.getElementById("scanFrameIframe").src = MESSAGERIE_URL;
+  scanFrameOverlay.classList.add("open");
+}
+
+document.getElementById("btnProfileMessagerie").addEventListener("click", openMessagerie);
+
+// suivi du nombre de messages non lus, même quand la messagerie n'est pas ouverte
+function ensureMessagerieBadgeFrame(){
+  const frame = document.getElementById("messagerieBadgeFrame");
+  if (frame && frame.getAttribute("src") === "about:blank"){
+    frame.src = MESSAGERIE_URL;
+  }
+}
+function stopMessagerieBadgeFrame(){
+  const frame = document.getElementById("messagerieBadgeFrame");
+  if (frame) frame.src = "about:blank";
+  updateMessagerieBadges(0);
+}
+function updateMessagerieBadges(count){
+  const n = Number(count) || 0;
+  const label = n > 99 ? "99+" : String(n);
+  const tabBadge = document.getElementById("tabBadgeMessagerie");
+  const profileBadge = document.getElementById("profileBadgeMessagerie");
+  [tabBadge, profileBadge].forEach(el => {
+    if (!el) return;
+    el.textContent = label;
+    el.classList.toggle("hidden", n <= 0);
+  });
+}
+window.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.source !== "messagerie") return;
+  if (data.type === "non-lus"){
+    updateMessagerieBadges(data.nonLus);
+  }
+});
 /* =========================================================
    APPELS — FILE D'ATTENTE ACCUEIL
 ========================================================= */

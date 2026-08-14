@@ -4710,7 +4710,16 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
           hospitalisationId,
           silencieux: true
         });
+// 🔔 Notification de clôture à tous les membres de l'équipe
+        const destinatairesCloture = getUidsEquipe(hospiData.equipe);
 
+        demanderNotificationMulti(
+          destinatairesCloture,
+          "🔒 Clôture d'hospitalisation",
+          `Patient : ${patientData.prenom} ${patientData.nom}\n` +
+          `Clôturée le ${now}\n` +
+          `Par : ${medecinCloture}`
+        );
         // 🔄 Mise à jour automatique du statut PDC sur le patient
         await updateDoc(patientRef, {
           pdcStatut: "Attente enregistrement",

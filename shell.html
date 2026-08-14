@@ -2567,34 +2567,50 @@ function preventDevTools(e) {
 
 // ===== LOCK =====
 window.lockSession = async function() {
-  isLocked = true;
-  sessionStorage.setItem("appLocked", "true");
+    isLocked = true;
+    sessionStorage.setItem("appLocked", "true");
 
-  document.body.classList.add("locked");
-  document.getElementById("lockOverlay").classList.add("active");
-  document.getElementById("unlockPassword").value = "";
-  document.getElementById("lockError").textContent = "";
+    document.body.classList.add("locked");
+    document.getElementById("lockOverlay").classList.add("active");
+    document.getElementById("unlockPassword").value = "";
+    document.getElementById("lockError").textContent = "";
 
-const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
-const prefCo = userSnap.préférenceConnexion || "mdp";
-if (prefCo === "mdp") {
-  switchLockTab("password");
-  }else if (prefCo === "badge"){
-    switchLockTab("badge");
-  }else {
-    switchLockTab("password");
-  }
+    // Récupération de la préférence de connexion
+    const user = auth.currentUser;
 
-  
+    if (user) {
+        const userSnap = await getDoc(
+            doc(db, "medecins", user.uid)
+        );
 
-  document.addEventListener("keydown", preventDevTools);
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const prefCo = userData.préférenceConnexion || "mdp";
 
-  document.querySelectorAll("iframe").forEach(iframe => {
-    iframe.contentWindow.postMessage({ type: "APP_LOCK" }, "*");
-    iframe.style.pointerEvents = "none";
-    iframe.blur();
-  });
-}
+            if (prefCo === "badge") {
+                switchLockTab("badge");
+            } else {
+                switchLockTab("password");
+            }
+        } else {
+            switchLockTab("password");
+        }
+    } else {
+        switchLockTab("password");
+    }
+
+    document.addEventListener("keydown", preventDevTools);
+
+    document.querySelectorAll("iframe").forEach(iframe => {
+        iframe.contentWindow.postMessage(
+            { type: "APP_LOCK" },
+            "*"
+        );
+
+        iframe.style.pointerEvents = "none";
+        iframe.blur();
+    });
+};
 
 // ===== VOLETS MDP / BADGE =====
 window.switchLockTab = function(tab) {

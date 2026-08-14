@@ -3346,11 +3346,12 @@ function afficherBulle(message, typeBulle){
 }
 
 
-function demanderNotification(titre, contenu) {
+function demanderNotification(uid, titre, contenu) {
 
     window.parent.postMessage(
         {
             type: "NOTIFICATION",
+            userId : uid,
             titre: titre,
             contenu: contenu
         },
@@ -3358,7 +3359,10 @@ function demanderNotification(titre, contenu) {
     );
 
 }
-
+function demanderNotificationMulti(uids, titre, contenu) {
+    const uniques = [...new Set((uids || []).filter(Boolean))];
+    uniques.forEach(uid => demanderNotification(uid, titre, contenu));
+}
 
 const listePDC = [
   "Attente enregistrement",
@@ -5504,6 +5508,13 @@ async function getHospActive() {
   return { hospiRef, hospiData: hospiSnap.data() };
 }
 
+function getUidsEquipe(equipeObj) {
+    if (!equipeObj) return [];
+    return Object.values(equipeObj)
+        .map(membre => membre?.id)    // ✅ c'est le champ réellement stocké
+        .filter(Boolean);
+}
+
 // 💾 SAUVEGARDE ÉQUIPE (TRANSACTION SAFE)
 async function saveEquipe(roleKey, equipeData) {
 
@@ -5518,58 +5529,47 @@ async function saveEquipe(roleKey, equipeData) {
   }
 
   const patientData = patientSnap.data();
-
-  const patientNom = [
-    patientData.prenom,
-    patientData.nom
-  ]
+  const patientNom = [patientData.prenom, patientData.nom]
     .filter(Boolean)
     .join(" ") || "Patient inconnu";
 
-
   // 👨‍⚕️ Personne ayant effectué l'affectation
-  const personneAffectante =
-    window.medecinNom || "Utilisateur inconnu";
+  const personneAffectante = window.medecinNom || "Utilisateur inconnu";
 
+  // 👥 On capture l'équipe mise à jour pour connaître les destinataires
+  let equipeApresMiseAJour = null;
 
-  // 💾 Enregistrement de l'équipe
   await runTransaction(db, async (tx) => {
 
     const snap = await tx.get(hospiRef);
-
-    if (!snap.exists()) {
-      throw "Hospitalisation introuvable";
-    }
+    if (!snap.exists()) throw "Hospitalisation introuvable";
 
     const data = snap.data();
 
-    const hospitalisationUpdate = {
-      ...data,
-      equipe: {
-        ...(data.equipe || {}),
-        [roleKey]: equipeData
-      }
+    const nouvelleEquipe = {
+      ...(data.equipe || {}),
+      [roleKey]: equipeData
     };
 
-    tx.update(
-      hospiRef,
-      hospitalisationUpdate
-    );
-  });
+    tx.update(hospiRef, {
+      ...data,
+      equipe: nouvelleEquipe
+    });
 
+    equipeApresMiseAJour = nouvelleEquipe;
+  });
 
   // 📝 Historique
   ajouterEntreeHistorique(
     `Affectation équipe (${roleKey}) : ${equipeData?.nom || "—"}`,
-    {
-      hospitalisationId: hospiRef.id,
-      silencieux: true
-    }
+    { hospitalisationId: hospiRef.id, silencieux: true }
   );
 
+  // 🔔 Notification à tous les membres de l'équipe (après mise à jour)
+  const destinataires = getUidsEquipe(equipeApresMiseAJour);
 
-  // 🔔 Notification
-  await demanderNotification(
+  demanderNotificationMulti(
+    destinataires,
     "👥 Nouvelle affectation",
     `Patient : ${patientNom}\n` +
     `Rôle : ${roleKey}\n` +
@@ -5577,6 +5577,7 @@ async function saveEquipe(roleKey, equipeData) {
     `Affecté par : ${personneAffectante}`
   );
 }
+
 
 async function removeEquipe(roleKey) {
 
@@ -5591,69 +5592,52 @@ async function removeEquipe(roleKey) {
   }
 
   const patientData = patientSnap.data();
-
-  const patientNom = [
-    patientData.prenom,
-    patientData.nom
-  ]
+  const patientNom = [patientData.prenom, patientData.nom]
     .filter(Boolean)
     .join(" ") || "Patient inconnu";
 
-
   // 👨‍⚕️ Personne ayant effectué la suppression
-  const personneAffectante =
-    window.medecinNom || "Utilisateur inconnu";
-
+  const personneAffectante = window.medecinNom || "Utilisateur inconnu";
 
   let membreSupprime = "Membre inconnu";
-
+  let uidMembreSupprime = null;
+  let equipeApresSuppression = null;
 
   await runTransaction(db, async (tx) => {
 
     const snap = await tx.get(hospiRef);
-
-    if (!snap.exists()) {
-      return;
-    }
+    if (!snap.exists()) return;
 
     const data = snap.data();
+    const membre = data.equipe?.[roleKey];
 
     // 👤 Récupérer le membre AVANT suppression
-    membreSupprime =
-      data.equipe?.[roleKey]?.nom ||
-      "Membre inconnu";
+    membreSupprime = membre?.nom || "Membre inconnu";
+    uidMembreSupprime = membre?.id || null;
 
-
-    if (data.equipe?.[roleKey]) {
-
-      const nouvelleEquipe = {
-        ...data.equipe
-      };
-
+    if (membre) {
+      const nouvelleEquipe = { ...data.equipe };
       delete nouvelleEquipe[roleKey];
 
-      tx.update(
-        hospiRef,
-        {
-          equipe: nouvelleEquipe
-        }
-      );
+      tx.update(hospiRef, { equipe: nouvelleEquipe });
+      equipeApresSuppression = nouvelleEquipe;
+    } else {
+      equipeApresSuppression = data.equipe || {};
     }
   });
-
 
   // 📝 Historique
   ajouterEntreeHistorique(
     `Suppression du membre d'équipe (${roleKey})`,
-    {
-      hospitalisationId: hospiRef.id,
-      silencieux: true
-    }
+    { hospitalisationId: hospiRef.id, silencieux: true }
   );
 
+  // 🔔 Notification aux membres restants + à la personne retirée
+  const destinataires = new Set(getUidsEquipe(equipeApresSuppression));
+  if (uidMembreSupprime) destinataires.add(uidMembreSupprime);
 
-  // 🔔 Notification
-  await demanderNotification(
+  demanderNotificationMulti(
+    [...destinataires],
     "👥 Suppression d'une affectation",
     `Patient : ${patientNom}\n` +
     `Rôle : ${roleKey}\n` +

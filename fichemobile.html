@@ -134,6 +134,28 @@ input, textarea, select{ font-family:inherit; }
 .icon-btn.spinning svg{ animation:spin .8s linear infinite; }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
+/* ============ PROFIL / PARAMETRES ============ */
+.profile-user{ display:flex; align-items:center; gap:12px; padding:2px 2px 20px; }
+.profile-avatar{
+  width:50px; height:50px; border-radius:15px; flex:0 0 auto;
+  background:linear-gradient(160deg, var(--blue-600), var(--blue-700));
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; font-weight:800; color:#fff;
+}
+.profile-name{ font-weight:800; font-size:1.02rem; line-height:1.25; }
+.profile-email{ color:var(--text-muted); font-size:.8rem; margin-top:2px; word-break:break-all; }
+.profile-section-label{ font-size:.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin:2px 0 8px; }
+.btn-notif{
+  width:100%; padding:14px; border-radius:12px; border:1.5px solid var(--border); background:#f8fafc;
+  font-size:.95rem; font-weight:700; color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px; transition:background .2s, border-color .2s, color .2s;
+}
+.btn-notif:active{ transform:scale(.98); }
+.btn-notif:disabled{ opacity:.6; }
+.btn-notif.is-on{ background:var(--blue-100); border-color:var(--blue-600); color:var(--blue-700); }
+.btn-notif.is-off{ background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
+.notif-status{ font-size:.78rem; color:var(--text-muted); margin-top:10px; text-align:center; }
+
 .pulse-bar{
   height:5px; width:100%; background:#e2e8f0; position:relative; overflow:hidden;
 }
@@ -532,6 +554,9 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
       </div>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="btnProfile" title="Profil et paramètres">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4.2 3.6-6.4 7.5-6.4s7.5 2.2 7.5 6.4"/></svg>
+      </button>
       <button class="icon-btn" id="btnRefresh" title="Actualiser">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
       </button>
@@ -565,9 +590,6 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <!-- -------- STATS -------- -->
     <section class="view" id="view-stats">
       <div id="statsContent"></div>
-      <button id="activerNotifications">
-    🔔 Activer les notifications
-</button>
     </section>
 
     <!-- -------- SCAN -------- -->
@@ -647,6 +669,28 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
     <div class="sheet-body" id="sheetBody"></div>
   </div>
 
+  <!-- ---- Bottom sheet profil / paramètres ---- -->
+  <div class="sheet-backdrop" id="profileSheetBackdrop"></div>
+  <div class="sheet" id="profileSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3>Profil</h3>
+      <button class="sheet-close" id="profileSheetCloseBtn">✖</button>
+    </div>
+    <div class="sheet-body">
+      <div class="profile-user">
+        <div class="profile-avatar" id="profileAvatar">—</div>
+        <div>
+          <div class="profile-name" id="profileName">—</div>
+          <div class="profile-email" id="profileEmail">—</div>
+        </div>
+      </div>
+      <div class="profile-section-label">Notifications</div>
+      <button class="btn-notif" id="btnToggleNotifications">🔔 Activer les notifications</button>
+      <div class="notif-status" id="notifStatusText"></div>
+    </div>
+  </div>
+
   <!-- ---- Fiche patient (plein écran) ---- -->
   <div id="patientDetail">
     <div class="pd-header">
@@ -695,12 +739,14 @@ import {
   onSnapshot,
   updateDoc,
   setDoc,
+  deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 import {
   getMessaging,
   getToken,
+  deleteToken,
   onMessage
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging.js";
 
@@ -897,105 +943,251 @@ function textBlock(val, emptyLabel="Non renseigné."){
     ? `<div class="txt-block">${escapeHtml(v)}</div>`
     : `<div class="txt-block empty">${emptyLabel}</div>`;
 }
-document
-    .getElementById("activerNotifications")
-    .addEventListener("click", async () => {
+const NOTIF_VAPID_KEY = "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI";
+const LS_NOTIF_ACTIVE = "gu2_notifs_active";
+const LS_NOTIF_TOKEN = "gu2_notifs_token";
 
-        try {
+async function activerNotifications() {
 
-            // 🔔 Demande d'autorisation
-            const permission =
-                await Notification.requestPermission();
+    try {
 
-            console.log("Permission :", permission);
+        // 🔔 Demande d'autorisation
+        const permission =
+            await Notification.requestPermission();
 
-            if (permission !== "granted") {
-                console.log("❌ Notifications refusées");
-                return;
-            }
+        console.log("Permission :", permission);
 
-            // 📡 Enregistrement du Service Worker
-            const registration =
-                await navigator.serviceWorker.register(
-                    "/GestUrg2/firebase-messaging-sw.js"
-                );
-
-            console.log(
-                "✅ Service Worker enregistré"
-            );
-
-            // 🔥 Initialisation FCM
-            const messaging = getMessaging(app);
-
-            // 🔑 Récupération du token
-            const token = await getToken(messaging, {
-                vapidKey: "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI"
-                ,
-                serviceWorkerRegistration: registration
-            });
-
-            if (!token) {
-                console.error("❌ Aucun token FCM obtenu");
-                return;
-            }
-
-            console.log(
-                "🔥 TOKEN FCM :",
-                token
-            );
-
-
-            // 👤 Utilisateur actuellement connecté
-            const user = auth.currentUser;
-
-            if (!user) {
-                console.error(
-                    "❌ Aucun utilisateur Firebase connecté"
-                );
-                return;
-            }
-
-            console.log(
-                "👤 Utilisateur :",
-                user.uid
-            );
-
-
-            // 💾 Document Firestore
-            const tokenRef = doc(
-                db,
-                "fcmTokens",
-                token
-            );
-
-            await setDoc(
-                tokenRef,
-                {
-                    token: token,
-                    userId: user.uid,
-                    email: user.email || null,
-                    plateforme: "web",
-                    updatedAt: serverTimestamp()
-                },
-                {
-                    merge: true
-                }
-            );
-
-            console.log(
-                "✅ Token FCM enregistré dans Firestore"
-            );
-
-        } catch (error) {
-
-            console.error(
-                "❌ Erreur notifications :",
-                error
-            );
-
+        if (permission !== "granted") {
+            console.log("❌ Notifications refusées");
+            toast("Notifications refusées", "error");
+            return;
         }
 
+        // 📡 Enregistrement du Service Worker
+        const registration =
+            await navigator.serviceWorker.register(
+                "/GestUrg2/firebase-messaging-sw.js"
+            );
+
+        console.log(
+            "✅ Service Worker enregistré"
+        );
+
+        // 🔥 Initialisation FCM
+        const messaging = getMessaging(app);
+
+        // 🔑 Récupération du token
+        const token = await getToken(messaging, {
+            vapidKey: NOTIF_VAPID_KEY
+            ,
+            serviceWorkerRegistration: registration
+        });
+
+        if (!token) {
+            console.error("❌ Aucun token FCM obtenu");
+            return;
+        }
+
+        console.log(
+            "🔥 TOKEN FCM :",
+            token
+        );
+
+
+        // 👤 Utilisateur actuellement connecté
+        const user = auth.currentUser;
+
+        if (!user) {
+            console.error(
+                "❌ Aucun utilisateur Firebase connecté"
+            );
+            return;
+        }
+
+        console.log(
+            "👤 Utilisateur :",
+            user.uid
+        );
+
+
+        // 💾 Document Firestore
+        const tokenRef = doc(
+            db,
+            "fcmTokens",
+            token
+        );
+
+        await setDoc(
+            tokenRef,
+            {
+                token: token,
+                userId: user.uid,
+                email: user.email || null,
+                plateforme: "web",
+                updatedAt: serverTimestamp()
+            },
+            {
+                merge: true
+            }
+        );
+
+        console.log(
+            "✅ Token FCM enregistré dans Firestore"
+        );
+
+        localStorage.setItem(LS_NOTIF_ACTIVE, "1");
+        localStorage.setItem(LS_NOTIF_TOKEN, token);
+        toast("Notifications activées", "success");
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur notifications :",
+            error
+        );
+        toast("Impossible d'activer les notifications", "error");
+
+    } finally {
+        updateNotifButtonUI();
+    }
+
+}
+
+async function desactiverNotifications() {
+
+    const btn = document.getElementById("btnToggleNotifications");
+    if (btn) btn.disabled = true;
+
+    try {
+
+        const storedToken = localStorage.getItem(LS_NOTIF_TOKEN);
+
+        // 🗑️ Suppression du document Firestore associé au token
+        if (storedToken) {
+            try {
+                await deleteDoc(doc(db, "fcmTokens", storedToken));
+                console.log("✅ Token FCM supprimé de Firestore");
+            } catch (e) {
+                console.error("❌ Erreur suppression token Firestore :", e);
+            }
+        }
+
+        // 🔕 Invalidation du token côté navigateur
+        try {
+            const messaging = getMessaging(app);
+            await deleteToken(messaging);
+        } catch (e) {
+            console.error("❌ Erreur deleteToken :", e);
+        }
+
+        toast("Notifications désactivées", "success");
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur désactivation notifications :",
+            error
+        );
+        toast("Erreur lors de la désactivation", "error");
+
+    } finally {
+        localStorage.removeItem(LS_NOTIF_ACTIVE);
+        localStorage.removeItem(LS_NOTIF_TOKEN);
+        if (btn) btn.disabled = false;
+        updateNotifButtonUI();
+    }
+
+}
+
+function notificationsActuellementActives(){
+    return typeof Notification !== "undefined"
+        && Notification.permission === "granted"
+        && localStorage.getItem(LS_NOTIF_ACTIVE) === "1";
+}
+
+function updateNotifButtonUI(){
+    const btn = document.getElementById("btnToggleNotifications");
+    const statusText = document.getElementById("notifStatusText");
+    if (!btn) return;
+
+    if (typeof Notification === "undefined") {
+        btn.textContent = "🔔 Notifications non supportées";
+        btn.disabled = true;
+        if (statusText) statusText.textContent = "Ce navigateur ne supporte pas les notifications.";
+        return;
+    }
+
+    if (Notification.permission === "denied") {
+        btn.textContent = "🔕 Notifications bloquées";
+        btn.disabled = true;
+        btn.classList.remove("is-on");
+        btn.classList.add("is-off");
+        if (statusText) statusText.textContent = "Autorisez les notifications dans les réglages de votre navigateur pour les activer.";
+        return;
+    }
+
+    btn.disabled = false;
+
+    if (notificationsActuellementActives()) {
+        btn.textContent = "🔕 Désactiver les notifications";
+        btn.classList.add("is-on");
+        btn.classList.remove("is-off");
+        if (statusText) statusText.textContent = "Vous recevrez les notifications sur cet appareil.";
+    } else {
+        btn.textContent = "🔔 Activer les notifications";
+        btn.classList.remove("is-on");
+        btn.classList.remove("is-off");
+        if (statusText) statusText.textContent = "";
+    }
+}
+
+document
+    .getElementById("btnToggleNotifications")
+    .addEventListener("click", async () => {
+        if (notificationsActuellementActives()) {
+            await desactiverNotifications();
+        } else {
+            await activerNotifications();
+        }
     });
+
+updateNotifButtonUI();
+
+/* =========================================================
+   PANNEAU PROFIL
+========================================================= */
+function updateProfilePanel(){
+    const user = auth.currentUser;
+    const info = state.currentUserInfo || {};
+    const nom = info.nom || (user && user.email ? user.email.split("@")[0] : "");
+    const nameEl = document.getElementById("profileName");
+    const emailEl = document.getElementById("profileEmail");
+    const avatarEl = document.getElementById("profileAvatar");
+    if (nameEl) nameEl.textContent = nom || "Utilisateur";
+    if (emailEl) emailEl.textContent = (user && user.email) || "";
+    if (avatarEl) {
+        const initiale = (nom || (user && user.email) || "?").trim().charAt(0).toUpperCase();
+        avatarEl.textContent = initiale || "?";
+    }
+}
+
+const profileSheetBackdrop = document.getElementById("profileSheetBackdrop");
+const profileSheet = document.getElementById("profileSheet");
+
+function openProfileSheet(){
+    updateProfilePanel();
+    updateNotifButtonUI();
+    profileSheetBackdrop.classList.add("open");
+    profileSheet.classList.add("open");
+}
+function closeProfileSheet(){
+    profileSheetBackdrop.classList.remove("open");
+    profileSheet.classList.remove("open");
+}
+
+document.getElementById("btnProfile").addEventListener("click", openProfileSheet);
+document.getElementById("profileSheetCloseBtn").addEventListener("click", closeProfileSheet);
+profileSheetBackdrop.addEventListener("click", closeProfileSheet);
 const STATUS_LABELS_FR = {
   "a-faire": "À faire",
   "a-donner": "À donner",
@@ -1138,8 +1330,12 @@ onAuthStateChanged(auth, async (user) => {
     if (medSnap.exists()){
       const d = medSnap.data();
       document.getElementById("userGreeting").textContent = d.nom ? `Bonjour, ${d.nom}` : "Vue mobile";
+      state.currentUserInfo = { nom: d.nom || "", role: d.role || "" };
     }
   }catch(e){ /* pas bloquant */ }
+
+  updateProfilePanel();
+  updateNotifButtonUI();
 
   await initApp();
   await initAppels();

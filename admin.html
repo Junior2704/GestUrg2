@@ -543,6 +543,7 @@ async function enregistrerBadge(valeur) {
     const ref = doc(db, "medecins", badgeUserId);
     await updateDoc(ref, { idBadge: valeur });
     afficherBulle(badgeModeActuel === "modif" ? "✅ Badge modifié" : "✅ Badge enregistré", "success");
+    await envoyerNotification(badgeUserId, "🪪 Nouveau badge enregistré", "Un nouveau badge d'accès vient d'être enregistré pour votre compte GestUrg2");
     fermerLectureBadge();
     afficherEtatBadge(valeur);
     chargerUtilisateurs();
@@ -560,6 +561,8 @@ window.supprimerBadge = async () => {
     const ref = doc(db, "medecins", badgeUserId);
     await updateDoc(ref, { badge: "" });
     afficherBulle("✅ Badge supprimé", "success");
+        await envoyerNotification(badgeUserId, "🪪 Badge supprimé", "Votre badge d'accès à votre compte GestUrg2 vient d'être supprimé");
+
     afficherEtatBadge(null);
     chargerUtilisateurs();
   } catch (err) {

@@ -806,6 +806,40 @@ await envoyerMessageSysteme({
     afficherBulle("Erreur : " + err.message, "alerte");
   }
 });
+async function envoyerNotification(userId, title, body) {
+
+    try {
+
+        const response = await fetch(
+            "https://firebase-notification-server.onrender.com/send-notification-user",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId,
+                    title,
+                    body
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        console.log("🔔 Notification :", result);
+
+        return result;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur notification :",
+            error
+        );
+
+    }
+}window.envoyerNotification = envoyerNotification;
 
 
 // 🔁 Forcer un utilisateur à changer son mot de passe
@@ -820,6 +854,7 @@ window.demanderChangement = async (uid) => {
     texte: `Un changement de mot de passe vient d'être demandé pour votre compte. Celui-ci vous sera imposé lors de votre prochaine connexion à GestUrg2.`,
     destinataires: [uid]
   });
+await envoyerNotification(uid, "🔐 Vous devez changer votre mot de passe", "Un administrateur vient de demander un changement de mot de passe de votre compte. Celui-ci vous sera imposé lors de la prochaine ouverture de GestUrg2 sur ordinateur")
     afficherBulle("L’utilisateur devra changer son mot de passe à sa prochaine connexion.","default");
   } catch (error) {
     console.error(error);

@@ -5509,15 +5509,30 @@ async function saveEquipe(roleKey, equipeData) {
 
   const { hospiRef } = await getHospActive();
 
-  let patientNom = "Patient inconnu";
-  let personneAffectante = "Utilisateur inconnu";
+  // 👤 Récupération du patient
+  const patientRef = doc(db, "patients", patientId);
+  const patientSnap = await getDoc(patientRef);
 
-  // UID des personnes avant modification
-  let anciensUids = [];
+  if (!patientSnap.exists()) {
+    throw new Error("Patient introuvable");
+  }
 
-  // UID des personnes après modification
-  let nouveauxUids = [];
+  const patientData = patientSnap.data();
 
+  const patientNom = [
+    patientData.prenom,
+    patientData.nom
+  ]
+    .filter(Boolean)
+    .join(" ") || "Patient inconnu";
+
+
+  // 👨‍⚕️ Personne ayant effectué l'affectation
+  const personneAffectante =
+    window.medecinNom || "Utilisateur inconnu";
+
+
+  // 💾 Enregistrement de l'équipe
   await runTransaction(db, async (tx) => {
 
     const snap = await tx.get(hospiRef);
@@ -5527,66 +5542,6 @@ async function saveEquipe(roleKey, equipeData) {
     }
 
     const data = snap.data();
-
-    // 👤 Patient
-    patientNom = [
-      data.patient?.prenom,
-      data.patient?.nom
-    ]
-      .filter(Boolean)
-      .join(" ") || "Patient inconnu";
-
-
-    // 👨‍⚕️ Personne qui effectue l'affectation
-    const user = auth.currentUser;
-
-    personneAffectante =
-      user?.displayName ||
-      user?.email ||
-      "Utilisateur inconnu";
-
-
-    // =====================================================
-    // 👥 ANCIENNE ÉQUIPE
-    // =====================================================
-
-    const ancienneEquipe = data.equipe?.[roleKey] || [];
-
-
-    // =====================================================
-    // 👥 NOUVELLE ÉQUIPE
-    // =====================================================
-
-    // On accepte :
-    // - une personne seule
-    // - un tableau de personnes
-
-    const ancienneListe = Array.isArray(ancienneEquipe)
-      ? ancienneEquipe
-      : ancienneEquipe
-        ? [ancienneEquipe]
-        : [];
-
-    const nouvelleListe = Array.isArray(equipeData)
-      ? equipeData
-      : equipeData
-        ? [equipeData]
-        : [];
-
-
-    // Récupération des UID
-    anciensUids = ancienneListe
-      .map(personne => personne?.uid)
-      .filter(Boolean);
-
-    nouveauxUids = nouvelleListe
-      .map(personne => personne?.uid)
-      .filter(Boolean);
-
-
-    // =====================================================
-    // 💾 MISE À JOUR FIRESTORE
-    // =====================================================
 
     const hospitalisationUpdate = {
       ...data,
@@ -5600,29 +5555,12 @@ async function saveEquipe(roleKey, equipeData) {
       hospiRef,
       hospitalisationUpdate
     );
-
   });
 
 
-  // =====================================================
-  // 🔎 PERSONNES AJOUTÉES / RETIRÉES
-  // =====================================================
-
-  const personnesAjoutees = nouveauxUids.filter(
-    uid => !anciensUids.includes(uid)
-  );
-
-  const personnesRetirees = anciensUids.filter(
-    uid => !nouveauxUids.includes(uid)
-  );
-
-
-  // =====================================================
-  // 📝 HISTORIQUE
-  // =====================================================
-
+  // 📝 Historique
   ajouterEntreeHistorique(
-    `Modification équipe (${roleKey})`,
+    `Affectation équipe (${roleKey}) : ${equipeData?.nom || "—"}`,
     {
       hospitalisationId: hospiRef.id,
       silencieux: true
@@ -5630,93 +5568,77 @@ async function saveEquipe(roleKey, equipeData) {
   );
 
 
-  // =====================================================
-  // 🔔 NOTIFICATIONS
-  // =====================================================
+  // 🔔 Notification
+  await envoyerNotification(
+    "👥 Nouvelle affectation",
+    `Patient : ${patientNom}\n` +
+    `Rôle : ${roleKey}\n` +
+    `Personne affectée : ${equipeData?.nom || "—"}\n` +
+    `Affecté par : ${personneAffectante}`
+  );
+}
 
-  // 👥 Personnes ajoutées
-  for (const uid of personnesAjoutees) {
-
-    await demanderNotification(
-      uid,
-      "👥 Vous avez été ajouté à une équipe",
-      `Patient : ${patientNom}\n` +
-      `Rôle : ${roleKey}\n` +
-      `Affecté par : ${personneAffectante}`
-      
-    );
-
-  }
-
-
-  // 👤 Personnes retirées
-  for (const uid of personnesRetirees) {
-
-    await demanderNotification(
-      uid,
-      "👥 Vous avez été retiré d'une équipe",
-      `Patient : ${patientNom}\n` +
-      `Rôle : ${roleKey}\n` +
-      `Retiré par : ${personneAffectante}`
-      
-    );
-
-  }
-
-}async function removeEquipe(roleKey) {
+async function removeEquipe(roleKey) {
 
   const { hospiRef } = await getHospActive();
 
-  let patientNom = "Patient inconnu";
+  // 👤 Récupération du patient
+  const patientRef = doc(db, "patients", patientId);
+  const patientSnap = await getDoc(patientRef);
+
+  if (!patientSnap.exists()) {
+    throw new Error("Patient introuvable");
+  }
+
+  const patientData = patientSnap.data();
+
+  const patientNom = [
+    patientData.prenom,
+    patientData.nom
+  ]
+    .filter(Boolean)
+    .join(" ") || "Patient inconnu";
+
+
+  // 👨‍⚕️ Personne ayant effectué la suppression
+  const personneAffectante =
+    window.medecinNom || "Utilisateur inconnu";
+
+
   let membreSupprime = "Membre inconnu";
-  let personneAffectante = "Utilisateur inconnu";
 
 
   await runTransaction(db, async (tx) => {
 
     const snap = await tx.get(hospiRef);
 
-    if (!snap.exists()) return;
+    if (!snap.exists()) {
+      return;
+    }
 
     const data = snap.data();
 
-
-    // 👤 Patient
-    patientNom = [
-      data.patient?.prenom,
-      data.patient?.nom
-    ]
-      .filter(Boolean)
-      .join(" ") || "Patient inconnu";
-
-
-    // 👨‍⚕️ Personne effectuant la suppression
-    const user = auth.currentUser;
-
-    personneAffectante =
-      user?.displayName ||
-      user?.email ||
-      "Utilisateur inconnu";
+    // 👤 Récupérer le membre AVANT suppression
+    membreSupprime =
+      data.equipe?.[roleKey]?.nom ||
+      "Membre inconnu";
 
 
     if (data.equipe?.[roleKey]) {
 
-      membreSupprime =
-        data.equipe[roleKey]?.nom ||
-        "Membre inconnu";
+      const nouvelleEquipe = {
+        ...data.equipe
+      };
 
-
-      delete data.equipe[roleKey];
+      delete nouvelleEquipe[roleKey];
 
       tx.update(
         hospiRef,
         {
-          equipe: data.equipe
+          equipe: nouvelleEquipe
         }
       );
-
     }
-
   });
 
 
@@ -5730,15 +5652,14 @@ async function saveEquipe(roleKey, equipeData) {
   );
 
 
-  // 🔔 NOTIFICATION
-  await demanderNotification(
-    "👥 Modification d'équipe vous concernant",
+  // 🔔 Notification
+  await envoyerNotification(
+    "👥 Suppression d'une affectation",
     `Patient : ${patientNom}\n` +
     `Rôle : ${roleKey}\n` +
     `Personne retirée : ${membreSupprime}\n` +
     `Retiré par : ${personneAffectante}`
   );
-
 }
 
 // 👥 CHARGEMENT ÉQUIPE

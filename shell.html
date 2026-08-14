@@ -2566,7 +2566,7 @@ function preventDevTools(e) {
 
 
 // ===== LOCK =====
-window.lockSession = function() {
+window.lockSession = async function() {
   isLocked = true;
   sessionStorage.setItem("appLocked", "true");
 
@@ -2575,9 +2575,17 @@ window.lockSession = function() {
   document.getElementById("unlockPassword").value = "";
   document.getElementById("lockError").textContent = "";
 
-  // Le badge NFC (lecteur = émulateur de clavier) permet un déverrouillage
-  // automatique : on ouvre donc sur ce volet, champ déjà sélectionné.
-  switchLockTab("badge");
+const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+const prefCo = userSnap.préférenceConnexion || "mdp";
+if (prefCo === "mdp") {
+  switchLockTab("password");
+  }else if (prefCo === "badge"){
+    switchLockTab("badge");
+  }else {
+    switchLockTab("password");
+  }
+
+  
 
   document.addEventListener("keydown", preventDevTools);
 

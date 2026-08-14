@@ -819,6 +819,69 @@ iframe {
   margin-top: 10px;
   font-size: 14px;
 }
+
+/* ===== VOLETS MDP / BADGE ===== */
+.lock-switch {
+  display: flex;
+  gap: 6px;
+  background: #f0f4f8;
+  padding: 4px;
+  border-radius: 12px;
+  margin-top: 18px;
+}
+
+.lock-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.lock-tab.active {
+  background: linear-gradient(135deg,#0078d4,#2893ff);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,120,212,.30);
+}
+
+.lock-panel {
+  display: none;
+}
+
+.lock-panel.active {
+  display: block;
+}
+
+.lock-badge-anim {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  margin: 10px auto 4px;
+  display: block;
+}
+
+.lock-badge-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 4px 0 0;
+}
+
+/* Champ du lecteur NFC : masqué visuellement mais focusable/sélectionné */
+.lock-badge-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+}
 #home {
   display: flex;
   flex-direction: column;
@@ -1513,14 +1576,30 @@ transform:none;
   <div class="lock-modal">
     <h2>🔒 GestUrg2 s'est mis en veille</h2>
      <p>Pour des raisons de sécurité, votre session GestUrg2 a été vérouillée.</p>
-    <p>Veuillez saisir votre mot de passe pour vous reconnecter.</p>
 <strong id="lockUserName"></strong>
-    <input type="password" id="unlockPassword" placeholder="Mot de passe" />
+
+    <div class="lock-switch">
+      <button type="button" id="lockTabBadge" class="lock-tab" onclick="switchLockTab('badge')">🪪 Badge</button>
+      <button type="button" id="lockTabPassword" class="lock-tab" onclick="switchLockTab('password')">🔑 Mot de passe</button>
+    </div>
+
+    <!-- Volet BADGE -->
+    <div id="lockPanelBadge" class="lock-panel" onclick="focusBadgeInput()">
+      <img src="animation-badge.gif" alt="Badge" class="lock-badge-anim">
+      <p class="lock-badge-hint">Approchez votre badge du lecteur…</p>
+      <input type="text" id="unlockBadge" class="lock-badge-input" autocomplete="off">
+    </div>
+
+    <!-- Volet MOT DE PASSE -->
+    <div id="lockPanelPassword" class="lock-panel">
+      <p>Veuillez saisir votre mot de passe pour vous reconnecter.</p>
+      <input type="password" id="unlockPassword" placeholder="Mot de passe" />
+    </div>
 
     <div id="lockError" class="lock-error"></div>
 
     <div class="lock-actions">
-       <button onclick="unlockSession()">Se reconnecter</button>
+       <button onclick="attemptUnlock()">Se reconnecter</button>
       <button class="logout-btn" onclick="forceLogout()">Se déconnecter</button>
     </div>
   </div>
@@ -1893,6 +1972,12 @@ setInterval(updateDateTime, 40);
 document.getElementById("unlockPassword").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && document.getElementById("lockOverlay").classList.contains("active")) {
     unlockSession();
+  }
+});
+document.getElementById("unlockBadge").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && document.getElementById("lockOverlay").classList.contains("active")) {
+    e.preventDefault();
+    unlockSessionByBadge();
   }
 });
 </script>
@@ -2482,9 +2567,6 @@ function preventDevTools(e) {
 
 // ===== LOCK =====
 window.lockSession = function() {
-setTimeout(() => {
-  document.getElementById("unlockPassword").focus();
-}, 100);
   isLocked = true;
   sessionStorage.setItem("appLocked", "true");
 
@@ -2492,6 +2574,10 @@ setTimeout(() => {
   document.getElementById("lockOverlay").classList.add("active");
   document.getElementById("unlockPassword").value = "";
   document.getElementById("lockError").textContent = "";
+
+  // Le badge NFC (lecteur = émulateur de clavier) permet un déverrouillage
+  // automatique : on ouvre donc sur ce volet, champ déjà sélectionné.
+  switchLockTab("badge");
 
   document.addEventListener("keydown", preventDevTools);
 
@@ -2502,8 +2588,86 @@ setTimeout(() => {
   });
 }
 
+// ===== VOLETS MDP / BADGE =====
+window.switchLockTab = function(tab) {
+  const isBadge = tab === "badge";
 
-// ===== UNLOCK =====
+  document.getElementById("lockTabBadge").classList.toggle("active", isBadge);
+  document.getElementById("lockTabPassword").classList.toggle("active", !isBadge);
+  document.getElementById("lockPanelBadge").classList.toggle("active", isBadge);
+  document.getElementById("lockPanelPassword").classList.toggle("active", !isBadge);
+
+  document.getElementById("lockError").textContent = "";
+
+  if (isBadge) {
+    document.getElementById("unlockBadge").value = "";
+    setTimeout(focusBadgeInput, 50);
+  } else {
+    setTimeout(() => document.getElementById("unlockPassword").focus(), 50);
+  }
+}
+
+window.focusBadgeInput = function() {
+  const input = document.getElementById("unlockBadge");
+  if (document.getElementById("lockPanelBadge").classList.contains("active")) {
+    input.focus();
+  }
+}
+
+// Le bouton "Se reconnecter" valide selon le volet actif
+window.attemptUnlock = function() {
+  if (document.getElementById("lockPanelBadge").classList.contains("active")) {
+    unlockSessionByBadge();
+  } else {
+    unlockSession();
+  }
+}
+
+// ===== SUCCES / ECHEC (communs mdp + badge) =====
+function handleUnlockSuccess() {
+  isLocked = false;
+  lockAttempts = 0;
+
+  sessionStorage.removeItem("appLocked");
+
+  document.body.classList.remove("locked");
+  document.getElementById("lockOverlay").classList.remove("active");
+
+  document.removeEventListener("keydown", preventDevTools);
+
+  document.querySelectorAll("iframe").forEach(iframe => {
+    iframe.style.pointerEvents = "auto";
+    iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
+  });
+
+  startInactivityTimer();
+}
+
+async function handleUnlockFail(message, errorDiv) {
+  lockAttempts++;
+  errorDiv.textContent = `${message} (${lockAttempts}/3)`;
+
+  if (lockAttempts >= 3) {
+    await signOut(auth);
+    isLocked = false;
+    lockAttempts = 0;
+
+    sessionStorage.removeItem("appLocked");
+
+    document.body.classList.remove("locked");
+    document.getElementById("lockOverlay").classList.remove("active");
+
+    document.removeEventListener("keydown", preventDevTools);
+
+    document.querySelectorAll("iframe").forEach(iframe => {
+      iframe.style.pointerEvents = "auto";
+      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
+    });
+    window.location.href = "index.html";
+  }
+}
+
+// ===== UNLOCK PAR MOT DE PASSE =====
 window.unlockSession = async function() {
 
   const password = document.getElementById("unlockPassword").value;
@@ -2523,47 +2687,45 @@ window.unlockSession = async function() {
 
     await reauthenticateWithCredential(auth.currentUser, credential);
 
-    // ✅ Succès
-    isLocked = false;
-    lockAttempts = 0;
-
-    sessionStorage.removeItem("appLocked");
-
-    document.body.classList.remove("locked");
-    document.getElementById("lockOverlay").classList.remove("active");
-
-    document.removeEventListener("keydown", preventDevTools);
-
-    document.querySelectorAll("iframe").forEach(iframe => {
-      iframe.style.pointerEvents = "auto";
-      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
-    });
-
-    startInactivityTimer();
+    handleUnlockSuccess();
 
   } catch (error) {
+    await handleUnlockFail("Mot de passe incorrect", errorDiv);
+  }
+};
 
-    lockAttempts++;
-    errorDiv.textContent = `Mot de passe incorrect (${lockAttempts}/3)`;
+// ===== UNLOCK PAR BADGE NFC =====
+window.unlockSessionByBadge = async function() {
 
-    if (lockAttempts >= 3) {
-      await signOut(auth);
-      isLocked = false;
-    lockAttempts = 0;
+  const badgeInput = document.getElementById("unlockBadge");
+  const badgeValue = badgeInput.value.trim();
+  const errorDiv = document.getElementById("lockError");
 
-    sessionStorage.removeItem("appLocked");
+  if (!badgeValue) {
+    return;
+  }
 
-    document.body.classList.remove("locked");
-    document.getElementById("lockOverlay").classList.remove("active");
+  if (!auth.currentUser) {
+    errorDiv.textContent = "Session introuvable, veuillez vous reconnecter.";
+    return;
+  }
 
-    document.removeEventListener("keydown", preventDevTools);
+  try {
 
-    document.querySelectorAll("iframe").forEach(iframe => {
-      iframe.style.pointerEvents = "auto";
-      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
-    });
-      window.location.href = "index.html";
+    const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+
+    if (userSnap.exists() && userSnap.data().idBadge && userSnap.data().idBadge === badgeValue) {
+      handleUnlockSuccess();
+    } else {
+      badgeInput.value = "";
+      focusBadgeInput();
+      await handleUnlockFail("Badge non reconnu", errorDiv);
     }
+
+  } catch (error) {
+    badgeInput.value = "";
+    focusBadgeInput();
+    errorDiv.textContent = "Erreur lors de la vérification du badge.";
   }
 };
 // ===== BOUTON DECONNEXION =====

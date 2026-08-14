@@ -281,6 +281,27 @@ input[type="checkbox"] {
   accent-color: #0078d4;
 }
 
+/* --- Badges --- */
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,120,212,0.4); }
+  50% { transform: scale(1.03); box-shadow: 0 0 0 12px rgba(0,120,212,0); }
+}
+.badge-scan-img {
+  width: 180px;
+  margin: 15px auto;
+  display: block;
+  border-radius: 12px;
+  animation: badgePulse 1.4s ease-in-out infinite;
+}
+.badge-hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  border: none;
+  pointer-events: none;
+}
+
 </style>
 </head>
 <body>
@@ -320,6 +341,7 @@ input[type="checkbox"] {
         <th>Editer</th>
         <th>Changer MDP</th>
         <th>Suppression</th>
+        <th>Gestion badge</th>
         <th>Urgences</th>
         <th>Tableau</th>
         <th>App mobile</th>
@@ -376,6 +398,32 @@ background:rgba(0,0,0,0.5);justify-content:center;align-items:center;">
   </div>
 </div>
 
+<!-- ✅ MODALE GESTION DU BADGE -->
+<div id="badgeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.5);justify-content:center;align-items:center;z-index:10000;">
+  <div style="background:white;padding:20px;border-radius:10px;width:380px;position:relative;">
+    <h3>🪪 Gestion du badge</h3>
+    <p id="badgeModalNom" style="font-weight:600;margin-bottom:15px;color:#374151;"></p>
+    <div id="badgeStatutBox" style="padding:14px;border-radius:8px;margin-bottom:15px;background:#f4f4f4;text-align:left;">
+      <span id="badgeStatutTexte">Chargement...</span>
+    </div>
+    <div id="badgeActions" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+    <button onclick="fermerBadgeModal()" style="background:gray;color:white;padding:8px 15px;border:none;border-radius:8px;margin-top:20px;float:right;">✖ Fermer</button>
+  </div>
+</div>
+
+<!-- ✅ MODALE LECTURE DU BADGE -->
+<div id="lireBadgeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:10001;">
+  <div style="background:white;padding:30px;border-radius:14px;width:360px;text-align:center;position:relative;">
+    <button onclick="fermerLectureBadge()" style="background:gray;color:white;padding:6px 12px;border:none;border-radius:8px;position:absolute;top:10px;right:10px;">✖</button>
+    <h3 id="lireBadgeTitre">📡 Scannez le badge</h3>
+    <img src="animation-badge.jpeg" alt="Scan badge" class="badge-scan-img">
+    <p style="color:#555;font-size:14px;">Approchez ou passez le badge sur le lecteur...</p>
+    <input type="text" id="badgeInputCache" class="badge-hidden-input" autocomplete="off">
+  </div>
+</div>
+
   <script type="module">
   emailjs.init("CZapZCcxYfJ8-acLS"); // clé publique par défaut, remplacée si multi-comptes
   import { envoyerMessageSysteme } from "./messagerie-envoi.js";
@@ -421,6 +469,103 @@ window.ouvrirModale = (id, nom, email, specialite, lieu, type) => {
 
 window.fermerModale = () => {
   document.getElementById("editModal").style.display = "none";
+};
+
+// ==========================
+// 🪪 GESTION DES BADGES
+// ==========================
+let badgeUserId = null;
+let badgeUserNom = null;
+let badgeModeActuel = null; // "ajout" ou "modif"
+
+window.ouvrirBadgeModal = (id, nom, badge) => {
+  badgeUserId = id;
+  badgeUserNom = nom;
+  document.getElementById("badgeModal").style.display = "flex";
+  document.getElementById("badgeModalNom").textContent = nom;
+  afficherEtatBadge(badge);
+};
+
+function afficherEtatBadge(badge) {
+  const statutBox = document.getElementById("badgeStatutBox");
+  const statutTexte = document.getElementById("badgeStatutTexte");
+  const actions = document.getElementById("badgeActions");
+
+  if (badge) {
+    statutBox.style.background = "#e6f7e9";
+    statutTexte.innerHTML = `✅ Badge enregistré : <strong>${badge}</strong>`;
+    actions.innerHTML = `
+      <button style="background:#0078d4;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="ouvrirLectureBadge('modif')">✏️ Modifier</button>
+      <button style="background:#ff0000;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="supprimerBadge()">🗑️ Supprimer</button>
+    `;
+  } else {
+    statutBox.style.background = "#fdeaea";
+    statutTexte.innerHTML = "❌ Aucun badge enregistré";
+    actions.innerHTML = `
+      <button style="background:#4caf50;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="ouvrirLectureBadge('ajout')">➕ Ajouter un badge</button>
+    `;
+  }
+}
+
+window.fermerBadgeModal = () => {
+  document.getElementById("badgeModal").style.display = "none";
+  badgeUserId = null;
+  badgeUserNom = null;
+};
+
+window.ouvrirLectureBadge = (mode) => {
+  badgeModeActuel = mode;
+  document.getElementById("lireBadgeTitre").textContent =
+    mode === "modif" ? "📡 Scannez le nouveau badge" : "📡 Scannez le badge";
+  document.getElementById("lireBadgeModal").style.display = "flex";
+  const input = document.getElementById("badgeInputCache");
+  input.value = "";
+  setTimeout(() => input.focus(), 50);
+};
+
+window.fermerLectureBadge = () => {
+  document.getElementById("lireBadgeModal").style.display = "none";
+  document.getElementById("badgeInputCache").value = "";
+};
+
+document.getElementById("badgeInputCache").addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const valeur = e.target.value.trim();
+    if (!valeur) return;
+    await enregistrerBadge(valeur);
+  }
+});
+
+async function enregistrerBadge(valeur) {
+  if (!badgeUserId) return;
+  try {
+    const ref = doc(db, "medecins", badgeUserId);
+    await updateDoc(ref, { badge: valeur });
+    afficherBulle(badgeModeActuel === "modif" ? "✅ Badge modifié" : "✅ Badge enregistré", "success");
+    fermerLectureBadge();
+    afficherEtatBadge(valeur);
+    chargerUtilisateurs();
+  } catch (err) {
+    console.error(err);
+    afficherBulle("❌ Erreur lors de l'enregistrement du badge", "error");
+  }
+}
+
+window.supprimerBadge = async () => {
+  if (!badgeUserId) return;
+  const confirmation = confirm(`Voulez-vous vraiment supprimer le badge de ${badgeUserNom} ?`);
+  if (!confirmation) return;
+  try {
+    const ref = doc(db, "medecins", badgeUserId);
+    await updateDoc(ref, { badge: "" });
+    afficherBulle("✅ Badge supprimé", "success");
+    afficherEtatBadge(null);
+    chargerUtilisateurs();
+  } catch (err) {
+    console.error(err);
+    afficherBulle("❌ Erreur lors de la suppression du badge", "error");
+  }
 };
 async function envoyerMailResetEmailJS(email, nom, motDePasseTemp) {
   const htmlMessage = `
@@ -608,6 +753,16 @@ tr.innerHTML = `
       </button>`
   }
 </td>
+
+<td>
+  <button class="badgeBtn"
+    data-id="${id}"
+    data-nom="${data.nom || ""}"
+    data-badge="${data.badge || ""}"
+    style="background:${data.badge ? "#4caf50" : "#0078d4"};color:white;">
+    ${data.badge ? "🪪 Badge" : "➕ Badge"}
+  </button>
+</td>
       
   <td><input type="checkbox" ${pages.urgences ? "checked" : ""} onchange="toggleAccess('${id}', 'urgences', this.checked)"></td>
     <td><input type="checkbox" ${pages.regulation ? "checked" : ""} onchange="toggleAccess('${id}', 'regulation', this.checked)"></td>
@@ -658,6 +813,14 @@ tbody.appendChild(tr);
     const lieu = btn.dataset.lieu;
     const type = btn.dataset.type;
     ouvrirModale(id, nom, email, specialite, lieu, type);
+  });
+});
+		tbody.querySelectorAll(".badgeBtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.id;
+    const nom = btn.dataset.nom;
+    const badge = btn.dataset.badge;
+    ouvrirBadgeModal(id, nom, badge);
   });
 });
 masquerLoader();
@@ -931,8 +1094,3 @@ window.addEventListener("message",(event)=>{
 
 </body>
 </html>
-
-
-
-
-

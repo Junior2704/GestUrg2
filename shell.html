@@ -1427,6 +1427,24 @@ transform:none;
   margin: 0 auto;
 }
 
+.login-password-iframe-wrapper {
+  width: 540px;
+  height: 325px;
+  margin: 0 auto;
+  overflow: hidden; /* C'est ceci qui va rogner ce qui dépasse */
+  position: relative;
+  border-radius: 10px;
+}
+
+.login-password-anim {
+  width: 540px;
+  height: 325px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
 </style>
 </head>
 <body>
@@ -1617,6 +1635,15 @@ transform:none;
 
     <!-- Volet MOT DE PASSE -->
     <div id="lockPanelPassword" class="lock-panel">
+<div class="login-password-iframe-wrapper">
+    <iframe
+      src="animation-mdp.html"
+      class="login-password-anim"
+      scrolling="no"
+      frameborder="0"
+      title="Animation de saisie du mot de passe">
+    </iframe>
+  </div>
       <p>Veuillez saisir votre mot de passe pour vous reconnecter.</p>
       <input type="password" id="unlockPassword" placeholder="Mot de passe" />
     </div>
@@ -2743,7 +2770,7 @@ window.unlockSession = async function() {
     );
 
     await reauthenticateWithCredential(auth.currentUser, credential);
-document.querySelector('.login-badge-anim')
+document.querySelector('.login-password-anim')
   .contentWindow
   .postMessage("Valide", "*");
         setTimeout(() =>{ 
@@ -2752,11 +2779,11 @@ document.querySelector('.login-badge-anim')
     
 
   } catch (error) {
-        document.querySelector('.login-badge-anim')
+        document.querySelector('.login-password-anim')
   .contentWindow
   .postMessage("Invalide", "*");
   setTimeout(() =>{ 
-      handleUnlockFail("Badge non reconnu", errorDiv);
+      handleUnlockFail("Mot de passe incorrect", errorDiv);
   },2000);
   }
 };

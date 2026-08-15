@@ -2734,10 +2734,18 @@ window.unlockSession = async function() {
     );
 
     await reauthenticateWithCredential(auth.currentUser, credential);
-
-    handleUnlockSuccess();
+document.querySelector('.login-badge-anim')
+  .contentWindow
+  .postMessage("Valide", "*");
+        setTimeout(() =>{ 
+      handleUnlockSuccess();
+    }, 2000);
+    
 
   } catch (error) {
+    document.querySelector('.login-badge-anim')
+  .contentWindow
+  .postMessage("Invalide", "*");
     await handleUnlockFail("Mot de passe incorrect", errorDiv);
   }
 };
@@ -2767,6 +2775,9 @@ window.unlockSessionByBadge = async function() {
     } else {
       badgeInput.value = "";
       focusBadgeInput();
+      document.querySelector('.login-badge-anim')
+  .contentWindow
+  .postMessage("Invalide", "*");
       await handleUnlockFail("Badge non reconnu", errorDiv);
     }
 

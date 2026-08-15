@@ -305,6 +305,10 @@
       border-bottom: 1px solid var(--border-soft);
     }
 
+    #ouvrirFicheBtn {
+      margin: 6px 0 4px;
+    }
+
     #editModal {
       display: none;
       position: fixed;
@@ -350,37 +354,6 @@
 
     .examen-encart button:hover {
       background-color: #128a44;
-    }
-
-    /* ============================================================
-       HISTORIQUE HOSPITALISATIONS
-       ============================================================ */
-    #hospitalisationsContent {
-      margin-top: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    #hospitalisationsContent .card {
-      background: var(--surface-alt);
-      padding: 18px 20px;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
-      border-left: 4px solid var(--accent);
-    }
-
-    #hospitalisationsContent h3 {
-      color: var(--accent-dark);
-      margin-top: 4px;
-      margin-bottom: 8px;
-    }
-
-    #hospitalisationsContent p {
-      margin: 5px 0;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      color: var(--ink-soft);
     }
 
     @keyframes fadeIn {
@@ -808,7 +781,6 @@ import {
     appId: "1:392921498200:web:7ccce767332c67c697c02d",
     measurementId: "G-C74MK2KYDL"
   };
-const hospitalisationsContent = document.getElementById("hospitalisationsContent")
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -1017,22 +989,34 @@ console.log("Données examens brutes :", examens);
     <p><b>Date de naissance :</b> ${formaterDate(patient.dateNaissance)}</p>
     <p><b>Position :</b> ${patient.position || "N/A"}</p>
 
+    <button id="ouvrirFicheBtn" class="btn-id">📁 Ouvrir la fiche patient</button>
+
     <h3>☢️ Examens en attente</h3>
     ${examensNonRealisesHTML}
 
     <h3>🗂️ Historique des examens réalisés</h3>
     ${examensRealisesHTML}
-
-    <h2>📊 Hospitalisations du patient</h2>
-    <div id="hospitalisationsContent"></div>
   `;
 
-chargerHistoriqueComplet(patient.patientId).finally(hideSpinner);
+  const ouvrirFicheBtn = document.getElementById("ouvrirFicheBtn");
+  if (ouvrirFicheBtn) {
+    ouvrirFicheBtn.onclick = () => {
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: `Fiche Urgences ${patient.nom} ${patient.prenom}`,
+          url: `fiche.html?id=${patient.patientId}`
+        },
+        "*"
+      );
+    };
+  }
 
+  hideSpinner();
   detailPanel.style.display = "flex";
 }
 
-
+// ==============================
     validerBtn.onclick = async () => {
       showSpinner();
   if (!window.currentEdit) { hideSpinner(); return; }

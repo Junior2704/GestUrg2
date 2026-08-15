@@ -5,202 +5,454 @@
       <link rel="icon" type="image/jpeg" href="logog2.png">
   <title>☢️ Gestionnaire des examens</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    /* ============================================================
+       DESIGN TOKENS — thème "console d'imagerie" (clinique, précis)
+       ============================================================ */
+    :root {
+      --bg: #eef1f6;
+      --surface: #ffffff;
+      --surface-alt: #f5f7fb;
+      --ink: #101826;
+      --ink-soft: #4c5567;
+      --ink-faint: #8892a3;
+      --border: #dde3ec;
+      --border-soft: #e8ecf3;
+
+      --accent: #0e7490;        /* teal clinique — évoque l'imagerie/scan */
+      --accent-dark: #0b5b73;
+      --accent-soft: #e3f4f7;
+      --accent-glow: rgba(14, 116, 144, 0.18);
+
+      --success: #16a34a;
+      --success-soft: #e7f6ec;
+      --danger: #dc2626;
+      --danger-soft: #fdeaea;
+      --warning: #d97706;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-sm: 0 1px 2px rgba(16, 24, 38, 0.06);
+      --shadow-md: 0 8px 24px rgba(16, 24, 38, 0.08);
+      --shadow-lg: 0 20px 50px rgba(16, 24, 38, 0.18);
+
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, "SFMono-Regular", Menlo, monospace;
+    }
+
     * { box-sizing: border-box; }
-#hospitalisationsContent {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
-#hospitalisationsContent .card {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-  border-left: 8px solid #0078d4;
-}
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
 
-#hospitalisationsContent h3 {
-  color: #0078d4;
-  margin-top: 10px;
-  margin-bottom: 8px;
-}
-
-#hospitalisationsContent p {
-  margin: 5px 0;
-  line-height: 1.5;
-  white-space: pre-wrap; /* conserve les sauts de ligne */
-  color: #333;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
+    /* ============================================================
+       BASE
+       ============================================================ */
     body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: #f7f9fc;
-      margin: 20px;
-      color: #333;
+      font-family: var(--font-ui);
+      background:
+        radial-gradient(1200px 600px at 100% -10%, rgba(14,116,144,0.06), transparent 60%),
+        var(--bg);
+      margin: 0;
+      padding: 28px clamp(16px, 4vw, 40px) 60px;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
     }
 
-    h1 {
-      text-align: center;
-      color: #2c3e50;
+    h1, h2, h3 {
+      font-family: var(--font-ui);
+      color: var(--ink);
+      letter-spacing: -0.01em;
     }
 
+    h2 { margin-bottom: 20px; font-weight: 700; }
+
+    p { color: var(--ink-soft); }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    /* ============================================================
+       EN-TÊTE DE PAGE
+       ============================================================ */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 20px 26px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #38bdf8 60%, transparent);
+    }
+
+    .page-header-title { display: flex; flex-direction: column; gap: 4px; }
+
+    .page-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 800;
+    }
+
+    /* ============================================================
+       BOUTONS
+       ============================================================ */
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-family: var(--font-ui);
+      font-size: 0.94rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    button:hover {
+      background-color: var(--accent-dark);
+      box-shadow: 0 8px 20px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    button:active { transform: translateY(0); }
+
+    .btn-id {
+      all: unset;
+      background: var(--surface-alt);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-id:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px var(--accent-glow);
+    }
+
+    .btn-id:active { transform: translateY(0); }
+
+    .btn-id:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .btn-id-c:hover {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+      color: var(--danger);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(220, 38, 38, 0.15);
+    }
+
+    .btn-id-c:focus {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    }
+
+    .btn-id-v:hover {
+      background: var(--success-soft);
+      border-color: var(--success);
+      color: var(--success);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.15);
+    }
+
+    .btn-id-v:focus {
+      border-color: var(--success);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+    }
+
+    /* ============================================================
+       TABLE PATIENTS
+       ============================================================ */
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background: white;
-      border-radius: 8px;
+      box-shadow: var(--shadow-md);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      margin-top: 25px;
+      margin-top: 8px;
+      border: 1px solid var(--border-soft);
     }
 
     thead {
-      background: #2980b9;
+      background: var(--ink);
       color: white;
+    }
+
+    th {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #cbd5e1;
     }
 
     th, td {
       padding: 14px 20px;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid var(--border-soft);
     }
 
     tbody tr {
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.2s ease;
     }
+
+    tbody tr:last-child td { border-bottom: none; }
 
     tbody tr:hover {
-      background-color: #dbe9f4;
+      background-color: var(--accent-soft);
     }
 
- #detailPanel {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-  z-index: 10000;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
+    tbody td:nth-child(4) {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent-dark);
+    }
 
-/* ✅ Fixe la taille et évite le saut de la modale */
-#detailContent {
-  background: white;
-  border-radius: 12px;
-  width: 90vw;
-  max-width: 800px;
-  height: 80vh;              /* <-- taille stable */
-  overflow-y: auto;          /* <-- défilement interne */
-  padding: 30px 40px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  position: relative;
-  transition: all 0.3s ease; /* optionnel pour douceur */
-}
-#editModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 10001;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
+    /* ============================================================
+       MODALES — panneau détail patient / édition
+       ============================================================ */
+    #detailPanel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 24, 38, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
 
+    #detailContent {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      width: 90vw;
+      max-width: 800px;
+      height: 80vh;
+      overflow-y: auto;
+      padding: 32px 40px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      border: 1px solid var(--border-soft);
+    }
 
+    #detailContent h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
+    #detailContent h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      font-size: 1.05rem;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    #editModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 24, 38, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 10001;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* ============================================================
+       ENCARTS EXAMENS
+       ============================================================ */
     .examen-encart {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
-      background-color: #f5faff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      background-color: var(--surface-alt);
+      border-left: 4px solid var(--accent);
     }
+
+    .examen-encart p { margin: 4px 0; color: var(--ink); font-size: 14.5px; }
+    .examen-encart p b { color: var(--ink-soft); font-weight: 600; }
 
     .examen-encart.realise {
-      background-color: #eaf9ea;
-      border-color: #9ccc65;
+      background-color: var(--success-soft);
+      border-left-color: var(--success);
     }
 
     .examen-encart button {
-      background-color: #27ae60;
+      background-color: var(--success);
       color: white;
       border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
     .examen-encart button:hover {
-      background-color: #219150;
+      background-color: #128a44;
     }
 
+    /* ============================================================
+       HISTORIQUE HOSPITALISATIONS
+       ============================================================ */
+    #hospitalisationsContent {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #hospitalisationsContent .card {
+      background: var(--surface-alt);
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border-left: 4px solid var(--accent);
+    }
+
+    #hospitalisationsContent h3 {
+      color: var(--accent-dark);
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    #hospitalisationsContent p {
+      margin: 5px 0;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      color: var(--ink-soft);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ============================================================
+       MODALE ÉDITION COMPTE-RENDU
+       ============================================================ */
     #editModalContent {
-      background: #ffffff;
-      border-radius: 16px;
-      max-width: 500px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      max-width: 520px;
       width: 100%;
-      padding: 30px 40px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      padding: 32px 36px;
+      box-shadow: var(--shadow-lg);
       position: relative;
-      color: #2c3e50;
+      color: var(--ink);
+      border: 1px solid var(--border-soft);
     }
 
     #editModalContent h3 {
       margin-top: 0;
-      font-size: 22px;
-      font-weight: 600;
-      color: #2d4059;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ink);
     }
 
     #compteRenduInput {
       width: 100%;
       height: 150px;
-      padding: 12px 16px;
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: var(--font-ui);
       font-size: 15px;
       resize: vertical;
-      background: #f9fafb;
+      background: var(--surface-alt);
+      color: var(--ink);
     }
 
     #compteRenduInput:focus {
       outline: none;
-      border-color: #3498db;
-      background: #ffffff;
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
     #ajouterHorodatageBtn {
-      background: #3498db;
-      color: white;
-      border: none;
+      background: var(--surface-alt);
+      color: var(--ink);
+      border: 1px solid var(--border);
       padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s ease;
-      margin-top: 10px;
+      transition: all 0.2s ease;
+      margin-top: 14px;
       margin-right: 10px;
     }
 
-#ajouterHorodatageBtn:hover {
-      background: #2d80c6;
+    #ajouterHorodatageBtn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-dark);
     }
 
+    /* ============================================================
+       NOTIFICATIONS "BULLES"
+       ============================================================ */
     #bubble-container {
       position: fixed;
       top: 20px;
@@ -213,356 +465,234 @@
     }
 
     .bubble {
-      max-width: 300px;
-      padding: 10px 15px;
-      border-radius: 8px;
+      max-width: 320px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
       color: white;
-      font-family: sans-serif;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
       animation: fadeout 0.5s ease-in-out 5s forwards;
       word-wrap: break-word;
       text-align: left;
     }
 
-    .administratif { background-color: #2196F3; }
-    .alerte { background-color: #f44336; }
+    .administratif { background-color: var(--accent); }
+    .alerte { background-color: var(--danger); }
 
     @keyframes fadeout {
       to { opacity: 0; transform: translateX(-20px); }
     }
 
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  background: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  margin-bottom: 15px;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #005ea2;
-}
-
-.tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.tab {
-  background: transparent;
-  color: #005ea2;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tab.active,
-.tab:hover {
-  background: #e6f0fc;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-btn {
-  background: #f0f4f8;
-  color: #333;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.icon-btn:hover {
-  background: #dbe9ff;
-}
-
-/* 🔽 Menu hover */
-.hover-menu {
-  position: relative;
-}
-
-.hover-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  overflow: hidden;
-}
-
-.hover-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.hover-panel button:hover {
-  background: #f0f8ff;
-}
-
-.hover-menu:hover .hover-panel {
-  display: flex;
-}
-/* 🔧 Correctif lisibilité topbar */
-.topbar button,
-.topbar .tab,
-.topbar .icon-btn {
-  color: #1f2937; /* gris foncé lisible */
-}
-.hover-panel button {
-  color: #1f2937;
-  background: white;
-}
-
-.hover-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-.tab.active {
-  background: #0078d4;
-  color: white;
-}
-.menu-wrapper {
-  position: relative;
-}
-
-.menu-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.menu-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-  color: #1f2937;
-}
-
-.menu-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-
-/* état ouvert */
-.menu-wrapper.open .menu-panel {
-  display: flex;
-}
-
-.topbar,
-.search-container {
-  position: relative;
-}
-
-body {
-      font-family: 'Inter', sans-serif;
-      margin: 0; padding: 20px;
-      background: #f0f4f8;
-      color: #222;
-    }
-    h2 {
-      margin-bottom: 20px;
+    /* ============================================================
+       TOPBAR / MENUS (réutilisables ailleurs dans l'app)
+       ============================================================ */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 15px;
     }
 
-    /* Boutons */
-    button {
-      background-color: #0078d4;
-      color: white;
+    .topbar-left { display: flex; align-items: center; gap: 20px; }
+
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--accent-dark); }
+
+    .tabs { display: flex; gap: 8px; }
+
+    .tab {
+      background: transparent;
+      color: var(--accent-dark);
       border: none;
-      padding: 10px 20px;
-      font-size: 1rem;
+      padding: 8px 14px;
       border-radius: 8px;
+      font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-      flex-shrink: 0;
     }
 
-    button:hover {
-      background-color: #005ea2;
-      box-shadow: 0 8px 20px rgba(0, 120, 212, 0.4);
-      transform: scale(1.05);
+    .tab.active, .tab:hover { background: var(--accent-soft); }
+    .tab.active { background: var(--accent); color: white; }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .icon-btn {
+      background: var(--surface-alt);
+      color: var(--ink-soft);
+      border: none;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
     }
 
-.spinner-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(2px);
-  z-index: 20000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    .icon-btn:hover { background: var(--accent-soft); }
 
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 5px solid #e0e0e0;
-  border-top: 5px solid #0078d4;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
+    .hover-menu { position: relative; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+    .hover-panel {
+      position: absolute;
+      top: 120%;
+      right: 0;
+      background: var(--surface);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      flex-direction: column;
+      min-width: 180px;
+      overflow: hidden;
+    }
 
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
+    .hover-panel button {
+      background: none;
+      border: none;
+      padding: 10px 14px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--ink);
+    }
 
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
+    .hover-panel button:hover { background: var(--accent-soft); color: var(--accent-dark); }
+    .hover-menu:hover .hover-panel { display: flex; }
 
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
+    .topbar button, .topbar .tab, .topbar .icon-btn { color: var(--ink); }
 
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
+    .menu-wrapper { position: relative; }
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
+    .menu-panel {
+      position: absolute;
+      top: 120%;
+      right: 0;
+      background: var(--surface);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      flex-direction: column;
+      min-width: 180px;
+      z-index: 9999;
+      overflow: hidden;
+    }
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
+    .menu-panel button {
+      background: none;
+      border: none;
+      padding: 10px 14px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--ink);
+    }
 
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
+    .menu-panel button:hover { background: var(--accent-soft); color: var(--accent-dark); }
+    .menu-wrapper.open .menu-panel { display: flex; }
 
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
+    .topbar, .search-container { position: relative; }
 
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
+    /* ============================================================
+       SPINNER
+       ============================================================ */
+    .spinner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(238, 241, 246, 0.75);
+      backdrop-filter: blur(2px);
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--border);
+      border-top: 4px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
 
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
+    /* ============================================================
+       SCROLLBAR
+       ============================================================ */
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
 
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
+    ::-webkit-scrollbar-track {
+      background: var(--surface-alt);
+      border-radius: 10px;
+    }
 
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-</style>
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+      border-radius: 10px;
+      border: 2px solid var(--surface-alt);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #38bdf8, var(--accent));
+    }
+
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--surface-alt); }
+
+    /* ============================================================
+       MODALES D'ÉTAT (accès refusé / erreur / compte-rendu prêt)
+       ============================================================ */
+    .modalna {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(16, 24, 38, 0.5);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modalna .card {
+      background: var(--surface);
+      padding: 28px 34px;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-soft);
+    }
+
+    .modalna h2 {
+      color: var(--danger);
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+    }
+
+    #modal-compte-rendu-pret h2 { color: var(--success); }
+
+    .modalna p {
+      font-size: 15px;
+      margin-bottom: 22px;
+      color: var(--ink-soft);
+    }
+
+    .modalna .btn { padding: 10px 20px; font-size: 14px; }
+
+    #modal-compte-rendu-pret .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #modal-compte-rendu-pret .btn-id { margin: 4px 6px 0; }
+  </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
 </head>
 <body>
   <div id="globalSpinner" class="spinner-overlay" style="display:none;">
@@ -588,9 +718,15 @@ body {
   </div>
 </div>
 
-<button id="refreshPatientsBtn" class="btn-id">
-  🔄 Actualiser la liste des patients
-</button>
+  <header class="page-header">
+    <div class="page-header-title">
+      <span class="page-eyebrow">Radiologie</span>
+      <h1>Gestionnaire des examens</h1>
+    </div>
+    <button id="refreshPatientsBtn" class="btn-id">
+      ⟳ Actualiser la liste des patients
+    </button>
+  </header>
 
 <table>
   <thead>
@@ -638,6 +774,15 @@ body {
   </div>
 </div>
 
+<div id="modal-compte-rendu-pret" class="modalna">
+  <div class="card">
+    <h2>📄 Compte-rendu généré</h2>
+    <p>Le compte-rendu a été enregistré dans le dossier du patient.</p>
+    <button id="ouvrirCompteRenduBtn" class="btn-id btn-id-v">Ouvrir le PDF</button>
+    <button id="fermerCompteRenduModalBtn" class="btn-id btn-id-c">Fermer</button>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -648,6 +793,7 @@ import {
   getDoc,
   doc,
   updateDoc,
+  addDoc,
   query,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -739,6 +885,12 @@ function hideSpinner() {
 
     closeBtnDetail.onclick = () => detailPanel.style.display = "none";
     closeEditModal.onclick = () => { editModal.style.display = "none"; currentEdit = null; };
+    const fermerCompteRenduModalBtn = document.getElementById("fermerCompteRenduModalBtn");
+    if (fermerCompteRenduModalBtn) {
+      fermerCompteRenduModalBtn.onclick = () => {
+        document.getElementById("modal-compte-rendu-pret").style.display = "none";
+      };
+    }
 
    window.loadPatients=async function loadPatients() {
   const snapshot = await getDocs(collection(db, "patients"));
@@ -883,19 +1035,21 @@ chargerHistoriqueComplet(patient.patientId).finally(hideSpinner);
 
     validerBtn.onclick = async () => {
       showSpinner();
-  if (!window.currentEdit) return;
+  if (!window.currentEdit) { hideSpinner(); return; }
   if (!window.currentEdit?.hospitalisationId) {
   console.error("❌ hospitalisationId manquant", window.currentEdit);
   afficherBulle("Erreur interne (hospitalisation)", "alerte");
+  hideSpinner();
   return;
 }
 
 
-  const { hospitalisationId, examIndex } = window.currentEdit;
+  const { patientId, hospitalisationId, examIndex } = window.currentEdit;
   const compteRendu = compteRenduInput.value.trim();
 
   if (!compteRendu) {
     afficherBulle("❌ Compte-rendu vide", "alerte");
+    hideSpinner();
     return;
   }
 
@@ -904,6 +1058,7 @@ chargerHistoriqueComplet(patient.patientId).finally(hideSpinner);
 
   if (!hospSnap.exists()) {
     afficherBulle("❌ Hospitalisation introuvable", "alerte");
+    hideSpinner();
     return;
   }
 
@@ -912,6 +1067,7 @@ chargerHistoriqueComplet(patient.patientId).finally(hideSpinner);
 
   if (!examen) {
     afficherBulle("❌ Examen introuvable", "alerte");
+    hideSpinner();
     return;
   }
 
@@ -922,6 +1078,38 @@ examen.dateRealisation = formatDateHeure(new Date().toISOString());
   await updateDoc(hospRef, {
     examens: hospData.examens
   });
+
+  // 🗂️ Génération automatique du compte-rendu au format .ord + enregistrement dans "documents"
+  try {
+    let patientData = {};
+    if (patientId) {
+      const patientSnap = await getDoc(doc(db, "patients", patientId));
+      if (patientSnap.exists()) patientData = patientSnap.data();
+    }
+
+    const ord = window.genererOrdCompteRendu(examen, patientData, compteRendu);
+
+    await addDoc(collection(db, "documents"), {
+      patientId: patientId || null,
+      type: `Compte-rendu ${examen.type || "examen"}`,
+      dateCreation: formatDateHeure(new Date().toISOString()),
+      contenu: compteRendu,
+      ord
+    });
+
+    if (window.ordToPDF) {
+      const pdfBlob = await window.ordToPDF(ord);
+      const url = URL.createObjectURL(pdfBlob);
+      const ouvrirBtn = document.getElementById("ouvrirCompteRenduBtn");
+      if (ouvrirBtn) ouvrirBtn.onclick = () => window.open(url, "_blank");
+      const modalPret = document.getElementById("modal-compte-rendu-pret");
+      if (modalPret) modalPret.style.display = "flex";
+    }
+  } catch (err) {
+    console.error("❌ Erreur génération compte-rendu .ord :", err);
+    afficherBulle("⚠️ Examen enregistré, mais le compte-rendu .ord n'a pas pu être généré", "alerte");
+  }
+
  hideSpinner();
   afficherBulle("✔️ Examen enregistré", "administratif");
   editModal.style.display = "none";
@@ -988,14 +1176,55 @@ window.openEditModal = (patientId, hospitalisationId, examIndex) => {
   const editModal = document.getElementById("editModal");
   const compteRenduInput = document.getElementById("compteRenduInput");
 
-  // ✅ on stocke CE DONT ON A VRAIMENT BESOIN
+  // ✅ on stocke CE DONT ON A VRAIMENT BESOIN (patientId requis pour générer le .ord)
   window.currentEdit = {
+    patientId,
     hospitalisationId,
     examIndex
   };
 
   compteRenduInput.value = "";
   editModal.style.display = "flex";
+};
+
+// ==============================
+// 🗂️ Génération du compte-rendu au format .ord
+// ==============================
+window.genererOrdCompteRendu = function (examen, patientData, compteRendu) {
+  const maintenant = new Date();
+
+  return {
+    logo: "logog2.png",
+    date: maintenant.toLocaleDateString("fr-FR"),
+    lieu: window.medecinLieu || "",
+    titre: `Compte-rendu — ${examen.type || "Examen"}`,
+    patient: {
+      prenom: patientData.prenom || "",
+      nom: patientData.nom || "",
+      date_Naissance: window.formaterDate ? window.formaterDate(patientData.dateNaissance) : (patientData.dateNaissance || "")
+    },
+    medecin: {
+      nom: window.medecinNom || "",
+      specialite: window.medecinSpecialite || ""
+    },
+    contenu: [
+      { type: "bold", value: "Examen : " },
+      { type: "text", value: examen.type || "N/A" },
+      { type: "newline" },
+      { type: "bold", value: "Date de la demande : " },
+      { type: "text", value: formatDateHeure(examen.dateDemande) },
+      { type: "newline" },
+      { type: "bold", value: "Date de réalisation : " },
+      { type: "text", value: examen.dateRealisation || formatDateHeure(new Date().toISOString()) },
+      { type: "newline" },
+      { type: "bold", value: "Réalisé par : " },
+      { type: "text", value: `${window.medecinNom || ""}${window.medecinSpecialite ? " (" + window.medecinSpecialite + ")" : ""}` },
+      { type: "separator" },
+      { type: "bold", value: "Compte-rendu :" },
+      { type: "newline" },
+      { type: "text", value: compteRendu }
+    ]
+  };
 };
 function formatDateHeure(input) {
   if (!input) return "?";
@@ -1134,4 +1363,3 @@ document.addEventListener("click", function(e){
 
 </body>
 </html>
-

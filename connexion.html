@@ -11,7 +11,7 @@
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   
   // --- Config Firebase ---
@@ -27,9 +27,78 @@ window.allerAdmin = async function () {
     window.location.href = "connexionadmin.html";
   }
 
- 
-  // --- Fonction de connexion ---
+const DERNIER_EMAIL_KEY = "gu2_dernierEmail";
+let systemeBloque = false;
+let badgeLoginEmail = null;
+let badgeLoginUid = null;
+
+// ➡️ Redirige vers la page principale
+// (mobile → urgences_mobile, ordinateur → urgences)
+// ➡️ Sauf si un paramètre ?page=... est présent dans l'URL : dans ce cas, priorité à cette page
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone|Mobile/i.test(navigator.userAgent)
+      || (window.innerWidth < 850);
+}
+
+// 🔎 Logique commune post-authentification (mot de passe ET badge)
+async function finaliserConnexion(user) {
+  const ref = doc(db, "medecins", user.uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = snap.data();
+
+    // 🔴 Vérifie si le compte est marqué pour suppression
+    if (data.supprime === true) {
+      window.location.href = "suppressioncompte.html";
+      return;
+    }
+
+    // 🔐 Vérifie si l'utilisateur doit changer son mot de passe
+    if (data.doitChangerMDP === true) {
+      window.location.href = "changer_mot_passe.html?from=obligatoire";
+      return;
+    }
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  let pageDemandee = urlParams.get("page");
+
+  if (pageDemandee) {
+    // Nettoie une éventuelle extension .html déjà présente
+    pageDemandee = pageDemandee.replace(/\.html$/i, "");
+    window.location.href = `${pageDemandee}.html?uid=${user.uid}`;
+  } else if (isMobileDevice()) {
+    window.location.href = `fichemobile.html?uid=${user.uid}`;
+  } else {
+    window.location.href = `shell.html`;
+  }
+}
+
+// 🈳 Traduction des erreurs Firebase (communes mot de passe / badge)
+function traduireErreurConnexion(error) {
+  switch (error.message) {
+    case "Firebase: Error (auth/invalid-email).":
+      return "🚨 Email invalide. Vérifiez l'adresse saisie.";
+    case "Firebase: Error (auth/user-disabled).":
+      return "🚫 Ce compte a été désactivé. Contactez un administrateur.";
+    case "Firebase: Error (auth/user-not-found).":
+      return "❌ Aucun compte trouvé avec cet email.";
+    case "Firebase: Error (auth/invalid-credential).":
+      return "🔑 Couple email/mot de passe incorrect.";
+    case "Firebase: Error (auth/missing-password).":
+      return "🚨 Merci de saisir un mot de passe.";
+    case "Firebase: Error (auth/too-many-requests).":
+      return "🚨 Vous avez tenté de vous connecté trop de fois avec un mot de passe éronné. Merci de réessayer plus tard";
+    case "Firebase: Error (auth/network-request-failed).":
+      return "📶 Problème de connexion réseau. Vérifiez votre connexion Internet.";
+    default:
+      return "❌ Une erreur est survenue : " + error.message;
+  }
+}
+
+  // --- Fonction de connexion (mot de passe) ---
   window.seConnecter = async function () {
+    if (systemeBloque) return;
     await setPersistence(auth, browserSessionPersistence);
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
@@ -40,83 +109,147 @@ window.allerAdmin = async function () {
     try {
       // 🔐 Connexion utilisateur
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      localStorage.setItem(DERNIER_EMAIL_KEY, email);
+      await finaliserConnexion(userCredential.user);
+    } catch (error) {
+      message.textContent = traduireErreurConnexion(error);
+    }
+  };
 
-      // 🔎 Vérifie dans Firestore si "doitChangerMDP" est vrai
-      const ref = doc(db, "medecins", user.uid);
-      const snap = await getDoc(ref);
-if (snap.exists()) {
-  const data = snap.data();
+  // ==========================
+  // 🪪 CONNEXION PAR BADGE
+  // ==========================
 
-  // 🔴 Vérifie si le compte est marqué pour suppression
-  if (data.supprime === true) {
-    window.location.href = "suppressioncompte.html";
-    return;
-  }
+  window.switchLoginTab = function (tab) {
+    const isBadge = tab === "badge";
 
-  // 🔐 Vérifie si l'utilisateur doit changer son mot de passe
-  if (data.doitChangerMDP === true) {
-    window.location.href = "changer_mot_passe.html?from=obligatoire";
-    return;
-  }
-}
+    document.getElementById("loginTabBadge").classList.toggle("active", isBadge);
+    document.getElementById("loginTabPassword").classList.toggle("active", !isBadge);
+    document.getElementById("loginPanelBadge").classList.toggle("active", isBadge);
+    document.getElementById("loginPanelPassword").classList.toggle("active", !isBadge);
 
+    document.getElementById("message").textContent = "";
+    document.getElementById("badgeLoginError").textContent = "";
 
-    // ➡️ Sinon, redirige vers la page principale
-// (mobile → urgences_mobile, ordinateur → urgences)
-// ➡️ Sauf si un paramètre ?page=... est présent dans l'URL : dans ce cas, priorité à cette page
-function isMobileDevice() {
-  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone|Mobile/i.test(navigator.userAgent)
-      || (window.innerWidth < 850);
-}
+    if (isBadge) {
+      document.getElementById("badgeLoginInput").value = "";
+      setTimeout(focusBadgeLoginInput, 50);
+    }
+  };
 
-const urlParams = new URLSearchParams(window.location.search);
-let pageDemandee = urlParams.get("page");
+  window.focusBadgeLoginInput = function () {
+    if (systemeBloque) return;
+    const panel = document.getElementById("loginPanelBadge");
+    if (panel && panel.classList.contains("active")) {
+      document.getElementById("badgeLoginInput").focus();
+    }
+  };
 
-if (pageDemandee) {
-  // Nettoie une éventuelle extension .html déjà présente
-  pageDemandee = pageDemandee.replace(/\.html$/i, "");
-  window.location.href = `${pageDemandee}.html?uid=${user.uid}`;
-} else if (isMobileDevice()) {
-  window.location.href = `fichemobile.html?uid=${user.uid}`;
-} else {
-  window.location.href = `shell.html`;
-}
+  // 🔎 Recherche l'utilisateur propriétaire du badge scanné
+  window.rechercherBadge = async function () {
+    if (systemeBloque) return;
+    const input = document.getElementById("badgeLoginInput");
+    const valeur = input.value.trim();
+    const errorDiv = document.getElementById("badgeLoginError");
+    errorDiv.textContent = "";
 
+    if (!valeur) return;
+
+    try {
+      const q = query(collection(db, "medecins"), where("idBadge", "==", valeur));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        errorDiv.textContent = "❌ Badge non reconnu.";
+        input.value = "";
+        focusBadgeLoginInput();
+        return;
+      }
+
+      const docSnap = snap.docs[0];
+      const data = docSnap.data();
+
+      badgeLoginEmail = data.email;
+      badgeLoginUid = docSnap.id;
+
+      input.value = "";
+
+      document.getElementById("usbUserText").textContent = `Utilisateur : ${data.nom || data.email || ""}`;
+      document.getElementById("usbPassword").value = "";
+      document.getElementById("usbLoginError").textContent = "";
+      document.getElementById("usbLoginModal").style.display = "flex";
+      setTimeout(() => document.getElementById("usbPassword").focus(), 50);
 
     } catch (error) {
-  let errorMsg = "❌ Erreur de connexion. Veuillez réessayer.";
-
-  switch (error.message) {
-    case "Firebase: Error (auth/invalid-email).":
-      errorMsg = "🚨 Email invalide. Vérifiez l'adresse saisie.";
-      break;
-    case "Firebase: Error (auth/user-disabled).":
-      errorMsg = "🚫 Ce compte a été désactivé. Contactez un administrateur.";
-      break;
-    case "Firebase: Error (auth/user-not-found).":
-      errorMsg = "❌ Aucun compte trouvé avec cet email.";
-      break;
-    case "Firebase: Error (auth/invalid-credential).":
-      errorMsg = "🔑 Couple email/mot de passe incorrect.";
-      break;
-    case "Firebase: Error (auth/missing-password).":
-      errorMsg = "🚨 Merci de saisir un mot de passe.";
-      break;
-    case "Firebase: Error (auth/too-many-requests).":
-      errorMsg = "🚨 Vous avez tenté de vous connecté trop de fois avec un mot de passe éronné. Merci de réessayer plus tard";
-      break;
-    case "Firebase: Error (auth/network-request-failed).":
-      errorMsg = "📶 Problème de connexion réseau. Vérifiez votre connexion Internet.";
-      break;
-    default:
-      errorMsg = "❌ Une erreur est survenue : " + error.message;
-      break;
-  }
-
-  message.textContent = errorMsg;
-}
+      console.error(error);
+      errorDiv.textContent = "❌ Erreur lors de la vérification du badge.";
+      input.value = "";
+      focusBadgeLoginInput();
+    }
   };
+
+  // ✔ Validation de la modale mot de passe (déclenchée après reconnaissance du badge)
+  window.validerUSBLogin = async function () {
+    if (!badgeLoginEmail) return;
+    await setPersistence(auth, browserSessionPersistence);
+
+    const password = document.getElementById("usbPassword").value;
+    const errorDiv = document.getElementById("usbLoginError");
+    errorDiv.textContent = "";
+
+    if (!password) {
+      errorDiv.textContent = "🚨 Merci de saisir un mot de passe.";
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, badgeLoginEmail, password);
+      localStorage.setItem(DERNIER_EMAIL_KEY, badgeLoginEmail);
+      document.getElementById("usbLoginModal").style.display = "none";
+      await finaliserConnexion(userCredential.user);
+    } catch (error) {
+      errorDiv.textContent = traduireErreurConnexion(error);
+      document.getElementById("usbPassword").value = "";
+      document.getElementById("usbPassword").focus();
+    }
+  };
+
+  // ❌ Annulation de la modale mot de passe badge
+  window.annulerUSBLogin = function () {
+    document.getElementById("usbLoginModal").style.display = "none";
+    document.getElementById("usbPassword").value = "";
+    document.getElementById("usbLoginError").textContent = "";
+    badgeLoginEmail = null;
+    badgeLoginUid = null;
+    focusBadgeLoginInput();
+  };
+
+  // 🔧 Détermine l'onglet par défaut (badge ou mot de passe) selon la préférence
+  // de l'utilisateur, retrouvée via le dernier email de connexion connu localement.
+  async function appliquerOngletParDefaut() {
+    const dernierEmail = localStorage.getItem(DERNIER_EMAIL_KEY);
+
+    if (dernierEmail) {
+      document.getElementById("email").value = dernierEmail;
+    }
+
+    let ongletParDefaut = "password";
+
+    if (dernierEmail) {
+      try {
+        const q = query(collection(db, "medecins"), where("email", "==", dernierEmail));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const pref = snap.docs[0].data()["préférenceConnexion"];
+          if (pref === "badge") ongletParDefaut = "badge";
+        }
+      } catch (e) {
+        console.warn("Impossible de récupérer la préférence de connexion :", e);
+      }
+    }
+
+    switchLoginTab(ongletParDefaut);
+  }
   async function checkFonctionnement() {
   try {
     const ref = doc(db, "referentiels", "fonctionnement");
@@ -178,6 +311,20 @@ document.getElementById("password").addEventListener("keydown", function(e) {
   }
 });
 
+document.getElementById("badgeLoginInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    rechercherBadge();
+  }
+});
+
+document.getElementById("usbPassword").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    validerUSBLogin();
+  }
+});
+
 
 window.showSystemModal = function(title, text) {
   const modal = document.getElementById("systemModal");
@@ -197,17 +344,21 @@ window.showSystemModal = function(title, text) {
   modal.style.display = "flex";
 };
 window.addEventListener("DOMContentLoaded", async () => {
+  await appliquerOngletParDefaut();
+
   const ok = await checkFonctionnement();
 
-  // si pas OK → on bloque les boutons
+  // si pas OK → on bloque les boutons et la lecture de badge
   if (!ok) {
+    systemeBloque = true;
     document.querySelectorAll("button").forEach(btn => {
-      if (btn.textContent.includes("Se connecter")) {
+      if (btn.textContent.includes("Se connecter") || btn.textContent.includes("Connexion")) {
         btn.disabled = true;
         btn.style.opacity = "0.5";
         btn.style.cursor = "not-allowed";
       }
     });
+    document.getElementById("badgeLoginInput").disabled = true;
   }
 });
 </script>
@@ -292,6 +443,76 @@ input::placeholder {
     img {
       margin-top: 15px;
     }
+
+/* ===== ONGLETS BADGE / MOT DE PASSE ===== */
+.login-switch {
+  display: flex;
+  gap: 6px;
+  background: #f0f4f8;
+  padding: 4px;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+
+.login-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.login-tab.active {
+  background: linear-gradient(135deg,#0078d4,#2893ff);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,120,212,.30);
+}
+
+.login-panel {
+  display: none;
+}
+
+.login-panel.active {
+  display: block;
+}
+
+.login-badge-anim {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  margin: 10px auto 4px;
+  display: block;
+}
+
+.login-badge-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 4px 0 0;
+}
+
+/* Champ du lecteur NFC : masqué visuellement mais focusable/sélectionné */
+.login-badge-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+}
+
+.login-badge-error {
+  color: red;
+  font-size: 13px;
+  margin-top: 10px;
+  min-height: 16px;
+}
 #shell-topbar {
   display: flex;
   justify-content: space-between;
@@ -638,16 +859,29 @@ img {
 <div id="loginBox" style="text-align:center; background:white; padding:25px; border-radius:12px; width:350px; margin:auto; box-shadow:0 0 10px rgba(0,0,0,0.1);">
   <h2>🔐 Connexion</h2>
 
-  <input type="email" id="email" placeholder="Email" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
-  <input type="password" id="password" placeholder="Mot de passe" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
-<br><br>
-  <!-- ✅ Bouton principal (utilisateur) -->
-  <button onclick="seConnecter()" 
-          class="btn-id">
-    🔑 Se connecter
-  </button>
+  <div class="login-switch">
+    <button type="button" id="loginTabBadge" class="login-tab" onclick="switchLoginTab('badge')">🪪 Badge</button>
+    <button type="button" id="loginTabPassword" class="login-tab" onclick="switchLoginTab('password')">🔑 Mot de passe</button>
+  </div>
 
-<br><br>
+  <!-- Volet MOT DE PASSE -->
+  <div id="loginPanelPassword" class="login-panel">
+    <input type="email" id="email" placeholder="Email" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+    <input type="password" id="password" placeholder="Mot de passe" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+    <br><br>
+    <button onclick="seConnecter()" class="btn-id">
+      🔑 Se connecter
+    </button>
+  </div>
+
+  <!-- Volet BADGE -->
+  <div id="loginPanelBadge" class="login-panel" onclick="focusBadgeLoginInput()">
+    <img src="animation-badge.jpeg" alt="Badge" class="login-badge-anim">
+    <p class="login-badge-hint">Approchez votre badge du lecteur…</p>
+    <input type="text" id="badgeLoginInput" class="login-badge-input" autocomplete="off">
+    <div id="badgeLoginError" class="login-badge-error"></div>
+  </div>
+
   <!-- 
   <button onclick="allerAdmin()" 
           class="btn-id btn-id-o">
@@ -664,13 +898,15 @@ background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:
 
   <div style="background:white; padding:25px; border-radius:12px; width:320px; text-align:center;">
 
-    <h3>🔐 Connexion USB détectée</h3>
+    <h3>🪪 Badge reconnu</h3>
 
     <p id="usbUserText">Utilisateur : ...</p>
 
     <input type="password" id="usbPassword"
       placeholder="Mot de passe"
       style="width:90%; padding:10px; margin:10px 0;">
+
+    <div id="usbLoginError" style="color:red;font-size:13px;margin-bottom:8px;min-height:16px;"></div>
 
     <button onclick="validerUSBLogin()" class="btn-id">
       ✔ Connexion

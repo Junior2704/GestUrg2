@@ -96,24 +96,47 @@ function traduireErreurConnexion(error) {
 }
 
   // --- Fonction de connexion (mot de passe) ---
-  window.seConnecter = async function () {
-    if (systemeBloque) return;
-    await setPersistence(auth, browserSessionPersistence);
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const message = document.getElementById("message");
-    message.textContent = "";
-    message.style.color = "red";
+window.seConnecter = async function () {
+  if (systemeBloque) return;
 
-    try {
-      // 🔐 Connexion utilisateur
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem(DERNIER_EMAIL_KEY, email);
+  await setPersistence(auth, browserSessionPersistence);
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const message = document.getElementById("message");
+
+  message.textContent = "";
+  message.style.color = "red";
+
+  // Réinitialise l'animation
+  const animation = document.querySelector(".login-mdp-anim");
+
+  try {
+    // 🔐 Connexion utilisateur
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    // ✅ Animation de succès
+    animation?.contentWindow.postMessage("Valide", "*");
+
+    localStorage.setItem(DERNIER_EMAIL_KEY, email);
+
+    // Laisse le temps à l'animation de jouer
+    setTimeout(async () => {
       await finaliserConnexion(userCredential.user);
-    } catch (error) {
-      message.textContent = traduireErreurConnexion(error);
-    }
-  };
+    }, 1500);
+
+  } catch (error) {
+
+    // ❌ Animation d'échec
+    animation?.contentWindow.postMessage("Invalide", "*");
+
+    message.textContent = traduireErreurConnexion(error);
+  }
+};
 
   // ==========================
   // 🪪 CONNEXION PAR BADGE
@@ -880,6 +903,22 @@ img {
 .login-panel.active {
   display: block;
 }
+.login-mdp-iframe-wrapper {
+  width: 540px;
+  height: 325px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.login-mdp-anim {
+  width: 540px;
+  height: 325px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  margin: 0 auto;
+}
 </style>
 </head>
 <body>
@@ -915,18 +954,38 @@ img {
   <div class="login-panel-container">
 
   <!-- Volet MOT DE PASSE -->
-  <div id="loginPanelPassword" class="login-panel">
-    <input type="email" id="email" placeholder="Email" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+<!-- Volet MOT DE PASSE -->
+<div id="loginPanelPassword" class="login-panel">
 
-    <input type="password" id="password" placeholder="Mot de passe" style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
-
-    <br><br>
-
-    <button onclick="seConnecter()" class="btn-id">
-      🔑 Se connecter
-    </button>
+  <div class="login-mdp-iframe-wrapper">
+    <iframe
+      src="animation-mdp.html"
+      class="login-mdp-anim"
+      scrolling="no"
+      frameborder="0"
+      title="Animation de connexion par mot de passe">
+    </iframe>
   </div>
 
+  <input
+    type="email"
+    id="email"
+    placeholder="Email"
+    style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+
+  <input
+    type="password"
+    id="password"
+    placeholder="Mot de passe"
+    style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+
+  <br><br>
+
+  <button onclick="seConnecter()" class="btn-id">
+    🔑 Se connecter
+  </button>
+
+</div>
   <!-- Volet BADGE -->
   <div id="loginPanelBadge" class="login-panel" onclick="focusBadgeLoginInput()">
 

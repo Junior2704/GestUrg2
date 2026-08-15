@@ -634,6 +634,25 @@ body {
   text-align: center;
 }
 
+.idcheck-password-iframe-wrapper {
+  width: 540px;
+  height: 325px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+}
+
+.idcheck-password-anim {
+  width: 540px;
+  height: 325px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+
 /* Champ du lecteur : masqué visuellement mais focusable */
 .idcheck-badge-input {
   position: absolute;
@@ -704,6 +723,15 @@ body {
 
     <!-- Volet MOT DE PASSE -->
     <div id="idcheckPanelPassword" class="idcheck-panel">
+      <div class="idcheck-password-iframe-wrapper">
+        <iframe
+          src="animation-mdp.html"
+          class="idcheck-password-anim"
+          scrolling="no"
+          frameborder="0"
+          title="Animation de saisie du mot de passe">
+        </iframe>
+      </div>
       <p>Veuillez saisir votre mot de passe.</p>
       <input type="password" id="idcheckPasswordInput" placeholder="Mot de passe">
     </div>
@@ -1184,10 +1212,21 @@ async function identityCheckByPassword() {
     );
 
     await reauthenticateWithCredential(auth.currentUser, credential);
-    identityCheckSuccess();
+
+    const passwordAnim = document.querySelector(".idcheck-password-anim");
+    if (passwordAnim) passwordAnim.contentWindow.postMessage("Valide", "*");
+
+    setTimeout(() => {
+      identityCheckSuccess();
+    }, 2000);
 
   } catch (error) {
-    await identityCheckFail("Mot de passe incorrect", errorDiv);
+    const passwordAnim = document.querySelector(".idcheck-password-anim");
+    if (passwordAnim) passwordAnim.contentWindow.postMessage("Invalide", "*");
+
+    setTimeout(() => {
+      identityCheckFail("Mot de passe incorrect", errorDiv);
+    }, 2000);
   }
 }
 

@@ -553,9 +553,165 @@ body {
   padding: 10px 20px;
   font-size: 14px;
 }
+
+/* ===== VÉRIFICATION D'IDENTITÉ (badge / mot de passe) ===== */
+#modalIdentityCheck .card {
+  max-width: 440px;
+  padding: 28px 32px;
+}
+
+#modalIdentityCheck h2 {
+  color: #0078d4;
+}
+
+#modalIdentityCheck p {
+  font-size: 14px;
+  color: #55627a;
+  margin-bottom: 14px;
+}
+
+.idcheck-switch {
+  display: flex;
+  gap: 8px;
+  background: #eef1f6;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.idcheck-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.idcheck-tab.active {
+  background: linear-gradient(135deg,#0078d4,#2893ff);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,120,212,.30);
+}
+
+.idcheck-panel {
+  display: none;
+}
+
+.idcheck-panel.active {
+  display: block;
+}
+
+.idcheck-badge-iframe-wrapper {
+  width: 100%;
+  height: 200px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+}
+
+.idcheck-badge-anim {
+  width: 330px;
+  height: 200px;
+  border: none;
+  display: block;
+  margin: 0 auto;
+}
+
+.idcheck-badge-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+/* Champ du lecteur : masqué visuellement mais focusable */
+.idcheck-badge-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+}
+
+#idcheckPasswordInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccd6e0;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#idcheckError {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 10px;
+  min-height: 16px;
+}
+
+.idcheck-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.idcheck-actions .logout-btn {
+  background: #e74c3c;
+  color: white;
+}
 </style>
 </head>
 <body>
+
+<div id="modalIdentityCheck" class="modalna">
+  <div class="card">
+    <h2>🔐 Vérification d'identité</h2>
+    <p>Merci de confirmer que c'est bien vous avant d'accéder aux paramètres.</p>
+
+    <div class="idcheck-switch" id="idcheckSwitch" style="display:none;">
+      <button type="button" id="idcheckTabBadge" class="idcheck-tab" onclick="switchIdentityTab('badge')">🪪 Badge</button>
+      <button type="button" id="idcheckTabPassword" class="idcheck-tab" onclick="switchIdentityTab('password')">🔑 Mot de passe</button>
+    </div>
+
+    <!-- Volet BADGE -->
+    <div id="idcheckPanelBadge" class="idcheck-panel" onclick="focusIdentityBadgeInput()">
+      <div class="idcheck-badge-iframe-wrapper">
+        <iframe
+          src="animation-badge.html"
+          class="idcheck-badge-anim"
+          scrolling="no"
+          frameborder="0"
+          title="Animation de lecture du badge">
+        </iframe>
+      </div>
+      <p class="idcheck-badge-hint">Approchez votre badge du lecteur…</p>
+      <input type="text" id="idcheckBadgeInput" class="idcheck-badge-input" autocomplete="off">
+    </div>
+
+    <!-- Volet MOT DE PASSE -->
+    <div id="idcheckPanelPassword" class="idcheck-panel">
+      <p>Veuillez saisir votre mot de passe.</p>
+      <input type="password" id="idcheckPasswordInput" placeholder="Mot de passe">
+    </div>
+
+    <div id="idcheckError"></div>
+
+    <div class="idcheck-actions">
+      <button class="btn btn-add" onclick="attemptIdentityCheck()">Valider</button>
+      <button class="btn logout-btn" onclick="identityCheckLogout()">Se déconnecter</button>
+    </div>
+  </div>
+</div>
 
 <div id="content">
 <div id="modal-no-access" class="modalna">
@@ -824,7 +980,13 @@ body {
 </div>
   <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut,
+    EmailAuthProvider,
+    reauthenticateWithCredential
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // --- Configuration Firebase ---
@@ -905,6 +1067,9 @@ document.getElementById("actes").style.display = "none";
 if (pages.adminmed !== true && pages.adminrh !== true){
    document.getElementById("personnel").style.display = "none";
 }
+
+        // --- Contrôle du badge / mot de passe (vérifie que c'est bien la personne) ---
+        verifierPresence(data);
       } else {
        const modal = document.getElementById("modal-error");
           if (modal) 
@@ -919,7 +1084,159 @@ if (pages.adminmed !== true && pages.adminrh !== true){
   }
 });
 
+// ==============================
+// 🔐 VÉRIFICATION D'IDENTITÉ (badge ou mot de passe)
+// ==============================
+let identityCheckAttempts = 0;
 
+function verifierPresence(data) {
+  const hasBadge = !!data.idBadge;
+  const prefCo = data["préférenceConnexion"] || "mdp";
+
+  document.getElementById("content").classList.add("blur");
+  document.getElementById("modalIdentityCheck").style.display = "flex";
+
+  const switchEl = document.getElementById("idcheckSwitch");
+
+  if (hasBadge) {
+    switchEl.style.display = "flex";
+    switchIdentityTab(prefCo === "badge" ? "badge" : "password");
+  } else {
+    // Pas de badge enregistré : on ne propose que le mot de passe
+    switchEl.style.display = "none";
+    switchIdentityTab("password");
+  }
+}
+
+window.switchIdentityTab = function (tab) {
+  const isBadge = tab === "badge";
+
+  document.getElementById("idcheckTabBadge").classList.toggle("active", isBadge);
+  document.getElementById("idcheckTabPassword").classList.toggle("active", !isBadge);
+  document.getElementById("idcheckPanelBadge").classList.toggle("active", isBadge);
+  document.getElementById("idcheckPanelPassword").classList.toggle("active", !isBadge);
+
+  document.getElementById("idcheckError").textContent = "";
+
+  if (isBadge) {
+    document.getElementById("idcheckBadgeInput").value = "";
+    setTimeout(focusIdentityBadgeInput, 50);
+  } else {
+    setTimeout(() => document.getElementById("idcheckPasswordInput").focus(), 50);
+  }
+};
+
+window.focusIdentityBadgeInput = function () {
+  const input = document.getElementById("idcheckBadgeInput");
+  if (document.getElementById("idcheckPanelBadge").classList.contains("active")) {
+    input.focus();
+  }
+};
+
+// Le bouton "Valider" agit selon le volet actif
+window.attemptIdentityCheck = function () {
+  if (document.getElementById("idcheckPanelBadge").classList.contains("active")) {
+    identityCheckByBadge();
+  } else {
+    identityCheckByPassword();
+  }
+};
+
+function identityCheckSuccess() {
+  identityCheckAttempts = 0;
+  document.getElementById("modalIdentityCheck").style.display = "none";
+  document.getElementById("content").classList.remove("blur");
+}
+
+async function identityCheckFail(message, errorDiv) {
+  identityCheckAttempts++;
+  errorDiv.textContent = `${message} (${identityCheckAttempts}/3)`;
+
+  if (identityCheckAttempts >= 3) {
+    await signOut(auth);
+    window.location.href = "index.html";
+  }
+}
+
+window.identityCheckLogout = async function () {
+  await signOut(auth);
+  window.location.href = "index.html";
+};
+
+// ===== VÉRIFICATION PAR MOT DE PASSE =====
+async function identityCheckByPassword() {
+  const password = document.getElementById("idcheckPasswordInput").value;
+  const errorDiv = document.getElementById("idcheckError");
+
+  if (!password) {
+    errorDiv.textContent = "Veuillez saisir votre mot de passe.";
+    return;
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      password
+    );
+
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    identityCheckSuccess();
+
+  } catch (error) {
+    await identityCheckFail("Mot de passe incorrect", errorDiv);
+  }
+}
+
+// ===== VÉRIFICATION PAR BADGE NFC =====
+async function identityCheckByBadge() {
+  const badgeInput = document.getElementById("idcheckBadgeInput");
+  const badgeValue = badgeInput.value.trim();
+  const errorDiv = document.getElementById("idcheckError");
+
+  if (!badgeValue) return;
+
+  if (!auth.currentUser) {
+    errorDiv.textContent = "Session introuvable, veuillez vous reconnecter.";
+    return;
+  }
+
+  try {
+    const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+    const badgeAnim = document.querySelector(".idcheck-badge-anim");
+
+    if (userSnap.exists() && userSnap.data().idBadge && userSnap.data().idBadge === badgeValue) {
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Valide", "*");
+      setTimeout(() => {
+        identityCheckSuccess();
+      }, 2000);
+    } else {
+      badgeInput.value = "";
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "*");
+      setTimeout(() => {
+        focusIdentityBadgeInput();
+        identityCheckFail("Badge non reconnu", errorDiv);
+      }, 2000);
+    }
+
+  } catch (error) {
+    badgeInput.value = "";
+    focusIdentityBadgeInput();
+    errorDiv.textContent = "Erreur lors de la vérification du badge.";
+  }
+}
+
+document.getElementById("idcheckPasswordInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && document.getElementById("modalIdentityCheck").style.display !== "none") {
+    identityCheckByPassword();
+  }
+});
+
+document.getElementById("idcheckBadgeInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && document.getElementById("modalIdentityCheck").style.display !== "none") {
+    e.preventDefault();
+    identityCheckByBadge();
+  }
+});
 
 
 const actesListEl = document.getElementById('actesList');

@@ -209,6 +209,46 @@ main.views{ flex:1; overflow:hidden; position:relative; }
   background:#ef4444; color:#fff; font-size:.62rem; font-weight:800; line-height:16px; text-align:center;
 }
 .tab-badge.hidden{ display:none; }
+.tabbar-btn.more-btn .ic{ font-size:1.1rem; }
+
+/* grille de la sheet "Plus" (onglets en débordement) */
+.more-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+  padding:4px 2px calc(6px + var(--safe-bottom));
+}
+.more-grid-btn{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  padding:16px 8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+  cursor:pointer; transition:transform .12s, background .12s;
+}
+.more-grid-btn:active{ transform:scale(.96); background:#f8fafc; }
+.more-grid-btn .ic{ font-size:1.5rem; line-height:1; }
+.more-grid-btn .lb{ font-size:.78rem; font-weight:700; color:var(--text); text-align:center; }
+.more-grid-btn .badge{
+  position:absolute; top:8px; right:10px; min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+  background:#ef4444; color:#fff; font-size:.66rem; font-weight:800; line-height:18px; text-align:center;
+}
+.more-grid-btn .badge.hidden{ display:none; }
+
+/* ============ ACCES REFUSE ============ */
+#accessDeniedScreen{
+  position:fixed; inset:0; z-index:5500;
+  display:none; align-items:center; justify-content:center;
+  padding:32px 24px calc(32px + var(--safe-bottom));
+  background:rgba(15,23,42,.5); backdrop-filter:blur(4px);
+}
+#accessDeniedScreen.show{ display:flex; }
+.access-denied-card{
+  width:100%; max-width:360px; background:var(--card); border-radius:var(--radius-lg);
+  padding:28px 24px; box-shadow:0 20px 50px rgba(15,23,42,.25); border:1px solid var(--border);
+  text-align:center;
+}
+.access-denied-ic{
+  width:60px; height:60px; border-radius:18px; margin:0 auto 16px; background:#fef2f2; color:#dc2626;
+  display:flex; align-items:center; justify-content:center; font-size:28px;
+}
+.access-denied-title{ font-size:1.15rem; font-weight:800; margin-bottom:8px; }
+.access-denied-text{ color:var(--text-muted); font-size:.88rem; line-height:1.5; margin-bottom:22px; }
 
 /* ============ generic sections/cards ============ */
 .section-title{
@@ -554,6 +594,16 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
   <div class="spinner"></div>
 </div>
 
+<!-- ================= ACCES REFUSE ================= -->
+<div id="accessDeniedScreen">
+  <div class="access-denied-card">
+    <div class="access-denied-ic">🚫</div>
+    <div class="access-denied-title">Accès non autorisé</div>
+    <div class="access-denied-text">Votre compte n'a pas accès à cette application. Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.</div>
+    <button class="btn-primary" id="btnAccessDeniedLogout">Se déconnecter</button>
+  </div>
+</div>
+
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-mark">🏥</div>
@@ -671,26 +721,19 @@ details.pd-section[open] > summary .chev{ transform:rotate(90deg); }
 
   </main>
 
-  <div class="tabbar">
-    <button class="tabbar-btn active" data-view="plan">
-      <span class="ic">🗺️</span><span class="lb">Plan</span>
-    </button>
-    <button class="tabbar-btn" data-view="recherche">
-      <span class="ic">🔍</span><span class="lb">Recherche</span>
-    </button>
-    <button class="tabbar-btn" data-view="stats">
-      <span class="ic">📊</span><span class="lb">Stats</span>
-    </button>
-    <button class="tabbar-btn" data-view="scan">
-      <span class="ic">📷</span><span class="lb">Scan</span>
-    </button>
-    <button class="tabbar-btn" data-view="appels">
-      <span class="ic">📣</span><span class="lb">Appels</span>
-    </button>
-    <button class="tabbar-btn" data-view="messagerie">
-      <span class="ic">💬</span><span class="lb">Messages</span>
-      <span class="tab-badge hidden" id="tabBadgeMessagerie">0</span>
-    </button>
+  <div class="tabbar" id="tabbarEl"></div>
+
+  <!-- ---- Bottom sheet "Plus" (onglets en débordement) ---- -->
+  <div class="sheet-backdrop" id="moreSheetBackdrop"></div>
+  <div class="sheet" id="moreSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3>Plus</h3>
+      <button class="sheet-close" id="moreSheetCloseBtn">✖</button>
+    </div>
+    <div class="sheet-body">
+      <div class="more-grid" id="moreGrid"></div>
+    </div>
   </div>
 
   <!-- ---- Bottom sheet salle ---- -->
@@ -891,7 +934,26 @@ let state = {
   searchGravFilter: null,
   refreshTimer: null,
   dataLoaded: false,    // true dès qu'un premier chargement de données a réussi
+  pages: {},             // droits d'accès de l'utilisateur (map pages.xxx = true/false)
 };
+
+/* =========================================================
+   ONGLETS (config centralisée)
+   - Pour ajouter un onglet : une ligne ici suffit, il ira
+     automatiquement dans la barre (si de la place) ou dans "Plus".
+   - pageKey (optionnel) : clé de state.pages requise pour afficher
+     l'onglet (ex: "bureau" pour Appels). Sans pageKey => visible
+     dès que l'utilisateur a accès à l'application.
+========================================================= */
+const TABS_CONFIG = [
+  { id:"plan",       icon:"🗺️", label:"Plan" },
+  { id:"recherche",  icon:"🔍", label:"Recherche" },
+  { id:"scan",       icon:"📷", label:"Scan" },
+  { id:"appels",     icon:"📣", label:"Appels", pageKey:"bureau" },
+  { id:"stats",      icon:"📊", label:"Stats" },
+  { id:"messagerie", icon:"💬", label:"Messages", badgeId:"tabBadgeMessagerie", overlay:true },
+];
+const TABBAR_MAX_PRIMARY = 4; // + le bouton "Plus" si des onglets débordent
 
 /* =========================================================
    GESTION HORS CONNEXION
@@ -1365,15 +1427,27 @@ function masquerEcranVerification(){
   setTimeout(() => { splash.style.display = "none"; }, 200);
 }
 
+function afficherAccesRefuse(){
+  document.getElementById("appRoot").classList.remove("active");
+  document.getElementById("accessDeniedScreen").classList.add("show");
+}
+function masquerAccesRefuse(){
+  document.getElementById("accessDeniedScreen").classList.remove("show");
+}
+document.getElementById("btnAccessDeniedLogout").addEventListener("click", async () => {
+  masquerAccesRefuse();
+  await signOut(auth);
+});
+
 onAuthStateChanged(auth, async (user) => {
   if (!user){
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("appRoot").classList.remove("active");
+    masquerAccesRefuse();
     masquerEcranVerification();
     return;
   }
   document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("appRoot").classList.add("active");
   masquerEcranVerification();
 
   try{
@@ -1383,15 +1457,36 @@ onAuthStateChanged(auth, async (user) => {
       const d = medSnap.data();
       document.getElementById("userGreeting").textContent = d.nom ? `Bonjour, ${d.nom}` : "Vue mobile";
       state.currentUserInfo = { nom: d.nom || "", role: d.role || "" };
+      state.pages = d.pages || {};
+    }else{
+      state.pages = {};
     }
-  }catch(e){ /* pas bloquant */ }
+  }catch(e){
+    console.error("Erreur chargement des droits d'accès :", e);
+    state.pages = {};
+  }
 
+  /* -------- vérification de l'accès à cette application -------- */
+  const currentPath = window.location.pathname;
+  const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+  if (!state.pages[currentPage]){
+    console.warn("Accès refusé à", currentPage);
+    afficherAccesRefuse();
+    return;
+  }
+  masquerAccesRefuse();
+  document.getElementById("appRoot").classList.add("active");
+
+  buildTabbar();
   updateProfilePanel();
   updateNotifButtonUI();
   ensureMessagerieBadgeFrame();
 
   await initApp();
-  await initAppels();
+  if (state.pages.bureau === true){
+    await initAppels();
+  }
 });
 
 /* =========================================================
@@ -1441,7 +1536,9 @@ async function chargerDonnees(manuel=false){
     state.dataLoaded = true;
     updateOfflineUI();
     renderAll();
-    await chargerAppels();
+    if (state.pages.bureau === true){
+      await chargerAppels();
+    }
     if (manuel) toast("Plan actualisé", "success");
   }catch(e){
     console.error("Erreur chargement données :", e);
@@ -1465,18 +1562,78 @@ function renderAll(){
 }
 
 /* =========================================================
-   NAVIGATION (onglets)
+   NAVIGATION (onglets) — génération dynamique
 ========================================================= */
-document.querySelectorAll(".tabbar-btn").forEach(btn => {
-  btn.addEventListener("click", () => switchTab(btn.dataset.view));
-});
-function switchTab(view){
-  if (view === "messagerie"){
-    openMessagerie();
+function tabEstAutorise(tab){
+  // un onglet sans pageKey est visible dès que l'app elle-même est autorisée
+  return !tab.pageKey || state.pages[tab.pageKey] === true;
+}
+
+function buildTabbar(){
+  const visibles = TABS_CONFIG.filter(tabEstAutorise);
+  const primaires = visibles.slice(0, TABBAR_MAX_PRIMARY);
+  const debordement = visibles.slice(TABBAR_MAX_PRIMARY);
+
+  const tabbarEl = document.getElementById("tabbarEl");
+  let html = primaires.map(tab => `
+    <button class="tabbar-btn" data-view="${tab.id}">
+      <span class="ic">${tab.icon}</span><span class="lb">${escapeHtml(tab.label)}</span>
+      ${tab.badgeId ? `<span class="tab-badge hidden" id="${tab.badgeId}">0</span>` : ""}
+    </button>
+  `).join("");
+
+  if (debordement.length > 0){
+    const badgeAilleurs = debordement.some(t => t.badgeId);
+    html += `
+      <button class="tabbar-btn more-btn" data-view="plus">
+        <span class="ic">⋯</span><span class="lb">Plus</span>
+        ${badgeAilleurs ? `<span class="tab-badge hidden" id="tabBadgePlus">0</span>` : ""}
+      </button>
+    `;
+  }
+  tabbarEl.innerHTML = html;
+
+  document.getElementById("moreGrid").innerHTML = debordement.map(tab => `
+    <div class="more-grid-btn" data-view="${tab.id}">
+      <span class="ic">${tab.icon}</span><span class="lb">${escapeHtml(tab.label)}</span>
+      ${tab.badgeId ? `<span class="badge hidden" id="${tab.badgeId}">0</span>` : ""}
+    </div>
+  `).join("");
+
+  document.querySelectorAll(".tabbar-btn[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => onTabSelect(btn.dataset.view));
+  });
+  document.querySelectorAll(".more-grid-btn[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => onTabSelect(btn.dataset.view));
+  });
+
+  // ré-applique l'état visuel courant (badges compris)
+  marquerOngletActif(state.currentTab);
+  updateMessagerieBadges(dernierNombreNonLus);
+}
+
+function onTabSelect(view){
+  if (view === "plus"){
+    openMoreSheet();
+    return;
+  }
+  const tab = TABS_CONFIG.find(t => t.id === view);
+  if (tab && tab.overlay){
+    if (view === "messagerie") openMessagerie();
+    closeMoreSheet();
     return; // ouvre l'overlay par-dessus l'onglet actif, sans changer la navigation
   }
+  closeMoreSheet();
+  switchTab(view);
+}
+
+function marquerOngletActif(view){
+  document.querySelectorAll(".tabbar-btn[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+}
+
+function switchTab(view){
   state.currentTab = view;
-  document.querySelectorAll(".tabbar-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  marquerOngletActif(view);
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
   if (view === "scan"){
     startScanner();
@@ -1484,6 +1641,20 @@ function switchTab(view){
     stopScanner();
   }
 }
+
+/* ---- sheet "Plus" ---- */
+const moreSheet = document.getElementById("moreSheet");
+const moreSheetBackdrop = document.getElementById("moreSheetBackdrop");
+function openMoreSheet(){
+  moreSheet.classList.add("open");
+  moreSheetBackdrop.classList.add("open");
+}
+function closeMoreSheet(){
+  moreSheet.classList.remove("open");
+  moreSheetBackdrop.classList.remove("open");
+}
+document.getElementById("moreSheetCloseBtn").addEventListener("click", closeMoreSheet);
+moreSheetBackdrop.addEventListener("click", closeMoreSheet);
 
 /* =========================================================
    VUE PLAN
@@ -2237,16 +2408,23 @@ function stopMessagerieBadgeFrame(){
   if (frame) frame.src = "about:blank";
   updateMessagerieBadges(0);
 }
+let dernierNombreNonLus = 0;
 function updateMessagerieBadges(count){
   const n = Number(count) || 0;
+  dernierNombreNonLus = n;
   const label = n > 99 ? "99+" : String(n);
   const tabBadge = document.getElementById("tabBadgeMessagerie");
   const profileBadge = document.getElementById("profileBadgeMessagerie");
+  const plusBadge = document.getElementById("tabBadgePlus");
   [tabBadge, profileBadge].forEach(el => {
     if (!el) return;
     el.textContent = label;
     el.classList.toggle("hidden", n <= 0);
   });
+  if (plusBadge){
+    plusBadge.textContent = "";
+    plusBadge.classList.toggle("hidden", n <= 0);
+  }
 }
 window.addEventListener("message", (event) => {
   const data = event.data;

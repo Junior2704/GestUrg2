@@ -302,9 +302,407 @@ input[type="checkbox"] {
   pointer-events: none;
 }
 
+/* ============================================================
+   🔒 LOADER VERROUILLANT — bloque tout accès visuel/interactif
+   tant que l'authentification + les droits + l'identité ne sont
+   pas validés.
+   ============================================================ */
+#accessLockOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: linear-gradient(135deg, #eef2f7, #dbe4f0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  font-family: "Segoe UI", sans-serif;
+}
+
+#accessLockOverlay .lock-icon {
+  font-size: 46px;
+  animation: lockPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: .75; }
+}
+
+#accessLockOverlay .lock-spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #cfd8e3;
+  border-top: 4px solid #0078d4;
+  border-radius: 50%;
+  animation: lockSpin 0.9s linear infinite;
+}
+
+@keyframes lockSpin {
+  to { transform: rotate(360deg); }
+}
+
+#accessLockOverlay p {
+  color: #374151;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0;
+}
+
+/* Contenu de la page : masqué/inerte tant que non déverrouillé */
+#content {
+  display: none;
+}
+
+.blur {
+  filter: blur(10px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ============================================================
+   MODALES D'ACCÈS (refus / erreur)
+   ============================================================ */
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f;
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+/* ===== VÉRIFICATION D'IDENTITÉ (badge / mot de passe) ===== */
+#modalIdentityCheck .card {
+  max-width: 620px;
+  width: 92vw;
+
+  /* Hauteur fixe : aucun changement entre les états */
+  height: 590px;
+  min-height: 590px;
+
+  padding: 28px 32px;
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+#modalIdentityCheck h2 {
+  flex-shrink: 0;
+}
+
+#modalIdentityCheck > .card > p {
+  flex-shrink: 0;
+}
+
+.idcheck-switch {
+  flex-shrink: 0;
+}
+
+.idcheck-panel {
+  flex-shrink: 0;
+}
+
+#idcheckError {
+  flex-shrink: 0;
+}
+
+.idcheck-actions {
+  flex-shrink: 0;
+}
+
+#modalIdentityCheck h2 {
+  color: #0078d4;
+}
+
+#modalIdentityCheck p {
+  font-size: 14px;
+  color: #55627a;
+  margin-bottom: 14px;
+}
+
+.idcheck-switch {
+  display: flex;
+  gap: 8px;
+  background: #eef1f6;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.idcheck-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.idcheck-tab.active {
+  background: linear-gradient(135deg,#0078d4,#2893ff);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,120,212,.30);
+}
+
+
+.idcheck-panel {
+  display: none;
+  height: 405px;
+  min-height: 405px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.idcheck-panel.active {
+  display: block;
+}
+
+.idcheck-badge-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+/* Champ du lecteur : masqué visuellement mais focusable */
+.idcheck-badge-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+}
+
+#idcheckPasswordInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccd6e0;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#idcheckError {
+  color: #c0392b;
+  font-size: 13px;
+
+  margin-top: 10px;
+
+  /* Toujours réserver la place du message */
+  height: 38px;
+  min-height: 38px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  text-align: center;
+  line-height: 18px;
+
+  overflow: hidden;
+}
+
+.idcheck-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.idcheck-actions .btn,
+.idcheck-actions .btn-add {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  background: #0078d4;
+  color: white;
+  transition: .2s;
+}
+
+.idcheck-actions .btn-add:hover {
+  background: #005fa3;
+}
+
+.idcheck-actions .logout-btn {
+  background: #e74c3c;
+  color: white;
+}
+.idcheck-badge-iframe-wrapper,
+.idcheck-password-iframe-wrapper {
+  width: 540px;
+  height: 325px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.idcheck-badge-anim {
+  width: 540px;
+  height: 325px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  transform: translateX(20px);
+}
+
+.idcheck-password-anim {
+  width: 540px;
+  height: 325px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
 </style>
 </head>
 <body>
+
+<!-- 🔒 Loader verrouillant : visible dès le chargement, tant que l'identité n'est pas validée -->
+<div id="accessLockOverlay">
+  <div class="lock-icon">🔒</div>
+  <div class="lock-spinner"></div>
+  <p>Vérification de votre accès en cours…</p>
+</div>
+
+<div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n'avez pas accès à cette page.</p>
+    <p>Veuillez contacter un administrateur pour plus d'informations.</p>
+  </div>
+</div>
+
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+    <p>Si le problème persiste, contactez un administrateur</p>
+  </div>
+</div>
+
+<div id="modalIdentityCheck" class="modalna">
+  <div class="card">
+    <h2>🔐 Vérification d'identité</h2>
+    <p>Merci de confirmer que c'est bien vous avant d'accéder à la gestion des comptes.</p>
+
+    <div class="idcheck-switch" id="idcheckSwitch" style="display:none;">
+      <button type="button" id="idcheckTabBadge" class="idcheck-tab" onclick="switchIdentityTab('badge')">🪪 Badge</button>
+      <button type="button" id="idcheckTabPassword" class="idcheck-tab" onclick="switchIdentityTab('password')">🔑 Mot de passe</button>
+    </div>
+
+   <!-- VOLET BADGE -->
+<div
+  id="idcheckPanelBadge"
+  class="idcheck-panel"
+  onclick="focusIdentityBadgeInput()"
+>
+
+  <div class="idcheck-badge-iframe-wrapper">
+    <iframe
+      src="animation-badge.html"
+      class="idcheck-badge-anim"
+      scrolling="no"
+      frameborder="0"
+      title="Animation de lecture du badge">
+    </iframe>
+  </div>
+
+  <p class="idcheck-badge-hint">
+    Approchez votre badge du lecteur…
+  </p>
+
+  <input
+    type="text"
+    id="idcheckBadgeInput"
+    class="idcheck-badge-input"
+    autocomplete="off"
+  >
+
+</div>
+
+ <!-- VOLET MOT DE PASSE -->
+<div
+  id="idcheckPanelPassword"
+  class="idcheck-panel"
+>
+
+  <div class="idcheck-password-iframe-wrapper">
+    <iframe
+      src="animation-mdp.html"
+      class="idcheck-password-anim"
+      scrolling="no"
+      frameborder="0"
+      title="Animation de saisie du mot de passe">
+    </iframe>
+  </div>
+
+  <p class="idcheck-password-hint">
+    Veuillez saisir votre mot de passe.
+  </p>
+
+  <input
+    type="password"
+    id="idcheckPasswordInput"
+    placeholder="Mot de passe"
+  >
+
+</div>
+
+    <div id="idcheckError"></div>
+
+    <div class="idcheck-actions">
+      <button class="btn btn-add" onclick="attemptIdentityCheck()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="content">
 
 	<h2>➕ Créer un nouvel utilisateur</h2>
 <div id="creationBox" style="background:white;padding:20px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1);margin-bottom:30px;">
@@ -424,6 +822,8 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100
   </div>
 </div>
 
+</div><!-- /#content -->
+
   <script type="module">
   emailjs.init("CZapZCcxYfJ8-acLS"); // clé publique par défaut, remplacée si multi-comptes
   import { envoyerMessageSysteme } from "./messagerie-envoi.js";
@@ -432,7 +832,10 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100
       getAuth,
       onAuthStateChanged,
       deleteUser,
-      getIdTokenResult
+      getIdTokenResult,
+      signOut,
+      EmailAuthProvider,
+      reauthenticateWithCredential
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
       getFirestore,
@@ -440,7 +843,8 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100
       getDocs,
       updateDoc,
       deleteDoc,
-      doc
+      doc,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -455,7 +859,220 @@ const app = getApps().length
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 🔐 Vérifie si l'utilisateur est admin (par exemple via son email)
+// ==============================
+// 🔐 CONTRÔLE D'ACCÈS À LA PAGE (auth + droits Firestore)
+// ==============================
+function masquerAccessLockOverlay() {
+  const overlay = document.getElementById("accessLockOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    masquerAccessLockOverlay();
+    const modal = document.getElementById("modal-error");
+    if (modal) modal.style.display = "flex";
+    console.error("Aucun utilisateur connecté");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      masquerAccessLockOverlay();
+      const modal = document.getElementById("modal-error");
+      if (modal) modal.style.display = "flex";
+      console.error("Utilisateur introuvable");
+      return;
+    }
+
+    const data = docSnap.data();
+    const pages = data.pages || {};
+
+    // --- Vérification des droits d'accès à cette page ---
+    if (pages.admin !== true) {
+      masquerAccessLockOverlay();
+      const modal = document.getElementById("modal-no-access");
+      if (modal) modal.style.display = "flex";
+      return;
+    }
+
+    // --- Contrôle du badge / mot de passe (vérifie que c'est bien la personne) ---
+    masquerAccessLockOverlay();
+    verifierPresence(data);
+
+  } catch (error) {
+    console.error("Erreur lors de la vérification d'accès :", error);
+    masquerAccessLockOverlay();
+    const modal = document.getElementById("modal-error");
+    if (modal) modal.style.display = "flex";
+  }
+});
+
+// ==============================
+// 🔐 VÉRIFICATION D'IDENTITÉ (badge ou mot de passe)
+// ==============================
+let identityCheckAttempts = 0;
+
+function verifierPresence(data) {
+  const hasBadge = !!data.idBadge;
+  const prefCo = data["préférenceConnexion"] || "mdp";
+
+  document.getElementById("modalIdentityCheck").style.display = "flex";
+
+  const switchEl = document.getElementById("idcheckSwitch");
+
+  if (hasBadge) {
+    switchEl.style.display = "flex";
+    switchIdentityTab(prefCo === "badge" ? "badge" : "password");
+  } else {
+    // Pas de badge enregistré : on ne propose que le mot de passe
+    switchEl.style.display = "none";
+    switchIdentityTab("password");
+  }
+}
+
+window.switchIdentityTab = function (tab) {
+  const isBadge = tab === "badge";
+
+  document.getElementById("idcheckTabBadge").classList.toggle("active", isBadge);
+  document.getElementById("idcheckTabPassword").classList.toggle("active", !isBadge);
+  document.getElementById("idcheckPanelBadge").classList.toggle("active", isBadge);
+  document.getElementById("idcheckPanelPassword").classList.toggle("active", !isBadge);
+
+  document.getElementById("idcheckError").textContent = "";
+
+  if (isBadge) {
+    document.getElementById("idcheckBadgeInput").value = "";
+    setTimeout(focusIdentityBadgeInput, 50);
+  } else {
+    setTimeout(() => document.getElementById("idcheckPasswordInput").focus(), 50);
+  }
+};
+
+window.focusIdentityBadgeInput = function () {
+  const input = document.getElementById("idcheckBadgeInput");
+  if (document.getElementById("idcheckPanelBadge").classList.contains("active")) {
+    input.focus();
+  }
+};
+
+// Le bouton "Valider" agit selon le volet actif
+window.attemptIdentityCheck = function () {
+  if (document.getElementById("idcheckPanelBadge").classList.contains("active")) {
+    identityCheckByBadge();
+  } else {
+    identityCheckByPassword();
+  }
+};
+
+function identityCheckSuccess() {
+  identityCheckAttempts = 0;
+  document.getElementById("modalIdentityCheck").style.display = "none";
+
+  // 🔓 Ce n'est qu'à partir d'ici que le contenu (et les données réelles
+  // des comptes) est révélé et chargé — jamais avant.
+  document.getElementById("content").style.display = "block";
+  chargerUtilisateurs();
+}
+
+async function identityCheckFail(message, errorDiv) {
+  identityCheckAttempts++;
+  errorDiv.textContent = `${message} (${identityCheckAttempts}/3)`;
+
+  if (identityCheckAttempts >= 3) {
+    await signOut(auth);
+    window.location.href = "index.html";
+  }
+}
+
+// ===== VÉRIFICATION PAR MOT DE PASSE =====
+async function identityCheckByPassword() {
+  const password = document.getElementById("idcheckPasswordInput").value;
+  const errorDiv = document.getElementById("idcheckError");
+
+  if (!password) {
+    errorDiv.textContent = "Veuillez saisir votre mot de passe.";
+    return;
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      password
+    );
+
+    await reauthenticateWithCredential(auth.currentUser, credential);
+
+    const passwordAnim = document.querySelector(".idcheck-password-anim");
+    if (passwordAnim) passwordAnim.contentWindow.postMessage("Valide", "*");
+
+    setTimeout(() => {
+      identityCheckSuccess();
+    }, 2000);
+
+  } catch (error) {
+    const passwordAnim = document.querySelector(".idcheck-password-anim");
+    if (passwordAnim) passwordAnim.contentWindow.postMessage("Invalide", "*");
+
+    setTimeout(() => {
+      identityCheckFail("Mot de passe incorrect", errorDiv);
+    }, 2000);
+  }
+}
+
+// ===== VÉRIFICATION PAR BADGE NFC =====
+async function identityCheckByBadge() {
+  const badgeInput = document.getElementById("idcheckBadgeInput");
+  const badgeValue = badgeInput.value.trim();
+  const errorDiv = document.getElementById("idcheckError");
+
+  if (!badgeValue) return;
+
+  if (!auth.currentUser) {
+    errorDiv.textContent = "Session introuvable, veuillez vous reconnecter.";
+    return;
+  }
+
+  try {
+    const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+    const badgeAnim = document.querySelector(".idcheck-badge-anim");
+
+    if (userSnap.exists() && userSnap.data().idBadge && userSnap.data().idBadge === badgeValue) {
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Valide", "*");
+      setTimeout(() => {
+        identityCheckSuccess();
+      }, 2000);
+    } else {
+      badgeInput.value = "";
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "*");
+      setTimeout(() => {
+        focusIdentityBadgeInput();
+        identityCheckFail("Badge non reconnu", errorDiv);
+      }, 2000);
+    }
+
+  } catch (error) {
+    badgeInput.value = "";
+    focusIdentityBadgeInput();
+    errorDiv.textContent = "Erreur lors de la vérification du badge.";
+  }
+}
+
+document.getElementById("idcheckPasswordInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && document.getElementById("modalIdentityCheck").style.display !== "none") {
+    identityCheckByPassword();
+  }
+});
+
+document.getElementById("idcheckBadgeInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && document.getElementById("modalIdentityCheck").style.display !== "none") {
+    e.preventDefault();
+    identityCheckByBadge();
+  }
+});
 
 window.ouvrirModale = (id, nom, email, specialite, lieu, type) => {
   document.getElementById("editModal").style.display = "flex";
@@ -867,7 +1484,6 @@ window.masquerLoader = function() {
 
 
     // 🔁 Met à jour l'accès à une page pour un utilisateur
-   import { getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 window.toggleAccess = async (uid, page, hasAccess) => {
   try {
@@ -1091,10 +1707,9 @@ window.addEventListener("message",(event)=>{
 });
 
  
-	chargerUtilisateurs();
-	
+	// ✅ chargerUtilisateurs() n'est plus appelé ici : il est désormais déclenché
+	// uniquement dans identityCheckSuccess(), une fois l'identité confirmée.
 
-	
   </script>
 
 </body>

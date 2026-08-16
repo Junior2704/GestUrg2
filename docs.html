@@ -1026,29 +1026,46 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
 }
 
 function ouvrirModal(blob, nom) {
-    const url = URL.createObjectURL(blob);
-    const nouvelOnglet = window.open(url, "_blank");
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const nouvelOnglet =
+        window.open(
+            `viewer.html?file=${encodeURIComponent(url)}&nom=${encodeURIComponent(nom)}`,
+            "_blank"
+        );
+
+
     if (!nouvelOnglet) {
 
-            afficherBulle(
-                "❌ Le navigateur a bloqué l'ouverture du PDF",
-                "alerte"
-            );
-masquerLoader();
-            URL.revokeObjectURL(url);
-            return;
-        }
+        afficherBulle(
+            "❌ Le navigateur a bloqué l'ouverture du PDF",
+            "alerte"
+        );
 
-        // Titre de l'onglet
-        nouvelOnglet.document.title =
-            nom;
+        masquerLoader();
 
-        // Nettoyage de l'URL temporaire
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-        }, 60000);
+        URL.revokeObjectURL(url);
+
+        return;
+
+    }
+
+
+    /*
+     * Nettoyage après 60 secondes.
+     * Le viewer aura eu le temps de charger
+     * le Blob.
+     */
+
+    setTimeout(() => {
+
+        URL.revokeObjectURL(url);
+
+    }, 60000);
+
 }
-
 window.fermerModal = function() {
     modal.style.display = "none";
     pdfViewer.src = "";

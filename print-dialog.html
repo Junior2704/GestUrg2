@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Impression — GestUrg2</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  background: #eef2f6;
+
+  color: #1f2937;
+
+  height: 100vh;
+
+  overflow: hidden;
+}
+
+
+/* =========================
+   BARRE SUPÉRIEURE
+========================= */
+
+.topbar {
+
+  height: 64px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #dce2e8;
+
+  display: flex;
+
+  align-items: center;
+
+  padding: 0 24px;
+
+  gap: 12px;
+
+}
+
+.topbar img {
+
+  width: 38px;
+
+  height: 38px;
+
+  object-fit: contain;
+
+}
+
+.topbar-title {
+
+  font-size: 20px;
+
+  font-weight: 700;
+
+  color: #1565c0;
+
+}
+
+.topbar-subtitle {
+
+  color: #7b8794;
+
+  font-size: 13px;
+
+}
+
+
+/* =========================
+   LAYOUT
+========================= */
+
+.container {
+
+  display: grid;
+
+  grid-template-columns: 330px 1fr;
+
+  height: calc(100vh - 64px);
+
+}
+
+
+/* =========================
+   PANNEAU OPTIONS
+========================= */
+
+.options {
+
+  background: #ffffff;
+
+  border-right: 1px solid #dce2e8;
+
+  padding: 24px;
+
+  overflow-y: auto;
+
+}
+
+.section {
+
+  margin-bottom: 25px;
+
+}
+
+.section-title {
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  color: #7b8794;
+
+  margin-bottom: 9px;
+
+  letter-spacing: .5px;
+
+}
+
+
+select,
+input[type="number"] {
+
+  width: 100%;
+
+  height: 42px;
+
+  border: 1px solid #ccd4dc;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  padding: 0 12px;
+
+  font-size: 14px;
+
+  outline: none;
+
+}
+
+
+select:focus,
+input:focus {
+
+  border-color: #1976d2;
+
+}
+
+
+/* =========================
+   BOUTONS COULEUR
+========================= */
+
+.color-buttons {
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 8px;
+
+}
+
+.color-button {
+
+  height: 42px;
+
+  border: 1px solid #ccd4dc;
+
+  border-radius: 8px;
+
+  background: white;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+}
+
+.color-button.active {
+
+  background: #e3f2fd;
+
+  border-color: #1976d2;
+
+  color: #1565c0;
+
+  font-weight: 600;
+
+}
+
+
+/* =========================
+   COPIES
+========================= */
+
+.copies {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+}
+
+.copies button {
+
+  width: 42px;
+
+  height: 42px;
+
+  border: 1px solid #ccd4dc;
+
+  background: #fff;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-size: 20px;
+
+}
+
+.copies input {
+
+  text-align: center;
+
+  flex: 1;
+
+}
+
+
+/* =========================
+   BOUTON IMPRIMER
+========================= */
+
+.print-button {
+
+  width: 100%;
+
+  height: 48px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background: #1976d2;
+
+  color: white;
+
+  font-size: 15px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-top: 10px;
+
+}
+
+.print-button:hover {
+
+  background: #1565c0;
+
+}
+
+.print-button:disabled {
+
+  opacity: .5;
+
+  cursor: default;
+
+}
+
+
+/* =========================
+   APERÇU
+========================= */
+
+.preview-container {
+
+  position: relative;
+
+  overflow: auto;
+
+  padding: 40px;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: flex-start;
+
+}
+
+
+/* fond derrière le papier */
+
+.preview-background {
+
+  min-height: 100%;
+
+  display: flex;
+
+  justify-content: center;
+
+}
+
+
+/* feuille */
+
+.paper {
+
+  background: white;
+
+  box-shadow:
+    0 4px 25px rgba(0,0,0,.15);
+
+  position: relative;
+
+  overflow: hidden;
+
+}
+
+
+/* dimensions */
+
+.paper.a4 {
+
+  width: 210mm;
+
+  min-height: 297mm;
+
+}
+
+.paper.a5 {
+
+  width: 148mm;
+
+  min-height: 210mm;
+
+}
+
+.paper.ticket {
+
+  width: 58mm;
+
+  min-height: 80mm;
+
+}
+
+
+/* document réel */
+
+#printContent {
+
+  width: 100%;
+
+  min-height: 100%;
+
+  padding: 10mm;
+
+}
+
+
+/* =========================
+   NOIR ET BLANC
+========================= */
+
+.paper.grayscale {
+
+  filter: grayscale(100%);
+
+}
+
+
+/* =========================
+   MESSAGE CHARGEMENT
+========================= */
+
+.loading {
+
+  position: absolute;
+
+  inset: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #7b8794;
+
+  font-size: 14px;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     TOPBAR
+========================= -->
+
+<div class="topbar">
+
+  <img src="logog2.png">
+
+  <div>
+
+    <div class="topbar-title">
+      Impression
+    </div>
+
+    <div class="topbar-subtitle">
+      GestUrg2
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<div class="container">
+
+
+<!-- =========================
+     OPTIONS
+========================= -->
+
+<div class="options">
+
+
+  <div class="section">
+
+    <div class="section-title">
+      Imprimante
+    </div>
+
+    <select id="printer">
+
+      <option>
+        Recherche des imprimantes...
+      </option>
+
+    </select>
+
+  </div>
+
+
+
+  <div class="section">
+
+    <div class="section-title">
+      Papier
+    </div>
+
+    <select id="paperSize">
+
+      <option value="A4">
+        A4 — 210 × 297 mm
+      </option>
+
+      <option value="A5">
+        A5 — 148 × 210 mm
+      </option>
+
+      <option value="ticket58">
+        Ticket — 58 mm
+      </option>
+
+    </select>
+
+  </div>
+
+
+
+  <div class="section">
+
+    <div class="section-title">
+      Couleur
+    </div>
+
+    <div class="color-buttons">
+
+      <button
+        id="colorBtn"
+        class="color-button active"
+      >
+        🎨 Couleur
+      </button>
+
+      <button
+        id="bwBtn"
+        class="color-button"
+      >
+        ⚫ Noir & blanc
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="section">
+
+    <div class="section-title">
+      Copies
+    </div>
+
+    <div class="copies">
+
+      <button id="minus">
+        −
+      </button>
+
+      <input
+        id="copies"
+        type="number"
+        min="1"
+        value="1"
+      >
+
+      <button id="plus">
+        +
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <button
+    class="print-button"
+    id="print"
+  >
+    🖨️ Imprimer
+  </button>
+
+
+</div>
+
+
+
+<!-- =========================
+     APERÇU
+========================= -->
+
+<div class="preview-container">
+
+  <div class="preview-background">
+
+    <div
+      id="paper"
+      class="paper a4"
+    >
+
+      <div
+        id="printContent"
+      >
+
+        <div class="loading">
+          Chargement de l'aperçu...
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+let contenuOriginal = "";
+
+let couleur = true;
+
+
+// ================================
+// CHARGEMENT DES IMPRIMANTES
+// ================================
+
+async function chargerImprimantes() {
+
+  const select =
+    document.getElementById("printer");
+
+  const printers =
+    await window.electronPrint.getPrinters();
+
+
+  select.innerHTML = "";
+
+
+  if (!printers.length) {
+
+    const option =
+      document.createElement("option");
+
+    option.textContent =
+      "Aucune imprimante trouvée";
+
+    select.appendChild(option);
+
+    return;
+  }
+
+
+  printers.forEach(printer => {
+
+    const option =
+      document.createElement("option");
+
+    option.value =
+      printer.name;
+
+    option.textContent =
+      printer.displayName ||
+      printer.name;
+
+
+    if (printer.isDefault) {
+
+      option.selected = true;
+
+    }
+
+
+    select.appendChild(option);
+
+  });
+
+}
+
+
+// ================================
+// APERÇU
+// ================================
+
+function actualiserApercu() {
+
+  const content =
+    document.getElementById("printContent");
+
+  content.innerHTML =
+    contenuOriginal;
+
+
+  const paper =
+    document.getElementById("paper");
+
+
+  paper.classList.remove(
+    "a4",
+    "a5",
+    "ticket58",
+    "grayscale"
+  );
+
+
+  const size =
+    document.getElementById("paperSize").value;
+
+
+  if (size === "A4") {
+
+    paper.classList.add("a4");
+
+  }
+
+  else if (size === "A5") {
+
+    paper.classList.add("a5");
+
+  }
+
+  else {
+
+    paper.classList.add("ticket58");
+
+  }
+
+
+  if (!couleur) {
+
+    paper.classList.add("grayscale");
+
+  }
+
+}
+
+
+// ================================
+// CHANGEMENT PAPIER
+// ================================
+
+document
+  .getElementById("paperSize")
+  .addEventListener(
+    "change",
+    actualiserApercu
+  );
+
+
+// ================================
+// COULEUR
+// ================================
+
+document
+  .getElementById("colorBtn")
+  .addEventListener(
+    "click",
+    () => {
+
+      couleur = true;
+
+      document
+        .getElementById("colorBtn")
+        .classList.add("active");
+
+      document
+        .getElementById("bwBtn")
+        .classList.remove("active");
+
+      actualiserApercu();
+
+    }
+  );
+
+
+document
+  .getElementById("bwBtn")
+  .addEventListener(
+    "click",
+    () => {
+
+      couleur = false;
+
+      document
+        .getElementById("bwBtn")
+        .classList.add("active");
+
+      document
+        .getElementById("colorBtn")
+        .classList.remove("active");
+
+      actualiserApercu();
+
+    }
+  );
+
+
+// ================================
+// COPIES
+// ================================
+
+document
+  .getElementById("minus")
+  .onclick = () => {
+
+    const input =
+      document.getElementById("copies");
+
+    input.value =
+      Math.max(
+        1,
+        Number(input.value) - 1
+      );
+
+  };
+
+
+document
+  .getElementById("plus")
+  .onclick = () => {
+
+    const input =
+      document.getElementById("copies");
+
+    input.value =
+      Number(input.value) + 1;
+
+  };
+
+
+// ================================
+// IMPRIMER
+// ================================
+
+document
+  .getElementById("print")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const printer =
+        document.getElementById("printer").value;
+
+      const paper =
+        document.getElementById("paperSize").value;
+
+      const copies =
+        Number(
+          document.getElementById("copies").value
+        );
+
+
+      if (!printer) {
+
+        alert(
+          "Veuillez sélectionner une imprimante."
+        );
+
+        return;
+
+      }
+
+
+      let pageSize;
+
+
+      if (paper === "A4") {
+
+        pageSize = {
+          width: 210000,
+          height: 297000
+        };
+
+      }
+
+      else if (paper === "A5") {
+
+        pageSize = {
+          width: 148000,
+          height: 210000
+        };
+
+      }
+
+      else {
+
+        pageSize = {
+          width: 58000,
+          height: 80000
+        };
+
+      }
+
+
+      const button =
+        document.getElementById("print");
+
+      button.disabled = true;
+
+      button.textContent =
+        "🖨️ Impression...";
+
+
+      try {
+
+        await window.electronPrint.imprimer({
+
+          deviceName: printer,
+
+          pageSize,
+
+          color: couleur,
+
+          copies,
+
+          orientation: "portrait"
+
+        });
+
+
+        window.close();
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        alert(
+          "Impossible d'imprimer :\n\n" +
+          error.message
+        );
+
+      }
+
+
+      button.disabled = false;
+
+      button.textContent =
+        "🖨️ Imprimer";
+
+    }
+  );
+
+
+// ================================
+// RÉCEPTION DU DOCUMENT
+// ================================
+
+window.electronPrint.onContenuImpression(
+  (contenu) => {
+
+    contenuOriginal = contenu;
+
+    actualiserApercu();
+
+  }
+);
+
+
+// ================================
+// INITIALISATION
+// ================================
+
+chargerImprimantes();
+
+</script>
+
+
+</body>
+
+</html>

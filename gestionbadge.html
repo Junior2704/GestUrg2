@@ -24,6 +24,12 @@
     --role-ambulancier:#dc2626;
     --role-aide-soignant:#f59e0b;
     --role-defaut:#6b7280;
+    /* Couleur d'établissement pour l'en-tête et le pied du badge :
+       remplacez cette valeur par la couleur de la charte graphique de l'hôpital. */
+    --etablissement:#0b1b33;
+    /* Gris utilisé pour le lieu de pratique — assombri pour rester lisible
+       (contraste AA) même en lumière faible (ex. aux urgences). */
+    --gris-lieu:#4b5165;
   }
   *{box-sizing:border-box;}
   body{
@@ -155,29 +161,64 @@
     box-shadow:0 10px 24px rgba(0,0,0,.12);
     font-family:'Inter',system-ui,sans-serif;
   }
-  .badge-carte .entete{
-    width:100%;box-sizing:border-box;padding:2.6mm 3mm 2mm;display:flex;align-items:center;justify-content:center;
-    background:#0b1b33;border-bottom:0.4mm solid #d3d7de;
+  /* Filigrane discret en fond de carte — freine la contrefaçon à vue.
+     À réserver aux impressions sur papier badge sécurisé : sur du papier
+     standard, une texture trop marquée peut nuire à la lisibilité de la photo. */
+  .badge-carte::before{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:repeating-linear-gradient(-35deg, rgba(11,27,51,.05) 0 0.5mm, transparent 0.5mm 4.2mm);
   }
-  .badge-carte .entete img{max-height:6mm;max-width:36mm;object-fit:contain;}
+  .badge-carte > *{position:relative;z-index:1;}
+  .badge-carte .entete{
+    width:100%;box-sizing:border-box;padding:2.6mm 3mm 2mm;display:flex;align-items:center;justify-content:center;position:relative;
+    background:var(--etablissement);border-bottom:0.6mm solid #d3d7de;box-shadow:0 1.5px 0 rgba(0,0,0,.06);
+  }
+  .badge-carte .entete img{max-height:6mm;max-width:32mm;object-fit:contain;}
   .badge-carte .entete .logo-fallback{font-size:8.5px;font-weight:800;color:#fff;letter-spacing:.08em;}
+  .badge-carte .puce-nfc{
+    position:absolute;top:50%;right:2.4mm;transform:translateY(-50%);
+    width:5mm;height:5mm;border-radius:50%;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .badge-carte .puce-nfc svg{width:3mm;height:3mm;}
   .badge-carte .photo-zone{
     width:24mm;height:30mm;border-radius:1.4mm;overflow:hidden;background:#e9ecf1;
     margin-top:3.4mm;border:0.4mm solid #dde1e8;box-shadow:0 1px 3px rgba(0,0,0,.08);flex-shrink:0;
   }
   .badge-carte .photo-zone img{width:100%;height:100%;object-fit:cover;display:block;}
   .badge-carte .photo-zone .photo-vide{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#b6bccb;font-size:9px;text-align:center;padding:2mm;box-sizing:border-box;}
-  .badge-carte .nom-zone{margin-top:2.6mm;text-align:center;padding:0 3mm;width:100%;box-sizing:border-box;}
-  .badge-carte .nom-zone .nom{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;line-height:1.15;color:#111827;}
-  .badge-carte .nom-zone .prenom{font-size:10px;font-weight:500;color:#444;margin-top:0.6mm;}
+  .badge-carte .separateur-role{width:13mm;height:0.6mm;border-radius:1mm;margin-top:2mm;flex-shrink:0;}
+  .badge-carte .nom-zone{margin-top:1.6mm;text-align:center;padding:0 3mm;width:100%;box-sizing:border-box;}
+  .badge-carte .nom-zone .nom{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1.15;color:#111827;}
+  .badge-carte .nom-zone .prenom{font-size:9.5px;font-weight:500;color:#444;margin-top:0.6mm;}
+  .badge-carte .nom-zone .identifiant{margin-top:1.2mm;font-size:7.4px;font-weight:700;letter-spacing:.05em;color:#3b4252;}
+  .badge-carte .nom-zone .identifiant .label{display:block;font-size:6.4px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--texte-2);margin-bottom:0.3mm;}
   .badge-carte .fonction-tag{
-    margin-top:1.8mm;padding:0.9mm 3mm;border-radius:5mm;color:#fff;font-size:9px;font-weight:800;
+    margin-top:1.6mm;padding:0.7mm 2.6mm;border-radius:5mm;color:#fff;font-size:8px;font-weight:800;
     text-transform:uppercase;letter-spacing:.03em;
   }
-  .badge-carte .meta-zone{margin-top:2mm;text-align:center;padding:0 3mm;width:100%;box-sizing:border-box;}
-  .badge-carte .meta-zone .service{font-size:8.6px;font-weight:700;color:#1b1f27;line-height:1.3;}
-  .badge-carte .meta-zone .lieu{font-size:7.6px;font-weight:500;color:#6b7280;margin-top:0.5mm;line-height:1.3;}
-  .badge-carte .bande{margin-top:auto;width:100%;padding:2.4mm 0;text-align:center;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+  .badge-carte .meta-zone{margin-top:2mm;text-align:center;padding:0 2.6mm;width:100%;box-sizing:border-box;}
+  .badge-carte .meta-zone .service{font-size:8.2px;font-weight:700;color:#1b1f27;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .badge-carte .meta-zone .service .lieu-inline{font-weight:600;color:var(--gris-lieu);}
+  .badge-carte .meta-zone .lieu{font-size:7.6px;font-weight:600;color:var(--gris-lieu);margin-top:0.5mm;line-height:1.3;}
+  .badge-carte .bande{margin-top:auto;width:100%;padding:2mm 0;text-align:center;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+  .badge-carte .pied-dates{width:100%;box-sizing:border-box;padding:1mm 2.6mm 1.6mm;text-align:center;font-size:6px;font-weight:600;color:var(--texte-2);letter-spacing:.01em;background:#fbfcfe;}
+
+  /* ---- verso du badge (consignes + QR de vérification) ---- */
+  .badge-verso{
+    width:54mm;height:85.6mm;border-radius:2.2mm;background:#fff;border:1px solid #d3d7de;
+    display:flex;flex-direction:column;align-items:center;overflow:hidden;position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:'Inter',system-ui,sans-serif;
+    box-sizing:border-box;padding:4mm 3.6mm 3mm;
+  }
+  .badge-verso .entete-verso{width:100%;text-align:center;font-size:7px;font-weight:800;letter-spacing:.07em;color:var(--texte-2);text-transform:uppercase;padding-bottom:2mm;border-bottom:0.3mm solid #eceef2;margin-bottom:3mm;}
+  .badge-verso .consignes{font-size:7.1px;line-height:1.55;color:#3b4252;text-align:left;width:100%;}
+  .badge-verso .consignes strong{display:block;font-size:7.4px;color:#111827;margin-bottom:0.8mm;}
+  .badge-verso .consignes .bloc + .bloc{margin-top:2.6mm;}
+  .badge-verso .qr-zone{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:1.2mm;padding-top:3mm;}
+  .badge-verso .qr-zone img{width:19mm;height:19mm;border:0.3mm solid #eceef2;border-radius:1mm;}
+  .badge-verso .qr-zone .legende{font-size:5.8px;color:var(--texte-2);text-align:center;letter-spacing:.02em;max-width:36mm;}
+  .badge-verso .pied-verso{margin-top:1.6mm;font-size:6px;font-weight:700;letter-spacing:.04em;color:var(--texte-2);text-align:center;}
 
   .barre-outils-photo{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
 
@@ -201,6 +242,8 @@
   .a4-slot.occupe{border-style:solid;border-color:var(--bleu);background:#fff;}
   .a4-slot .num{position:absolute;top:2mm;left:2mm;font-size:7px;color:#b7bcc6;font-weight:700;}
   .a4-slot .mini{width:90%;height:90%;object-fit:cover;border-radius:2mm;}
+  .a4-slot .face-tag{position:absolute;bottom:1.6mm;right:1.6mm;font-size:6.5px;font-weight:800;color:#fff;padding:0.5mm 1.8mm;border-radius:3mm;text-transform:uppercase;letter-spacing:.03em;}
+  .a4-slot .verso-icone{font-size:16px;opacity:.5;}
 
   .info-flottante{font-size:12.5px;color:var(--texte-2);background:#f4f6f9;border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.5;}
 
@@ -233,7 +276,6 @@
   <div class="modale">
     <h2>Accès refusé</h2>
     <p class="sub">Vous n'avez pas l'autorisation d'accéder à la gestion des badges.</p>
-    <div class="modale-footer"><button class="btn-id" onclick="window.location.href='index.html'">Retour</button></div>
   </div>
 </div>
 
@@ -280,7 +322,7 @@
   <section class="panel" id="tab-trouve">
     <div class="carte zone-scan-geante">
       <h2 style="text-align:center;margin:0 0 4px;">Scanner un badge</h2>
-      <p class="sub" style="text-align:center;">Présentez le badge sur le lecteur, le résultat s'affiche automatiquement.</p>
+      <p class="sub" style="text-align:center;">Présentez le badge sur le lecteur pour trouver le propriétaire du badge.</p>
       <div id="trouve-anim-conteneur"></div>
       <input type="text" id="scan-trouve" class="input-scan-cache" autocomplete="off">
       <div class="resultat-scan" id="resultat-trouve">
@@ -302,7 +344,7 @@
       <div class="row-entre"><strong>2. Photo &amp; aperçu du badge</strong></div>
       <div class="designer">
         <div>
-          <div id="apercu-badge-conteneur" style="display:flex;justify-content:center;"></div>
+          <div id="apercu-badge-conteneur" style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;"></div>
           <div class="champ" style="margin-top:14px;">
             <label>Fonction affichée sur le badge</label>
             <select id="select-fonction" style="width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--bordure);background:#fbfcfe;">
@@ -321,13 +363,13 @@
           </div>
           <div class="champ">
             <label>Lieu de pratique</label>
-            <input type="text" id="input-lieu" placeholder="ex. Hôpital Saint-Louis" style="width:100%;">
+            <input type="text" id="input-lieu" placeholder="ex. HOPJ" style="width:100%;">
           </div>
           <div class="barre-outils-photo">
             <label class="btn-id" style="cursor:pointer;">📷 Charger une photo<input type="file" id="input-photo" accept="image/*" style="display:none;"></label>
             <button class="btn-id btn-id-v" id="btn-enregistrer-photo" disabled>💾 Enregistrer le badge</button>
           </div>
-          <div class="info-flottante">La photo (champ <code>photo</code>), la fonction (champ <code>fonction</code>), le service (champ <code>service</code>) et le lieu de pratique (champ <code>lieu</code>) sont enregistrés dans la fiche de l'utilisateur, dans Firestore.</div>
+          <div class="info-flottante">La photo (champ <code>photo</code>), la fonction (champ <code>fonction</code>), le service (champ <code>service</code>) et le lieu de pratique (champ <code>lieu</code>) sont enregistrés dans la fiche de l'utilisateur, dans Firestore. L'identifiant affiché sous le nom (matricule / n° RPPS) est généré automatiquement à partir de l'identifiant Firestore de la fiche — aucun champ supplémentaire à saisir. La date d'émission est enregistrée automatiquement lors du premier enregistrement du badge ; la date de validité en découle.</div>
         </div>
         <div>
           <div class="row-entre" style="margin-top:0;"><strong>File d'impression</strong>
@@ -340,10 +382,10 @@
 
     <div class="carte" id="bloc-a4" style="display:none;">
       <div class="row-entre">
-        <strong>3. Positionner sur la feuille A4</strong>
+        <strong>3. Positionner sur la feuille d'impression</strong>
         <button class="btn-id btn-id-v" id="btn-imprimer">🖨️ Imprimer</button>
       </div>
-      <p class="sub" style="margin-top:-6px;">Sélectionnez un badge dans la file puis cliquez sur l'emplacement de la feuille où il doit être imprimé (utile pour les feuilles de papier badge pré-découpées).</p>
+      <p class="sub" style="margin-top:-6px;">Sélectionnez un badge dans la file puis cliquez sur un emplacement de la feuille : le recto y est placé, et le verso est automatiquement positionné juste à côté, pour pouvoir glisser la carte plastique entre les deux impressions avant plastification.</p>
       <div class="a4-conteneur"><div class="a4-feuille" id="a4-feuille"></div></div>
     </div>
   </section>
@@ -422,6 +464,13 @@ const app = initializeApp(firebaseConfig);
 const LOGO_PATH = "logo.png";
 const ANIMATION_PATH = "animation-badge.html";
 const COLLECTION = "medecins";
+// Durée de validité affichée au dos/pied du badge, en années à partir de la date d'émission.
+const DUREE_VALIDITE_ANNEES = 3;
+// Base de l'URL encodée dans le QR code au verso, pour un contrôle physique du badge.
+// À adapter si une page de vérification dédiée est mise en place côté serveur.
+const URL_VERIFICATION_BASE = "https://urgences-a8ed4.web.app/verif-badge";
+
+const ICONE_NFC = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="2.4" fill="#fff"/><path d="M6.5 12a5.5 5.5 0 0 1 5.5-5.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 12a8.5 8.5 0 0 1 8.5-8.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></svg>`;
 
 const ROLE_COULEURS = {
   "Médecin": "var(--role-medecin)",
@@ -469,6 +518,32 @@ function suggestionFonction(type){
 }
 function fonctionAffichee(data){
   return data.fonction || suggestionFonction(data.type) || "";
+}
+
+// L'UID Firestore (déjà unique par construction) sert d'identifiant visible sur le badge,
+// simplement reformaté en groupes de 4 caractères pour rester lisible (pas de champ à ajouter).
+function identifiantBadge(uid){
+  const propre = (uid||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const groupes = propre.match(/.{1,4}/g);
+  return groupes ? groupes.join(" ") : (uid||"—");
+}
+function libelleIdentifiant(fonction){
+  return fonction === "Médecin" ? "N° RPPS" : "Matricule";
+}
+function formatDateFR(iso){
+  if(!iso) return "—";
+  try{
+    return new Date(iso).toLocaleDateString("fr-FR", {day:"2-digit",month:"2-digit",year:"numeric"});
+  }catch(e){ return "—"; }
+}
+function dateValiditeDepuis(iso){
+  const depart = iso ? new Date(iso) : new Date();
+  const v = new Date(depart);
+  v.setFullYear(v.getFullYear() + DUREE_VALIDITE_ANNEES);
+  return v.toISOString();
+}
+function urlQR(data){
+  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(data)}`;
 }
 let FILE_IMPRESSION = []; // [{uid, nom, prenom, role, photo}]
 let ITEM_FILE_ACTIF = null;
@@ -784,25 +859,53 @@ document.getElementById("input-lieu").addEventListener("input", e=>{
   dessinerApercuBadge();
 });
 
-/* ================= APERÇU BADGE ================= */
-function marqueBadge(d, photo, fonction, service, lieu){
+/* ================= APERÇU BADGE : RECTO ================= */
+function marqueBadge(d, uid, photo, fonction, service, lieu, dateEmissionIso){
+  const emisIso = dateEmissionIso || new Date().toISOString();
+  let metaHTML = "";
+  if(service && lieu){
+    metaHTML = `<div class="service">${service} <span class="lieu-inline">· ${lieu}</span></div>`;
+  } else if(service){
+    metaHTML = `<div class="service">${service}</div>`;
+  } else if(lieu){
+    metaHTML = `<div class="lieu">${lieu}</div>`;
+  }
   return `
     <div class="badge-carte">
       <div class="entete">
         <img src="${LOGO_PATH}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
         <span class="logo-fallback" style="display:none;">HÔPITAL</span>
+        <span class="puce-nfc" title="Badge à puce actif">${ICONE_NFC}</span>
       </div>
       <div class="photo-zone">${photo ? `<img src="${photo}">` : `<span class="photo-vide">Photo</span>`}</div>
+      <div class="separateur-role" style="background:${couleurRole(fonction)}"></div>
       <div class="nom-zone">
         <div class="nom">${nomFamille(d)}</div>
         <div class="prenom">${d.prenom||""}</div>
+        <div class="identifiant"><span class="label">${libelleIdentifiant(fonction)}</span>${identifiantBadge(uid)}</div>
       </div>
       <div class="fonction-tag" style="background:${couleurRole(fonction)}">${fonction || "Fonction non définie"}</div>
-      <div class="meta-zone">
-        ${service ? `<div class="service">${service}</div>` : ""}
-        ${lieu ? `<div class="lieu">${lieu}</div>` : ""}
-      </div>
+      <div class="meta-zone">${metaHTML}</div>
       <div class="bande" style="background:${couleurRole(fonction)}">${fonction || "—"}</div>
+      <div class="pied-dates">Émis le ${formatDateFR(emisIso)} · Valable jusqu'au ${formatDateFR(dateValiditeDepuis(emisIso))}</div>
+    </div>`;
+}
+
+/* ================= APERÇU BADGE : VERSO (consignes + QR de vérification) ================= */
+function marqueBadgeVerso(uid){
+  const qr = urlQR(`${URL_VERIFICATION_BASE}?uid=${encodeURIComponent(uid)}`);
+  return `
+    <div class="badge-verso">
+      <div class="entete-verso">Badge professionnel — vérification</div>
+      <div class="consignes">
+        <div class="bloc"><strong>Badge trouvé ?</strong>Merci de le déposer à l'accueil de l'établissement ou de le remettre au service sécurité.</div>
+        <div class="bloc"><strong>Badge perdu ?</strong>Signalez-le sans délai au service sécurité afin qu'il soit désactivé.</div>
+      </div>
+      <div class="qr-zone">
+        <img src="${qr}" alt="QR code de vérification du badge">
+        <span class="legende">Scanner pour vérifier l'authenticité du badge</span>
+      </div>
+      <div class="pied-verso">${identifiantBadge(uid)}</div>
     </div>`;
 }
 
@@ -810,7 +913,15 @@ function dessinerApercuBadge(){
   const d = TOUS_UTILISATEURS[UID_DESIGNER];
   const photo = PHOTO_EN_ATTENTE || d.photo || "";
   const conteneur = document.getElementById("apercu-badge-conteneur");
-  conteneur.innerHTML = marqueBadge(d, photo, FONCTION_EN_ATTENTE, SERVICE_EN_ATTENTE, LIEU_EN_ATTENTE);
+  conteneur.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:var(--texte-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Recto</div>
+      ${marqueBadge(d, UID_DESIGNER, photo, FONCTION_EN_ATTENTE, SERVICE_EN_ATTENTE, LIEU_EN_ATTENTE, d.dateEmission)}
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:var(--texte-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Verso</div>
+      ${marqueBadgeVerso(UID_DESIGNER)}
+    </div>`;
 }
 
 /* ================= CHARGEMENT / RECADRAGE PHOTO ================= */
@@ -898,6 +1009,10 @@ document.getElementById("btn-enregistrer-photo").addEventListener("click", async
   if(FONCTION_EN_ATTENTE) maj.fonction = FONCTION_EN_ATTENTE;
   if(SERVICE_EN_ATTENTE !== null) maj.service = SERVICE_EN_ATTENTE;
   if(LIEU_EN_ATTENTE !== null) maj.lieu = LIEU_EN_ATTENTE;
+  // Date d'émission fixée une seule fois, au premier enregistrement du badge.
+  if(!TOUS_UTILISATEURS[UID_DESIGNER].dateEmission){
+    maj.dateEmission = new Date().toISOString();
+  }
   await updateDoc(doc(db, COLLECTION, UID_DESIGNER), maj);
   Object.assign(TOUS_UTILISATEURS[UID_DESIGNER], maj);
   btn.textContent = "✅ Enregistré";
@@ -914,7 +1029,8 @@ document.getElementById("btn-ajouter-file").addEventListener("click", ()=>{
   const lieu = LIEU_EN_ATTENTE !== null ? LIEU_EN_ATTENTE : (d.lieu||"");
   if(!photo){ alert("Ajoutez une photo avant d'ajouter ce badge à la file d'impression."); return; }
   if(!fonction){ alert("Choisissez la fonction affichée sur le badge avant de l'ajouter à la file."); return; }
-  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:nomFamille(d), prenom:d.prenom||"", type:fonction, service, lieu, photo });
+  const dateEmission = d.dateEmission || new Date().toISOString();
+  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:nomFamille(d), prenom:d.prenom||"", type:fonction, service, lieu, photo, dateEmission });
   redessinerFile();
 });
 
@@ -945,11 +1061,23 @@ function calculerSlots(){
     for(let c=0;c<cols;c++){
       slots.push({
         left: offX + c*(BADGE_W+GAP),
-        top: offY + r*(BADGE_H+GAP)
+        top: offY + r*(BADGE_H+GAP),
+        row: r, col: c
       });
     }
   }
   return slots;
+}
+
+// Cherche l'emplacement libre le plus proche (même ligne) pour poser le verso juste à côté du recto,
+// afin de pouvoir glisser la carte plastique entre les deux impressions avant plastification.
+function trouverSlotVersoVoisin(indexRecto){
+  const s = SLOTS[indexRecto];
+  const droite = SLOTS.findIndex(sl => sl.row===s.row && sl.col===s.col+1);
+  if(droite!==-1 && !ASSIGNATIONS[droite]) return droite;
+  const gauche = SLOTS.findIndex(sl => sl.row===s.row && sl.col===s.col-1);
+  if(gauche!==-1 && !ASSIGNATIONS[gauche]) return gauche;
+  return null;
 }
 
 function construireFeuilleA4(){
@@ -957,17 +1085,42 @@ function construireFeuilleA4(){
   const feuille = document.getElementById("a4-feuille");
   feuille.innerHTML = "";
   SLOTS.forEach((s, i)=>{
+    const assign = ASSIGNATIONS[i];
     const el = document.createElement("div");
-    el.className = "a4-slot" + (ASSIGNATIONS[i] ? " occupe" : "");
+    el.className = "a4-slot" + (assign ? " occupe" : "");
     el.style.left = s.left+"mm"; el.style.top = s.top+"mm";
     el.style.width = BADGE_W+"mm"; el.style.height = BADGE_H+"mm";
-    el.innerHTML = `<span class="num">${i+1}</span>` + (ASSIGNATIONS[i] ? `<img class="mini" src="${ASSIGNATIONS[i].photo}">` : "");
+    let contenu = `<span class="num">${i+1}</span>`;
+    if(assign){
+      if(assign.face === "verso"){
+        contenu += `<span class="verso-icone">🔳</span><span class="face-tag" style="background:#374151;">Verso</span>`;
+      } else {
+        contenu += `<img class="mini" src="${assign.item.photo}"><span class="face-tag" style="background:${couleurRole(assign.item.type)}">Recto</span>`;
+      }
+    }
+    el.innerHTML = contenu;
     el.addEventListener("click", ()=>{
       if(ITEM_FILE_ACTIF===null){
-        if(ASSIGNATIONS[i]){ delete ASSIGNATIONS[i]; construireFeuilleA4(); }
+        if(assign){
+          const faceOpposee = assign.face==="recto" ? "verso" : "recto";
+          const idxPaire = Object.keys(ASSIGNATIONS).find(k =>
+            ASSIGNATIONS[k].item===assign.item && ASSIGNATIONS[k].face===faceOpposee
+          );
+          delete ASSIGNATIONS[i];
+          if(idxPaire!==undefined) delete ASSIGNATIONS[idxPaire];
+          construireFeuilleA4();
+        }
         return;
       }
-      ASSIGNATIONS[i] = FILE_IMPRESSION[ITEM_FILE_ACTIF];
+      if(assign) return; // emplacement déjà occupé
+      const idxVerso = trouverSlotVersoVoisin(i);
+      if(idxVerso===null){
+        alert("Aucun emplacement libre juste à côté pour le verso. Choisissez un emplacement où une case voisine (gauche ou droite) est libre, afin que le recto et le verso soient imprimés côte à côte.");
+        return;
+      }
+      const item = FILE_IMPRESSION[ITEM_FILE_ACTIF];
+      ASSIGNATIONS[i] = { item, face:"recto" };
+      ASSIGNATIONS[idxVerso] = { item, face:"verso" };
       construireFeuilleA4();
     });
     feuille.appendChild(el);
@@ -978,15 +1131,15 @@ function construireFeuilleA4(){
 document.getElementById("btn-imprimer").addEventListener("click", ()=>{
   const zone = document.getElementById("zone-impression");
   zone.innerHTML = "";
-  Object.entries(ASSIGNATIONS).forEach(([idx, item])=>{
+  Object.entries(ASSIGNATIONS).forEach(([idx, assign])=>{
     const s = SLOTS[idx];
+    const item = assign.item;
     const div = document.createElement("div");
     div.style.position = "absolute";
     div.style.left = s.left+"mm"; div.style.top = s.top+"mm";
-    div.innerHTML = marqueBadge(
-      { nom:item.nom, prenom:item.prenom },
-      item.photo, item.type, item.service, item.lieu
-    );
+    div.innerHTML = assign.face === "verso"
+      ? marqueBadgeVerso(item.uid)
+      : marqueBadge({ nom:item.nom, prenom:item.prenom }, item.uid, item.photo, item.type, item.service, item.lieu, item.dateEmission);
     zone.appendChild(div);
   });
   if(Object.keys(ASSIGNATIONS).length===0){ alert("Aucun badge positionné sur la feuille."); return; }

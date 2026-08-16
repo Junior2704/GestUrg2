@@ -1116,65 +1116,24 @@ async function afficherDocuments() {
                 </div>
             `;
 
-        li.querySelector(".btn-loupe")?.addEventListener("click", async () => {
-afficherLoader();
-    // 🔥 CAS 1 : nouveau système .ord
-if (data.ord) {
+li.querySelector(".btn-loupe")?.addEventListener("click", () => {
 
-    
+    const viewerUrl =
+        `viewer.html?docId=${encodeURIComponent(data.id)}`;
 
-    try {
+    const nouvelOnglet =
+        window.open(viewerUrl, "_blank");
 
-        // 🔥 on envoie directement l'objet Firestore complet
-        const ord = data.ord;
+    if (!nouvelOnglet) {
 
-       
-
-        const html = generateHTML(ord);
-
-     
-const patient = data.patient || {};
-
-const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
-const container = document.createElement("div");
-container.innerHTML = html;
-
-const pdfBlob = await html2pdf()
-  .set({
-    margin: 0,
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  })
-  .from(container)
-  .outputPdf('blob');
-
-masquerLoader();
-ouvrirModal(pdfBlob, nom);
-
-    } catch (err) {
-
-        console.error("Erreur PDF :", err);
-        afficherBulle("Erreur génération PDF", "error");
+        afficherBulle(
+            "❌ Le navigateur a bloqué l'ouverture du document",
+            "alerte"
+        );
 
     }
 
-    return;
-}
-
-    // 🔹 CAS 2 : ancien système PDF base64
-    if (data.pdfBase64) {
-const patient = data.patient || {};
-const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
-        const blob = b64toBlob(data.pdfBase64, "application/pdf");
-        masquerLoader();
-        ouvrirModal(blob, nom);
-        return;
-    }
-
-    afficherBulle("Aucun document disponible", "warning");
-masquerLoader();
 });
-
             li.querySelector(".btn-delete")?.addEventListener("click", e => {
                 ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);
             });

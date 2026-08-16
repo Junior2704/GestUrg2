@@ -276,11 +276,23 @@
       <div class="designer">
         <div>
           <div id="apercu-badge-conteneur" style="display:flex;justify-content:center;"></div>
+          <div class="champ" style="margin-top:14px;">
+            <label>Fonction affichée sur le badge</label>
+            <select id="select-fonction" style="width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--bordure);background:#fbfcfe;">
+              <option value="">— Choisir —</option>
+              <option value="Médecin">Médecin</option>
+              <option value="Infirmier">Infirmier</option>
+              <option value="Externe">Externe</option>
+              <option value="Interne">Interne</option>
+              <option value="Ambulancier">Ambulancier</option>
+              <option value="Aide-Soignant">Aide-Soignant</option>
+            </select>
+          </div>
           <div class="barre-outils-photo">
             <label class="btn-id" style="cursor:pointer;">📷 Charger une photo<input type="file" id="input-photo" accept="image/*" style="display:none;"></label>
             <button class="btn-id btn-id-v" id="btn-enregistrer-photo" disabled>💾 Enregistrer le badge</button>
           </div>
-          <div class="info-flottante">La photo est recadrée dans un cadre circulaire puis enregistrée dans la fiche de l'utilisateur (champ <code>photo</code>).</div>
+          <div class="info-flottante">La photo (champ <code>photo</code>) et la fonction (champ <code>fonction</code>) sont enregistrées dans la fiche de l'utilisateur.</div>
         </div>
         <div>
           <div class="row-entre" style="margin-top:0;"><strong>File d'impression</strong>
@@ -390,6 +402,36 @@ let UID_COURANT_DETAIL = null;
 let CONTEXTE_SCAN = null; // 'controle' | 'remplacement'
 let UID_DESIGNER = null;
 let PHOTO_EN_ATTENTE = null; // dataURL après crop, avant enregistrement
+let FONCTION_EN_ATTENTE = null;
+
+// Le champ "nom" contient parfois le nom complet ("Louis Dabadie") en plus du champ "prenom" séparé.
+// On retire le prénom du champ nom pour n'afficher que le nom de famille sur le badge / les listes.
+function nomFamille(data){
+  const nomBrut = (data.nom||"").trim();
+  const prenom = (data.prenom||"").trim();
+  if(prenom && nomBrut.toLowerCase().startsWith(prenom.toLowerCase())){
+    return nomBrut.slice(prenom.length).trim();
+  }
+  return nomBrut;
+}
+function nomAffiche(data){
+  return `${data.prenom||""} ${nomFamille(data)}`.trim() || data.nom || "—";
+}
+// "type" est le type de compte (ex: "doc"), pas le poste affiché sur le badge.
+// "fonction" est le champ dédié au poste (Médecin/Infirmier/Externe/Interne/Ambulancier/Aide-Soignant).
+function suggestionFonction(type){
+  const t = (type||"").toLowerCase();
+  if(t.includes("doc") || t.includes("medecin") || t.includes("méd")) return "Médecin";
+  if(t.includes("infirm")) return "Infirmier";
+  if(t.includes("Ext")) return "Externe";
+  if(t.includes("Int")) return "Interne";
+  if(t.includes("ambulancier")) return "Ambulancier";
+  if(t.includes("AS")) return "Aide-Soignant";
+  return "";
+}
+function fonctionAffichee(data){
+  return data.fonction || suggestionFonction(data.type) || "";
+}
 let FILE_IMPRESSION = []; // [{uid, nom, prenom, role, photo}]
 let ITEM_FILE_ACTIF = null;
 let SLOTS = []; // positions calculées pour la feuille A4
@@ -408,7 +450,7 @@ onAuthStateChanged(auth, async (user) => {
     const data = docSnap.data();
     const pages = data.pages || {};
 
-    if (pages.adminsysteme !== true) {
+    if (pages.gestionbadge !== true) {
       document.getElementById("loader").classList.add("masque");
       document.getElementById("modal-no-access").classList.add("actif");
       console.warn("Accès refusé à gestionbadge");
@@ -450,7 +492,7 @@ async function chargerUtilisateurs(){
 }
 
 function initiales(data){
-  return ((data.prenom||"")[0]||"") + ((data.nom||"")[0]||"");
+  return ((data.prenom||"")[0]||"") + ((nomFamille(data))[0]||"");
 }
 
 function afficherListe(filtre=""){
@@ -461,14 +503,15 @@ function afficherListe(filtre=""){
   Object.entries(TOUS_UTILISATEURS)
     .sort((a,b)=> (a[1].nom||"").localeCompare(b[1].nom||""))
     .forEach(([uid, data])=>{
-      const nomComplet = `${data.prenom||""} ${data.nom||""}`.trim();
+      const nomComplet = nomAffiche(data);
       if(f && !nomComplet.toLowerCase().includes(f)) return;
       n++;
+      const fonction = fonctionAffichee(data);
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${data.photo ? `<img class="avatar" src="${data.photo}">` : `<span class="avatar-vide">${initiales(data)}</span>`}</td>
         <td><strong>${nomComplet||"—"}</strong></td>
-        <td><span class="badge-role-tag" style="background:${couleurRole(data.type)}">${data.type||"—"}</span></td>
+        <td>${fonction ? `<span class="badge-role-tag" style="background:${couleurRole(fonction)}">${fonction}</span>` : `<span style="color:var(--texte-2);">— (${data.type||"non défini"})</span>`}</td>
         <td>${data.lieu||"—"}</td>
         <td>${data.idBadge ? `<span class="pill pill-badge-ok">● Badge actif</span>` : `<span class="pill pill-badge-non">Aucun badge</span>`}</td>
         <td class="actions-cell" style="justify-content:flex-end;">
@@ -490,8 +533,8 @@ document.getElementById("corps-liste").addEventListener("click", e=>{
 function ouvrirDetail(uid){
   UID_COURANT_DETAIL = uid;
   const data = TOUS_UTILISATEURS[uid];
-  document.getElementById("detail-nom").textContent = `${data.prenom||""} ${data.nom||""}`.trim() || "—";
-  document.getElementById("detail-fonction").textContent = `${data.type||"—"} · ${data.lieu||"—"}`;
+  document.getElementById("detail-nom").textContent = nomAffiche(data);
+  document.getElementById("detail-fonction").textContent = `${fonctionAffichee(data)||"Fonction non définie"} · ${data.lieu||"—"}`;
   document.getElementById("detail-badge-info").textContent = data.idBadge
     ? `Badge attribué — n° ${data.idBadge}`
     : "Aucun badge attribué à cet utilisateur.";
@@ -512,7 +555,7 @@ document.getElementById("btn-detail-remplacer").addEventListener("click", ()=>{
 document.getElementById("btn-detail-supprimer").addEventListener("click", async ()=>{
   const data = TOUS_UTILISATEURS[UID_COURANT_DETAIL];
   if(!data.idBadge){ fermerModale("modal-detail"); return; }
-  if(!confirm(`Supprimer le badge de ${data.prenom||""} ${data.nom||""} ?`)) return;
+  if(!confirm(`Supprimer le badge de ${nomAffiche(data)} ?`)) return;
   await updateDoc(doc(db, COLLECTION, UID_COURANT_DETAIL), { idBadge: deleteField() });
   data.idBadge = null;
   fermerModale("modal-detail");
@@ -537,8 +580,8 @@ function lancerScan(contexte, uid){
   const data = TOUS_UTILISATEURS[uid];
   document.getElementById("scan-titre").textContent = contexte === "controle" ? "Contrôle du badge" : "Remplacement du badge";
   document.getElementById("scan-sous-titre").textContent = contexte === "controle"
-    ? `Faites scanner le badge de ${data.prenom||""} ${data.nom||""} pour vérifier sa validité.`
-    : `Scannez le nouveau badge à attribuer à ${data.prenom||""} ${data.nom||""}.`;
+    ? `Faites scanner le badge de ${nomAffiche(data)} pour vérifier sa validité.`
+    : `Scannez le nouveau badge à attribuer à ${nomAffiche(data)}.`;
   document.getElementById("scan-input").value = "";
   document.getElementById("scan-statut").textContent = "";
   document.getElementById("scan-anim-conteneur").style.display = "none";
@@ -564,8 +607,8 @@ document.getElementById("scan-input").addEventListener("keydown", async e=>{
     const res = document.getElementById("scan-resultat");
     res.classList.add("actif", estValide ? "ok" : "non");
     document.getElementById("scan-resultat-txt").innerHTML = estValide
-      ? `✅ <strong>Badge valide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Correspond bien à ${data.prenom||""} ${data.nom||""}</span>`
-      : `❌ <strong>Badge invalide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Ce badge ne correspond pas à ${data.prenom||""} ${data.nom||""}</span>`;
+      ? `✅ <strong>Badge valide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Correspond bien à ${nomAffiche(data)}</span>`
+      : `❌ <strong>Badge invalide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Ce badge ne correspond pas à ${nomAffiche(data)}</span>`;
     document.getElementById("scan-statut").textContent = "";
     e.target.disabled = false;
   }
@@ -616,8 +659,9 @@ async function rechercherBadge(code){
     const d = snap.docs[0].data();
     res.classList.add("actif","ok");
     avatarZone.innerHTML = d.photo ? `<img class="avatar" style="width:52px;height:52px;" src="${d.photo}">` : `<span class="avatar-vide" style="width:52px;height:52px;">${initiales(d)}</span>`;
-    txtZone.innerHTML = `<strong>${d.prenom||""} ${d.nom||""} ✅</strong>
-      <span><span class="badge-role-tag" style="background:${couleurRole(d.type)}">${d.type||"—"}</span> · ${d.specialite||""} · ${d.lieu||""}</span>`;
+    const fct = fonctionAffichee(d);
+    txtZone.innerHTML = `<strong>${nomAffiche(d)} ✅</strong>
+      <span>${fct ? `<span class="badge-role-tag" style="background:${couleurRole(fct)}">${fct}</span>` : ""} · ${d.specialite||""} · ${d.lieu||""}</span>`;
   }
   scanTrouve.focus();
 }
@@ -631,12 +675,13 @@ function afficherResultatsDesigner(filtre){
   zone.innerHTML = "";
   if(!f){ return; }
   Object.entries(TOUS_UTILISATEURS)
-    .filter(([u,d])=> `${d.prenom||""} ${d.nom||""}`.toLowerCase().includes(f))
+    .filter(([u,d])=> nomAffiche(d).toLowerCase().includes(f))
     .slice(0,8)
     .forEach(([uid,d])=>{
       const div = document.createElement("div");
       div.className = "item-file";
-      div.innerHTML = `<span class="pastille" style="background:${couleurRole(d.type)}"></span> ${d.prenom||""} ${d.nom||""} <small>${d.type||""}</small>`;
+      const fctD = fonctionAffichee(d);
+      div.innerHTML = `<span class="pastille" style="background:${couleurRole(fctD)}"></span> ${nomAffiche(d)} <small>${fctD||"fonction non définie"}</small>`;
       div.addEventListener("click", ()=>selectionnerDesigner(uid));
       zone.appendChild(div);
     });
@@ -645,12 +690,21 @@ function afficherResultatsDesigner(filtre){
 function selectionnerDesigner(uid){
   UID_DESIGNER = uid;
   PHOTO_EN_ATTENTE = null;
+  const d = TOUS_UTILISATEURS[uid];
+  FONCTION_EN_ATTENTE = d.fonction || suggestionFonction(d.type) || "";
+  document.getElementById("select-fonction").value = FONCTION_EN_ATTENTE;
   document.getElementById("bloc-designer").style.display = "block";
   document.getElementById("bloc-a4").style.display = "block";
   document.getElementById("btn-enregistrer-photo").disabled = true;
   dessinerApercuBadge();
   construireFeuilleA4();
 }
+
+document.getElementById("select-fonction").addEventListener("change", e=>{
+  FONCTION_EN_ATTENTE = e.target.value;
+  document.getElementById("btn-enregistrer-photo").disabled = false;
+  dessinerApercuBadge();
+});
 
 /* ================= APERÇU BADGE ================= */
 function dessinerApercuBadge(){
@@ -665,10 +719,10 @@ function dessinerApercuBadge(){
       </div>
       <div class="photo-zone">${photo ? `<img src="${photo}">` : ""}</div>
       <div class="nom-zone">
-        <div class="nom">${d.nom||""}</div>
+        <div class="nom">${nomFamille(d)}</div>
         <div class="prenom">${d.prenom||""}</div>
       </div>
-      <div class="bande" style="background:${couleurRole(d.type)}">${d.type||"—"}</div>
+      <div class="bande" style="background:${couleurRole(FONCTION_EN_ATTENTE)}">${FONCTION_EN_ATTENTE || "Fonction non définie"}</div>
     </div>`;
 }
 
@@ -750,13 +804,16 @@ document.getElementById("btn-valider-crop").addEventListener("click", ()=>{
 });
 
 document.getElementById("btn-enregistrer-photo").addEventListener("click", async ()=>{
-  if(!PHOTO_EN_ATTENTE) return;
+  if(!PHOTO_EN_ATTENTE && !FONCTION_EN_ATTENTE) return;
   const btn = document.getElementById("btn-enregistrer-photo");
   btn.disabled = true; btn.textContent = "Enregistrement…";
-  await updateDoc(doc(db, COLLECTION, UID_DESIGNER), { photo: PHOTO_EN_ATTENTE });
-  TOUS_UTILISATEURS[UID_DESIGNER].photo = PHOTO_EN_ATTENTE;
+  const maj = {};
+  if(PHOTO_EN_ATTENTE) maj.photo = PHOTO_EN_ATTENTE;
+  if(FONCTION_EN_ATTENTE) maj.fonction = FONCTION_EN_ATTENTE;
+  await updateDoc(doc(db, COLLECTION, UID_DESIGNER), maj);
+  Object.assign(TOUS_UTILISATEURS[UID_DESIGNER], maj);
   btn.textContent = "✅ Enregistré";
-  setTimeout(()=>{ btn.textContent = "💾 Enregistrer le badge"; }, 1500);
+  setTimeout(()=>{ btn.textContent = "💾 Enregistrer le badge"; btn.disabled = true; }, 1500);
   afficherListe(document.getElementById("recherche-liste").value);
 });
 
@@ -764,8 +821,10 @@ document.getElementById("btn-enregistrer-photo").addEventListener("click", async
 document.getElementById("btn-ajouter-file").addEventListener("click", ()=>{
   const d = TOUS_UTILISATEURS[UID_DESIGNER];
   const photo = PHOTO_EN_ATTENTE || d.photo;
+  const fonction = FONCTION_EN_ATTENTE || fonctionAffichee(d);
   if(!photo){ alert("Ajoutez une photo avant d'ajouter ce badge à la file d'impression."); return; }
-  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:d.nom||"", prenom:d.prenom||"", type:d.type||"", photo });
+  if(!fonction){ alert("Choisissez la fonction affichée sur le badge avant de l'ajouter à la file."); return; }
+  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:nomFamille(d), prenom:d.prenom||"", type:fonction, photo });
   redessinerFile();
 });
 
@@ -775,7 +834,7 @@ function redessinerFile(){
   FILE_IMPRESSION.forEach((item, i)=>{
     const div = document.createElement("div");
     div.className = "item-file" + (ITEM_FILE_ACTIF===i ? " actif" : "");
-    div.innerHTML = `<span class="pastille" style="background:${couleurRole(item.type)}"></span> ${item.prenom} ${item.nom} <small>${item.type}</small>`;
+    div.innerHTML = `<span class="pastille" style="background:${couleurRole(item.type)}"></span> ${item.prenom} ${item.nom} <small>${item.type||"fonction non définie"}</small>`;
     div.addEventListener("click", ()=>{ ITEM_FILE_ACTIF = i; redessinerFile(); });
     zone.appendChild(div);
   });

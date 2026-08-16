@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-      <link rel="icon" type="image/jpeg" href="logog2.png">
-
+  <link rel="icon" type="image/jpeg" href="logog2.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Afficheur Médecins – Urgences</title>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
   <style>
+    /* ==========================================================
+       RESET / BASE
+    ========================================================== */
     html, body {
       margin: 0;
       height: 100%;
@@ -20,27 +18,11 @@
       color: #0b2240;
     }
 
-    header {
-      background: linear-gradient(90deg, #0b2240, #004b8d);
-      color: white;
-      padding: 14px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+    body { padding: 20px; }
 
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+    button { font-family: inherit; }
 
-    #datetime { font-size: 1rem; opacity: 0.9; }
-
-    main { padding: 20px 30px; }
+    main, section { display: block; }
 
     .section-title {
       font-size: 1.5rem;
@@ -50,7 +32,175 @@
       text-transform: uppercase;
     }
 
-    /* === TABLEAU MÉDICAL === */
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    /* ==========================================================
+       SCROLLBAR
+    ========================================================== */
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2196f3, #1565c0);
+      border-radius: 10px;
+      border: 2px solid #eef3ff;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #42a5f5, #1976d2);
+    }
+    * { scrollbar-width: thin; scrollbar-color: #2196f3 #eef3ff; }
+
+    /* ==========================================================
+       BOUTONS — SYSTÈME UNIFIÉ (.btn)
+    ========================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+    .btn:active { transform: translateY(0); box-shadow: none; }
+    .btn:focus-visible { outline: 2px solid #0078d4; outline-offset: 2px; }
+
+    .btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 8px; }
+
+    .btn-primary { background: #0078d4; color: #fff; }
+    .btn-primary:hover { background: #005ea2; }
+
+    .btn-danger { background: #b71c1c; color: #fff; }
+    .btn-danger:hover { background: #8f1414; }
+
+    .btn-warning { background: #f57c00; color: #fff; }
+    .btn-warning:hover { background: #cc6600; }
+
+    .btn-info { background: #1976d2; color: #fff; }
+    .btn-info:hover { background: #125ea1; }
+
+    .btn-success { background: #2e7d32; color: #fff; }
+    .btn-success:hover { background: #255f28; }
+
+    .btn-ghost { background: #e2e8f0; color: #1e293b; }
+    .btn-ghost:hover { background: #cbd5e1; }
+
+    /* ==========================================================
+       CARTES SYNTHÈSE
+    ========================================================== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .card h2 { margin: 0; font-size: 2.4rem; color: #0b2240; }
+    .card p { margin-top: 6px; font-size: 1rem; color: #475569; font-weight: 500; }
+
+    .total   { border-left: 6px solid #1976d2; }
+    .attente { border-left: 6px solid #4caf50; }
+    .pec     { border-left: 6px solid #ff9800; }
+    .vital   { border-left: 6px solid #b71c1c; }
+    .relatif { border-left: 6px solid #6f42c1; }
+    .admin   { border-left: 6px solid #009688; }
+
+    /* ==========================================================
+       CIRCUITS
+    ========================================================== */
+    .circuit-grid {
+      margin-top: 25px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .circuit {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+    .circuit h3 { margin: 0; font-size: 2rem; color: #004b8d; }
+    .circuit span { display: block; margin-top: 4px; font-size: 0.95rem; font-weight: 600; color: #1e3a8a; }
+
+    /* ==========================================================
+       BARRE DE FILTRES
+    ========================================================== */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      padding: 14px 18px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+
+    .filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+    }
+
+    .filter-group select {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.9rem;
+      background: #f8fafc;
+    }
+
+    .filter-group.checkbox { min-width: auto; }
+    .filter-group.checkbox label {
+      text-transform: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-presets { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+    .filter-status { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+    .filter-badge {
+      background: #b71c1c;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .filter-badge.hidden { display: none; }
+
+    .filter-count { font-size: 0.85rem; font-weight: 700; color: #334155; }
+
+    /* ==========================================================
+       TABLEAU MÉDICAL
+    ========================================================== */
     .medical-table {
       width: 100%;
       border-collapse: collapse;
@@ -61,10 +211,7 @@
       font-size: 0.95rem;
     }
 
-    .medical-table thead {
-      background: #0b2240;
-      color: #ffffff;
-    }
+    .medical-table thead { background: #0b2240; color: #ffffff; }
 
     .medical-table th {
       padding: 12px 10px;
@@ -81,632 +228,128 @@
       vertical-align: middle;
     }
 
-    .medical-table tbody tr:hover {
-      background: #f1f5f9;
+    .medical-table tbody tr:hover { background: #f1f5f9; }
+
+    /* Couleurs lignes par gravité */
+    .medical-table tbody tr.grav-p3 { background-color: rgba(183,28,28,.08) !important; }
+    .medical-table tbody tr.grav-p2 { background-color: rgba(255,152,0,.08) !important; }
+    .medical-table tbody tr.grav-p1 { background-color: rgba(255,193,7,.10) !important; }
+    .medical-table tbody tr.grav-p0 { background-color: rgba(76,175,80,.10) !important; }
+
+    /* Couleur texte gravité (colonne Gravité) */
+    .medical-table tbody tr.grav-p3 td:nth-child(3) { color: #b71c1c; font-weight: 700; }
+    .medical-table tbody tr.grav-p2 td:nth-child(3) { color: #ef6c00; font-weight: 700; }
+    .medical-table tbody tr.grav-p1 td:nth-child(3) { color: #f9a825; font-weight: 700; }
+    .medical-table tbody tr.grav-p0 td:nth-child(3) { color: #2e7d32; font-weight: 700; }
+
+    /* Hover qui conserve la couleur */
+    .medical-table tbody tr.grav-p3:hover { background: #f7d7d7 !important; }
+    .medical-table tbody tr.grav-p2:hover { background: #ffe7c0 !important; }
+    .medical-table tbody tr.grav-p1:hover { background: #fff4c2 !important; }
+    .medical-table tbody tr.grav-p0:hover { background: #dff3df !important; }
+
+    /* PDC (colonne 6) */
+    .pdc-oui td:nth-child(6) { color: #2e7d32; font-weight: 600; }
+    .pdc-non td:nth-child(6) { color: #c62828; font-weight: 600; }
+
+    .alert-equipe td:first-child { border-left: 4px solid #b71c1c; }
+
+    /* Vigilances */
+    .vigilance-alert {
+      color: #b71c1c !important;
+      font-weight: 700 !important;
+      animation: blink-slow 4s infinite;
+    }
+    @keyframes blink-slow {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75%      { opacity: 0; }
+    }
+    .vigilance-none {
+      color: inherit !important;
+      font-weight: normal !important;
+      animation: none !important;
     }
 
-   /* === COULEURS LIGNES GRAVITÉ === */
+    .tooltip { position: relative; display: inline-block; cursor: help; }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: max-content;
+      max-width: 200px;
+      background-color: #b71c1c;
+      color: #fff;
+      text-align: left;
+      padding: 5px 8px;
+      border-radius: 4px;
+      position: absolute;
+      z-index: 1;
+      top: -5px;
+      left: 105%;
+      white-space: pre-wrap;
+    }
+    .tooltip:hover .tooltiptext { visibility: visible; }
 
-.medical-table tbody tr.grav-p3 {
-  background-color: rgba(183,28,28,.08) !important;
-}
-
-.medical-table tbody tr.grav-p2 {
-  background-color: rgba(255,152,0,.08) !important;
-}
-
-.medical-table tbody tr.grav-p1 {
-  background-color: rgba(255,193,7,.10) !important;
-}
-
-.medical-table tbody tr.grav-p0 {
-  background-color: rgba(76,175,80,.10) !important;
-}
-
-
-/* Couleur TEXTE gravité */
-
-.medical-table tbody tr.grav-p3 td:nth-child(4) {
-  color:#b71c1c;
-  font-weight:700;
-}
-
-.medical-table tbody tr.grav-p2 td:nth-child(4) {
-  color:#ef6c00;
-  font-weight:700;
-}
-
-.medical-table tbody tr.grav-p1 td:nth-child(4) {
-  color:#f9a825;
-  font-weight:700;
-}
-
-.medical-table tbody tr.grav-p0 td:nth-child(4) {
-  color:#2e7d32;
-  font-weight:700;
-}
-
-
-/* Hover qui conserve la couleur */
-
-.medical-table tbody tr.grav-p3:hover {
-  background:#f7d7d7 !important;
-}
-
-.medical-table tbody tr.grav-p2:hover {
-  background:#ffe7c0 !important;
-}
-
-.medical-table tbody tr.grav-p1:hover {
-  background:#fff4c2 !important;
-}
-
-.medical-table tbody tr.grav-p0:hover {
-  background:#dff3df !important;
-}
-    /* === PDC === */
-    .pdc-oui td:nth-child(7) { color: #2e7d32; font-weight: 600; }
-    .pdc-non td:nth-child(7) { color: #c62828; font-weight: 600; }
-
-    footer {
-      margin-top: 30px;
+    /* Ligne "aucun résultat" */
+    .no-results-row td {
       text-align: center;
-      font-size: 0.85rem;
-      color: #64748b;
-    }
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      background: #f4f7fb;
-      color: #0b2240;
-    }
-
-    header {
-      background: linear-gradient(90deg, #0b2240, #004b8d);
-      color: white;
-      padding: 14px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    #datetime {
+      padding: 24px;
       font-size: 1rem;
-      opacity: 0.9;
-    }
-
-    main {
-      padding: 20px 30px;
-    }
-
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #004b8d;
-      margin-bottom: 14px;
-      text-transform: uppercase;
-    }
-
-    /* === CARTES SYNTHÈSE MÉDICALE === */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 18px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 2.4rem;
-      color: #0b2240;
-    }
-
-    .card p {
-      margin-top: 6px;
-      font-size: 1rem;
-      color: #475569;
-      font-weight: 500;
-    }
-
-    .total   { border-left: 6px solid #1976d2; }
-    .attente { border-left: 6px solid #4caf50; }
-    .pec     { border-left: 6px solid #ff9800; }
-    .vital   { border-left: 6px solid #b71c1c; }
-    .relatif { border-left: 6px solid #6f42c1; }
-    .admin   { border-left: 6px solid #009688; }
-
-    /* === CIRCUITS === */
-    .circuit-grid {
-      margin-top: 25px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-    }
-
-    .circuit {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-    .circuit h3 {
-      margin: 0;
-      font-size: 2rem;
-      color: #004b8d;
-    }
-
-    .circuit span {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.95rem;
       font-weight: 600;
-      color: #1e3a8a;
-    }
-
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 0.85rem;
       color: #64748b;
+      background: #f8fafc;
     }
-
-
-.alert-equipe td:first-child {
-  border-left: 4px solid #b71c1c;
-}
-.tooltip {
-  position: relative;
-  display: inline-block;
-  cursor: help;
-}
-
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: max-content;
-  max-width: 200px;
-  background-color: #b71c1c;
-  color: #fff;
-  text-align: left;
-  padding: 5px 8px;
-  border-radius: 4px;
-  position: absolute;
-  z-index: 1;
-  top: -5px;
-  left: 105%;
-  white-space: pre-wrap;
-}
-
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-}
-
-.vigilance-alert {
-  color: #b71c1c !important;
-  font-weight: 700 !important;
-  animation: blink-slow 4s infinite; /* 4 secondes pour un cycle complet */
-}
-
-@keyframes blink-slow {
-  0%, 50%, 100% { opacity: 1; }   /* visible la moitié du temps */
-  25%, 75%       { opacity: 0; }   /* invisible la moitié du temps */
-}
-
-
-
-/* Vigilances vides ou "aucune" : style normal */
-.vigilance-none {
-  color: inherit !important;   /* reprend la couleur normale de la ligne */
-  font-weight: normal !important; /* normal, pas gras */
-  animation: none !important;  /* pas d'animation */
-}
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  background: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  margin-bottom: 15px;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #005ea2;
-}
-
-.tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.tab {
-  background: transparent;
-  color: #005ea2;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tab.active,
-.tab:hover {
-  background: #e6f0fc;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-btn {
-  background: #f0f4f8;
-  color: #333;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.icon-btn:hover {
-  background: #dbe9ff;
-}
-
-/* 🔽 Menu hover */
-.hover-menu {
-  position: relative;
-}
-
-.hover-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  overflow: hidden;
-}
-
-.hover-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.hover-panel button:hover {
-  background: #f0f8ff;
-}
-
-.hover-menu:hover .hover-panel {
-  display: flex;
-}
-/* 🔧 Correctif lisibilité topbar */
-.topbar button,
-.topbar .tab,
-.topbar .icon-btn {
-  color: #1f2937; /* gris foncé lisible */
-}
-.hover-panel button {
-  color: #1f2937;
-  background: white;
-}
-
-.hover-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-.tab.active {
-  background: #0078d4;
-  color: white;
-}
-.menu-wrapper {
-  position: relative;
-}
-
-.menu-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.menu-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-  color: #1f2937;
-}
-
-.menu-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-
-/* état ouvert */
-.menu-wrapper.open .menu-panel {
-  display: flex;
-}
-
-.topbar,
-.search-container {
-  position: relative;
-}
-
-body {
-      font-family: 'Inter', sans-serif;
-      margin: 0; padding: 20px;
-      background: #f0f4f8;
-      color: #222;
+    .no-results-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
     }
-    h2 {
-      margin-bottom: 20px;
+    .no-results-content .no-results-text { font-style: italic; }
+    .no-results-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ==========================================================
+       MODALES
+    ========================================================== */
+    .modalna {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
     }
-
-    /* Boutons */
-    button {
-      background-color: #0078d4;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-      flex-shrink: 0;
+    .modalna .card {
+      background: #fff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
-
-    button:hover {
-      background-color: #005ea2;
-      box-shadow: 0 8px 20px rgba(0, 120, 212, 0.4);
-      transform: scale(1.05);
-    }
-/* 🔎 BARRE DE FILTRES */
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  padding: 14px 18px;
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-  margin-bottom: 16px;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 140px;
-}
-
-.filter-group label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-}
-
-.filter-group select {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  font-size: 0.9rem;
-  background: #f8fafc;
-}
-
-.filter-group.checkbox {
-  min-width: auto;
-}
-
-.filter-group.checkbox label {
-  text-transform: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-/* 🔘 PRESETS */
-.filter-presets {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-
-.preset {
-  border: none;
-  border-radius: 10px;
-  padding: 8px 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.preset:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-}
-
-.preset.danger {
-  background: #b71c1c;
-  color: white;
-}
-
-.preset.warning {
-  background: #f57c00;
-  color: white;
-}
-
-.preset.info {
-  background: #1976d2;
-  color: white;
-}
-
-.preset.reset {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-.filter-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-}
-
-.filter-badge {
-  background: #b71c1c;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.filter-badge.hidden {
-  display: none;
-}
-
-.filter-count {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #334155;
-}
-
-.no-results-row td {
-  text-align: center;
-  padding: 22px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #64748b;
-  background: #f8fafc;
-  font-style: italic;
-}
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+    .modalna h2 { color: #d32f2f; margin-bottom: 12px; }
+    .modalna p { font-size: 16px; margin-bottom: 20px; }
+  </style>
 </head>
 <body>
 <div id="mainContent">
 
-
-<div id="modal-no-access" class="modalna">
-  <div class="card">
-    <h2>⛔️ Accès refusé</h2>
-    <p>Vous n’avez pas accès à cette page.</p>
-        <p>veuillez contacter un administrateur pour plus d'informations.</p>
-
+  <div id="modal-no-access" class="modalna">
+    <div class="card">
+      <h2>⛔️ Accès refusé</h2>
+      <p>Vous n'avez pas accès à cette page.</p>
+      <p>Veuillez contacter un administrateur pour plus d'informations.</p>
+    </div>
   </div>
-</div>
-<div id="modal-error" class="modalna">
-  <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez re-essayer un peu plus tard</p>
-        <p>Si le problème persiste, contactez un administrateur</p>
 
+  <div id="modal-error" class="modalna">
+    <div class="card">
+      <h2>😞 Oups, une erreur est survenue</h2>
+      <p>Veuillez réessayer un peu plus tard.</p>
+      <p>Si le problème persiste, contactez un administrateur.</p>
+    </div>
   </div>
-</div>
+
   <!-- === SYNTHÈSE GLOBALE === -->
   <section>
     <div class="section-title">Synthèse d'activité</div>
@@ -732,108 +375,103 @@ body {
       <div class="circuit"><h3 id="circuit-psy">--</h3><span>Psychiatrie</span></div>
     </div>
   </section>
-      <!-- === LISTE PATIENTS === -->
+
+  <!-- === LISTE PATIENTS === -->
   <section style="margin-top:40px">
     <div class="section-title">Patients présents</div>
-  
-<!-- 🔎 BARRE DE FILTRES -->
-<div class="filter-bar">
 
-  <div class="filter-group">
-    <label>Gravité</label>
-    <select id="filterGravite">
-      <option value="">Toutes</option>
-      <option value="p3">P3 / Vital</option>
-      <option value="p2">P2</option>
-      <option value="p1">P1</option>
-      <option value="p0">P0</option>
-      <option value="admin">Administratif</option>
-    </select>
-  </div>
+    <!-- 🔎 BARRE DE FILTRES -->
+    <div class="filter-bar">
 
-  <div class="filter-group">
-    <label>Circuit</label>
-    <select id="filterCircuit">
-      <option value="">Tous</option>
-      <option value="général">Général</option>
-      <option value="pédiatrie">Pédiatrie</option>
-      <option value="traumatologie">Traumato</option>
-      <option value="ophtalmologie">Ophtalmo</option>
-      <option value="gynécologie">Gynéco</option>
-      <option value="psychiatrie">Psy</option>
-    </select>
-  </div>
+      <div class="filter-group">
+        <label for="filterGravite">Gravité</label>
+        <select id="filterGravite">
+          <option value="">Toutes</option>
+          <option value="p3">P3 / Vital</option>
+          <option value="p2">P2</option>
+          <option value="p1">P1</option>
+          <option value="p0">P0</option>
+          <option value="admin">Administratif</option>
+        </select>
+      </div>
 
-  <div class="filter-group">
-    <label>PDC</label>
-    <select id="filterPDC">
-      <option value="">Tous</option>
-      <option value="oui">Pris en charge</option>
-      <option value="non">Non pris</option>
-    </select>
-  </div>
-<div class="filter-group">
-  <label>Localisation</label>
-  <select id="filterLocalisation">
-    <option value="">Toutes</option>
-    <option value="attente">Salle d'attente</option>
-	    <option value="iao">IAO</option>
-    <option value="dechoc">Déchoquage</option>
+      <div class="filter-group">
+        <label for="filterCircuit">Circuit</label>
+        <select id="filterCircuit">
+          <option value="">Tous</option>
+          <option value="général">Général</option>
+          <option value="pédiatrie">Pédiatrie</option>
+          <option value="traumatologie">Traumato</option>
+          <option value="ophtalmologie">Ophtalmo</option>
+          <option value="gynécologie">Gynéco</option>
+          <option value="psychiatrie">Psy</option>
+        </select>
+      </div>
 
-    <option value="box">Box</option>
-	    <option value="PEC">PEC</option>
-    <option value="Psy">Psy</option>
+      <div class="filter-group">
+        <label for="filterPDC">PDC</label>
+        <select id="filterPDC">
+          <option value="">Tous</option>
+          <option value="oui">Pris en charge</option>
+          <option value="non">Non pris</option>
+        </select>
+      </div>
 
-    <option value="imagerie">Imagerie</option>
-    <option value="sortie">Sortie</option>
-  </select>
-</div>
+      <div class="filter-group">
+        <label for="filterLocalisation">Localisation</label>
+        <select id="filterLocalisation">
+          <option value="">Toutes</option>
+          <option value="attente">Salle d'attente</option>
+          <option value="iao">IAO</option>
+          <option value="dechoc">Déchoquage</option>
+          <option value="box">Box</option>
+          <option value="pec">PEC</option>
+          <option value="psy">Psy</option>
+          <option value="imagerie">Imagerie</option>
+          <option value="sortie">Sortie</option>
+        </select>
+      </div>
 
-  <div class="filter-group checkbox">
-    <label>
-      <input type="checkbox" id="filterVigilance">
-      Vigilance
-    </label>
-  </div>
+      <div class="filter-group checkbox">
+        <label><input type="checkbox" id="filterVigilance"> Vigilance</label>
+      </div>
 
-  <!-- PRESETS -->
-  <div class="filter-presets">
-    <button class="preset danger" onclick="presetP3()">🔥 P3</button>
-    <button class="preset warning" onclick="presetVigilance()">⚠ Vigilance</button>
-    <button class="preset info" onclick="presetSansMedecin()">👨‍⚕️ Manque médecin</button>
-	<button class="preset info" onclick="presetTemps(2)">⏱ > 2h</button>
-<button class="preset info" onclick="presetTemps(4)">⏱ > 4h</button>
-<button class="preset warning" onclick="presetAllergies()">⭐ Allergies</button>
+      <div class="filter-group checkbox">
+        <label><input type="checkbox" id="filterMesPatients"> 🧑‍⚕️ Mes patients</label>
+      </div>
 
-    <button class="preset reset" onclick="resetFilters()">♻ Réinitialiser</button>
-  </div>
-<div class="filter-status">
-  <span id="activeFiltersBadge" class="filter-badge hidden">Filtres actifs</span>
-  <span id="visibleCount" class="filter-count">0 / 0</span>
-</div>
+      <!-- PRESETS -->
+      <div class="filter-presets">
+        <button id="btn-preset-p3" class="btn btn-danger" onclick="presetP3()">🔥 P3</button>
+        <button id="btn-preset-vigilance" class="btn btn-warning" onclick="presetVigilance()">⚠ Vigilance</button>
+        <button id="btn-preset-sans-medecin" class="btn btn-info" onclick="presetSansMedecin()">👨‍⚕️ Manque médecin</button>
+        <button id="btn-preset-temps-2h" class="btn btn-info" onclick="presetTemps(2)">⏱ &gt; 2h</button>
+        <button id="btn-preset-temps-4h" class="btn btn-info" onclick="presetTemps(4)">⏱ &gt; 4h</button>
+        <button id="btn-preset-allergies" class="btn btn-warning" onclick="presetAllergies()">⭐ Allergies</button>
+        <button id="btn-preset-mes-patients" class="btn btn-primary" onclick="presetMesPatients()">🧑‍⚕️ Mes patients</button>
+        <button id="btn-reset-filters" class="btn btn-ghost" onclick="resetFilters()">♻ Réinitialiser</button>
+      </div>
 
-</div>
+      <div class="filter-status">
+        <span id="activeFiltersBadge" class="filter-badge hidden">Filtres actifs</span>
+        <span id="visibleCount" class="filter-count">0 / 0</span>
+      </div>
 
-
+    </div>
 
     <div style="overflow-x:auto">
       <table class="medical-table">
         <thead>
           <tr>
-          
             <th>Identité</th>
-			<th>Vigilances</th>
-
+            <th>Vigilances</th>
             <th>Gravité</th>
             <th>Motif</th>
             <th>Circuit</th>
             <th>PDC</th>
             <th>Position</th>
-			<th>Temps écoulé</th>
-
-			<th>Équipe référente</th>
-		
-
+            <th>Temps écoulé</th>
+            <th>Équipe référente</th>
           </tr>
         </thead>
         <tbody id="patient-list"></tbody>
@@ -841,25 +479,24 @@ body {
     </div>
   </section>
 
-  <footer>
-    </footer>
+  <footer></footer>
 
+</div>
 
+<!-- Firebase (SDK modulaire uniquement — les builds "compat" ne sont pas utilisés dans ce fichier) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  where
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    collection,
+    getDocs,
+    query,
+    where
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -870,1283 +507,536 @@ import {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-   let medecinNom = "";
+  // ============================================================
+  // Références DOM des filtres (déclarées explicitement — on ne
+  // compte plus sur le mapping implicite id → variable globale)
+  // ============================================================
+  const filterGravite = document.getElementById('filterGravite');
+  const filterCircuit = document.getElementById('filterCircuit');
+  const filterPDC = document.getElementById('filterPDC');
+  const filterLocalisation = document.getElementById('filterLocalisation');
+  const filterVigilance = document.getElementById('filterVigilance');
+  const filterMesPatients = document.getElementById('filterMesPatients');
+  const activeFiltersBadge = document.getElementById('activeFiltersBadge');
+  const visibleCount = document.getElementById('visibleCount');
+  const patientListBody = document.getElementById('patient-list');
+
+  // Filtres "spéciaux" pilotés par les presets (pas de <select> dédié)
+  const specialFilters = { sansMedecin: false, allergies: false, tempsMin: 0 };
+
+  let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    return;
-  } else {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+
     try {
       window.afficherLoader();
       const docRef = doc(db, "medecins", user.uid);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        medecinNom = data.nom || "";
-        medecinSpecialite = data.specialite || "";
-        medecinLieu = data.lieu || "";
 
-        // Met à jour aussi les variables globales sur window
-        window.medecinNom = medecinNom;
-        window.medecinSpecialite = medecinSpecialite;
-        window.medecinLieu = medecinLieu;
-
-        // Mise à jour des éléments HTML si présents
-        const nomElem = document.getElementById("nom-medecin");
-        if (nomElem) nomElem.textContent = medecinNom;
-
-        const specElem = document.getElementById("specialite");
-        if (specElem) specElem.textContent = medecinSpecialite;
-
-        const lieuElem = document.getElementById("lieu-medecin");
-        if (lieuElem) lieuElem.textContent = medecinLieu;
-
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-        if (!pages[currentPage]) {
-const modal = document.getElementById("modal-no-access");
-          if (modal) masquerLoader();
-          modal.style.display = "flex";       
-          console.warn("Accès refusé à", currentPage);
-        }
-      } else {
-        // Document inexistant — redirection
+      if (!docSnap.exists()) {
         alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        window.masquerLoader();
         return;
       }
+
+      const data = docSnap.data();
+      medecinNom = data.nom || "";
+      medecinSpecialite = data.specialite || "";
+      medecinLieu = data.lieu || "";
+
+      window.medecinNom = medecinNom;
+      window.medecinSpecialite = medecinSpecialite;
+      window.medecinLieu = medecinLieu;
+
+      const nomElem = document.getElementById("nom-medecin");
+      if (nomElem) nomElem.textContent = medecinNom;
+      const specElem = document.getElementById("specialite");
+      if (specElem) specElem.textContent = medecinSpecialite;
+      const lieuElem = document.getElementById("lieu-medecin");
+      if (lieuElem) lieuElem.textContent = medecinLieu;
+
+      // --- Vérification d'accès à la page ---
+      const pages = data.pages || {};
+      const currentPath = window.location.pathname;
+      const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+      if (!pages[currentPage]) {
+        window.masquerLoader();
+        const modal = document.getElementById("modal-no-access");
+        if (modal) modal.style.display = "flex";
+        console.warn("Accès refusé à", currentPage);
+        return; // on n'affiche pas les données si l'accès est refusé
+      }
+
       updateMedicalDashboard();
-      setInterval(refreshTempsEcoule, 60000); 
-setInterval(updateMedicalDashboard, 10000); // toutes les 5 secondes
+      setInterval(refreshTempsEcoule, 60000);
+      setInterval(updateMedicalDashboard, 10000);
+
     } catch (error) {
+      console.error(error);
+      window.masquerLoader();
       const modal = document.getElementById("modal-error");
-          if (modal) masquerLoader();
-          modal.style.display = "flex"; 
-      
+      if (modal) modal.style.display = "flex";
       alert("Une erreur est survenue, veuillez réessayer plus tard.");
     }
-  }
-});
-const STATUTS_ATTENTE = [
-  "Attente enregistrement",
-  "Attente dossier administratif",
-  "IAO - cricuit court",
-  "Attente 1ere consult med",
-  "Attente 1ere consult int",
-  "Attente 1ere consult ext"
-];
+  });
+
+  // ============================================================
+  // UTILITAIRES
+  // ============================================================
   function calculerAge(dateNaissance) {
     const birth = new Date(dateNaissance);
     const now = new Date();
     let age = now.getFullYear() - birth.getFullYear();
-    if (
-      now.getMonth() < birth.getMonth() ||
-      (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())
-    ) {
+    if (now.getMonth() < birth.getMonth() ||
+        (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) {
       age--;
     }
     return age;
   }
-  // === HORLOGE ===
-  
-window.afficherLoader = function() {
-  let loader = document.getElementById("loadingScreen");
-  
-  if (!loader) {
-    loader = document.createElement("iframe");
-    loader.id = "loadingScreen";
-    loader.src = "loader.html?modal=true"; 
-    loader.style.position = "fixed";
-    loader.style.top = "0";
-    loader.style.left = "0";
-    loader.style.width = "100%";
-    loader.style.height = "100%";
-    loader.style.border = "none";
-    loader.style.zIndex = "9999";
-    loader.style.background = "transparent";
-    loader.style.pointerEvents = "none"; 
-    document.body.appendChild(loader);
-  }
 
-  loader.style.display = "block";
-  loader.style.opacity = "1";
-};
+  window.afficherLoader = function () {
+    let loader = document.getElementById("loadingScreen");
+    if (!loader) {
+      loader = document.createElement("iframe");
+      loader.id = "loadingScreen";
+      loader.src = "loader.html?modal=true";
+      loader.style.position = "fixed";
+      loader.style.top = "0";
+      loader.style.left = "0";
+      loader.style.width = "100%";
+      loader.style.height = "100%";
+      loader.style.border = "none";
+      loader.style.zIndex = "9999";
+      loader.style.background = "transparent";
+      loader.style.pointerEvents = "none";
+      document.body.appendChild(loader);
+    }
+    loader.style.display = "block";
+    loader.style.opacity = "1";
+  };
 
-// --- Masque l’écran de chargement ---
-window.masquerLoader = function() {
-  const loader = document.getElementById("loadingScreen");
-  if (loader) {
-    loader.style.transition = "opacity 0.3s ease";
-    loader.style.opacity = "0";
-    setTimeout(() => {
-      loader.style.display = "none";
-    }, 300); // délai pour l’animation
-  }
-};
+  window.masquerLoader = function () {
+    const loader = document.getElementById("loadingScreen");
+    if (loader) {
+      loader.style.transition = "opacity 0.3s ease";
+      loader.style.opacity = "0";
+      setTimeout(() => { loader.style.display = "none"; }, 300);
+    }
+  };
 
   function setVal(id, val) {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   }
 
-let patientsCache = new Map();
-function patientHash(data, hosp) {
-  return JSON.stringify({
-    nom: data.nom,
-    prenom: data.prenom,
-    position: data.position,
-    pdc: data.pdcStatut,
-    vigilances: data.vigilances,
-    equipe: data.equipe,
-    gravite: hosp.gravite,
-    motif: hosp.motif,
-    circuit: hosp.circuit
-  });
-}
-
-function buildPatientRow(id, data, hosp, tempsEcoule, startMs) {
-
-const tr =
-document.createElement("tr");
-
-const vigilance =
-data.vigilances?.trim()
-|| "aucune";
-
-let nomAffiche = `${data.nom || ""} ${data.prenom || ""}`;
-
-if (data.dateNaissance) {
-  const age = calculerAge(data.dateNaissance);
-  if (!isNaN(age) && age < 18) {
-    nomAffiche += " 🧸";
-  }
-}
-tr.dataset.id=id;
-
-tr.innerHTML=`
-
-<td>${nomAffiche}</td>
-<td class="${
-vigilance!=="aucune"
-?
-"vigilance-alert"
-:
-"vigilance-none"
-}">
-${vigilance}
-</td>
-
-<td>${hosp?.gravite||"—"}</td>
-
-<td>${hosp?.motif||"—"}</td>
-
-<td>${hosp?.circuit||"—"}</td>
-
-<td>${data.pdcStatut||""}</td>
-
-<td>${data.position||""}</td>
-
-<td
-class="temps-ecoule"
-data-start="${startMs||""}"
->
-${tempsEcoule||"—"}
-</td>
-
-<td>
-${formatEquipe(
-hosp?.equipe
-||
-{}
-)}
-</td>
-
-`;
-
-return tr;
-
-}
-
-window.updateMedicalDashboard = async function () {
-
-try {
-
-const patientsRef =
-collection(db,"patients");
-
-const q =
-query(
-patientsRef,
-where(
-"hospitalisationActive",
-"==",
-true
-)
-);
-
-const snapshot =
-await getDocs(q);
-
-const tbody =
-document.getElementById(
-"patient-list"
-);
-
-const newCache =
-new Map();
-
-const counts = {
-total:0,
-attente:0,
-couche:0,
-critique:0,
-admin:0
-};
-
-const circuits = {
-general:0,
-pediatrie:0,
-traumato:0,
-ophtalmo:0,
-gyn:0,
-psy:0
-};
-
-const rows = [];
-
-
-/* ==========================
-Préparation données
-========================== */
-
-for (
-const docSnap
-of snapshot.docs
-) {
-
-const id =
-docSnap.id;
-
-const data =
-docSnap.data() ||
-{};
-
-counts.total++;
-
-let hosp = {};
-
-if (
-data.hospitalisationActiveId
-) {
-
-try {
-
-const hospDoc =
-await getDoc(
-doc(
-db,
-"hospitalisations",
-data.hospitalisationActiveId
-)
-);
-
-if (
-hospDoc.exists()
-) {
-hosp = hospDoc.data();
-}
-
-}
-catch {}
-
-}
-
-const gravite =
-hosp.gravite
-?? "—";
-
-const motif =
-hosp.motif
-?? "—";
-
-const circuit =
-hosp.circuit
-?? "—";
-
-const position =
-data.position
-|| "";
-
-const pdc =
-data.pdcStatut
-|| "";
-
-const gravLower =
-gravite
-.toLowerCase();
-
-const circuitLower =
-circuit
-.toLowerCase();
-
-
-/* Dashboard */
-
-if (
-position
-.toLowerCase()
-.includes(
-"attente"
-)
-) {
-counts.attente++;
-}
-
-if (
-gravLower
-.includes(
-"admin"
-)
-) {
-counts.admin++;
-}
-
-if (
-gravLower.match(
-/p0|p1|p2/
-)
-) {
-counts.couche++;
-}
-
-if (
-gravLower.includes(
-"p3"
-)
-||
-gravLower.includes(
-"vital"
-)
-) {
-counts.critique++;
-}
-
-
-/* Circuits */
-
-if (
-circuitLower
-.includes(
-"ped"
-)
-) {
-
-circuits.pediatrie++;
-
-}
-else if (
-circuitLower
-.includes(
-"trauma"
-)
-) {
-
-circuits.traumato++;
-
-}
-else if (
-circuitLower
-.includes(
-"opht"
-)
-) {
-
-circuits.ophtalmo++;
-
-}
-else if (
-circuitLower
-.includes(
-"gyn"
-)
-) {
-
-circuits.gyn++;
-
-}
-else if (
-circuitLower
-.includes(
-"psy"
-)
-) {
-
-circuits.psy++;
-
-}
-else {
-
-circuits.general++;
-
-}
-
-/* ==========================
-   TEMPS ÉCOULÉ
-========================== */
-
-let startMs = null;
-
-if (hosp?.dateDebut) {
-
-  // Timestamp Firebase
-  if (hosp.dateDebut.seconds) {
-
-    startMs = hosp.dateDebut.seconds * 1000;
-
-
-
-  }
-
-  // nombre
-  else if (typeof hosp.dateDebut === "number") {
-
-    startMs = hosp.dateDebut;
-
-
-  }
-
-  // string FR
-  else if (typeof hosp.dateDebut === "string") {
-
-  
-
-    try {
-
-      const [datePart, timePart] =
-        hosp.dateDebut.trim().split(" ");
-
-
-      if (datePart && timePart) {
-
-        const [jour, mois, annee] =
-          datePart.split("/");
-
-        const [heure, minute, seconde] =
-          timePart.split(":");
-
-      
-
-        const dateObj = new Date(
-          Number(annee),
-          Number(mois) - 1,
-          Number(jour),
-          Number(heure),
-          Number(minute),
-          Number(seconde)
-        );
-
-       
-
-        startMs = dateObj.getTime();
-
-        
-
-      }
-
-    } catch (err) {
-
-      console.error("❌ erreur parsing", err);
-
+  // Convertit un dateDebut Firestore (Timestamp | number | "dd/mm/yyyy HH:mm:ss") en ms
+  function parseStartMs(raw) {
+    if (raw === null || raw === undefined || raw === "") return null;
+
+    if (typeof raw === "object" && "seconds" in raw) {
+      return raw.seconds * 1000;
     }
+    if (typeof raw === "number") return raw;
 
-  }
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (trimmed === "" || trimmed === "null" || trimmed === "undefined") return null;
 
-}
+      // Chaîne purement numérique (ms) — cas des attributs data-start générés par nos soins
+      if (!isNaN(trimmed)) return Number(trimmed);
 
-
-
-let temps = "—";
-
-if (startMs) {
-
-  const diff = Date.now() - startMs;
-
-  const heures = Math.floor(diff / 3600000);
-  const minutes = Math.floor((diff % 3600000) / 60000);
-
-  temps = `${heures}h ${minutes}m`;
-
-}
-
-
-
-/* Cache */
-
-const hash =
-JSON.stringify({
-
-nom:
-data.nom,
-
-prenom:
-data.prenom,
-
-position,
-
-pdc,
-
-gravite,
-
-motif,
-
-circuit,
-
-vigilances:
-data.vigilances,
-
-equipe:
-hosp.equipe,
-
-});
-
-newCache.set(
-id,
-hash
-);
-
-rows.push({
-id,
-data,
-hosp,
-gravite,
-motif,
-circuit,
-position,
-pdc,
-startMs,
-temps,
-hash
-});
-
-}
-
-
-/* ==========================
-MAJ DOM
-========================== */
-
-for (
-const p
-of rows
-) {
-
-const existing =
-tbody.querySelector(
-`[data-id="${p.id}"]`
-);
-
-const changed =
-patientsCache.get(
-p.id
-)
-!== p.hash;
-
-if (
-existing &&
-!changed
-) {
-continue;
-}
-
-const tr =
-document.createElement(
-"tr"
-);
-
-tr.dataset.id =
-p.id;
-
-const grav =
-p.gravite
-.toLowerCase();
-
-
-if (
-grav.includes("p3")
-||
-grav.includes("vital")
-)
-tr.classList.add(
-"grav-p3"
-);
-
-else if (
-grav.includes(
-"p2"
-)
-)
-tr.classList.add(
-"grav-p2"
-);
-
-else if (
-grav.includes(
-"p1"
-)
-)
-tr.classList.add(
-"grav-p1"
-);
-
-else if (
-grav.includes(
-"p0"
-)
-||
-grav.includes(
-"admin"
-)
-)
-tr.classList.add(
-"grav-p0"
-);
-
-
-/* PDC */
-
-if (
-p.pdc
-.toLowerCase()
-.includes(
-"oui"
-)
-)
-tr.classList.add(
-"pdc-oui"
-);
-
-else if (
-p.pdc
-.toLowerCase()
-.includes(
-"non"
-)
-)
-tr.classList.add(
-"pdc-non"
-);
-
-
-/* Vigilance */
-
-const vigilance =
-p.data
-.vigilances
-?.trim()
-||
-"aucune";
-
-const vigilanceClass =
-
-vigilance
-!==
-"aucune"
-
-?
-
-"vigilance-alert"
-
-:
-
-"vigilance-none";
-
-
-/* équipe */
-
-tr.setAttribute(
-"data-equipe",
-JSON.stringify(
-p.hosp?.equipe ||
-{}
-)
-);
-
-tr.setAttribute(
-"data-temps",
-
-Math.floor(
-(
-p.startMs
-||
-0
-)
-/1000
-)
-);
-
-let nomAffiche = `${p.data.nom || ""} ${p.data.prenom || ""}`;
-
-if (p.data.dateNaissance) {
-  const age = calculerAge(p.data.dateNaissance);
-  if (!isNaN(age) && age < 18) {
-    nomAffiche += " 🧸";
-  }
-}
-tr.innerHTML = `
-
-<td>${nomAffiche}</td>
-
-
-<td class="${vigilanceClass}">
-${vigilance}
-</td>
-
-<td>${p.gravite}</td>
-
-<td>${p.motif}</td>
-
-<td>${p.circuit}</td>
-
-<td>${p.pdc}</td>
-
-<td>${p.position}</td>
-
-<td
-class="temps-ecoule"
-data-start="${p.startMs || ''}"
->
-${p.startMs ? p.temps : "—"}
-</td>
-
-<td>
-${formatEquipe(
-p.hosp?.equipe ||
-p.data?.equipe ||
-{}
-)}
-</td>
-
-`;
-
-tr.addEventListener(
-"click",
-() => {
-
-window.parent.postMessage({
-
-type:
-"OPEN_TAB",
-
-title:
-`Fiche Urgences ${p.data.nom} ${p.data.prenom}`,
-
-url:
-`fiche.html?id=${p.id}&from=tableau`
-
-},"https://junior2704.github.io");
-
-}
-);
-
-if (
-existing
-) {
-
-existing.replaceWith(
-tr
-);
-
-}
-else {
-
-tbody.appendChild(
-tr
-);
-
-}
-
-}
-
-
-/* suppression */
-
-for (
-const [
-oldId
-]
-of patientsCache
-) {
-
-if (
-!newCache.has(
-oldId
-)
-) {
-
-tbody
-.querySelector(
-`[data-id="${oldId}"]`
-)
-?.remove();
-
-}
-
-}
-
-
-patientsCache =
-newCache;
-
-
-/* Dashboard */
-
-setVal(
-"total",
-counts.total
-);
-
-setVal(
-"attente",
-counts.attente
-);
-
-setVal(
-"pec",
-Math.max(
-counts.total
--
-counts.attente,
-0
-)
-);
-
-setVal(
-"critique",
-counts.critique
-);
-
-setVal(
-"couche",
-counts.couche
-);
-
-setVal(
-"admin",
-counts.admin
-);
-
-Object.keys(
-circuits
-).forEach(
-c =>
-setVal(
-`circuit-${c}`,
-circuits[c]
-)
-);
-
-applyFilters();
-refreshTempsEcoule();
-masquerLoader();
-
-}
-catch(err){
-
-console.error(
-err
-);
-
-}
-
-};
-window.refreshTempsEcoule = function () {
-
-
-
-  const now = Date.now();
-
-  document.querySelectorAll(".temps-ecoule").forEach((td, index) => {
-
-  
-
-    // récupération attribut HTML
-    const rawStart = td.dataset.start;
-
-
-    // aucune donnée
-    if (!rawStart || rawStart === "null" || rawStart === "undefined") {
-
-   
-
-      td.textContent = "—";
-      return;
-    }
-
-    let startMs = null;
-
-    /* =========================================
-       CAS 1 : timestamp numérique
-    ========================================= */
-
-    if (!isNaN(rawStart)) {
-
-      startMs = Number(rawStart);
-
-
-    }
-
-    /* =========================================
-       CAS 2 : string date FR
-       ex : 29/01/2026 11:20:31
-    ========================================= */
-
-    else {
-
-
+      // Format "dd/mm/yyyy HH:mm:ss"
       try {
-
-        const [datePart, timePart] = rawStart.trim().split(" ");
-
-   
-
-        if (!datePart || !timePart) {
-
-          console.error("❌ format invalide");
-
-          td.textContent = "—";
-          return;
-        }
-
+        const [datePart, timePart] = trimmed.split(" ");
+        if (!datePart || !timePart) return null;
         const [jour, mois, annee] = datePart.split("/");
         const [heure, minute, seconde] = timePart.split(":");
-
-    
-
         const dateObj = new Date(
-          Number(annee),
-          Number(mois) - 1,
-          Number(jour),
-          Number(heure),
-          Number(minute),
-          Number(seconde)
+          Number(annee), Number(mois) - 1, Number(jour),
+          Number(heure), Number(minute), Number(seconde || 0)
         );
-
-   
-
-        startMs = dateObj.getTime();
-
-       
-
+        const ms = dateObj.getTime();
+        return isNaN(ms) ? null : ms;
       } catch (err) {
-
-        console.error("❌ erreur parsing :", err);
-
-        td.textContent = "—";
-        return;
+        console.error("❌ erreur parsing date :", err);
+        return null;
       }
     }
+    return null;
+  }
 
-    /* =========================================
-       VALIDATION
-    ========================================= */
+  // Calcule le texte + la couleur d'un temps écoulé (utilisé à la création ET au refresh)
+  function formatElapsed(startMs) {
+    if (!startMs) return { text: "—", color: "" };
 
-    if (!startMs || isNaN(startMs)) {
-
-      console.error("❌ startMs invalide");
-
-      td.textContent = "—";
-      return;
-    }
-
-    /* =========================================
-       CALCUL DIFF
-    ========================================= */
-
-    const diff = now - startMs;
-
-    if (diff < 0) {
-
-      console.warn("⚠ date future détectée");
-
-      td.textContent = "—";
-      return;
-    }
+    const diff = Date.now() - startMs;
+    if (diff < 0) return { text: "—", color: "" };
 
     const jours = Math.floor(diff / 86400000);
     const heures = Math.floor((diff % 86400000) / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
 
+    const text = jours > 0 ? `${jours}j ${heures}h ${minutes}m` : `${heures}h ${minutes}m`;
 
+    let color = "#2e7d32";
+    if (jours >= 1 || heures >= 8) color = "#b71c1c";
+    else if (heures >= 4) color = "#ef6c00";
+    else if (heures >= 2) color = "#f9a825";
 
-    /* =========================================
-       AFFICHAGE
-    ========================================= */
+    return { text, color };
+  }
 
-    let affichage = "";
+  function formatEquipe(equipe) {
+    if (!equipe) return "—";
 
-    if (jours > 0) {
+    const roles = [
+      ["medecinReferent", "👨‍⚕️"],
+      ["infirmierReferent", "👩‍⚕️"],
+      ["interneReferent", "🎓"],
+      ["externeReferent", "📘"]
+    ];
 
-      affichage = `${jours}j ${heures}h ${minutes}m`;
+    const noms = roles
+      .map(([role, emoji]) => {
+        const nom = equipe[role]?.nom;
+        return nom ? `${emoji} ${nom}` : null;
+      })
+      .filter(Boolean);
 
-    } else {
+    return noms.length ? noms.join("<br>") : "—";
+  }
 
-      affichage = `${heures}h ${minutes}m`;
+  // Un médecin est-il référent (quel que soit son rôle) de ce patient ?
+  function estDansEquipe(equipe, nom) {
+    if (!equipe || !nom) return false;
+    const roles = ["medecinReferent", "infirmierReferent", "interneReferent", "externeReferent"];
+    return roles.some(role => equipe[role]?.nom === nom);
+  }
 
+  // ⚠️ Le champ Firestore exact pour les allergies n'était pas identifiable dans le
+  // fichier d'origine (le preset "⭐ Allergies" existait mais ne lisait aucune donnée).
+  // On tente ici les noms de champs les plus probables — à ajuster si besoin.
+  function aDesAllergies(data) {
+    if (!data) return false;
+    if (data.allergies === true) return true;
+    if (typeof data.allergies === "string" && data.allergies.trim() !== "" && data.allergies.trim().toLowerCase() !== "aucune") return true;
+    if (Array.isArray(data.allergies) && data.allergies.length > 0) return true;
+    if (data.allergie === true) return true;
+    return false;
+  }
+
+  // ============================================================
+  // CONSTRUCTION D'UNE LIGNE PATIENT (utilisée pour créer ET mettre à jour)
+  // ============================================================
+  function buildPatientRow(p) {
+    const tr = document.createElement("tr");
+    tr.dataset.id = p.id;
+
+    const gravLower = (p.gravite || "").toLowerCase();
+    if (gravLower.includes("p3") || gravLower.includes("vital")) tr.classList.add("grav-p3");
+    else if (gravLower.includes("p2")) tr.classList.add("grav-p2");
+    else if (gravLower.includes("p1")) tr.classList.add("grav-p1");
+    else if (gravLower.includes("p0") || gravLower.includes("admin")) tr.classList.add("grav-p0");
+
+    const pdcLower = (p.pdc || "").toLowerCase();
+    if (pdcLower.includes("oui")) tr.classList.add("pdc-oui");
+    else if (pdcLower.includes("non")) tr.classList.add("pdc-non");
+
+    const vigilance = (p.data?.vigilances?.trim()) || "aucune";
+    const vigilanceClass = vigilance !== "aucune" ? "vigilance-alert" : "vigilance-none";
+
+    // Données exposées en attributs data-* : base robuste pour le filtrage
+    // (on ne dépend plus de l'index des colonnes du tableau)
+    tr.dataset.gravite = gravLower;
+    tr.dataset.circuit = (p.circuit || "").toLowerCase();
+    tr.dataset.pdc = pdcLower;
+    tr.dataset.position = (p.position || "").toLowerCase();
+    tr.dataset.vigilance = vigilance.toLowerCase();
+    tr.dataset.equipe = JSON.stringify(p.equipe || {});
+    tr.dataset.temps = Math.floor((p.startMs || 0) / 1000);
+    tr.dataset.mespatients = estDansEquipe(p.equipe, medecinNom) ? "1" : "0";
+    tr.dataset.hasmedecin = p.equipe?.medecinReferent?.nom ? "1" : "0";
+    tr.dataset.allergie = aDesAllergies(p.data) ? "1" : "0";
+
+    let nomAffiche = `${p.data?.nom || ""} ${p.data?.prenom || ""}`.trim();
+    if (p.data?.dateNaissance) {
+      const age = calculerAge(p.data.dateNaissance);
+      if (!isNaN(age) && age < 18) nomAffiche += " 🧸";
     }
+    if (tr.dataset.allergie === "1") nomAffiche += " ⭐";
 
-    td.textContent = affichage;
+    const elapsed = formatElapsed(p.startMs);
 
+    tr.innerHTML = `
+      <td>${nomAffiche}</td>
+      <td class="${vigilanceClass}">${vigilance}</td>
+      <td>${p.gravite || "—"}</td>
+      <td>${p.motif || "—"}</td>
+      <td>${p.circuit || "—"}</td>
+      <td>${p.pdc || ""}</td>
+      <td>${p.position || ""}</td>
+      <td class="temps-ecoule" data-start="${p.startMs || ""}" style="font-weight:700;color:${elapsed.color}">${elapsed.text}</td>
+      <td>${formatEquipe(p.equipe || {})}</td>
+    `;
 
+    tr.addEventListener("click", () => {
+      window.parent.postMessage({
+        type: "OPEN_TAB",
+        title: `Fiche Urgences ${p.data?.nom || ""} ${p.data?.prenom || ""}`,
+        url: `fiche.html?id=${p.id}&from=tableau`
+      }, "https://junior2704.github.io");
+    });
 
-    /* =========================================
-       COULEURS
-    ========================================= */
+    return tr;
+  }
 
-    td.style.fontWeight = "700";
+  // ============================================================
+  // CHARGEMENT / RAFRAÎCHISSEMENT DES DONNÉES
+  // ============================================================
+  let patientsCache = new Map();
 
-    if (jours >= 1 || heures >= 8) {
+  window.updateMedicalDashboard = async function () {
+    try {
+      const patientsRef = collection(db, "patients");
+      const q = query(patientsRef, where("hospitalisationActive", "==", true));
+      const snapshot = await getDocs(q);
 
-      td.style.color = "#b71c1c";
-      
+      const newCache = new Map();
+      const counts = { total: 0, attente: 0, couche: 0, critique: 0, admin: 0 };
+      const circuits = { general: 0, pediatrie: 0, traumato: 0, ophtalmo: 0, gyn: 0, psy: 0 };
+      const rows = [];
 
+      for (const docSnap of snapshot.docs) {
+        const id = docSnap.id;
+        const data = docSnap.data() || {};
+        counts.total++;
+
+        let hosp = {};
+        if (data.hospitalisationActiveId) {
+          try {
+            const hospDoc = await getDoc(doc(db, "hospitalisations", data.hospitalisationActiveId));
+            if (hospDoc.exists()) hosp = hospDoc.data();
+          } catch (err) {
+            console.error("Erreur chargement hospitalisation", id, err);
+          }
+        }
+
+        const gravite = hosp.gravite ?? "—";
+        const motif = hosp.motif ?? "—";
+        const circuit = hosp.circuit ?? "—";
+        const position = data.position || "";
+        const pdc = data.pdcStatut || "";
+
+        const gravLower = gravite.toLowerCase();
+        const circuitLower = circuit.toLowerCase();
+
+        if (position.toLowerCase().includes("attente")) counts.attente++;
+        if (gravLower.includes("admin")) counts.admin++;
+        if (gravLower.match(/p0|p1|p2/)) counts.couche++;
+        if (gravLower.includes("p3") || gravLower.includes("vital")) counts.critique++;
+
+        if (circuitLower.includes("ped")) circuits.pediatrie++;
+        else if (circuitLower.includes("trauma")) circuits.traumato++;
+        else if (circuitLower.includes("opht")) circuits.ophtalmo++;
+        else if (circuitLower.includes("gyn")) circuits.gyn++;
+        else if (circuitLower.includes("psy")) circuits.psy++;
+        else circuits.general++;
+
+        const startMs = parseStartMs(hosp?.dateDebut);
+
+        const hash = JSON.stringify({
+          nom: data.nom, prenom: data.prenom, position, pdc, gravite, motif, circuit,
+          vigilances: data.vigilances, equipe: hosp.equipe, allergies: data.allergies,
+          dateNaissance: data.dateNaissance
+        });
+
+        newCache.set(id, hash);
+        rows.push({ id, data, hosp, gravite, motif, circuit, position, pdc, startMs, equipe: hosp?.equipe || {}, hash });
+      }
+
+      // --- Mise à jour du DOM (uniquement les lignes changées) ---
+      for (const p of rows) {
+        const existing = patientListBody.querySelector(`[data-id="${p.id}"]`);
+        const changed = patientsCache.get(p.id) !== p.hash;
+        if (existing && !changed) continue;
+
+        const tr = buildPatientRow(p);
+        if (existing) existing.replaceWith(tr);
+        else patientListBody.appendChild(tr);
+      }
+
+      // --- Suppression des patients qui ne sont plus hospitalisés ---
+      for (const [oldId] of patientsCache) {
+        if (!newCache.has(oldId)) {
+          patientListBody.querySelector(`[data-id="${oldId}"]`)?.remove();
+        }
+      }
+
+      patientsCache = newCache;
+
+      // --- Synthèse ---
+      setVal("total", counts.total);
+      setVal("attente", counts.attente);
+      setVal("pec", Math.max(counts.total - counts.attente, 0));
+      setVal("critique", counts.critique);
+      setVal("couche", counts.couche);
+      setVal("admin", counts.admin);
+      Object.keys(circuits).forEach(c => setVal(`circuit-${c}`, circuits[c]));
+
+      applyFilters();
+      refreshTempsEcoule();
+      masquerLoader();
+
+    } catch (err) {
+      console.error(err);
     }
-    else if (heures >= 4) {
+  };
 
-      td.style.color = "#ef6c00";
-     
+  window.refreshTempsEcoule = function () {
+    document.querySelectorAll(".temps-ecoule").forEach(td => {
+      const startMs = parseStartMs(td.dataset.start);
+      const elapsed = formatElapsed(startMs);
+      td.textContent = elapsed.text;
+      td.style.fontWeight = "700";
+      td.style.color = elapsed.color;
+    });
+  };
 
-    }
-    else if (heures >= 2) {
+  // ============================================================
+  // FILTRES
+  // ============================================================
+  function renderNoResults(visibles, total, mesPatientsActif) {
+    const existing = patientListBody.querySelector(".no-results-row");
+    if (existing) existing.remove();
 
-      td.style.color = "#f9a825";
-     
+    if (visibles !== 0 || total === 0) return;
 
-    }
-    else {
+    const colCount = document.querySelectorAll(".medical-table thead th").length;
+    const tr = document.createElement("tr");
+    tr.className = "no-results-row";
 
-      td.style.color = "#2e7d32";
-      
+    const suggestionMesPatients = !mesPatientsActif
+      ? `<button id="btn-suggest-mes-patients" class="btn btn-primary btn-sm" onclick="presetMesPatients()">🧑‍⚕️ Voir mes patients</button>`
+      : "";
 
-    }
+    tr.innerHTML = `
+      <td colspan="${colCount}">
+        <div class="no-results-content">
+          <span class="no-results-text">Aucun patient ne correspond aux filtres sélectionnés</span>
+          <div class="no-results-actions">
+            <button id="btn-suggest-reset" class="btn btn-ghost btn-sm" onclick="resetFilters()">♻ Réinitialiser les filtres</button>
+            ${suggestionMesPatients}
+          </div>
+        </div>
+      </td>
+    `;
+    patientListBody.appendChild(tr);
+  }
 
-  });
+  window.applyFilters = function () {
+    const gravite = filterGravite.value.toLowerCase();
+    const circuit = filterCircuit.value.toLowerCase();
+    const pdc = filterPDC.value.toLowerCase();
+    const localisation = filterLocalisation.value.toLowerCase();
+    const vigilanceOnly = filterVigilance.checked;
+    const mesPatientsOnly = filterMesPatients.checked;
+    const now = Date.now();
 
- 
-};
+    let total = 0;
+    let visibles = 0;
 
-function isPhaseAttente(pdcStatut) {
-  if (!pdcStatut) return true;
+    document.querySelectorAll("#patient-list tr[data-id]").forEach(tr => {
+      total++;
+      const d = tr.dataset;
+      let visible = true;
 
-  const statut = pdcStatut.toLowerCase();
+      if (gravite && !d.gravite.includes(gravite)) visible = false;
+      if (circuit && !d.circuit.includes(circuit)) visible = false;
+      if (pdc && !d.pdc.includes(pdc)) visible = false;
+      if (localisation && !d.position.includes(localisation)) visible = false;
+      if (vigilanceOnly && (d.vigilance === "aucune" || d.vigilance === "")) visible = false;
+      if (mesPatientsOnly && d.mespatients !== "1") visible = false;
+      if (specialFilters.sansMedecin && d.hasmedecin === "1") visible = false;
+      if (specialFilters.allergies && d.allergie !== "1") visible = false;
+      if (specialFilters.tempsMin) {
+        const startSec = parseInt(d.temps || "0", 10);
+        const heures = startSec ? (now - startSec * 1000) / 3600000 : -1;
+        if (heures < specialFilters.tempsMin) visible = false;
+      }
 
-  return STATUTS_ATTENTE.some(s =>
-    statut.includes(s.toLowerCase())
-  );
-}
+      tr.style.display = visible ? "" : "none";
+      if (visible) visibles++;
+    });
 
+    const filtersActive = !!(
+      gravite || circuit || pdc || localisation || vigilanceOnly || mesPatientsOnly ||
+      specialFilters.sansMedecin || specialFilters.allergies || specialFilters.tempsMin
+    );
 
-function formatEquipe(equipe){
+    activeFiltersBadge.classList.toggle("hidden", !filtersActive);
+    visibleCount.textContent = `${visibles} / ${total}`;
 
-if(
-!equipe
-){
-return "—";
-}
+    renderNoResults(visibles, total, mesPatientsOnly);
+  };
 
-const noms=[];
+  ["filterGravite", "filterCircuit", "filterPDC", "filterLocalisation", "filterVigilance", "filterMesPatients"]
+    .forEach(id => document.getElementById(id).addEventListener("change", applyFilters));
 
-[
-[
-"medecinReferent",
-"👨‍⚕️"
-],
+  window.resetFilters = function (apply = true) {
+    filterGravite.value = "";
+    filterCircuit.value = "";
+    filterPDC.value = "";
+    filterLocalisation.value = "";
+    filterVigilance.checked = false;
+    filterMesPatients.checked = false;
+    specialFilters.sansMedecin = false;
+    specialFilters.allergies = false;
+    specialFilters.tempsMin = 0;
 
-[
-"infirmierReferent",
-"👩‍⚕️"
-],
+    if (apply) applyFilters();
+  };
 
-[
-"interneReferent",
-"🎓"
-],
+  // --- Presets : tous passent par applyFilters() pour rester cohérents
+  //     (badge et compteur toujours synchronisés, quel que soit le point d'entrée) ---
+  window.presetP3 = function () {
+    resetFilters(false);
+    filterGravite.value = "p3";
+    applyFilters();
+  };
 
-[
-"externeReferent",
-"📘"
-]
+  window.presetVigilance = function () {
+    resetFilters(false);
+    filterVigilance.checked = true;
+    applyFilters();
+  };
 
-]
+  window.presetSansMedecin = function () {
+    resetFilters(false);
+    specialFilters.sansMedecin = true;
+    applyFilters();
+  };
 
-.forEach(
-([k,emoji])=>{
+  window.presetTemps = function (heures) {
+    resetFilters(false);
+    specialFilters.tempsMin = heures;
+    applyFilters();
+  };
 
-const nom=
-equipe[k]
-?.nom;
+  window.presetAllergies = function () {
+    resetFilters(false);
+    specialFilters.allergies = true;
+    applyFilters();
+  };
 
-if(
-nom
-){
-
-noms.push(
-`${emoji} ${nom}`
-);
-
-}
-
-}
-);
-
-return noms.length
-? noms.join("<br>")
-: "—";
-
-}
-function applyFilters() {
-  const gravite = filterGravite.value.toLowerCase();
-  const circuit = filterCircuit.value.toLowerCase();
-  const pdc = filterPDC.value.toLowerCase();
-  const localisation = filterLocalisation.value.toLowerCase();
-  const vigilanceOnly = filterVigilance.checked;
-
-  let total = 0;
-  let visibles = 0;
-  let filtersActive = false;
-
-  document.querySelectorAll('#patient-list tr').forEach(tr => {
-    total++;
-
-    const td = tr.children;
-    const gravTxt = td[3]?.textContent.toLowerCase() || '';
-    const circuitTxt = td[5]?.textContent.toLowerCase() || '';
-    const pdcTxt = td[6]?.textContent.toLowerCase() || '';
-    const localisationTxt = td[7]?.textContent.toLowerCase() || '';
-    const vigilanceTxt = td[2]?.textContent.toLowerCase() || '';
-
-    let visible = true;
-
-    if (gravite && !gravTxt.includes(gravite)) visible = false;
-    if (circuit && !circuitTxt.includes(circuit)) visible = false;
-    if (pdc && !pdcTxt.includes(pdc)) visible = false;
-    if (localisation && !localisationTxt.includes(localisation)) visible = false;
-    if (vigilanceOnly && (vigilanceTxt === 'aucune' || vigilanceTxt === '')) visible = false;
-
-    if (gravite || circuit || pdc || localisation || vigilanceOnly) {
-      filtersActive = true;
-    }
-
-    tr.style.display = visible ? '' : 'none';
-    if (visible) visibles++;
-  });
-
-  // 🔴 badge filtres actifs
-  activeFiltersBadge.classList.toggle('hidden', !filtersActive);
-
-  // 🔢 compteur
-  visibleCount.textContent = `${visibles} / ${total}`;
-  // ❌ Message "aucun résultat"
-const tbody = document.getElementById('patient-list');
-
-// Supprime l'ancien message si présent
-const existing = tbody.querySelector('.no-results-row');
-if (existing) existing.remove();
-
-// Si aucun patient visible → afficher message
-if (visibles === 0 && total > 0) {
-  const tr = document.createElement('tr');
-  tr.className = 'no-results-row';
-  tr.innerHTML = `
-    <td colspan="10">
-      Aucun patient ne correspond aux filtres sélectionnés
-    </td>
-  `;
-  tbody.appendChild(tr);
-}
-
-}
-
-
-// écouteurs
-['filterGravite','filterCircuit','filterPDC','filterVigilance']
-  .forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
-   window.presetP3 = function() {
-  resetFilters(false);
-  document.getElementById('filterGravite').value = 'p3';
-  applyFilters();
-}
-window.presetTemps = function(heures) {
-  resetFilters(false);
-
-  const now = Date.now();
-  document.querySelectorAll('#patient-list tr').forEach(tr => {
-    const dateDebutSec = parseInt(tr.getAttribute('data-temps') || 0);
-    if (!dateDebutSec) {
-      tr.style.display = 'none';
-      return;
-    }
-    const diffMs = now - dateDebutSec * 1000;
-    const h = Math.floor(diffMs / 3600000);
-
-    tr.style.display = h >= heures ? '' : 'none';
-  });
-
-  document.getElementById('activeFiltersBadge').classList.remove('hidden');
-}
-
-window.presetAllergies = function() {
-  resetFilters(false);
-
-  document.querySelectorAll('#patient-list tr').forEach(tr => {
-    const nomCell = tr.children[0]?.innerHTML || '';
-    tr.style.display = nomCell.includes('⭐') ? '' : 'none';
-  });
-
-  document.getElementById('activeFiltersBadge').classList.remove('hidden');
-}
-
-window.presetVigilance = function() {
-  resetFilters(false);
-  document.getElementById('filterVigilance').checked = true;
-  applyFilters();
-}
-
-window.presetSansMedecin = function() {
-  resetFilters(false);
-
-  document.querySelectorAll('#patient-list tr').forEach(tr => {
-    const equipe = JSON.parse(tr.getAttribute('data-equipe') || '{}');
-    const hasMedecin = equipe.medecinReferent?.nom;
-
-    tr.style.display = hasMedecin ? 'none' : '';
-  });
-
-  document.getElementById('activeFiltersBadge').classList.remove('hidden');
-}
-
-window.resetFilters = function(apply = true) {
-  filterGravite.value = '';
-  filterCircuit.value = '';
-  filterPDC.value='';
-filterLocalisation.value='';
-filterVigilance.checked=false;
-
-  document.querySelectorAll('#patient-list tr')
-    .forEach(tr => tr.style.display = '');
-
-  document.getElementById('activeFiltersBadge').classList.add('hidden');
-
-  if (apply) applyFilters();
-}
-
-document.getElementById('filterLocalisation')
-  .addEventListener('change', applyFilters);
-
-  
+  window.presetMesPatients = function () {
+    resetFilters(false);
+    filterMesPatients.checked = true;
+    applyFilters();
+  };
 </script>
 
 </body>

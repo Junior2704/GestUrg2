@@ -1024,73 +1024,31 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     }
     return new Blob(byteArrays, { type: contentType });
 }
+
 function ouvrirModal(blob, nom) {
-
-    const nouvelOnglet =
-        window.open(
-            "viewer.html",
-            "_blank"
-        );
-
+    const url = URL.createObjectURL(blob);
+    const nouvelOnglet = window.open(url, "_blank");
     if (!nouvelOnglet) {
 
-        afficherBulle(
-            "❌ Le navigateur a bloqué l'ouverture du PDF",
-            "alerte"
-        );
-
-        masquerLoader();
-
-        return;
-    }
-
-
-    const reader =
-        new FileReader();
-
-
-    reader.onload = function () {
-
-        const data =
-            reader.result;
-
-
-        /*
-         * On attend que le viewer soit chargé.
-         */
-
-        const envoyer = () => {
-
-            nouvelOnglet.postMessage(
-                {
-                    type: "charger-pdf",
-                    data: data,
-                    nom: nom
-                },
-                window.location.origin
+            afficherBulle(
+                "❌ Le navigateur a bloqué l'ouverture du PDF",
+                "alerte"
             );
+masquerLoader();
+            URL.revokeObjectURL(url);
+            return;
+        }
 
-        };
+        // Titre de l'onglet
+        nouvelOnglet.document.title =
+            nom;
 
-
-        /*
-         * Quelques centaines de ms permettent
-         * au viewer de s'initialiser.
-         */
-
-        setTimeout(
-            envoyer,
-            300
-        );
-
-    };
-
-
-    reader.readAsArrayBuffer(
-        blob
-    );
-
+        // Nettoyage de l'URL temporaire
+        setTimeout(() => {
+            URL.revokeObjectURL(pdfUrl);
+        }, 60000);
 }
+
 window.fermerModal = function() {
     modal.style.display = "none";
     pdfViewer.src = "";

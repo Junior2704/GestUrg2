@@ -215,6 +215,9 @@
   .badge-verso .consignes{font-size:7.1px;line-height:1.55;color:#3b4252;text-align:left;width:100%;}
   .badge-verso .consignes strong{display:block;font-size:7.4px;color:#111827;margin-bottom:0.8mm;}
   .badge-verso .consignes .bloc + .bloc{margin-top:2.6mm;}
+  .badge-verso .signature-zone{width:100%;margin-top:3mm;padding-top:2.4mm;border-top:0.3mm solid #eceef2;text-align:center;}
+  .badge-verso .signature-zone .label{display:block;font-size:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--texte-2);margin-bottom:1.2mm;}
+  .badge-verso .signature-zone img{max-width:32mm;max-height:11mm;object-fit:contain;}
   .badge-verso .qr-zone{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:1.2mm;padding-top:3mm;}
   .badge-verso .qr-zone img{width:19mm;height:19mm;border:0.3mm solid #eceef2;border-radius:1mm;}
   .badge-verso .qr-zone .legende{font-size:5.8px;color:var(--texte-2);text-align:center;letter-spacing:.02em;max-width:36mm;}
@@ -896,8 +899,11 @@ function marqueBadge(d, uid, photo, fonction, service, lieu, dateEmissionIso){
 }
 
 /* ================= APERÇU BADGE : VERSO (consignes + QR de vérification) ================= */
-function marqueBadgeVerso(uid){
+function marqueBadgeVerso(uid, signature){
   const qr = urlQR(`${URL_VERIFICATION_BASE}?uid=${encodeURIComponent(uid)}`);
+  const signatureHTML = signature
+    ? `<div class="signature-zone"><span class="label">Signature du titulaire</span><img src="${signature}" alt="Signature"></div>`
+    : "";
   return `
     <div class="badge-verso">
       <div class="entete-verso">Badge professionnel — vérification</div>
@@ -905,6 +911,7 @@ function marqueBadgeVerso(uid){
         <div class="bloc"><strong>Badge trouvé ?</strong>Merci de le déposer à l'accueil de l'établissement ou de le remettre au service sécurité.</div>
         <div class="bloc"><strong>Badge perdu ?</strong>Signalez-le sans délai au service sécurité afin qu'il soit désactivé.</div>
       </div>
+      ${signatureHTML}
       <div class="qr-zone">
         <img src="${qr}" alt="QR code de vérification du badge">
         <span class="legende">Scanner pour vérifier l'authenticité du badge</span>
@@ -924,7 +931,7 @@ function dessinerApercuBadge(){
     </div>
     <div style="text-align:center;">
       <div style="font-size:11px;font-weight:700;color:var(--texte-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Verso</div>
-      ${marqueBadgeVerso(UID_DESIGNER)}
+      ${marqueBadgeVerso(UID_DESIGNER, d.Signature)}
     </div>`;
 }
 
@@ -1034,7 +1041,7 @@ document.getElementById("btn-ajouter-file").addEventListener("click", ()=>{
   if(!photo){ alert("Ajoutez une photo avant d'ajouter ce badge à la file d'impression."); return; }
   if(!fonction){ alert("Choisissez la fonction affichée sur le badge avant de l'ajouter à la file."); return; }
   const dateEmission = d.dateEmission || new Date().toISOString();
-  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:nomFamille(d), prenom:d.prenom||"", type:fonction, service, lieu, photo, dateEmission });
+  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:nomFamille(d), prenom:d.prenom||"", type:fonction, service, lieu, photo, dateEmission, signature:d.Signature||"" });
   redessinerFile();
 });
 
@@ -1142,7 +1149,7 @@ document.getElementById("btn-imprimer").addEventListener("click", ()=>{
     div.style.position = "absolute";
     div.style.left = s.left+"mm"; div.style.top = s.top+"mm";
     div.innerHTML = assign.face === "verso"
-      ? marqueBadgeVerso(item.uid)
+      ? marqueBadgeVerso(item.uid, item.signature)
       : marqueBadge({ nom:item.nom, prenom:item.prenom }, item.uid, item.photo, item.type, item.service, item.lieu, item.dateEmission);
     zone.appendChild(div);
   });

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestion des badges</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#0078ff;
+    --rouge:#e60000;
+    --vert:#00b35a;
+    --bg:#f4f6f9;
+    --carte:#ffffff;
+    --bordure:rgba(0,0,0,0.09);
+    --texte:#1b1f27;
+    --texte-2:#6b7280;
+    --radius:14px;
+    --role-medecin:#0078ff;
+    --role-infirmier:#16a34a;
+    --role-externe:#06b6d4;
+    --role-interne:#7c3aed;
+    --role-ambulancier:#dc2626;
+    --role-aide-soignant:#f59e0b;
+    --role-defaut:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--texte);
+    -webkit-font-smoothing:antialiased;
+  }
+  .btn-id {
+    all: unset;
+    background: transparent;
+    color: #000;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(2px);
+  }
+  .btn-id:hover {
+    background: rgba(0, 120, 255, 0.12);
+    border-color: rgba(0, 120, 255, 0.6);
+    color: #0078ff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+  }
+  .btn-id:active { transform: translateY(0px); box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1); }
+  .btn-id:focus { outline: none; border-color: rgba(0, 120, 255, 0.8); box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15); }
+  .btn-id-c:hover { background: rgba(255, 0, 0, 0.10); border-color: rgba(255, 0, 0, 0.6); color: #e60000; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15); }
+  .btn-id-c:focus { border-color: rgba(255, 0, 0, 0.8); box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15); }
+  .btn-id-v:hover { background: rgba(0, 200, 80, 0.12); border-color: rgba(0, 200, 80, 0.6); color: #00b35a; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15); }
+  .btn-id-v:focus { border-color: rgba(0, 200, 80, 0.8); box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15); }
+  .btn-id[disabled]{opacity:.35;cursor:not-allowed;pointer-events:none;}
+  .btn-id.actif{background:rgba(0,120,255,0.14);border-color:rgba(0,120,255,0.7);color:#0078ff;}
+
+  #app{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px;}
+  header.top h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-0.3px;}
+  header.top p{margin:2px 0 0;color:var(--texte-2);font-size:13.5px;}
+
+  nav.tabs{display:flex;gap:8px;background:var(--carte);padding:6px;border-radius:14px;border:1px solid var(--bordure);width:fit-content;margin-bottom:22px;}
+  nav.tabs button{
+    all:unset;cursor:pointer;padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--texte-2);transition:.2s;
+  }
+  nav.tabs button:hover{color:var(--bleu);}
+  nav.tabs button.actif{background:var(--bleu);color:#fff;}
+
+  .panel{display:none;}
+  .panel.actif{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .carte{background:var(--carte);border:1px solid var(--bordure);border-radius:var(--radius);padding:20px;}
+  .carte + .carte{margin-top:18px;}
+
+  .row-entre{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  input[type=text], input[type=search], input[type=file]{
+    font-family:inherit;font-size:14px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--bordure);background:#fbfcfe;color:var(--texte);
+  }
+  input[type=text]:focus, input[type=search]:focus{outline:none;border-color:rgba(0,120,255,.6);box-shadow:0 0 0 3px rgba(0,120,255,.12);}
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--texte-2);padding:8px 10px;border-bottom:1px solid var(--bordure);}
+  tbody td{padding:10px;border-bottom:1px solid #f0f1f4;font-size:14px;vertical-align:middle;}
+  tbody tr:hover{background:#fafbfd;}
+  .avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#e5e9f0;display:inline-block;vertical-align:middle;}
+  .avatar-vide{width:38px;height:38px;border-radius:50%;background:#e5e9f0;display:inline-flex;align-items:center;justify-content:center;color:var(--texte-2);font-size:13px;font-weight:700;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;}
+  .pill-badge-ok{background:#eafff2;color:#0a8a45;border:1px solid #c8f3d9;}
+  .pill-badge-non{background:#f4f5f7;color:var(--texte-2);border:1px solid var(--bordure);}
+  .actions-cell{display:flex;gap:6px;flex-wrap:wrap;}
+  .actions-cell .btn-id{padding:6px 10px;font-size:12.5px;}
+
+  /* ---- overlay / modales ---- */
+  .overlay{position:fixed;inset:0;background:rgba(15,20,30,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .overlay.actif{display:flex;}
+  .modale{background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:24px;box-shadow:0 30px 60px rgba(0,0,0,.25);}
+  .modale.large{max-width:920px;}
+  .modale h2{margin:0 0 4px;font-size:18px;font-weight:800;}
+  .modale p.sub{margin:0 0 18px;color:var(--texte-2);font-size:13.5px;}
+  .modale-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+  .fermer-x{all:unset;cursor:pointer;float:right;font-size:20px;color:var(--texte-2);padding:4px 8px;border-radius:8px;}
+  .fermer-x:hover{background:#f2f3f5;color:var(--texte);}
+
+  .champ{margin-bottom:14px;}
+  .champ label{display:block;font-size:12.5px;font-weight:700;color:var(--texte-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
+  .champ input[type=text]{width:100%;}
+
+  .zone-scan{
+    border:2px dashed rgba(0,120,255,.35);border-radius:14px;padding:22px;text-align:center;background:rgba(0,120,255,.04);
+  }
+  .zone-scan .icone{font-size:30px;margin-bottom:8px;}
+  .zone-scan input{width:100%;text-align:center;font-size:16px;letter-spacing:.06em;}
+  .zone-scan .statut{margin-top:10px;font-size:13px;color:var(--texte-2);}
+
+  .resultat-scan{margin-top:16px;border-radius:14px;padding:16px;display:none;align-items:center;gap:14px;}
+  .resultat-scan.actif{display:flex;}
+  .resultat-scan.ok{background:#eafff2;border:1px solid #c8f3d9;}
+  .resultat-scan.non{background:#fff0f0;border:1px solid #ffd4d4;}
+  .resultat-scan .avatar, .resultat-scan .avatar-vide{width:52px;height:52px;font-size:16px;}
+  .resultat-scan .txt strong{display:block;font-size:15px;}
+  .resultat-scan .txt span{font-size:12.5px;color:var(--texte-2);}
+
+  iframe.anim-badge{width:220px;height:220px;border:0;display:block;margin:0 auto;}
+
+  /* ---- onglet badge trouvé ---- */
+  .zone-scan-geante{max-width:520px;margin:0 auto;padding:40px 24px;}
+  .zone-scan-geante .icone{font-size:44px;}
+  .zone-scan-geante input{font-size:20px;padding:14px;}
+
+  /* ---- onglet impression : carte badge ---- */
+  .designer{display:grid;grid-template-columns:280px 1fr;gap:22px;}
+  @media (max-width:820px){.designer{grid-template-columns:1fr;}}
+
+  .badge-carte{
+    width:54mm;height:85.6mm;border-radius:3mm;background:#fff;border:1px solid #d9dce2;
+    display:flex;flex-direction:column;align-items:center;overflow:hidden;position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,.12);
+  }
+  .badge-carte .logo-zone{height:9mm;display:flex;align-items:center;justify-content:center;padding-top:3mm;}
+  .badge-carte .logo-zone img{max-height:7mm;max-width:34mm;object-fit:contain;}
+  .badge-carte .logo-zone .logo-fallback{font-size:9px;font-weight:800;color:var(--texte-2);letter-spacing:.05em;}
+  .badge-carte .photo-zone{width:30mm;height:30mm;border-radius:50%;overflow:hidden;background:#e9ecf1;margin-top:3mm;border:0.6mm solid #f0f1f4;}
+  .badge-carte .photo-zone img{width:100%;height:100%;object-fit:cover;display:block;}
+  .badge-carte .nom-zone{margin-top:3.5mm;text-align:center;padding:0 3mm;}
+  .badge-carte .nom-zone .nom{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;line-height:1.15;}
+  .badge-carte .nom-zone .prenom{font-size:10px;font-weight:500;color:#444;margin-top:1mm;}
+  .badge-carte .bande{margin-top:auto;width:100%;padding:2.6mm 0;text-align:center;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+
+  .barre-outils-photo{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+
+  .liste-file{display:flex;flex-direction:column;gap:8px;max-height:230px;overflow:auto;}
+  .item-file{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--bordure);border-radius:10px;cursor:pointer;font-size:13px;transition:.15s;}
+  .item-file:hover{border-color:rgba(0,120,255,.5);}
+  .item-file.actif{border-color:var(--bleu);background:rgba(0,120,255,.06);}
+  .item-file .pastille{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .item-file small{color:var(--texte-2);margin-left:auto;}
+
+  .a4-conteneur{overflow:auto;border-radius:12px;background:#e9ecf1;padding:20px;display:flex;justify-content:center;}
+  .a4-feuille{
+    position:relative;width:210mm;height:297mm;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);
+    transform:scale(.62);transform-origin:top center;margin:-58mm -30mm;
+  }
+  .a4-slot{
+    position:absolute;border:1.5px dashed #c7cbd4;border-radius:3mm;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:.15s;background:#fbfcfe;
+  }
+  .a4-slot:hover{border-color:var(--bleu);background:rgba(0,120,255,.05);}
+  .a4-slot.occupe{border-style:solid;border-color:var(--bleu);background:#fff;}
+  .a4-slot .num{position:absolute;top:2mm;left:2mm;font-size:7px;color:#b7bcc6;font-weight:700;}
+  .a4-slot .mini{width:90%;height:90%;object-fit:cover;border-radius:2mm;}
+
+  .info-flottante{font-size:12.5px;color:var(--texte-2);background:#f4f6f9;border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.5;}
+
+  .badge-role-tag{display:inline-block;padding:3px 9px;border-radius:8px;color:#fff;font-size:11px;font-weight:700;}
+
+  #loader{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:999;font-size:14px;color:var(--texte-2);}
+  #loader.masque{display:none;}
+
+  /* Impression réelle */
+  #zone-impression{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #zone-impression, #zone-impression *{visibility:visible;}
+    #zone-impression{display:block;position:absolute;top:0;left:0;width:210mm;height:297mm;}
+    @page{size:A4;margin:0;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">Chargement…</div>
+
+<!-- Modale d'accès refusé -->
+<div class="overlay" id="modal-no-access">
+  <div class="modale">
+    <h2>Accès refusé</h2>
+    <p class="sub">Vous n'avez pas l'autorisation d'accéder à la gestion des badges.</p>
+    <div class="modale-footer"><button class="btn-id" onclick="window.location.href='index.html'">Retour</button></div>
+  </div>
+</div>
+
+<!-- Modale d'erreur générique -->
+<div class="overlay" id="modal-error">
+  <div class="modale">
+    <h2>Une erreur est survenue</h2>
+    <p class="sub" id="modal-error-msg">Merci de réessayer.</p>
+    <div class="modale-footer"><button class="btn-id" onclick="document.getElementById('modal-error').classList.remove('actif')">Fermer</button></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header class="top">
+    <div>
+      <h1>🪪 Gestion des badges</h1>
+      <p>Attribution, contrôle et impression des badges du personnel</p>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="actif" data-tab="tab-liste">📋 Utilisateurs</button>
+    <button data-tab="tab-trouve">🔍 Badge trouvé</button>
+    <button data-tab="tab-impression">🖨️ Modèle &amp; impression</button>
+  </nav>
+
+  <!-- ================= ONGLET 1 : LISTE / GESTION ================= -->
+  <section class="panel actif" id="tab-liste">
+    <div class="carte">
+      <div class="row-entre">
+        <input type="search" id="recherche-liste" placeholder="Rechercher un nom…">
+        <span class="info-flottante" style="margin:0;" id="compteur-liste"></span>
+      </div>
+      <table>
+        <thead>
+          <tr><th></th><th>Nom</th><th>Fonction</th><th>Lieu</th><th>Badge</th><th style="text-align:right;">Actions</th></tr>
+        </thead>
+        <tbody id="corps-liste"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= ONGLET 2 : BADGE TROUVÉ ================= -->
+  <section class="panel" id="tab-trouve">
+    <div class="carte zone-scan-geante">
+      <div class="icone">📡</div>
+      <h2 style="text-align:center;margin:0 0 4px;">Scanner un badge</h2>
+      <p class="sub" style="text-align:center;">Présentez le badge sur le lecteur, le résultat s'affiche automatiquement.</p>
+      <input type="text" id="scan-trouve" placeholder="En attente d'un badge…" autocomplete="off">
+      <div class="resultat-scan" id="resultat-trouve">
+        <div id="resultat-trouve-avatar"></div>
+        <div class="txt" id="resultat-trouve-txt"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ONGLET 3 : MODELE / IMPRESSION ================= -->
+  <section class="panel" id="tab-impression">
+    <div class="carte">
+      <div class="row-entre"><strong>1. Choisir un utilisateur</strong></div>
+      <input type="text" id="recherche-designer" placeholder="Rechercher un nom pour créer / modifier son badge…" style="width:100%;">
+      <div id="resultats-designer" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto;"></div>
+    </div>
+
+    <div class="carte" id="bloc-designer" style="display:none;">
+      <div class="row-entre"><strong>2. Photo &amp; aperçu du badge</strong></div>
+      <div class="designer">
+        <div>
+          <div id="apercu-badge-conteneur" style="display:flex;justify-content:center;"></div>
+          <div class="barre-outils-photo">
+            <label class="btn-id" style="cursor:pointer;">📷 Charger une photo<input type="file" id="input-photo" accept="image/*" style="display:none;"></label>
+            <button class="btn-id btn-id-v" id="btn-enregistrer-photo" disabled>💾 Enregistrer le badge</button>
+          </div>
+          <div class="info-flottante">La photo est recadrée dans un cadre circulaire puis enregistrée dans la fiche de l'utilisateur (champ <code>photo</code>).</div>
+        </div>
+        <div>
+          <div class="row-entre" style="margin-top:0;"><strong>File d'impression</strong>
+            <button class="btn-id" id="btn-ajouter-file">➕ Ajouter à la file</button>
+          </div>
+          <div class="liste-file" id="liste-file"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte" id="bloc-a4" style="display:none;">
+      <div class="row-entre">
+        <strong>3. Positionner sur la feuille A4</strong>
+        <button class="btn-id btn-id-v" id="btn-imprimer">🖨️ Imprimer</button>
+      </div>
+      <p class="sub" style="margin-top:-6px;">Sélectionnez un badge dans la file puis cliquez sur l'emplacement de la feuille où il doit être imprimé (utile pour les feuilles de papier badge pré-découpées).</p>
+      <div class="a4-conteneur"><div class="a4-feuille" id="a4-feuille"></div></div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= MODALE : DETAIL / GESTION D'UN BADGE ================= -->
+<div class="overlay" id="modal-detail">
+  <div class="modale">
+    <button class="fermer-x" onclick="fermerModale('modal-detail')">✕</button>
+    <h2 id="detail-nom">—</h2>
+    <p class="sub" id="detail-fonction">—</p>
+    <div class="info-flottante" id="detail-badge-info">Aucun badge attribué</div>
+    <div class="modale-footer" style="justify-content:flex-start;flex-wrap:wrap;">
+      <button class="btn-id btn-id-v" id="btn-detail-controler">✅ Contrôler</button>
+      <button class="btn-id" id="btn-detail-remplacer">🔁 Remplacer</button>
+      <button class="btn-id btn-id-c" id="btn-detail-supprimer">🗑️ Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALE : SCAN (contrôle / remplacement) ================= -->
+<div class="overlay" id="modal-scan">
+  <div class="modale">
+    <button class="fermer-x" onclick="fermerModale('modal-scan')">✕</button>
+    <h2 id="scan-titre">Contrôle du badge</h2>
+    <p class="sub" id="scan-sous-titre">Présentez le badge sur le lecteur.</p>
+    <div class="zone-scan">
+      <div class="icone">📡</div>
+      <input type="text" id="scan-input" placeholder="En attente…" autocomplete="off">
+      <div class="statut" id="scan-statut"></div>
+    </div>
+    <div id="scan-anim-conteneur" style="display:none;margin-top:16px;">
+      <iframe class="anim-badge" id="scan-iframe" src="about:blank"></iframe>
+    </div>
+    <div class="resultat-scan" id="scan-resultat">
+      <div id="scan-resultat-txt" class="txt"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALE : RECADRAGE PHOTO ================= -->
+<div class="overlay" id="modal-crop">
+  <div class="modale">
+    <button class="fermer-x" onclick="fermerModale('modal-crop')">✕</button>
+    <h2>Cadrer la photo</h2>
+    <p class="sub">Glissez pour repositionner, utilisez le curseur pour zoomer.</p>
+    <div id="crop-viewport" style="width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto;background:#eee;position:relative;cursor:grab;">
+      <img id="crop-img" style="position:absolute;user-select:none;-webkit-user-drag:none;" draggable="false">
+    </div>
+    <div style="text-align:center;margin-top:14px;">
+      <input type="range" id="crop-zoom" min="100" max="300" value="100" style="width:70%;">
+    </div>
+    <div class="modale-footer">
+      <button class="btn-id" onclick="fermerModale('modal-crop')">Annuler</button>
+      <button class="btn-id btn-id-v" id="btn-valider-crop">✅ Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="zone-impression"></div>
+
+<script type="module">
+/* ============================================================
+   ⚠️ À ADAPTER SELON VOTRE PROJET :
+   - le chemin d'import de firebase-config.js (doit exporter { db, auth })
+   - le chemin du logo de l'hôpital ("logo.png")
+   - le chemin de "animation-badge.html" (déjà existant dans votre app)
+   ============================================================ */
+import { db, auth } from "./firebase-config.js";
+import {
+  collection, doc, getDoc, getDocs, updateDoc, deleteField, query, where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const LOGO_PATH = "logo.png";
+const ANIMATION_PATH = "animation-badge.html";
+const COLLECTION = "medecins";
+
+const ROLE_COULEURS = {
+  "Médecin": "var(--role-medecin)",
+  "Infirmier": "var(--role-infirmier)",
+  "Externe": "var(--role-externe)",
+  "Interne": "var(--role-interne)",
+  "Ambulancier": "var(--role-ambulancier)",
+  "Aide-Soignant": "var(--role-aide-soignant)"
+};
+function couleurRole(role){ return ROLE_COULEURS[role] || "var(--role-defaut)"; }
+
+let TOUS_UTILISATEURS = {}; // uid -> data
+let UID_COURANT_DETAIL = null;
+let CONTEXTE_SCAN = null; // 'controle' | 'remplacement'
+let UID_DESIGNER = null;
+let PHOTO_EN_ATTENTE = null; // dataURL après crop, avant enregistrement
+let FILE_IMPRESSION = []; // [{uid, nom, prenom, role, photo}]
+let ITEM_FILE_ACTIF = null;
+let SLOTS = []; // positions calculées pour la feuille A4
+let ASSIGNATIONS = {}; // slotIndex -> item de FILE_IMPRESSION
+
+/* ================= AUTHENTIFICATION & CONTRÔLE D'ACCÈS ================= */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  try {
+    const docRef = doc(db, COLLECTION, user.uid);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+      return;
+    }
+    const data = docSnap.data();
+    const pages = data.pages || {};
+
+    if (pages.adminsysteme !== true) {
+      document.getElementById("loader").classList.add("masque");
+      document.getElementById("modal-no-access").classList.add("actif");
+      console.warn("Accès refusé à gestionbadge");
+      return;
+    }
+
+    document.getElementById("loader").classList.add("masque");
+    document.getElementById("app").style.display = "block";
+    await chargerUtilisateurs();
+  } catch (error) {
+    document.getElementById("loader").classList.add("masque");
+    document.getElementById("modal-error-msg").textContent = "Erreur lors du chargement : " + error.message;
+    document.getElementById("modal-error").classList.add("actif");
+    console.error("Erreur chargement médecin :", error);
+  }
+});
+
+/* ================= UTILITAIRES MODALES / ONGLETS ================= */
+function ouvrirModale(id){ document.getElementById(id).classList.add("actif"); }
+window.fermerModale = function(id){ document.getElementById(id).classList.remove("actif"); };
+
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("actif"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("actif"));
+    btn.classList.add("actif");
+    document.getElementById(btn.dataset.tab).classList.add("actif");
+    if(btn.dataset.tab === "tab-trouve"){ setTimeout(()=>document.getElementById("scan-trouve").focus(), 80); }
+  });
+});
+
+/* ================= CHARGEMENT DES UTILISATEURS ================= */
+async function chargerUtilisateurs(){
+  const snap = await getDocs(collection(db, COLLECTION));
+  TOUS_UTILISATEURS = {};
+  snap.forEach(d => TOUS_UTILISATEURS[d.id] = d.data());
+  afficherListe();
+  afficherResultatsDesigner("");
+}
+
+function initiales(data){
+  return ((data.prenom||"")[0]||"") + ((data.nom||"")[0]||"");
+}
+
+function afficherListe(filtre=""){
+  const corps = document.getElementById("corps-liste");
+  corps.innerHTML = "";
+  const f = filtre.trim().toLowerCase();
+  let n = 0;
+  Object.entries(TOUS_UTILISATEURS)
+    .sort((a,b)=> (a[1].nom||"").localeCompare(b[1].nom||""))
+    .forEach(([uid, data])=>{
+      const nomComplet = `${data.prenom||""} ${data.nom||""}`.trim();
+      if(f && !nomComplet.toLowerCase().includes(f)) return;
+      n++;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${data.photo ? `<img class="avatar" src="${data.photo}">` : `<span class="avatar-vide">${initiales(data)}</span>`}</td>
+        <td><strong>${nomComplet||"—"}</strong></td>
+        <td><span class="badge-role-tag" style="background:${couleurRole(data.type)}">${data.type||"—"}</span></td>
+        <td>${data.lieu||"—"}</td>
+        <td>${data.idBadge ? `<span class="pill pill-badge-ok">● Badge actif</span>` : `<span class="pill pill-badge-non">Aucun badge</span>`}</td>
+        <td class="actions-cell" style="justify-content:flex-end;">
+          <button class="btn-id" data-action="voir" data-uid="${uid}">Voir</button>
+        </td>`;
+      corps.appendChild(tr);
+    });
+  document.getElementById("compteur-liste").textContent = `${n} utilisateur${n>1?"s":""}`;
+}
+document.getElementById("recherche-liste").addEventListener("input", e=>afficherListe(e.target.value));
+
+document.getElementById("corps-liste").addEventListener("click", e=>{
+  const btn = e.target.closest("button[data-action='voir']");
+  if(!btn) return;
+  ouvrirDetail(btn.dataset.uid);
+});
+
+/* ================= MODALE DETAIL (VOIR / CONTROLER / REMPLACER / SUPPRIMER) ================= */
+function ouvrirDetail(uid){
+  UID_COURANT_DETAIL = uid;
+  const data = TOUS_UTILISATEURS[uid];
+  document.getElementById("detail-nom").textContent = `${data.prenom||""} ${data.nom||""}`.trim() || "—";
+  document.getElementById("detail-fonction").textContent = `${data.type||"—"} · ${data.lieu||"—"}`;
+  document.getElementById("detail-badge-info").textContent = data.idBadge
+    ? `Badge attribué — n° ${data.idBadge}`
+    : "Aucun badge attribué à cet utilisateur.";
+  document.getElementById("btn-detail-controler").disabled = !data.idBadge;
+  document.getElementById("btn-detail-controler").style.opacity = data.idBadge ? 1 : .4;
+  ouvrirModale("modal-detail");
+}
+
+document.getElementById("btn-detail-controler").addEventListener("click", ()=>{
+  if(!TOUS_UTILISATEURS[UID_COURANT_DETAIL]?.idBadge) return;
+  fermerModale("modal-detail");
+  lancerScan("controle", UID_COURANT_DETAIL);
+});
+document.getElementById("btn-detail-remplacer").addEventListener("click", ()=>{
+  fermerModale("modal-detail");
+  lancerScan("remplacement", UID_COURANT_DETAIL);
+});
+document.getElementById("btn-detail-supprimer").addEventListener("click", async ()=>{
+  const data = TOUS_UTILISATEURS[UID_COURANT_DETAIL];
+  if(!data.idBadge){ fermerModale("modal-detail"); return; }
+  if(!confirm(`Supprimer le badge de ${data.prenom||""} ${data.nom||""} ?`)) return;
+  await updateDoc(doc(db, COLLECTION, UID_COURANT_DETAIL), { idBadge: deleteField() });
+  data.idBadge = null;
+  fermerModale("modal-detail");
+  afficherListe(document.getElementById("recherche-liste").value);
+});
+
+/* ================= ANIMATION IFRAME (validité) ================= */
+function jouerAnimationBadge(iframeEl, estValide){
+  return new Promise(resolve=>{
+    iframeEl.onload = ()=>{
+      iframeEl.contentWindow.postMessage(estValide ? "valide" : "invalide", "*");
+      setTimeout(resolve, 2000);
+    };
+    iframeEl.src = ANIMATION_PATH + "?t=" + Date.now();
+  });
+}
+
+/* ================= SCAN : CONTROLE / REMPLACEMENT ================= */
+function lancerScan(contexte, uid){
+  CONTEXTE_SCAN = contexte;
+  UID_COURANT_DETAIL = uid;
+  const data = TOUS_UTILISATEURS[uid];
+  document.getElementById("scan-titre").textContent = contexte === "controle" ? "Contrôle du badge" : "Remplacement du badge";
+  document.getElementById("scan-sous-titre").textContent = contexte === "controle"
+    ? `Faites scanner le badge de ${data.prenom||""} ${data.nom||""} pour vérifier sa validité.`
+    : `Scannez le nouveau badge à attribuer à ${data.prenom||""} ${data.nom||""}.`;
+  document.getElementById("scan-input").value = "";
+  document.getElementById("scan-statut").textContent = "";
+  document.getElementById("scan-anim-conteneur").style.display = "none";
+  document.getElementById("scan-resultat").classList.remove("actif","ok","non");
+  ouvrirModale("modal-scan");
+  setTimeout(()=>document.getElementById("scan-input").focus(), 100);
+}
+
+document.getElementById("scan-input").addEventListener("keydown", async e=>{
+  if(e.key !== "Enter") return;
+  const code = e.target.value.trim();
+  if(!code) return;
+  e.target.value = "";
+  e.target.disabled = true;
+  document.getElementById("scan-statut").textContent = "Lecture du badge…";
+
+  const data = TOUS_UTILISATEURS[UID_COURANT_DETAIL];
+
+  if(CONTEXTE_SCAN === "controle"){
+    const estValide = code === data.idBadge;
+    document.getElementById("scan-anim-conteneur").style.display = "block";
+    await jouerAnimationBadge(document.getElementById("scan-iframe"), estValide);
+    const res = document.getElementById("scan-resultat");
+    res.classList.add("actif", estValide ? "ok" : "non");
+    document.getElementById("scan-resultat-txt").innerHTML = estValide
+      ? `✅ <strong>Badge valide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Correspond bien à ${data.prenom||""} ${data.nom||""}</span>`
+      : `❌ <strong>Badge invalide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Ce badge ne correspond pas à ${data.prenom||""} ${data.nom||""}</span>`;
+    document.getElementById("scan-statut").textContent = "";
+    e.target.disabled = false;
+  }
+
+  if(CONTEXTE_SCAN === "remplacement"){
+    // vérifie que ce badge n'est pas déjà attribué à quelqu'un d'autre
+    const dejaPris = Object.entries(TOUS_UTILISATEURS).find(([u,d]) => d.idBadge === code && u !== UID_COURANT_DETAIL);
+    if(dejaPris){
+      document.getElementById("scan-statut").textContent = `⚠️ Ce badge est déjà attribué à ${dejaPris[1].prenom||""} ${dejaPris[1].nom||""}.`;
+      e.target.disabled = false;
+      return;
+    }
+    await updateDoc(doc(db, COLLECTION, UID_COURANT_DETAIL), { idBadge: code });
+    data.idBadge = code;
+    const res = document.getElementById("scan-resultat");
+    res.classList.add("actif","ok");
+    document.getElementById("scan-resultat-txt").innerHTML = `✅ <strong>Nouveau badge enregistré</strong><br><span style="color:var(--texte-2);font-size:12.5px;">n° ${code}</span>`;
+    document.getElementById("scan-statut").textContent = "";
+    e.target.disabled = false;
+    afficherListe(document.getElementById("recherche-liste").value);
+  }
+});
+
+/* ================= ONGLET BADGE TROUVÉ ================= */
+const scanTrouve = document.getElementById("scan-trouve");
+scanTrouve.addEventListener("keydown", async e=>{
+  if(e.key !== "Enter") return;
+  const code = e.target.value.trim();
+  if(!code) return;
+  e.target.value = "";
+  await rechercherBadge(code);
+});
+document.querySelector('[data-tab="tab-trouve"]').addEventListener("click", ()=>setTimeout(()=>scanTrouve.focus(),80));
+
+async function rechercherBadge(code){
+  const q = query(collection(db, COLLECTION), where("idBadge","==", code));
+  const snap = await getDocs(q);
+  const res = document.getElementById("resultat-trouve");
+  const avatarZone = document.getElementById("resultat-trouve-avatar");
+  const txtZone = document.getElementById("resultat-trouve-txt");
+  res.classList.remove("ok","non");
+
+  if(snap.empty){
+    res.classList.add("actif","non");
+    avatarZone.innerHTML = `<span class="avatar-vide" style="width:52px;height:52px;font-size:18px;">?</span>`;
+    txtZone.innerHTML = `<strong>Badge inconnu ❌</strong><span>Ce badge n'est associé à aucun utilisateur.</span>`;
+  } else {
+    const d = snap.docs[0].data();
+    res.classList.add("actif","ok");
+    avatarZone.innerHTML = d.photo ? `<img class="avatar" style="width:52px;height:52px;" src="${d.photo}">` : `<span class="avatar-vide" style="width:52px;height:52px;">${initiales(d)}</span>`;
+    txtZone.innerHTML = `<strong>${d.prenom||""} ${d.nom||""} ✅</strong>
+      <span><span class="badge-role-tag" style="background:${couleurRole(d.type)}">${d.type||"—"}</span> · ${d.specialite||""} · ${d.lieu||""}</span>`;
+  }
+  scanTrouve.focus();
+}
+
+/* ================= ONGLET IMPRESSION : recherche utilisateur ================= */
+document.getElementById("recherche-designer").addEventListener("input", e=>afficherResultatsDesigner(e.target.value));
+
+function afficherResultatsDesigner(filtre){
+  const zone = document.getElementById("resultats-designer");
+  const f = filtre.trim().toLowerCase();
+  zone.innerHTML = "";
+  if(!f){ return; }
+  Object.entries(TOUS_UTILISATEURS)
+    .filter(([u,d])=> `${d.prenom||""} ${d.nom||""}`.toLowerCase().includes(f))
+    .slice(0,8)
+    .forEach(([uid,d])=>{
+      const div = document.createElement("div");
+      div.className = "item-file";
+      div.innerHTML = `<span class="pastille" style="background:${couleurRole(d.type)}"></span> ${d.prenom||""} ${d.nom||""} <small>${d.type||""}</small>`;
+      div.addEventListener("click", ()=>selectionnerDesigner(uid));
+      zone.appendChild(div);
+    });
+}
+
+function selectionnerDesigner(uid){
+  UID_DESIGNER = uid;
+  PHOTO_EN_ATTENTE = null;
+  document.getElementById("bloc-designer").style.display = "block";
+  document.getElementById("bloc-a4").style.display = "block";
+  document.getElementById("btn-enregistrer-photo").disabled = true;
+  dessinerApercuBadge();
+  construireFeuilleA4();
+}
+
+/* ================= APERÇU BADGE ================= */
+function dessinerApercuBadge(){
+  const d = TOUS_UTILISATEURS[UID_DESIGNER];
+  const photo = PHOTO_EN_ATTENTE || d.photo || "";
+  const conteneur = document.getElementById("apercu-badge-conteneur");
+  conteneur.innerHTML = `
+    <div class="badge-carte">
+      <div class="logo-zone">
+        <img src="${LOGO_PATH}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+        <span class="logo-fallback" style="display:none;">HÔPITAL</span>
+      </div>
+      <div class="photo-zone">${photo ? `<img src="${photo}">` : ""}</div>
+      <div class="nom-zone">
+        <div class="nom">${d.nom||""}</div>
+        <div class="prenom">${d.prenom||""}</div>
+      </div>
+      <div class="bande" style="background:${couleurRole(d.type)}">${d.type||"—"}</div>
+    </div>`;
+}
+
+/* ================= CHARGEMENT / RECADRAGE PHOTO ================= */
+let cropState = { img:null, zoom:1, x:0, y:0, dragging:false, startX:0, startY:0 };
+
+document.getElementById("input-photo").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    const img = document.getElementById("crop-img");
+    img.src = ev.target.result;
+    img.onload = ()=>{
+      const vp = 220;
+      const scale = Math.max(vp/img.naturalWidth, vp/img.naturalHeight);
+      cropState = { zoom:1, baseScale:scale, x:0, y:0, dragging:false };
+      positionnerCropImg();
+      document.getElementById("crop-zoom").value = 100;
+      ouvrirModale("modal-crop");
+    };
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+});
+
+function positionnerCropImg(){
+  const img = document.getElementById("crop-img");
+  const scale = cropState.baseScale * cropState.zoom;
+  img.style.width = (img.naturalWidth*scale)+"px";
+  img.style.height = (img.naturalHeight*scale)+"px";
+  const vp = 220;
+  const maxX = Math.max(0, (img.naturalWidth*scale - vp)/2);
+  const maxY = Math.max(0, (img.naturalHeight*scale - vp)/2);
+  cropState.x = Math.min(maxX, Math.max(-maxX, cropState.x));
+  cropState.y = Math.min(maxY, Math.max(-maxY, cropState.y));
+  img.style.left = (vp/2 - img.naturalWidth*scale/2 + cropState.x)+"px";
+  img.style.top = (vp/2 - img.naturalHeight*scale/2 + cropState.y)+"px";
+}
+
+document.getElementById("crop-zoom").addEventListener("input", e=>{
+  cropState.zoom = e.target.value/100;
+  positionnerCropImg();
+});
+
+const viewport = document.getElementById("crop-viewport");
+viewport.addEventListener("pointerdown", e=>{
+  cropState.dragging = true;
+  cropState.startX = e.clientX - cropState.x;
+  cropState.startY = e.clientY - cropState.y;
+  viewport.style.cursor = "grabbing";
+});
+window.addEventListener("pointermove", e=>{
+  if(!cropState.dragging) return;
+  cropState.x = e.clientX - cropState.startX;
+  cropState.y = e.clientY - cropState.startY;
+  positionnerCropImg();
+});
+window.addEventListener("pointerup", ()=>{ cropState.dragging=false; viewport.style.cursor="grab"; });
+
+document.getElementById("btn-valider-crop").addEventListener("click", ()=>{
+  const img = document.getElementById("crop-img");
+  const vp = 220;
+  const scale = cropState.baseScale * cropState.zoom;
+  const sortie = 400; // résolution finale de la photo (px)
+  const canvas = document.createElement("canvas");
+  canvas.width = sortie; canvas.height = sortie;
+  const ctx = canvas.getContext("2d");
+  // cercle de découpe
+  ctx.beginPath(); ctx.arc(sortie/2, sortie/2, sortie/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+  const rapport = sortie/vp;
+  const dx = (parseFloat(img.style.left))*rapport;
+  const dy = (parseFloat(img.style.top))*rapport;
+  ctx.drawImage(img, dx, dy, img.naturalWidth*scale*rapport, img.naturalHeight*scale*rapport);
+  PHOTO_EN_ATTENTE = canvas.toDataURL("image/jpeg", 0.85);
+  fermerModale("modal-crop");
+  dessinerApercuBadge();
+  document.getElementById("btn-enregistrer-photo").disabled = false;
+});
+
+document.getElementById("btn-enregistrer-photo").addEventListener("click", async ()=>{
+  if(!PHOTO_EN_ATTENTE) return;
+  const btn = document.getElementById("btn-enregistrer-photo");
+  btn.disabled = true; btn.textContent = "Enregistrement…";
+  await updateDoc(doc(db, COLLECTION, UID_DESIGNER), { photo: PHOTO_EN_ATTENTE });
+  TOUS_UTILISATEURS[UID_DESIGNER].photo = PHOTO_EN_ATTENTE;
+  btn.textContent = "✅ Enregistré";
+  setTimeout(()=>{ btn.textContent = "💾 Enregistrer le badge"; }, 1500);
+  afficherListe(document.getElementById("recherche-liste").value);
+});
+
+/* ================= FILE D'IMPRESSION ================= */
+document.getElementById("btn-ajouter-file").addEventListener("click", ()=>{
+  const d = TOUS_UTILISATEURS[UID_DESIGNER];
+  const photo = PHOTO_EN_ATTENTE || d.photo;
+  if(!photo){ alert("Ajoutez une photo avant d'ajouter ce badge à la file d'impression."); return; }
+  FILE_IMPRESSION.push({ uid:UID_DESIGNER, nom:d.nom||"", prenom:d.prenom||"", type:d.type||"", photo });
+  redessinerFile();
+});
+
+function redessinerFile(){
+  const zone = document.getElementById("liste-file");
+  zone.innerHTML = "";
+  FILE_IMPRESSION.forEach((item, i)=>{
+    const div = document.createElement("div");
+    div.className = "item-file" + (ITEM_FILE_ACTIF===i ? " actif" : "");
+    div.innerHTML = `<span class="pastille" style="background:${couleurRole(item.type)}"></span> ${item.prenom} ${item.nom} <small>${item.type}</small>`;
+    div.addEventListener("click", ()=>{ ITEM_FILE_ACTIF = i; redessinerFile(); });
+    zone.appendChild(div);
+  });
+}
+
+/* ================= FEUILLE A4 ================= */
+const BADGE_W = 54, BADGE_H = 85.6, MARGE = 10, GAP = 4, PAGE_W = 210, PAGE_H = 297;
+
+function calculerSlots(){
+  const cols = Math.floor((PAGE_W - 2*MARGE + GAP) / (BADGE_W + GAP));
+  const rows = Math.floor((PAGE_H - 2*MARGE + GAP) / (BADGE_H + GAP));
+  const usedW = cols*BADGE_W + (cols-1)*GAP;
+  const usedH = rows*BADGE_H + (rows-1)*GAP;
+  const offX = (PAGE_W - usedW)/2;
+  const offY = (PAGE_H - usedH)/2;
+  const slots = [];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      slots.push({
+        left: offX + c*(BADGE_W+GAP),
+        top: offY + r*(BADGE_H+GAP)
+      });
+    }
+  }
+  return slots;
+}
+
+function construireFeuilleA4(){
+  SLOTS = calculerSlots();
+  const feuille = document.getElementById("a4-feuille");
+  feuille.innerHTML = "";
+  SLOTS.forEach((s, i)=>{
+    const el = document.createElement("div");
+    el.className = "a4-slot" + (ASSIGNATIONS[i] ? " occupe" : "");
+    el.style.left = s.left+"mm"; el.style.top = s.top+"mm";
+    el.style.width = BADGE_W+"mm"; el.style.height = BADGE_H+"mm";
+    el.innerHTML = `<span class="num">${i+1}</span>` + (ASSIGNATIONS[i] ? `<img class="mini" src="${ASSIGNATIONS[i].photo}">` : "");
+    el.addEventListener("click", ()=>{
+      if(ITEM_FILE_ACTIF===null){
+        if(ASSIGNATIONS[i]){ delete ASSIGNATIONS[i]; construireFeuilleA4(); }
+        return;
+      }
+      ASSIGNATIONS[i] = FILE_IMPRESSION[ITEM_FILE_ACTIF];
+      construireFeuilleA4();
+    });
+    feuille.appendChild(el);
+  });
+}
+
+/* ================= IMPRESSION ================= */
+document.getElementById("btn-imprimer").addEventListener("click", ()=>{
+  const zone = document.getElementById("zone-impression");
+  zone.innerHTML = "";
+  Object.entries(ASSIGNATIONS).forEach(([idx, item])=>{
+    const s = SLOTS[idx];
+    const div = document.createElement("div");
+    div.style.position = "absolute";
+    div.style.left = s.left+"mm"; div.style.top = s.top+"mm";
+    div.innerHTML = `
+      <div class="badge-carte">
+        <div class="logo-zone"><img src="${LOGO_PATH}"></div>
+        <div class="photo-zone"><img src="${item.photo}"></div>
+        <div class="nom-zone"><div class="nom">${item.nom}</div><div class="prenom">${item.prenom}</div></div>
+        <div class="bande" style="background:${couleurRole(item.type)}">${item.type}</div>
+      </div>`;
+    zone.appendChild(div);
+  });
+  if(Object.keys(ASSIGNATIONS).length===0){ alert("Aucun badge positionné sur la feuille."); return; }
+  window.print();
+});
+</script>
+</body>
+</html>

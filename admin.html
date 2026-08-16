@@ -600,7 +600,49 @@ input[type="checkbox"] {
   overflow: hidden;
   margin: 0 auto;
 }
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #0078d4;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  vertical-align: middle;
+  line-height: 1;
+}
 
+.info-btn:hover {
+  background: #005fa3;
+  transform: scale(1.1);
+}
+
+.info-popup {
+  position: fixed;
+  z-index: 99999;
+  max-width: 280px;
+  padding: 12px 14px;
+  background: white;
+  color: #1f2937;
+  border: 1px solid #dbe3ec;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.18);
+  font-size: 13px;
+  line-height: 1.45;
+  display: none;
+  text-align: left;
+}
+
+.info-popup.active {
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -826,7 +868,7 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100
 </div>
 
 </div><!-- /#content -->
-
+<div id="columnInfoPopup" class="info-popup"></div>
   <script type="module">
   emailjs.init("CZapZCcxYfJ8-acLS"); // clé publique par défaut, remplacée si multi-comptes
   import { envoyerMessageSysteme } from "./messagerie-envoi.js";
@@ -1147,7 +1189,53 @@ window.fermerLectureBadge = () => {
   document.getElementById("lireBadgeModal").style.display = "none";
   document.getElementById("badgeInputCache").value = "";
 };
+<script>
+function showColumnInfo(button, text) {
+  const popup = document.getElementById("columnInfoPopup");
 
+  // Si on clique sur le même bouton alors que la popup est ouverte
+  if (
+    popup.classList.contains("active") &&
+    popup.dataset.button === button
+  ) {
+    popup.classList.remove("active");
+    return;
+  }
+
+  popup.textContent = text;
+  popup.dataset.button = button;
+  popup.classList.add("active");
+
+  const rect = button.getBoundingClientRect();
+
+  let left = rect.left;
+  let top = rect.bottom + 8;
+
+  // Évite que la popup sorte à droite de l'écran
+  if (left + 280 > window.innerWidth - 10) {
+    left = window.innerWidth - 290;
+  }
+
+  // Évite qu'elle sorte en bas
+  if (top + 120 > window.innerHeight - 10) {
+    top = rect.top - 130;
+  }
+
+  popup.style.left = left + "px";
+  popup.style.top = top + "px";
+}
+
+// Fermer en cliquant ailleurs
+document.addEventListener("click", function(e) {
+  if (
+    !e.target.closest(".info-btn") &&
+    !e.target.closest(".info-popup")
+  ) {
+    document.getElementById("columnInfoPopup")
+      .classList.remove("active");
+  }
+});
+</script>
 document.getElementById("badgeInputCache").addEventListener("keydown", async (e) => {
   if (e.key === "Enter") {
     e.preventDefault();

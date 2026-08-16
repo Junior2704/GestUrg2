@@ -120,8 +120,14 @@
     border:2px dashed rgba(0,120,255,.35);border-radius:14px;padding:22px;text-align:center;background:rgba(0,120,255,.04);
   }
   .zone-scan .icone{font-size:30px;margin-bottom:8px;}
-  .zone-scan input{width:100%;text-align:center;font-size:16px;letter-spacing:.06em;}
   .zone-scan .statut{margin-top:10px;font-size:13px;color:var(--texte-2);}
+
+  /* Champ de saisie du lecteur badge : capte le flux clavier du lecteur NFC
+     mais reste invisible pour l'utilisateur (pas de display:none pour garder le focus possible) */
+  .input-scan-cache{
+    position:absolute; width:1px; height:1px; padding:0; margin:0; border:0;
+    opacity:0; overflow:hidden; pointer-events:none;
+  }
 
   .resultat-scan{margin-top:16px;border-radius:14px;padding:16px;display:none;align-items:center;gap:14px;}
   .resultat-scan.actif{display:flex;}
@@ -131,12 +137,12 @@
   .resultat-scan .txt strong{display:block;font-size:15px;}
   .resultat-scan .txt span{font-size:12.5px;color:var(--texte-2);}
 
-  iframe.anim-badge{width:220px;height:220px;border:0;display:block;margin:0 auto;}
+  iframe.anim-badge{width:100%;max-width:340px;height:320px;border:0;display:block;margin:0 auto;}
 
   /* ---- onglet badge trouvé ---- */
-  .zone-scan-geante{max-width:520px;margin:0 auto;padding:40px 24px;}
-  .zone-scan-geante .icone{font-size:44px;}
-  .zone-scan-geante input{font-size:20px;padding:14px;}
+  .zone-scan-geante{max-width:520px;margin:0 auto;padding:32px 24px;}
+  .zone-scan-geante .icone{font-size:30px;}
+
 
   /* ---- onglet impression : carte badge ---- */
   .designer{display:grid;grid-template-columns:280px 1fr;gap:22px;}
@@ -252,10 +258,10 @@
   <!-- ================= ONGLET 2 : BADGE TROUVÉ ================= -->
   <section class="panel" id="tab-trouve">
     <div class="carte zone-scan-geante">
-      <div class="icone">📡</div>
       <h2 style="text-align:center;margin:0 0 4px;">Scanner un badge</h2>
       <p class="sub" style="text-align:center;">Présentez le badge sur le lecteur, le résultat s'affiche automatiquement.</p>
-      <input type="text" id="scan-trouve" placeholder="En attente d'un badge…" autocomplete="off">
+      <div id="trouve-anim-conteneur"></div>
+      <input type="text" id="scan-trouve" class="input-scan-cache" autocomplete="off">
       <div class="resultat-scan" id="resultat-trouve">
         <div id="resultat-trouve-avatar"></div>
         <div class="txt" id="resultat-trouve-txt"></div>
@@ -336,12 +342,11 @@
     <h2 id="scan-titre">Contrôle du badge</h2>
     <p class="sub" id="scan-sous-titre">Présentez le badge sur le lecteur.</p>
     <div class="zone-scan">
-      <div class="icone">📡</div>
-      <input type="text" id="scan-input" placeholder="En attente…" autocomplete="off">
+      <div id="scan-anim-conteneur">
+        <iframe class="anim-badge" id="scan-iframe" src="about:blank"></iframe>
+      </div>
+      <input type="text" id="scan-input" class="input-scan-cache" autocomplete="off">
       <div class="statut" id="scan-statut"></div>
-    </div>
-    <div id="scan-anim-conteneur" style="display:none;margin-top:16px;">
-      <iframe class="anim-badge" id="scan-iframe" src="about:blank"></iframe>
     </div>
     <div class="resultat-scan" id="scan-resultat">
       <div id="scan-resultat-txt" class="txt"></div>
@@ -564,14 +569,16 @@ document.getElementById("btn-detail-supprimer").addEventListener("click", async 
   afficherListe(document.getElementById("recherche-liste").value);
 });
 
-/* ================= ANIMATION IFRAME (validité) ================= */
-function jouerAnimationBadge(iframeEl, estValide){
+/* ================= ANIMATION IFRAME (lecture du badge) ================= */
+// Recharge l'iframe pour (re)lancer son animation d'attente/lecture par défaut.
+function demarrerAnimationBadge(iframeEl){
+  iframeEl.src = ANIMATION_PATH + "?t=" + Date.now();
+}
+// Envoie le résultat (valide/invalide) à l'animation déjà en cours de lecture, puis attend qu'elle joue (2s).
+function envoyerResultatAnimation(iframeEl, estValide){
   return new Promise(resolve=>{
-    iframeEl.onload = ()=>{
-      iframeEl.contentWindow.postMessage(estValide ? "valide" : "invalide", "*");
-      setTimeout(resolve, 2000);
-    };
-    iframeEl.src = ANIMATION_PATH + "?t=" + Date.now();
+    try{ iframeEl.contentWindow.postMessage(estValide ? "valide" : "invalide", "*"); }catch(err){}
+    setTimeout(resolve, 2000);
   });
 }
 
@@ -586,8 +593,8 @@ function lancerScan(contexte, uid){
     : `Scannez le nouveau badge à attribuer à ${nomAffiche(data)}.`;
   document.getElementById("scan-input").value = "";
   document.getElementById("scan-statut").textContent = "";
-  document.getElementById("scan-anim-conteneur").style.display = "none";
   document.getElementById("scan-resultat").classList.remove("actif","ok","non");
+  demarrerAnimationBadge(document.getElementById("scan-iframe"));
   ouvrirModale("modal-scan");
   setTimeout(()=>document.getElementById("scan-input").focus(), 100);
 }
@@ -601,11 +608,11 @@ document.getElementById("scan-input").addEventListener("keydown", async e=>{
   document.getElementById("scan-statut").textContent = "Lecture du badge…";
 
   const data = TOUS_UTILISATEURS[UID_COURANT_DETAIL];
+  const iframe = document.getElementById("scan-iframe");
 
   if(CONTEXTE_SCAN === "controle"){
     const estValide = code === data.idBadge;
-    document.getElementById("scan-anim-conteneur").style.display = "block";
-    await jouerAnimationBadge(document.getElementById("scan-iframe"), estValide);
+    await envoyerResultatAnimation(iframe, estValide);
     const res = document.getElementById("scan-resultat");
     res.classList.add("actif", estValide ? "ok" : "non");
     document.getElementById("scan-resultat-txt").innerHTML = estValide
@@ -613,16 +620,20 @@ document.getElementById("scan-input").addEventListener("keydown", async e=>{
       : `❌ <strong>Badge invalide</strong><br><span style="color:var(--texte-2);font-size:12.5px;">Ce badge ne correspond pas à ${nomAffiche(data)}</span>`;
     document.getElementById("scan-statut").textContent = "";
     e.target.disabled = false;
+    demarrerAnimationBadge(iframe); // prêt pour un nouveau scan éventuel
+    e.target.focus();
   }
 
   if(CONTEXTE_SCAN === "remplacement"){
     // vérifie que ce badge n'est pas déjà attribué à quelqu'un d'autre
     const dejaPris = Object.entries(TOUS_UTILISATEURS).find(([u,d]) => d.idBadge === code && u !== UID_COURANT_DETAIL);
     if(dejaPris){
-      document.getElementById("scan-statut").textContent = `⚠️ Ce badge est déjà attribué à ${dejaPris[1].prenom||""} ${dejaPris[1].nom||""}.`;
+      document.getElementById("scan-statut").textContent = `⚠️ Ce badge est déjà attribué à ${nomAffiche(dejaPris[1])}.`;
       e.target.disabled = false;
+      e.target.focus();
       return;
     }
+    await envoyerResultatAnimation(iframe, true);
     await updateDoc(doc(db, COLLECTION, UID_COURANT_DETAIL), { idBadge: code });
     data.idBadge = code;
     const res = document.getElementById("scan-resultat");
@@ -636,6 +647,17 @@ document.getElementById("scan-input").addEventListener("keydown", async e=>{
 
 /* ================= ONGLET BADGE TROUVÉ ================= */
 const scanTrouve = document.getElementById("scan-trouve");
+let iframeTrouve = null;
+
+function assurerAnimationTrouve(){
+  if(!iframeTrouve){
+    iframeTrouve = document.createElement("iframe");
+    iframeTrouve.className = "anim-badge";
+    document.getElementById("trouve-anim-conteneur").appendChild(iframeTrouve);
+  }
+  demarrerAnimationBadge(iframeTrouve);
+}
+
 scanTrouve.addEventListener("keydown", async e=>{
   if(e.key !== "Enter") return;
   const code = e.target.value.trim();
@@ -643,7 +665,10 @@ scanTrouve.addEventListener("keydown", async e=>{
   e.target.value = "";
   await rechercherBadge(code);
 });
-document.querySelector('[data-tab="tab-trouve"]').addEventListener("click", ()=>setTimeout(()=>scanTrouve.focus(),80));
+document.querySelector('[data-tab="tab-trouve"]').addEventListener("click", ()=>{
+  setTimeout(()=>scanTrouve.focus(),80);
+  assurerAnimationTrouve();
+});
 
 async function rechercherBadge(code){
   const q = query(collection(db, COLLECTION), where("idBadge","==", code));
@@ -653,7 +678,10 @@ async function rechercherBadge(code){
   const txtZone = document.getElementById("resultat-trouve-txt");
   res.classList.remove("ok","non");
 
-  if(snap.empty){
+  const trouve = !snap.empty;
+  await envoyerResultatAnimation(iframeTrouve, trouve);
+
+  if(!trouve){
     res.classList.add("actif","non");
     avatarZone.innerHTML = `<span class="avatar-vide" style="width:52px;height:52px;font-size:18px;">?</span>`;
     txtZone.innerHTML = `<strong>Badge inconnu ❌</strong><span>Ce badge n'est associé à aucun utilisateur.</span>`;
@@ -665,6 +693,7 @@ async function rechercherBadge(code){
     txtZone.innerHTML = `<strong>${nomAffiche(d)} ✅</strong>
       <span>${fct ? `<span class="badge-role-tag" style="background:${couleurRole(fct)}">${fct}</span>` : ""} · ${d.specialite||""} · ${d.lieu||""}</span>`;
   }
+  assurerAnimationTrouve(); // relance l'animation d'attente pour le prochain scan
   scanTrouve.focus();
 }
 

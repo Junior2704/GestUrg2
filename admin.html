@@ -806,7 +806,19 @@ input[type="checkbox"] {
         <th>Médicaments</th>
         <th>Actes</th>
         <th>Ajouter patient</th>
-        <th>Messagerie Admin</th>
+        <th>Messagerie Admin
+      
+<th>
+  Gestion badge
+  <button
+    type="button"
+    class="info-btn"
+    data-info="Permet de gérer le badge de l'utilisateur."
+    onclick="showColumnInfo(this)">
+    i
+  </button>
+</th>
+        </th>
         <th>Admin système</th>
         <th>Admin RH</th>
         <th>Admin médical</th>
@@ -1189,21 +1201,11 @@ window.fermerLectureBadge = () => {
   document.getElementById("lireBadgeModal").style.display = "none";
   document.getElementById("badgeInputCache").value = "";
 };
-<script>
-function showColumnInfo(button, text) {
+function showColumnInfo(button) {
+  const text = button.dataset.info;
   const popup = document.getElementById("columnInfoPopup");
 
-  // Si on clique sur le même bouton alors que la popup est ouverte
-  if (
-    popup.classList.contains("active") &&
-    popup.dataset.button === button
-  ) {
-    popup.classList.remove("active");
-    return;
-  }
-
   popup.textContent = text;
-  popup.dataset.button = button;
   popup.classList.add("active");
 
   const rect = button.getBoundingClientRect();
@@ -1211,12 +1213,10 @@ function showColumnInfo(button, text) {
   let left = rect.left;
   let top = rect.bottom + 8;
 
-  // Évite que la popup sorte à droite de l'écran
   if (left + 280 > window.innerWidth - 10) {
     left = window.innerWidth - 290;
   }
 
-  // Évite qu'elle sorte en bas
   if (top + 120 > window.innerHeight - 10) {
     top = rect.top - 130;
   }
@@ -1235,7 +1235,7 @@ document.addEventListener("click", function(e) {
       .classList.remove("active");
   }
 });
-</script>
+
 document.getElementById("badgeInputCache").addEventListener("keydown", async (e) => {
   if (e.key === "Enter") {
     e.preventDefault();

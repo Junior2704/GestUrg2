@@ -788,20 +788,7 @@ const printButton =
     );
 
 
-/*
- * Version web :
- *
- * Le bouton d'impression Electron
- * est totalement supprimé.
- */
 
-if (!estElectron) {
-
-    printButton.classList.add(
-        "hidden"
-    );
-
-}
 
 
 /* =====================================================
@@ -1926,70 +1913,150 @@ document
     );
 
 
-/* =====================================================
-   IMPRESSION ELECTRON
-===================================================== */
 printButton.addEventListener("click", async () => {
 
-    if (!estElectron) {
+    // ==============================
+    // 🖥️ VERSION ELECTRON
+    // ==============================
+
+    if (estElectron) {
+
+        if (!pdfBlob) {
+            alert("Le document n'est pas encore chargé.");
+            return;
+        }
+
+        try {
+
+            printButton.disabled = true;
+            printButton.innerHTML = "⏳ Préparation...";
+
+            const arrayBuffer =
+                await pdfBlob.arrayBuffer();
+
+            await window.electronPrint.ouvrir({
+
+                data: new Uint8Array(arrayBuffer),
+
+                nom: nomDocument
+
+            });
+
+            printButton.disabled = false;
+
+            printButton.innerHTML =
+                "🖨️ <span class='printText'>Imprimer</span>";
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Erreur impression Electron :",
+                error
+            );
+
+            printButton.disabled = false;
+
+            printButton.innerHTML =
+                "🖨️ <span class='printText'>Imprimer</span>";
+
+            alert(
+                "Impossible d'ouvrir la fenêtre d'impression."
+            );
+
+        }
+
         return;
     }
+
+
+    // ==============================
+    // 🌐 VERSION WEB
+    // ==============================
 
     if (!pdfBlob) {
-        alert("Le document n'est pas encore chargé.");
-        return;
-    }
-
-    try {
-
-        printButton.disabled = true;
-        printButton.innerHTML = "⏳ Préparation...";
-
-
-        const arrayBuffer =
-            await pdfBlob.arrayBuffer();
-
-
-        /*
-         * On envoie le PDF à Electron.
-         */
-
-        await window.electronPrint.ouvrir({
-
-            data: new Uint8Array(arrayBuffer),
-
-            nom: nomDocument
-
-        });
-
-
-        printButton.disabled = false;
-        printButton.innerHTML = "🖨️ <span class='printText'>Imprimer</span>";
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Erreur impression Electron :",
-            error
-        );
-
-        printButton.disabled = false;
-
-        printButton.innerHTML =
-            "🖨️ <span class='printText'>Imprimer</span>";
 
         alert(
-            "Impossible d'ouvrir la fenêtre d'impression."
+            "Le document n'est pas encore chargé."
         );
+
+        return;
 
     }
 
+
+    /*
+     * Création d'une URL temporaire
+     * pour le PDF.
+     */
+
+    const url =
+        URL.createObjectURL(pdfBlob);
+
+
+    /*
+     * Ouverture du PDF dans un nouvel onglet.
+     */
+
+    const fenetre =
+        window.open(
+            url,
+            "_blank"
+        );
+
+
+    if (!fenetre) {
+
+        URL.revokeObjectURL(url);
+
+        alert(
+            "Le navigateur a bloqué l'ouverture du document."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * On attend que le PDF soit chargé,
+     * puis on lance l'impression.
+     */
+
+    setTimeout(() => {
+
+        try {
+
+            fenetre.focus();
+
+            fenetre.print();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Erreur impression navigateur :",
+                error
+            );
+
+        }
+
+    }, 1000);
+
+
+    /*
+     * Nettoyage un peu plus tard.
+     */
+
+    setTimeout(() => {
+
+        URL.revokeObjectURL(url);
+
+    }, 60000);
+
 });
-/* =====================================================
-   NETTOYAGE
-===================================================== */
 
 window.addEventListener(
     "beforeunload",

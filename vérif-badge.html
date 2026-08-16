@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vérification de badge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f6f9; --carte:#ffffff; --bordure:rgba(0,0,0,0.09);
+    --texte:#1b1f27; --texte-2:#6b7280; --radius:16px;
+    --role-medecin:#0078ff; --role-infirmier:#16a34a; --role-externe:#06b6d4;
+    --role-interne:#7c3aed; --role-ambulancier:#dc2626; --role-aide-soignant:#f59e0b; --role-defaut:#6b7280;
+    --ok:#0a8a45; --ok-bg:#eafff2; --ok-bd:#c8f3d9;
+    --non:#c81e1e; --non-bg:#fff0f0; --non-bd:#ffd4d4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--texte);
+    -webkit-font-smoothing:antialiased; padding:20px;
+  }
+  .carte{
+    background:var(--carte); border:1px solid var(--bordure); border-radius:var(--radius);
+    width:100%; max-width:380px; padding:26px 24px; box-shadow:0 20px 50px rgba(0,0,0,.12); text-align:center;
+  }
+  .avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:#e5e9f0;margin:0 auto 14px;display:block;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.12);}
+  .avatar-vide{width:88px;height:88px;border-radius:50%;background:#e5e9f0;display:flex;align-items:center;justify-content:center;color:var(--texte-2);font-size:26px;font-weight:700;margin:0 auto 14px;}
+  h1{font-size:19px;font-weight:800;margin:0 0 4px;letter-spacing:-.2px;}
+  .prenom{font-size:14px;color:var(--texte-2);margin:0 0 12px;}
+  .role-tag{display:inline-block;padding:4px 12px;border-radius:20px;color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:18px;}
+
+  .statut{border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:14px;}
+  .statut.ok{background:var(--ok-bg);border:1px solid var(--ok-bd);}
+  .statut.non{background:var(--non-bg);border:1px solid var(--non-bd);}
+  .statut .icone{font-size:22px;flex-shrink:0;}
+  .statut .txt strong{display:block;font-size:14px;}
+  .statut.ok .txt strong{color:var(--ok);}
+  .statut.non .txt strong{color:var(--non);}
+  .statut .txt span{font-size:12.5px;color:var(--texte-2);}
+
+  .details{font-size:12.5px;color:var(--texte-2);border-top:1px solid var(--bordure);padding-top:14px;margin-top:4px;text-align:left;line-height:1.7;}
+  .details b{color:var(--texte);}
+
+  #chargement, #introuvable, #erreur{display:none;}
+  #chargement.actif, #introuvable.actif, #erreur.actif, #resultat.actif{display:block;}
+  #resultat{display:none;}
+  .spinner{width:28px;height:28px;border:3px solid var(--bordure);border-top-color:#0078ff;border-radius:50%;margin:0 auto 14px;animation:tour 0.8s linear infinite;}
+  @keyframes tour{to{transform:rotate(360deg);}}
+  .icone-grande{font-size:38px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="carte">
+
+  <div id="chargement" class="actif">
+    <div class="spinner"></div>
+    <p style="color:var(--texte-2);font-size:13.5px;margin:0;">Vérification du badge…</p>
+  </div>
+
+  <div id="introuvable">
+    <div class="icone-grande">❌</div>
+    <h1>Badge inconnu</h1>
+    <p style="color:var(--texte-2);font-size:13.5px;">Ce QR code ne correspond à aucun badge enregistré.</p>
+  </div>
+
+  <div id="erreur">
+    <div class="icone-grande">⚠️</div>
+    <h1>Vérification impossible</h1>
+    <p style="color:var(--texte-2);font-size:13.5px;" id="erreur-msg">Merci de réessayer dans un instant.</p>
+  </div>
+
+  <div id="resultat">
+    <div id="zone-avatar"></div>
+    <h1 id="zone-nom">—</h1>
+    <p class="prenom" id="zone-prenom">—</p>
+    <span class="role-tag" id="zone-role">—</span>
+
+    <div class="statut" id="zone-statut">
+      <span class="icone" id="zone-statut-icone">—</span>
+      <div class="txt">
+        <strong id="zone-statut-titre">—</strong>
+        <span id="zone-statut-sous">—</span>
+      </div>
+    </div>
+
+    <div class="details">
+      <div><b>Service :</b> <span id="zone-service">—</span></div>
+      <div><b>Lieu de pratique :</b> <span id="zone-lieu">—</span></div>
+      <div><b>Émis le :</b> <span id="zone-emission">—</span></div>
+      <div><b>Valable jusqu'au :</b> <span id="zone-validite">—</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const COLLECTION = "medecins";
+
+// Durée de validité du badge, en années à partir de la date d'émission
+// (doit rester identique à la valeur utilisée dans gestionbadge.html).
+const DUREE_VALIDITE_ANNEES = 3;
+
+const ROLE_COULEURS = {
+  "Médecin": "var(--role-medecin)",
+  "Infirmier": "var(--role-infirmier)",
+  "Externe": "var(--role-externe)",
+  "Interne": "var(--role-interne)",
+  "Ambulancier": "var(--role-ambulancier)",
+  "Aide-Soignant": "var(--role-aide-soignant)"
+};
+function couleurRole(role){ return ROLE_COULEURS[role] || "var(--role-defaut)"; }
+
+function nomFamille(data){
+  const nomBrut = (data.nom||"").trim();
+  const prenom = (data.prenom||"").trim();
+  if(prenom && nomBrut.toLowerCase().startsWith(prenom.toLowerCase())){
+    return nomBrut.slice(prenom.length).trim();
+  }
+  return nomBrut;
+}
+function suggestionFonction(type){
+  const t = (type||"").toLowerCase();
+  if(t.includes("doc") || t.includes("medecin") || t.includes("méd")) return "Médecin";
+  if(t.includes("infirm")) return "Infirmier";
+  if(t.includes("Ext")) return "Externe";
+  if(t.includes("Int")) return "Interne";
+  if(t.includes("ambulancier")) return "Ambulancier";
+  if(t.includes("AS")) return "Aide-Soignant";
+  return "";
+}
+function fonctionAffichee(data){
+  return data.fonction || suggestionFonction(data.type) || "";
+}
+function initiales(data){
+  return ((data.prenom||"")[0]||"") + ((nomFamille(data))[0]||"");
+}
+function formatDateFR(iso){
+  if(!iso) return "—";
+  try{ return new Date(iso).toLocaleDateString("fr-FR", {day:"2-digit",month:"2-digit",year:"numeric"}); }
+  catch(e){ return "—"; }
+}
+function dateValiditeDepuis(iso){
+  if(!iso) return null;
+  const v = new Date(iso);
+  v.setFullYear(v.getFullYear() + DUREE_VALIDITE_ANNEES);
+  return v;
+}
+
+function afficherEcran(id){
+  ["chargement","introuvable","erreur","resultat"].forEach(i=>{
+    document.getElementById(i).classList.toggle("actif", i===id);
+  });
+}
+
+async function verifier(){
+  const params = new URLSearchParams(window.location.search);
+  const uid = params.get("uid");
+  if(!uid){ afficherEcran("introuvable"); return; }
+
+  try{
+    const snap = await getDoc(doc(db, COLLECTION, uid));
+    if(!snap.exists()){ afficherEcran("introuvable"); return; }
+    const data = snap.data();
+
+    document.getElementById("zone-avatar").innerHTML = data.photo
+      ? `<img class="avatar" src="${data.photo}">`
+      : `<span class="avatar-vide">${initiales(data)}</span>`;
+    document.getElementById("zone-nom").textContent = nomFamille(data) || "—";
+    document.getElementById("zone-prenom").textContent = data.prenom || "";
+    const fonction = fonctionAffichee(data);
+    const roleTag = document.getElementById("zone-role");
+    roleTag.textContent = fonction || "Fonction non définie";
+    roleTag.style.background = couleurRole(fonction);
+
+    document.getElementById("zone-service").textContent = data.service || "—";
+    document.getElementById("zone-lieu").textContent = data.lieu || "—";
+    document.getElementById("zone-emission").textContent = formatDateFR(data.dateEmission);
+    const dateValidite = dateValiditeDepuis(data.dateEmission);
+    document.getElementById("zone-validite").textContent = dateValidite ? formatDateFR(dateValidite.toISOString()) : "—";
+
+    // Un badge est considéré valide s'il a un badge physique attribué (idBadge)
+    // ET si la date de validité (émission + durée) n'est pas dépassée.
+    const aUnBadge = !!data.idBadge;
+    const nonExpire = dateValidite ? (new Date() <= dateValidite) : false;
+    const valide = aUnBadge && nonExpire;
+
+    const zoneStatut = document.getElementById("zone-statut");
+    zoneStatut.className = "statut " + (valide ? "ok" : "non");
+    document.getElementById("zone-statut-icone").textContent = valide ? "✅" : "❌";
+    document.getElementById("zone-statut-titre").textContent = valide ? "Badge valide" : "Badge non valide";
+    document.getElementById("zone-statut-sous").textContent = !aUnBadge
+      ? "Aucun badge physique attribué à cette personne."
+      : (!nonExpire ? "La date de validité de ce badge est dépassée." : "En cours de validité.");
+
+    afficherEcran("resultat");
+  }catch(err){
+    console.error("Erreur de vérification badge :", err);
+    document.getElementById("erreur-msg").textContent = "Merci de réessayer dans un instant.";
+    afficherEcran("erreur");
+  }
+}
+
+verifier();
+</script>
+</body>
+</html>

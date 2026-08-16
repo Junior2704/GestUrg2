@@ -1,205 +1,1626 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="ordToPdf.js"></script>
-<meta charset="UTF-8">
-<title>Document PDF</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase (AUTONOME) -->
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+>
+
+<title>Document PDF — GestUrg2</title>
+
+
+<!-- =====================================================
+     LIBRAIRIES
+===================================================== -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script src="ordToPdf.js"></script>
+
+
+<!-- =====================================================
+     FIREBASE
+===================================================== -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+
 <style>
-html, body {
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+
     margin: 0;
+
     padding: 0;
+
+    width: 100%;
+
     height: 100%;
+
     overflow: hidden;
-    font-family: Arial, sans-serif;
+
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #eef2f6;
+
 }
 
-header {
+
+/* =========================================================
+   BARRE
+========================================================= */
+
+#toolbar {
+
+    height: 58px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #dce3ea;
+
     display: flex;
+
     align-items: center;
-    gap: 12px;
-    padding: 8px 16px;
-    background: #1e293b;
-    color: white;
+
+    gap: 10px;
+
+    padding: 0 14px;
+
+    user-select: none;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.06);
+
+    position: relative;
+
+    z-index: 10;
+
 }
 
-header img {
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+#logo {
+
+    width: 36px;
+
     height: 36px;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+
 }
 
-header span {
-    font-size: 16px;
-    font-weight: bold;
+
+/* =========================================================
+   TITRE
+========================================================= */
+
+#documentInfo {
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    min-width: 0;
+
+    flex: 1;
+
 }
+
+#documentTitle {
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    color: #1565c0;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+#documentStatus {
+
+    font-size: 11px;
+
+    color: #78909c;
+
+    margin-top: 2px;
+
+}
+
+
+/* =========================================================
+   BOUTONS
+========================================================= */
+
+.toolbarButton {
+
+    height: 36px;
+
+    min-width: 36px;
+
+    padding: 0 11px;
+
+    border-radius: 7px;
+
+    border: 1px solid #d4dce4;
+
+    background: #ffffff;
+
+    color: #455a64;
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    transition:
+        background .15s,
+        border-color .15s,
+        color .15s;
+
+}
+
+.toolbarButton:hover {
+
+    background: #f2f7fb;
+
+    border-color: #b9c7d3;
+
+}
+
+.toolbarButton:active {
+
+    transform: scale(.97);
+
+}
+
+
+/* =========================================================
+   BOUTON IMPRIMER
+========================================================= */
+
+#printButton {
+
+    background: #1976d2;
+
+    border-color: #1976d2;
+
+    color: white;
+
+    font-weight: 600;
+
+    padding-left: 15px;
+
+    padding-right: 15px;
+
+}
+
+#printButton:hover {
+
+    background: #1565c0;
+
+    border-color: #1565c0;
+
+}
+
+#printButton:disabled {
+
+    opacity: .55;
+
+    cursor: default;
+
+}
+
+
+/* =========================================================
+   SÉPARATEUR
+========================================================= */
+
+.separator {
+
+    width: 1px;
+
+    height: 28px;
+
+    background: #dce3ea;
+
+    margin: 0 3px;
+
+}
+
+
+/* =========================================================
+   ZONE PDF
+========================================================= */
 
 #pdfWrapper {
-    height: 100% ;
+
+    position: absolute;
+
+    top: 58px;
+
+    left: 0;
+
+    right: 0;
+
+    bottom: 0;
+
+    background:
+        radial-gradient(
+            circle at center,
+            #f8fafc 0%,
+            #e9eef3 100%
+        );
+
 }
 
-iframe {
+
+/* =========================================================
+   PDF
+========================================================= */
+
+#pdfFrame {
+
     width: 100%;
+
     height: 100%;
+
     border: none;
+
+    display: block;
+
+    background: white;
+
 }
-/* Chrome, Edge, Opera */
+
+
+/* =========================================================
+   LOADER
+========================================================= */
+
+#loader {
+
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #eef2f6;
+
+    z-index: 20;
+
+    transition: opacity .2s;
+
+}
+
+#loader.hidden {
+
+    opacity: 0;
+
+    pointer-events: none;
+
+}
+
+.loaderRing {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 50%;
+
+    border: 4px solid #d6e6f5;
+
+    border-top-color: #1976d2;
+
+    animation:
+        spin .8s linear infinite;
+
+}
+
+@keyframes spin {
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+#loaderText {
+
+    margin-top: 13px;
+
+    color: #607d8b;
+
+    font-size: 13px;
+
+}
+
+
+/* =========================================================
+   MESSAGE ERREUR
+========================================================= */
+
+#errorScreen {
+
+    position: absolute;
+
+    inset: 58px 0 0 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    color: #455a64;
+
+    background: #eef2f6;
+
+    text-align: center;
+
+}
+
+#errorScreen.visible {
+
+    display: flex;
+
+}
+
+#errorIcon {
+
+    font-size: 38px;
+
+}
+
+#errorTitle {
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+    color: #263238;
+
+}
+
+#errorMessage {
+
+    font-size: 13px;
+
+    color: #78909c;
+
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
 ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+
+    width: 11px;
+
+    height: 11px;
+
 }
 
 ::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
+
+    background: #eef3f8;
+
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
+
+    background:
+        linear-gradient(
+            180deg,
+            #42a5f5,
+            #1565c0
+        );
+
     border-radius: 10px;
-    border: 2px solid #eef3ff;
+
+    border: 2px solid #eef3f8;
+
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
+
+    background:
+        linear-gradient(
+            180deg,
+            #64b5f6,
+            #1976d2
+        );
+
 }
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+
+/* =========================================================
+   PETITE FENÊTRE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    #documentStatus {
+
+        display: none;
+
+    }
+
+    #documentTitle {
+
+        max-width: 180px;
+
+    }
+
+    .printText {
+
+        display: none;
+
+    }
+
+}
+
+</style>
+
 </head>
+
+
 <body>
 
 
+<!-- =====================================================
+     BARRE
+===================================================== -->
+
+<header id="toolbar">
+
+
+    <img
+        id="logo"
+        src="logog2.png"
+        alt="GestUrg2"
+    >
+
+
+    <div id="documentInfo">
+
+        <div id="documentTitle">
+            Document PDF
+        </div>
+
+        <div id="documentStatus">
+            Chargement...
+        </div>
+
+    </div>
+
+
+    <div class="separator"></div>
+
+
+    <button
+        class="toolbarButton"
+        id="zoomOutButton"
+        title="Zoom arrière"
+    >
+        −
+    </button>
+
+
+    <button
+        class="toolbarButton"
+        id="zoomResetButton"
+        title="Réinitialiser le zoom"
+    >
+        100 %
+    </button>
+
+
+    <button
+        class="toolbarButton"
+        id="zoomInButton"
+        title="Zoom avant"
+    >
+        +
+    </button>
+
+
+    <div class="separator"></div>
+
+
+    <button
+        class="toolbarButton"
+        id="fullscreenButton"
+        title="Plein écran"
+    >
+        ⛶
+    </button>
+
+
+    <button
+        class="toolbarButton"
+        id="downloadButton"
+        title="Télécharger le PDF"
+    >
+        ↓
+    </button>
+
+
+    <button
+        class="toolbarButton"
+        id="printButton"
+        title="Imprimer"
+    >
+        🖨️
+        <span class="printText">
+            Imprimer
+        </span>
+    </button>
+
+
+</header>
+
+
+<!-- =====================================================
+     PDF
+===================================================== -->
 
 <div id="pdfWrapper">
-    <iframe id="pdfFrame"></iframe>
+
+    <iframe
+        id="pdfFrame"
+        title="Aperçu du document PDF"
+    ></iframe>
+
 </div>
 
+
+<!-- =====================================================
+     LOADER
+===================================================== -->
+
+<div id="loader">
+
+    <div class="loaderRing"></div>
+
+    <div id="loaderText">
+        Chargement du document...
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     ERREUR
+===================================================== -->
+
+<div id="errorScreen">
+
+    <div id="errorIcon">
+        ⚠️
+    </div>
+
+    <div id="errorTitle">
+        Impossible de charger le document
+    </div>
+
+    <div id="errorMessage"></div>
+
+</div>
+
+
+
 <script>
-/* ===============================
-   🔥 CONFIG FIREBASE (À REMPLACER)
-   =============================== */
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
 const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d",
-    measurementId: "G-C74MK2KYDL"
-}; 	
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+    apiKey:
+        "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
 
-window.viewer= async function () {
-/* ===============================
-   📄 RÉCUPÉRATION docId
-   =============================== */
-const params = new URLSearchParams(window.location.search);
-const docId = params.get("docId");
-const fileUrl = params.get("file");
+    authDomain:
+        "urgences-a8ed4.firebaseapp.com",
+
+    projectId:
+        "urgences-a8ed4",
+
+    storageBucket:
+        "urgences-a8ed4.appspot.com",
+
+    messagingSenderId:
+        "392921498200",
+
+    appId:
+        "1:392921498200:web:7ccce767332c67c697c02d",
+
+    measurementId:
+        "G-C74MK2KYDL"
+
+};
 
 
-// =============================
-// CAS 1 : URL DIRECT
-// =============================
-if (fileUrl) {
-    document.getElementById("pdfFrame").src = decodeURIComponent(fileUrl);
+firebase.initializeApp(
+    firebaseConfig
+);
+
+
+const db =
+    firebase.firestore();
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+let pdfBlob = null;
+
+let pdfUrl = null;
+
+let nomDocument = "Document.pdf";
+
+let zoom = 1;
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const pdfFrame =
+    document.getElementById(
+        "pdfFrame"
+    );
+
+const loader =
+    document.getElementById(
+        "loader"
+    );
+
+const loaderText =
+    document.getElementById(
+        "loaderText"
+    );
+
+const documentTitle =
+    document.getElementById(
+        "documentTitle"
+    );
+
+const documentStatus =
+    document.getElementById(
+        "documentStatus"
+    );
+
+const errorScreen =
+    document.getElementById(
+        "errorScreen"
+    );
+
+const errorMessage =
+    document.getElementById(
+        "errorMessage"
+    );
+
+const printButton =
+    document.getElementById(
+        "printButton"
+    );
+
+
+/* =========================================================
+   LOADER
+========================================================= */
+
+function afficherLoader(
+    texte = "Chargement du document..."
+) {
+
+    loaderText.textContent =
+        texte;
+
+    loader.classList.remove(
+        "hidden"
+    );
+
 }
 
-// =============================
-// CAS 2 : FIRESTORE v10
-// =============================
-else if (docId) {
 
-    const ref = db.collection("documents").doc(docId);
-const snap = await ref.get();
+function masquerLoader() {
 
-    if (!snap.exists) {
-        document.body.innerHTML = "<h2 style='padding:20px'>Document introuvable</h2>";
-    } else {
+    loader.classList.add(
+        "hidden"
+    );
 
-        const data = snap.data();
+}
 
-        // =========================
-        // 🔥 CAS ORD (ORDONNANCE)
-        // =========================
+
+/* =========================================================
+   ERREUR
+========================================================= */
+
+function afficherErreur(
+    message
+) {
+
+    masquerLoader();
+
+    errorMessage.textContent =
+        message;
+
+    errorScreen.classList.add(
+        "visible"
+    );
+
+    documentStatus.textContent =
+        "Erreur de chargement";
+
+}
+
+
+/* =========================================================
+   TITRE
+========================================================= */
+
+function definirTitre(
+    nom
+) {
+
+    if (!nom) {
+
+        nom =
+            "Document PDF";
+
+    }
+
+
+    nomDocument =
+        nom;
+
+
+    document.title =
+        nom;
+
+
+    documentTitle.textContent =
+        nom;
+
+}
+
+
+/* =========================================================
+   CHARGER LE PDF
+========================================================= */
+
+async function chargerPDF(
+    blob,
+    nom
+) {
+
+    try {
+
+        afficherLoader(
+            "Chargement du document..."
+        );
+
+
+        pdfBlob =
+            blob;
+
+
+        definirTitre(
+            nom
+        );
+
+
+        if (pdfUrl) {
+
+            URL.revokeObjectURL(
+                pdfUrl
+            );
+
+        }
+
+
+        pdfUrl =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        pdfFrame.src =
+            pdfUrl;
+
+
+        documentStatus.textContent =
+            "Document PDF";
+
+
+        /*
+         * On laisse Chromium charger
+         * le PDF dans l'iframe.
+         */
+
+        pdfFrame.onload = () => {
+
+            masquerLoader();
+
+        };
+
+
+        /*
+         * Sécurité au cas où le PDF
+         * ne déclenche pas correctement
+         * l'événement load.
+         */
+
+        setTimeout(() => {
+
+            masquerLoader();
+
+        }, 2500);
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Erreur chargement PDF :",
+            error
+        );
+
+
+        afficherErreur(
+            "Le document PDF n'a pas pu être chargé."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   URL DIRECTE
+========================================================= */
+
+async function chargerDepuisURL(
+    fileUrl,
+    nom
+) {
+
+    try {
+
+        afficherLoader(
+            "Chargement du PDF..."
+        );
+
+
+        const response =
+            await fetch(
+                decodeURIComponent(
+                    fileUrl
+                )
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+
+        const blob =
+            await response.blob();
+
+
+        await chargerPDF(
+            blob,
+            nom ||
+            "Document.pdf"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Erreur URL PDF :",
+            error
+        );
+
+
+        afficherErreur(
+            "Impossible de récupérer le PDF."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FIRESTORE
+========================================================= */
+
+async function chargerDepuisFirestore(
+    docId
+) {
+
+    try {
+
+        afficherLoader(
+            "Récupération du document..."
+        );
+
+
+        const ref =
+            db
+                .collection("documents")
+                .doc(docId);
+
+
+        const snap =
+            await ref.get();
+
+
+        if (!snap.exists) {
+
+            throw new Error(
+                "Document introuvable."
+            );
+
+        }
+
+
+        const data =
+            snap.data();
+
+
+        /*
+         * Nom du document
+         */
+
+        const nom =
+            data.nom ||
+            data.name ||
+            data.filename ||
+            data.fileName ||
+            "Document.pdf";
+
+
+        /* =================================================
+           CAS ORDONNANCE
+        ================================================= */
+
         if (data.ord) {
 
-            if (!window.ordToPDF) {
-                document.body.innerHTML = "<h2 style='padding:20px'>Module ordonnance non chargé</h2>";
-            } else {
-               document.body.innerHTML = "<h2 style='padding:20px'>Chargement du document...</h2>";
+            if (
+                typeof window.ordToPDF !==
+                "function"
+            ) {
 
-const html = generateHTML(data.ord);
+                throw new Error(
+                    "Le module ordonnance n'est pas chargé."
+                );
 
-const container = document.createElement("div");
-container.innerHTML = html;
+            }
 
-const pdfBlob = await html2pdf()
-  .set({
-    margin: 0,
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  })
-  .from(container)
-  .outputPdf('blob');
 
-const url = URL.createObjectURL(pdfBlob);
+            afficherLoader(
+                "Génération de l'ordonnance..."
+            );
 
-document.body.innerHTML = `
-  <iframe id="pdfFrame" style="width:100%;height:100vh;border:none;"></iframe>
-`;
 
-document.getElementById("pdfFrame").src = url;
+            const html =
+                generateHTML(
+                    data.ord
+                );
+
+
+            const container =
+                document.createElement(
+                    "div"
+                );
+
+
+            container.innerHTML =
+                html;
+
+
+            const blob =
+                await html2pdf()
+                    .set({
+
+                        margin: 0,
+
+                        html2canvas: {
+
+                            scale: 2
+
+                        },
+
+                        jsPDF: {
+
+                            unit: "mm",
+
+                            format: "a4",
+
+                            orientation:
+                                "portrait"
+
+                        }
+
+                    })
+                    .from(container)
+                    .outputPdf(
+                        "blob"
+                    );
+
+
+            await chargerPDF(
+                blob,
+                nom === "Document.pdf"
+                    ? "Ordonnance.pdf"
+                    : nom
+            );
+
+
+            return;
+
+        }
+
+
+        /* =================================================
+           CAS PDF BASE64
+        ================================================= */
+
+        if (data.pdfBase64) {
+
+            const blob =
+                b64toBlob(
+                    data.pdfBase64,
+                    "application/pdf"
+                );
+
+
+            await chargerPDF(
+                blob,
+                nom
+            );
+
+
+            return;
+
+        }
+
+
+        throw new Error(
+            "Aucun PDF disponible dans ce document."
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Erreur Firestore :",
+            error
+        );
+
+
+        afficherErreur(
+            error.message ||
+            "Impossible de charger le document."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   BASE64 → BLOB
+========================================================= */
+
+function b64toBlob(
+    b64,
+    type
+) {
+
+    const bytes =
+        atob(b64);
+
+
+    const arr =
+        new Uint8Array(
+            bytes.length
+        );
+
+
+    for (
+        let i = 0;
+        i < bytes.length;
+        i++
+    ) {
+
+        arr[i] =
+            bytes.charCodeAt(i);
+
+    }
+
+
+    return new Blob(
+        [arr],
+        {
+            type
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ZOOM
+========================================================= */
+
+function appliquerZoom() {
+
+    /*
+     * Le PDF natif de Chromium gère son
+     * propre zoom. On transmet donc les
+     * raccourcis clavier au PDF lorsque
+     * c'est possible.
+     *
+     * Pour l'instant, on affiche simplement
+     * le niveau demandé dans notre interface.
+     */
+
+    document.getElementById(
+        "zoomResetButton"
+    ).textContent =
+        `${Math.round(zoom * 100)} %`;
+
+}
+
+
+document.getElementById(
+    "zoomInButton"
+).addEventListener(
+    "click",
+    () => {
+
+        zoom =
+            Math.min(
+                2,
+                zoom + .1
+            );
+
+        appliquerZoom();
+
+        /*
+         * Ctrl + +
+         */
+
+        pdfFrame.focus();
+
+        pdfFrame.contentWindow?.postMessage(
+            {
+                type: "zoom-in"
+            },
+            "*"
+        );
+
+    }
+);
+
+
+document.getElementById(
+    "zoomOutButton"
+).addEventListener(
+    "click",
+    () => {
+
+        zoom =
+            Math.max(
+                .5,
+                zoom - .1
+            );
+
+        appliquerZoom();
+
+        pdfFrame.focus();
+
+        pdfFrame.contentWindow?.postMessage(
+            {
+                type: "zoom-out"
+            },
+            "*"
+        );
+
+    }
+);
+
+
+document.getElementById(
+    "zoomResetButton"
+).addEventListener(
+    "click",
+    () => {
+
+        zoom = 1;
+
+        appliquerZoom();
+
+        pdfFrame.focus();
+
+    }
+);
+
+
+/* =========================================================
+   PLEIN ÉCRAN
+========================================================= */
+
+document.getElementById(
+    "fullscreenButton"
+).addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            if (
+                !document.fullscreenElement
+            ) {
+
+                await document.documentElement
+                    .requestFullscreen();
+
+            }
+
+            else {
+
+                await document.exitFullscreen();
+
             }
 
         }
 
-        // =========================
-        // 📄 CAS PDF BASE64
-        // =========================
-        else if (data.pdfBase64) {
+        catch (error) {
 
-            const blob = b64toBlob(data.pdfBase64, "application/pdf");
-            const url = URL.createObjectURL(blob);
-            document.getElementById("pdfFrame").src = url;
+            console.error(
+                "Fullscreen:",
+                error
+            );
 
         }
 
-        // =========================
-        // ❌ CAS VIDE
-        // =========================
-        else {
-            document.body.innerHTML = "<h2 style='padding:20px'>PDF indisponible</h2>";
+    }
+);
+
+
+/* =========================================================
+   TÉLÉCHARGEMENT
+========================================================= */
+
+document.getElementById(
+    "downloadButton"
+).addEventListener(
+    "click",
+    () => {
+
+        if (!pdfBlob) {
+
+            return;
+
         }
-    }
-}
 
-else {
-    document.body.innerHTML = "<h2 style='padding:20px'>Aucun document fourni</h2>";
-}
-}
 
-/* ===============================
-   🔁 BASE64 → BLOB
-   =============================== */
-function b64toBlob(b64, type) {
-    const bytes = atob(b64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) {
-        arr[i] = bytes.charCodeAt(i);
+        const url =
+            URL.createObjectURL(
+                pdfBlob
+            );
+
+
+        const a =
+            document.createElement(
+                "a"
+            );
+
+
+        a.href =
+            url;
+
+
+        a.download =
+            nomDocument ||
+            "Document.pdf";
+
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        a.remove();
+
+
+        setTimeout(() => {
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        }, 1000);
+
     }
-    return new Blob([arr], { type });
-}
+);
+
+
+/* =========================================================
+   🖨️ IMPRESSION
+========================================================= */
+
+printButton.addEventListener(
+    "click",
+    async () => {
+
+        if (!pdfBlob) {
+
+            alert(
+                "Le document n'est pas encore chargé."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Cette fonction sera exposée
+         * par le preload.js.
+         */
+
+        if (
+            !window.electronPrint ||
+            !window.electronPrint.ouvrirPDF
+        ) {
+
+            alert(
+                "La fonction d'impression Electron n'est pas disponible."
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            printButton.disabled =
+                true;
+
+
+            printButton.innerHTML =
+                "⏳ Préparation...";
+
+
+            /*
+             * Conversion du Blob en ArrayBuffer
+             */
+
+            const buffer =
+                await pdfBlob.arrayBuffer();
+
+
+            /*
+             * Envoi du PDF à Electron
+             */
+
+            await window.electronPrint.ouvrirPDF({
+
+                data:
+                    new Uint8Array(
+                        buffer
+                    ),
+
+                nom:
+                    nomDocument
+
+            });
+
+
+            printButton.innerHTML =
+                "🖨️ Imprimer";
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Erreur impression :",
+                error
+            );
+
+
+            alert(
+                "Impossible d'ouvrir la fenêtre d'impression.\n\n" +
+                (
+                    error?.message ||
+                    "Erreur inconnue."
+                )
+            );
+
+
+            printButton.innerHTML =
+                "🖨️ Imprimer";
+
+        }
+
+
+        printButton.disabled =
+            false;
+
+    }
+);
+
+
+/* =========================================================
+   NETTOYAGE
+========================================================= */
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (pdfUrl) {
+
+            URL.revokeObjectURL(
+                pdfUrl
+            );
+
+            pdfUrl = null;
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   FONCTION PRINCIPALE
+========================================================= */
+
+window.viewer =
+async function() {
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const docId =
+        params.get(
+            "docId"
+        );
+
+
+    const fileUrl =
+        params.get(
+            "file"
+        );
+
+
+    const nom =
+        params.get(
+            "nom"
+        );
+
+
+    /* ================================================
+       CAS 1 : URL DIRECTE
+    ================================================= */
+
+    if (fileUrl) {
+
+        await chargerDepuisURL(
+            fileUrl,
+            nom ||
+            "Document.pdf"
+        );
+
+
+        return;
+
+    }
+
+
+    /* ================================================
+       CAS 2 : FIRESTORE
+    ================================================= */
+
+    if (docId) {
+
+        await chargerDepuisFirestore(
+            docId
+        );
+
+
+        return;
+
+    }
+
+
+    /* ================================================
+       CAS 3 : RIEN
+    ================================================= */
+
+    afficherErreur(
+        "Aucun document PDF n'a été fourni."
+    );
+
+};
+
+
+/* =========================================================
+   LANCEMENT
+========================================================= */
+
 viewer();
 
 </script>

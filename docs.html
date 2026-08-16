@@ -1024,18 +1024,13 @@ function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     }
     return new Blob(byteArrays, { type: contentType });
 }
-
 function ouvrirModal(blob, nom) {
-
-    const url =
-        URL.createObjectURL(blob);
 
     const nouvelOnglet =
         window.open(
-            `viewer.html?file=${encodeURIComponent(url)}&nom=${encodeURIComponent(nom)}`,
+            "viewer.html",
             "_blank"
         );
-
 
     if (!nouvelOnglet) {
 
@@ -1046,24 +1041,54 @@ function ouvrirModal(blob, nom) {
 
         masquerLoader();
 
-        URL.revokeObjectURL(url);
-
         return;
-
     }
 
 
-    /*
-     * Nettoyage après 60 secondes.
-     * Le viewer aura eu le temps de charger
-     * le Blob.
-     */
+    const reader =
+        new FileReader();
 
-    setTimeout(() => {
 
-        URL.revokeObjectURL(url);
+    reader.onload = function () {
 
-    }, 60000);
+        const data =
+            reader.result;
+
+
+        /*
+         * On attend que le viewer soit chargé.
+         */
+
+        const envoyer = () => {
+
+            nouvelOnglet.postMessage(
+                {
+                    type: "charger-pdf",
+                    data: data,
+                    nom: nom
+                },
+                window.location.origin
+            );
+
+        };
+
+
+        /*
+         * Quelques centaines de ms permettent
+         * au viewer de s'initialiser.
+         */
+
+        setTimeout(
+            envoyer,
+            300
+        );
+
+    };
+
+
+    reader.readAsArrayBuffer(
+        blob
+    );
 
 }
 window.fermerModal = function() {

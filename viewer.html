@@ -2018,10 +2018,24 @@ async function viewer2() {
     /* ================================================
        RIEN
     ================================================= */
+afficherLoader(
+    "Préparation du document..."
+);
 
-    afficherErreur(
-        "Aucun document PDF n'a été fourni."
-    );
+setTimeout(() => {
+
+   
+
+    if (!pdfDocument) {
+
+        afficherErreur(
+            "Aucun document PDF n'a été fourni."
+        );
+
+    }
+
+}, 5000);
+    
 
 }
 
@@ -2029,7 +2043,67 @@ async function viewer2() {
 /* =========================================================
    LANCEMENT
 ========================================================= */
+window.addEventListener(
+    "message",
+    async (event) => {
 
+        if (
+            event.origin !==
+            window.location.origin
+        ) {
+            return;
+        }
+
+
+        if (
+            !event.data ||
+            event.data.type !==
+            "charger-pdf"
+        ) {
+            return;
+        }
+
+
+        try {
+
+            const data =
+                event.data.data;
+
+
+            const blob =
+                new Blob(
+                    [data],
+                    {
+                        type:
+                            "application/pdf"
+                    }
+                );
+
+
+            await chargerBlob(
+                blob,
+                event.data.nom ||
+                "Document.pdf"
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Erreur réception PDF:",
+                error
+            );
+
+
+            afficherErreur(
+                "Impossible de charger le document."
+            );
+
+        }
+
+    }
+);
 viewer2();
 
 </script>

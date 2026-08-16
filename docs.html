@@ -1117,22 +1117,43 @@ async function afficherDocuments() {
             `;
 
 li.querySelector(".btn-loupe")?.addEventListener("click", () => {
+    let titre = "Document";
 
-    const viewerUrl =
-        `viewer.html?docId=${encodeURIComponent(data.id)}`;
+    // 🟦 Nouveau système .ord
+    if (data.ord) {
 
-    const nouvelOnglet =
-        window.open(viewerUrl, "_blank");
-
-    if (!nouvelOnglet) {
-
-        afficherBulle(
-            "❌ Le navigateur a bloqué l'ouverture du document",
-            "alerte"
-        );
+        titre =
+            data.ord.titre ||
+            "Ordonnance";
 
     }
 
+    // 📄 Ancien système PDF
+    else {
+
+        const patient = data.patient || {};
+
+        titre =
+            `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`
+                .replace(/\s+/g, " ")
+                .trim();
+
+    }
+
+    // Sécurité si le titre est vide
+    if (!titre) {
+        titre = "Document";
+    }
+    const viewerUrl =
+        `viewer.html?docId=${encodeURIComponent(data.id)}`;
+window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: titre,
+      url: viewerUrl
+    },
+    "*"
+  );
 });
             li.querySelector(".btn-delete")?.addEventListener("click", e => {
                 ouvrirConfirmDeleteModal(e.currentTarget.dataset.docId);

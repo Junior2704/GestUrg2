@@ -230,9 +230,14 @@
   .item-file small{color:var(--texte-2);margin-left:auto;}
 
   .a4-conteneur{overflow:auto;border-radius:12px;background:#e9ecf1;padding:20px;display:flex;justify-content:center;}
+  /* Le wrapper occupe la taille réelle à l'échelle réduite, pour que la feuille
+     tienne entièrement dans la zone visible (plus de marges négatives qui la décalaient hors cadre). */
+  .a4-echelle{
+    width:calc(210mm * 0.62); height:calc(297mm * 0.62); position:relative; flex-shrink:0;
+  }
   .a4-feuille{
-    position:relative;width:210mm;height:297mm;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);
-    transform:scale(.62);transform-origin:top center;margin:-58mm -30mm;
+    position:absolute;top:0;left:0;width:210mm;height:297mm;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);
+    transform:scale(.62);transform-origin:top left;
   }
   .a4-slot{
     position:absolute;border:1.5px dashed #c7cbd4;border-radius:3mm;display:flex;align-items:center;justify-content:center;
@@ -385,7 +390,7 @@
         <button class="btn-id btn-id-v" id="btn-imprimer">🖨️ Imprimer</button>
       </div>
       <p class="sub" style="margin-top:-6px;">Sélectionnez un badge dans la file puis cliquez sur un emplacement de la feuille : le recto y est placé, et le verso est automatiquement positionné juste à côté, pour pouvoir glisser la carte plastique entre les deux impressions avant plastification.</p>
-      <div class="a4-conteneur"><div class="a4-feuille" id="a4-feuille"></div></div>
+      <div class="a4-conteneur"><div class="a4-echelle"><div class="a4-feuille" id="a4-feuille"></div></div></div>
     </div>
   </section>
 </div>
@@ -429,7 +434,7 @@
   <div class="modale">
     <button class="fermer-x" onclick="fermerModale('modal-crop')">✕</button>
     <h2>Cadrer la photo</h2>
-    <p class="sub">Glissez pour repositionner, utilisez le curseur pour zoomer. La photo est cadrée en portrait, comme sur un badge professionnel.</p>
+    <p class="sub">Glissez pour repositionner, utilisez le curseur pour zoomer.</p>
     <div id="crop-viewport" style="width:200px;height:250px;border-radius:6px;overflow:hidden;margin:0 auto;background:#eee;position:relative;cursor:grab;border:1px solid #d3d7de;">
       <img id="crop-img" style="position:absolute;user-select:none;-webkit-user-drag:none;" draggable="false">
     </div>
@@ -466,8 +471,8 @@ const COLLECTION = "medecins";
 // Durée de validité affichée au dos/pied du badge, en années à partir de la date d'émission.
 const DUREE_VALIDITE_ANNEES = 3;
 // Base de l'URL encodée dans le QR code au verso, pour un contrôle physique du badge.
-// À adapter si une page de vérification dédiée est mise en place côté serveur.
-const URL_VERIFICATION_BASE = "https://junior2704.github.io/GestUrg2/verif-badge";
+// Pointe vers verif-badge.html : à héberger sur le même domaine (Firebase Hosting).
+const URL_VERIFICATION_BASE = "https://junior2704.github.io/GestUrg2/verif-badge.html";
 
 const ICONE_NFC = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="2.4" fill="#fff"/><path d="M6.5 12a5.5 5.5 0 0 1 5.5-5.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 12a8.5 8.5 0 0 1 8.5-8.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></svg>`;
 
@@ -527,7 +532,7 @@ function identifiantBadge(uid){
   return groupes ? groupes.join(" ") : (uid||"—");
 }
 function libelleIdentifiant(fonction){
-  return fonction === "Médecin" ? "UID" : "UID";
+  return fonction === "Médecin" ? "N° RPPS" : "Matricule";
 }
 function formatDateFR(iso){
   if(!iso) return "—";
@@ -897,12 +902,12 @@ function marqueBadgeVerso(uid){
     <div class="badge-verso">
       <div class="entete-verso">Badge professionnel — vérification</div>
       <div class="consignes">
-        <div class="bloc"><strong>Vous avez trouvé ce badge ?</strong>Merci de le déposer à l'accueil de l'établissement ou de le remettre au service sécurité.</div>
-        <div class="bloc"><strong>Vous avez perdu votre badge ?</strong>Signalez-le sans délai au service sécurité afin qu'il soit désactivé.</div>
+        <div class="bloc"><strong>Badge trouvé ?</strong>Merci de le déposer à l'accueil de l'établissement ou de le remettre au service sécurité.</div>
+        <div class="bloc"><strong>Badge perdu ?</strong>Signalez-le sans délai au service sécurité afin qu'il soit désactivé.</div>
       </div>
       <div class="qr-zone">
         <img src="${qr}" alt="QR code de vérification du badge">
-        
+        <span class="legende">Scanner pour vérifier l'authenticité du badge</span>
       </div>
       <div class="pied-verso">${identifiantBadge(uid)}</div>
     </div>`;

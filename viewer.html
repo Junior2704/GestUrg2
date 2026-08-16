@@ -10,11 +10,23 @@
     content="width=device-width, initial-scale=1"
 >
 
-<title>Document PDF — GestUrg2</title>
+<title>Document — GestUrg2</title>
 
 
 <!-- =====================================================
-     LIBRAIRIES
+     PDF.JS
+     Pas de lecteur PDF Google/Chromium :
+     les pages sont rendues nous-mêmes dans des canvas.
+===================================================== -->
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+    type="module">
+</script>
+
+
+<!-- =====================================================
+     HTML2PDF
 ===================================================== -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -65,12 +77,18 @@ body {
 
 
 /* =========================================================
-   BARRE
+   BARRE PRINCIPALE
 ========================================================= */
 
 #toolbar {
 
-    height: 58px;
+    position: fixed;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    height: 60px;
 
     background: #ffffff;
 
@@ -80,18 +98,14 @@ body {
 
     align-items: center;
 
-    gap: 10px;
+    gap: 8px;
 
     padding: 0 14px;
 
-    user-select: none;
+    z-index: 1000;
 
     box-shadow:
-        0 2px 8px rgba(0,0,0,.06);
-
-    position: relative;
-
-    z-index: 10;
+        0 2px 10px rgba(0,0,0,.07);
 
 }
 
@@ -102,9 +116,9 @@ body {
 
 #logo {
 
-    width: 36px;
+    width: 38px;
 
-    height: 36px;
+    height: 38px;
 
     object-fit: contain;
 
@@ -114,10 +128,14 @@ body {
 
 
 /* =========================================================
-   TITRE
+   INFORMATIONS DOCUMENT
 ========================================================= */
 
 #documentInfo {
+
+    flex: 1;
+
+    min-width: 0;
 
     display: flex;
 
@@ -125,19 +143,18 @@ body {
 
     justify-content: center;
 
-    min-width: 0;
-
-    flex: 1;
+    margin-left: 4px;
 
 }
 
+
 #documentTitle {
+
+    color: #1565c0;
 
     font-size: 15px;
 
     font-weight: 700;
-
-    color: #1565c0;
 
     white-space: nowrap;
 
@@ -147,11 +164,12 @@ body {
 
 }
 
+
 #documentStatus {
 
-    font-size: 11px;
-
     color: #78909c;
+
+    font-size: 11px;
 
     margin-top: 2px;
 
@@ -168,17 +186,17 @@ body {
 
     min-width: 36px;
 
-    padding: 0 11px;
+    padding: 0 10px;
 
     border-radius: 7px;
 
-    border: 1px solid #d4dce4;
+    border: 1px solid #d2dce4;
 
     background: #ffffff;
 
     color: #455a64;
 
-    font-size: 13px;
+    font-size: 14px;
 
     cursor: pointer;
 
@@ -193,27 +211,30 @@ body {
     transition:
         background .15s,
         border-color .15s,
-        color .15s;
+        color .15s,
+        transform .08s;
 
 }
+
 
 .toolbarButton:hover {
 
-    background: #f2f7fb;
+    background: #f3f7fa;
 
-    border-color: #b9c7d3;
+    border-color: #b8c7d2;
 
 }
 
+
 .toolbarButton:active {
 
-    transform: scale(.97);
+    transform: scale(.96);
 
 }
 
 
 /* =========================================================
-   BOUTON IMPRIMER
+   BOUTON IMPRESSION
 ========================================================= */
 
 #printButton {
@@ -226,11 +247,12 @@ body {
 
     font-weight: 600;
 
-    padding-left: 15px;
+    padding-left: 14px;
 
-    padding-right: 15px;
+    padding-right: 14px;
 
 }
+
 
 #printButton:hover {
 
@@ -240,11 +262,10 @@ body {
 
 }
 
-#printButton:disabled {
 
-    opacity: .55;
+#printButton.hidden {
 
-    cursor: default;
+    display: none;
 
 }
 
@@ -267,14 +288,14 @@ body {
 
 
 /* =========================================================
-   ZONE PDF
+   ZONE DE DOCUMENT
 ========================================================= */
 
-#pdfWrapper {
+#viewer {
 
-    position: absolute;
+    position: fixed;
 
-    top: 58px;
+    top: 60px;
 
     left: 0;
 
@@ -282,31 +303,85 @@ body {
 
     bottom: 0;
 
+    overflow: auto;
+
     background:
         radial-gradient(
             circle at center,
-            #f8fafc 0%,
-            #e9eef3 100%
+            #f9fbfd 0%,
+            #e7edf2 100%
         );
+
+    padding: 28px 20px 60px;
 
 }
 
 
 /* =========================================================
-   PDF
+   CONTENEUR DES PAGES
 ========================================================= */
 
-#pdfFrame {
+#pages {
 
-    width: 100%;
+    width: fit-content;
 
-    height: 100%;
+    min-width: 100%;
 
-    border: none;
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 24px;
+
+}
+
+
+/* =========================================================
+   PAGE PDF
+========================================================= */
+
+.pdfPage {
+
+    position: relative;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 18px rgba(0,0,0,.16);
+
+    overflow: hidden;
+
+}
+
+
+.pdfPage canvas {
 
     display: block;
 
-    background: white;
+}
+
+
+/* =========================================================
+   NUMÉRO DE PAGE
+========================================================= */
+
+.pageNumber {
+
+    position: absolute;
+
+    left: 50%;
+
+    bottom: -24px;
+
+    transform: translateX(-50%);
+
+    color: #78909c;
+
+    font-size: 11px;
+
+    white-space: nowrap;
 
 }
 
@@ -317,9 +392,13 @@ body {
 
 #loader {
 
-    position: absolute;
+    position: fixed;
 
-    inset: 0;
+    inset: 60px 0 0 0;
+
+    background: rgba(238,242,246,.96);
+
+    z-index: 900;
 
     display: flex;
 
@@ -329,13 +408,10 @@ body {
 
     justify-content: center;
 
-    background: #eef2f6;
-
-    z-index: 20;
-
     transition: opacity .2s;
 
 }
+
 
 #loader.hidden {
 
@@ -345,15 +421,16 @@ body {
 
 }
 
+
 .loaderRing {
 
-    width: 42px;
+    width: 46px;
 
-    height: 42px;
+    height: 46px;
 
     border-radius: 50%;
 
-    border: 4px solid #d6e6f5;
+    border: 4px solid #d7e6f3;
 
     border-top-color: #1976d2;
 
@@ -362,17 +439,21 @@ body {
 
 }
 
+
 @keyframes spin {
 
     to {
+
         transform: rotate(360deg);
+
     }
 
 }
 
+
 #loaderText {
 
-    margin-top: 13px;
+    margin-top: 14px;
 
     color: #607d8b;
 
@@ -382,16 +463,18 @@ body {
 
 
 /* =========================================================
-   MESSAGE ERREUR
+   ÉCRAN ERREUR
 ========================================================= */
 
 #errorScreen {
 
-    position: absolute;
+    position: fixed;
 
-    inset: 58px 0 0 0;
+    inset: 60px 0 0 0;
 
     display: none;
+
+    z-index: 800;
 
     align-items: center;
 
@@ -399,15 +482,12 @@ body {
 
     flex-direction: column;
 
-    gap: 10px;
-
-    color: #455a64;
+    text-align: center;
 
     background: #eef2f6;
 
-    text-align: center;
-
 }
+
 
 #errorScreen.visible {
 
@@ -415,27 +495,34 @@ body {
 
 }
 
+
 #errorIcon {
 
-    font-size: 38px;
+    font-size: 42px;
+
+    margin-bottom: 10px;
 
 }
+
 
 #errorTitle {
 
-    font-size: 17px;
+    color: #263238;
+
+    font-size: 18px;
 
     font-weight: 700;
 
-    color: #263238;
-
 }
+
 
 #errorMessage {
 
-    font-size: 13px;
+    margin-top: 6px;
 
     color: #78909c;
+
+    font-size: 13px;
 
 }
 
@@ -452,11 +539,13 @@ body {
 
 }
 
+
 ::-webkit-scrollbar-track {
 
-    background: #eef3f8;
+    background: #edf2f6;
 
 }
+
 
 ::-webkit-scrollbar-thumb {
 
@@ -469,9 +558,10 @@ body {
 
     border-radius: 10px;
 
-    border: 2px solid #eef3f8;
+    border: 2px solid #edf2f6;
 
 }
+
 
 ::-webkit-scrollbar-thumb:hover {
 
@@ -486,7 +576,7 @@ body {
 
 
 /* =========================================================
-   PETITE FENÊTRE
+   PETITES FENÊTRES
 ========================================================= */
 
 @media (max-width: 700px) {
@@ -549,9 +639,11 @@ body {
     <div class="separator"></div>
 
 
+    <!-- Zoom -->
+
     <button
         class="toolbarButton"
-        id="zoomOutButton"
+        id="zoomOut"
         title="Zoom arrière"
     >
         −
@@ -560,7 +652,7 @@ body {
 
     <button
         class="toolbarButton"
-        id="zoomResetButton"
+        id="zoomValue"
         title="Réinitialiser le zoom"
     >
         100 %
@@ -569,7 +661,7 @@ body {
 
     <button
         class="toolbarButton"
-        id="zoomInButton"
+        id="zoomIn"
         title="Zoom avant"
     >
         +
@@ -578,6 +670,30 @@ body {
 
     <div class="separator"></div>
 
+
+    <!-- Rotation -->
+
+    <button
+        class="toolbarButton"
+        id="rotateButton"
+        title="Tourner le document"
+    >
+        ↻
+    </button>
+
+
+    <!-- Téléchargement -->
+
+    <button
+        class="toolbarButton"
+        id="downloadButton"
+        title="Télécharger"
+    >
+        ↓
+    </button>
+
+
+    <!-- Plein écran -->
 
     <button
         class="toolbarButton"
@@ -588,14 +704,7 @@ body {
     </button>
 
 
-    <button
-        class="toolbarButton"
-        id="downloadButton"
-        title="Télécharger le PDF"
-    >
-        ↓
-    </button>
-
+    <!-- Impression uniquement Electron -->
 
     <button
         class="toolbarButton"
@@ -613,17 +722,14 @@ body {
 
 
 <!-- =====================================================
-     PDF
+     VIEWER
 ===================================================== -->
 
-<div id="pdfWrapper">
+<main id="viewer">
 
-    <iframe
-        id="pdfFrame"
-        title="Aperçu du document PDF"
-    ></iframe>
+    <div id="pages"></div>
 
-</div>
+</main>
 
 
 <!-- =====================================================
@@ -660,8 +766,21 @@ body {
 </div>
 
 
+<script type="module">
 
-<script>
+/* =========================================================
+   PDF.JS
+========================================================= */
+
+import {
+    getDocument,
+    GlobalWorkerOptions
+} from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+
+
+GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
 
 /* =========================================================
    FIREBASE
@@ -706,22 +825,72 @@ const db =
    VARIABLES
 ========================================================= */
 
+let pdfDocument = null;
+
 let pdfBlob = null;
 
 let pdfUrl = null;
 
-let nomDocument = "Document.pdf";
+let nomDocument =
+    "Document.pdf";
 
-let zoom = 1;
+let zoom =
+    1.25;
+
+let rotation =
+    0;
+
+
+/* =========================================================
+   DETECTION ELECTRON
+========================================================= */
+
+const estElectron =
+    !!(
+        window.electronPrint &&
+        typeof window.electronPrint.ouvrirPDF ===
+            "function"
+    );
+
+
+/*
+ * Très important :
+ *
+ * En version web :
+ *
+ *     estElectron = false
+ *
+ * donc aucune impression Electron
+ * n'est proposée.
+ */
+
+const printButton =
+    document.getElementById(
+        "printButton"
+    );
+
+
+if (!estElectron) {
+
+    printButton.classList.add(
+        "hidden"
+    );
+
+}
 
 
 /* =========================================================
    ELEMENTS
 ========================================================= */
 
-const pdfFrame =
+const pagesContainer =
     document.getElementById(
-        "pdfFrame"
+        "pages"
+    );
+
+const viewer =
+    document.getElementById(
+        "viewer"
     );
 
 const loader =
@@ -734,16 +903,6 @@ const loaderText =
         "loaderText"
     );
 
-const documentTitle =
-    document.getElementById(
-        "documentTitle"
-    );
-
-const documentStatus =
-    document.getElementById(
-        "documentStatus"
-    );
-
 const errorScreen =
     document.getElementById(
         "errorScreen"
@@ -754,10 +913,43 @@ const errorMessage =
         "errorMessage"
     );
 
-const printButton =
+const documentTitle =
     document.getElementById(
-        "printButton"
+        "documentTitle"
     );
+
+const documentStatus =
+    document.getElementById(
+        "documentStatus"
+    );
+
+const zoomValue =
+    document.getElementById(
+        "zoomValue"
+    );
+
+
+/* =========================================================
+   TITRE
+========================================================= */
+
+function definirTitre(
+    nom
+) {
+
+    nomDocument =
+        nom ||
+        "Document.pdf";
+
+
+    document.title =
+        `${nomDocument} — GestUrg2`;
+
+
+    documentTitle.textContent =
+        nomDocument;
+
+}
 
 
 /* =========================================================
@@ -765,11 +957,13 @@ const printButton =
 ========================================================= */
 
 function afficherLoader(
-    texte = "Chargement du document..."
+    texte
 ) {
 
     loaderText.textContent =
-        texte;
+        texte ||
+        "Chargement du document...";
+
 
     loader.classList.remove(
         "hidden"
@@ -805,46 +999,212 @@ function afficherErreur(
     );
 
     documentStatus.textContent =
-        "Erreur de chargement";
+        "Erreur";
+
 
 }
 
 
 /* =========================================================
-   TITRE
+   MISE À JOUR ZOOM
 ========================================================= */
 
-function definirTitre(
-    nom
-) {
+function mettreAJourZoom() {
 
-    if (!nom) {
+    zoomValue.textContent =
+        `${Math.round(zoom * 100)} %`;
 
-        nom =
-            "Document PDF";
+}
+
+
+/* =========================================================
+   RENDU DU PDF
+========================================================= */
+
+async function rendrePDF() {
+
+    if (!pdfDocument) {
+
+        return;
 
     }
 
 
-    nomDocument =
-        nom;
+    pagesContainer.innerHTML =
+        "";
 
 
-    document.title =
-        nom;
+    documentStatus.textContent =
+        `${pdfDocument.numPages} page${
+            pdfDocument.numPages > 1
+                ? "s"
+                : ""
+        }`;
 
 
-    documentTitle.textContent =
-        nom;
+    mettreAJourZoom();
+
+
+    for (
+        let pageNumber = 1;
+        pageNumber <= pdfDocument.numPages;
+        pageNumber++
+    ) {
+
+        await rendrePage(
+            pageNumber
+        );
+
+    }
 
 }
 
 
 /* =========================================================
-   CHARGER LE PDF
+   RENDRE UNE PAGE
 ========================================================= */
 
-async function chargerPDF(
+async function rendrePage(
+    pageNumber
+) {
+
+    const page =
+        await pdfDocument.getPage(
+            pageNumber
+        );
+
+
+    const viewport =
+        page.getViewport({
+
+            scale:
+                zoom,
+
+            rotation:
+                rotation
+
+        });
+
+
+    const pageContainer =
+        document.createElement(
+            "div"
+        );
+
+
+    pageContainer.className =
+        "pdfPage";
+
+
+    pageContainer.style.width =
+        `${viewport.width}px`;
+
+
+    pageContainer.style.height =
+        `${viewport.height}px`;
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    const dpr =
+        window.devicePixelRatio ||
+        1;
+
+
+    canvas.width =
+        Math.floor(
+            viewport.width *
+            dpr
+        );
+
+
+    canvas.height =
+        Math.floor(
+            viewport.height *
+            dpr
+        );
+
+
+    canvas.style.width =
+        `${viewport.width}px`;
+
+
+    canvas.style.height =
+        `${viewport.height}px`;
+
+
+    pageContainer.appendChild(
+        canvas
+    );
+
+
+    const pageNumberLabel =
+        document.createElement(
+            "div"
+        );
+
+
+    pageNumberLabel.className =
+        "pageNumber";
+
+
+    pageNumberLabel.textContent =
+        `Page ${pageNumber} / ${pdfDocument.numPages}`;
+
+
+    pageContainer.appendChild(
+        pageNumberLabel
+    );
+
+
+    pagesContainer.appendChild(
+        pageContainer
+    );
+
+
+    /*
+     * On utilise le DPR pour obtenir
+     * un affichage net sur les écrans
+     * haute résolution.
+     */
+
+    const transform =
+        dpr !== 1
+            ? [dpr, 0, 0, dpr, 0, 0]
+            : null;
+
+
+    await page.render({
+
+        canvasContext:
+            context,
+
+        viewport:
+            viewport,
+
+        transform:
+            transform
+
+    }).promise;
+
+}
+
+
+/* =========================================================
+   CHARGER UN BLOB
+========================================================= */
+
+async function chargerBlob(
     blob,
     nom
 ) {
@@ -852,7 +1212,7 @@ async function chargerPDF(
     try {
 
         afficherLoader(
-            "Chargement du document..."
+            "Préparation du document..."
         );
 
 
@@ -880,53 +1240,93 @@ async function chargerPDF(
             );
 
 
-        pdfFrame.src =
-            pdfUrl;
+        const arrayBuffer =
+            await blob.arrayBuffer();
 
 
-        documentStatus.textContent =
-            "Document PDF";
-
-
-        /*
-         * On laisse Chromium charger
-         * le PDF dans l'iframe.
-         */
-
-        pdfFrame.onload = () => {
-
-            masquerLoader();
-
-        };
-
-
-        /*
-         * Sécurité au cas où le PDF
-         * ne déclenche pas correctement
-         * l'événement load.
-         */
-
-        setTimeout(() => {
-
-            masquerLoader();
-
-        }, 2500);
+        await chargerDepuisDonnees(
+            new Uint8Array(
+                arrayBuffer
+            )
+        );
 
     }
 
     catch (error) {
 
         console.error(
-            "Erreur chargement PDF :",
             error
         );
 
 
         afficherErreur(
-            "Le document PDF n'a pas pu être chargé."
+            "Le PDF n'a pas pu être chargé."
         );
 
     }
+
+}
+
+
+/* =========================================================
+   CHARGER DEPUIS DES DONNÉES PDF
+========================================================= */
+
+async function chargerDepuisDonnees(
+    data
+) {
+
+    afficherLoader(
+        "Rendu du document..."
+    );
+
+
+    /*
+     * destruction éventuelle de l'ancien PDF
+     */
+
+    if (pdfDocument) {
+
+        try {
+
+            await pdfDocument.destroy();
+
+        }
+
+        catch (_) {}
+
+    }
+
+
+    /*
+     * Chargement PDF.js
+     */
+
+    const loadingTask =
+        getDocument({
+
+            data:
+                data
+
+        });
+
+
+    pdfDocument =
+        await loadingTask.promise;
+
+
+    await rendrePDF();
+
+
+    masquerLoader();
+
+
+    documentStatus.textContent =
+        `${pdfDocument.numPages} page${
+            pdfDocument.numPages > 1
+                ? "s"
+                : ""
+        }`;
 
 }
 
@@ -936,21 +1336,21 @@ async function chargerPDF(
 ========================================================= */
 
 async function chargerDepuisURL(
-    fileUrl,
+    url,
     nom
 ) {
 
     try {
 
         afficherLoader(
-            "Chargement du PDF..."
+            "Téléchargement du document..."
         );
 
 
         const response =
             await fetch(
                 decodeURIComponent(
-                    fileUrl
+                    url
                 )
             );
 
@@ -968,10 +1368,9 @@ async function chargerDepuisURL(
             await response.blob();
 
 
-        await chargerPDF(
+        await chargerBlob(
             blob,
-            nom ||
-            "Document.pdf"
+            nom
         );
 
     }
@@ -979,7 +1378,7 @@ async function chargerDepuisURL(
     catch (error) {
 
         console.error(
-            "Erreur URL PDF :",
+            "Erreur URL :",
             error
         );
 
@@ -1031,10 +1430,6 @@ async function chargerDepuisFirestore(
             snap.data();
 
 
-        /*
-         * Nom du document
-         */
-
         const nom =
             data.nom ||
             data.name ||
@@ -1044,13 +1439,13 @@ async function chargerDepuisFirestore(
 
 
         /* =================================================
-           CAS ORDONNANCE
+           ORDONNANCE
         ================================================= */
 
         if (data.ord) {
 
             if (
-                typeof window.ordToPDF !==
+                typeof generateHTML !==
                 "function"
             ) {
 
@@ -1112,7 +1507,7 @@ async function chargerDepuisFirestore(
                     );
 
 
-            await chargerPDF(
+            await chargerBlob(
                 blob,
                 nom === "Document.pdf"
                     ? "Ordonnance.pdf"
@@ -1126,7 +1521,7 @@ async function chargerDepuisFirestore(
 
 
         /* =================================================
-           CAS PDF BASE64
+           PDF BASE64
         ================================================= */
 
         if (data.pdfBase64) {
@@ -1138,7 +1533,7 @@ async function chargerDepuisFirestore(
                 );
 
 
-            await chargerPDF(
+            await chargerBlob(
                 blob,
                 nom
             );
@@ -1150,7 +1545,7 @@ async function chargerDepuisFirestore(
 
 
         throw new Error(
-            "Aucun PDF disponible dans ce document."
+            "PDF indisponible."
         );
 
     }
@@ -1205,9 +1600,12 @@ function b64toBlob(
 
 
     return new Blob(
-        [arr],
+        [
+            arr
+        ],
         {
-            type
+            type:
+                type
         }
     );
 
@@ -1215,234 +1613,238 @@ function b64toBlob(
 
 
 /* =========================================================
-   ZOOM
+   ZOOM +
 ========================================================= */
 
-function appliquerZoom() {
+document
+    .getElementById(
+        "zoomIn"
+    )
+    .addEventListener(
+        "click",
+        async () => {
 
-    /*
-     * Le PDF natif de Chromium gère son
-     * propre zoom. On transmet donc les
-     * raccourcis clavier au PDF lorsque
-     * c'est possible.
-     *
-     * Pour l'instant, on affiche simplement
-     * le niveau demandé dans notre interface.
-     */
-
-    document.getElementById(
-        "zoomResetButton"
-    ).textContent =
-        `${Math.round(zoom * 100)} %`;
-
-}
+            zoom =
+                Math.min(
+                    3,
+                    zoom + .15
+                );
 
 
-document.getElementById(
-    "zoomInButton"
-).addEventListener(
-    "click",
-    () => {
+            await rendrePDF();
 
-        zoom =
-            Math.min(
-                2,
-                zoom + .1
+        }
+    );
+
+
+/* =========================================================
+   ZOOM -
+========================================================= */
+
+document
+    .getElementById(
+        "zoomOut"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            zoom =
+                Math.max(
+                    .5,
+                    zoom - .15
+                );
+
+
+            await rendrePDF();
+
+        }
+    );
+
+
+/* =========================================================
+   RESET ZOOM
+========================================================= */
+
+document
+    .getElementById(
+        "zoomValue"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            zoom =
+                1.25;
+
+
+            await rendrePDF();
+
+        }
+    );
+
+
+/* =========================================================
+   ROTATION
+========================================================= */
+
+document
+    .getElementById(
+        "rotateButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            rotation =
+                (
+                    rotation +
+                    90
+                ) %
+                360;
+
+
+            await rendrePDF();
+
+        }
+    );
+
+
+/* =========================================================
+   TELECHARGEMENT
+========================================================= */
+
+document
+    .getElementById(
+        "downloadButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            if (!pdfBlob) {
+
+                return;
+
+            }
+
+
+            const url =
+                URL.createObjectURL(
+                    pdfBlob
+                );
+
+
+            const a =
+                document.createElement(
+                    "a"
+                );
+
+
+            a.href =
+                url;
+
+
+            a.download =
+                nomDocument;
+
+
+            document.body.appendChild(
+                a
             );
 
-        appliquerZoom();
 
-        /*
-         * Ctrl + +
-         */
-
-        pdfFrame.focus();
-
-        pdfFrame.contentWindow?.postMessage(
-            {
-                type: "zoom-in"
-            },
-            "*"
-        );
-
-    }
-);
+            a.click();
 
 
-document.getElementById(
-    "zoomOutButton"
-).addEventListener(
-    "click",
-    () => {
+            a.remove();
 
-        zoom =
-            Math.max(
-                .5,
-                zoom - .1
+
+            setTimeout(
+                () => {
+
+                    URL.revokeObjectURL(
+                        url
+                    );
+
+                },
+                1000
             );
 
-        appliquerZoom();
-
-        pdfFrame.focus();
-
-        pdfFrame.contentWindow?.postMessage(
-            {
-                type: "zoom-out"
-            },
-            "*"
-        );
-
-    }
-);
-
-
-document.getElementById(
-    "zoomResetButton"
-).addEventListener(
-    "click",
-    () => {
-
-        zoom = 1;
-
-        appliquerZoom();
-
-        pdfFrame.focus();
-
-    }
-);
+        }
+    );
 
 
 /* =========================================================
    PLEIN ÉCRAN
 ========================================================= */
 
-document.getElementById(
-    "fullscreenButton"
-).addEventListener(
-    "click",
-    async () => {
+document
+    .getElementById(
+        "fullscreenButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
 
-        try {
+            try {
 
-            if (
-                !document.fullscreenElement
-            ) {
+                if (
+                    !document.fullscreenElement
+                ) {
 
-                await document.documentElement
-                    .requestFullscreen();
+                    await document
+                        .documentElement
+                        .requestFullscreen();
+
+                }
+
+                else {
+
+                    await document
+                        .exitFullscreen();
+
+                }
 
             }
 
-            else {
+            catch (error) {
 
-                await document.exitFullscreen();
+                console.error(
+                    error
+                );
 
             }
 
         }
-
-        catch (error) {
-
-            console.error(
-                "Fullscreen:",
-                error
-            );
-
-        }
-
-    }
-);
+    );
 
 
 /* =========================================================
-   TÉLÉCHARGEMENT
-========================================================= */
-
-document.getElementById(
-    "downloadButton"
-).addEventListener(
-    "click",
-    () => {
-
-        if (!pdfBlob) {
-
-            return;
-
-        }
-
-
-        const url =
-            URL.createObjectURL(
-                pdfBlob
-            );
-
-
-        const a =
-            document.createElement(
-                "a"
-            );
-
-
-        a.href =
-            url;
-
-
-        a.download =
-            nomDocument ||
-            "Document.pdf";
-
-
-        document.body.appendChild(a);
-
-        a.click();
-
-        a.remove();
-
-
-        setTimeout(() => {
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        }, 1000);
-
-    }
-);
-
-
-/* =========================================================
-   🖨️ IMPRESSION
+   🖨️ IMPRESSION ELECTRON UNIQUEMENT
 ========================================================= */
 
 printButton.addEventListener(
     "click",
     async () => {
 
-        if (!pdfBlob) {
+        /*
+         * Double sécurité :
+         *
+         * Même si quelqu'un déclenche
+         * artificiellement le bouton,
+         * aucune impression Electron
+         * ne sera faite dans le navigateur.
+         */
 
-            alert(
-                "Le document n'est pas encore chargé."
-            );
+        if (!estElectron) {
 
             return;
 
         }
 
 
-        /*
-         * Cette fonction sera exposée
-         * par le preload.js.
-         */
-
-        if (
-            !window.electronPrint ||
-            !window.electronPrint.ouvrirPDF
-        ) {
-
-            alert(
-                "La fonction d'impression Electron n'est pas disponible."
-            );
+        if (!pdfBlob) {
 
             return;
 
@@ -1459,61 +1861,58 @@ printButton.addEventListener(
                 "⏳ Préparation...";
 
 
-            /*
-             * Conversion du Blob en ArrayBuffer
-             */
-
             const buffer =
                 await pdfBlob.arrayBuffer();
 
 
-            /*
-             * Envoi du PDF à Electron
-             */
+            await window.electronPrint
+                .ouvrirPDF({
 
-            await window.electronPrint.ouvrirPDF({
+                    data:
+                        new Uint8Array(
+                            buffer
+                        ),
 
-                data:
-                    new Uint8Array(
-                        buffer
-                    ),
+                    nom:
+                        nomDocument
 
-                nom:
-                    nomDocument
-
-            });
+                });
 
 
             printButton.innerHTML =
                 "🖨️ Imprimer";
+
+
+            printButton.disabled =
+                false;
 
         }
 
         catch (error) {
 
             console.error(
-                "Erreur impression :",
+                "Erreur impression Electron:",
                 error
-            );
-
-
-            alert(
-                "Impossible d'ouvrir la fenêtre d'impression.\n\n" +
-                (
-                    error?.message ||
-                    "Erreur inconnue."
-                )
             );
 
 
             printButton.innerHTML =
                 "🖨️ Imprimer";
 
+
+            printButton.disabled =
+                false;
+
+
+            alert(
+                "Impossible d'ouvrir la fenêtre d'impression.\n\n" +
+                (
+                    error.message ||
+                    "Erreur inconnue."
+                )
+            );
+
         }
-
-
-        printButton.disabled =
-            false;
 
     }
 );
@@ -1525,15 +1924,26 @@ printButton.addEventListener(
 
 window.addEventListener(
     "beforeunload",
-    () => {
+    async () => {
+
+        if (pdfDocument) {
+
+            try {
+
+                await pdfDocument.destroy();
+
+            }
+
+            catch (_) {}
+
+        }
+
 
         if (pdfUrl) {
 
             URL.revokeObjectURL(
                 pdfUrl
             );
-
-            pdfUrl = null;
 
         }
 
@@ -1545,8 +1955,7 @@ window.addEventListener(
    FONCTION PRINCIPALE
 ========================================================= */
 
-window.viewer =
-async function() {
+async function viewer() {
 
     const params =
         new URLSearchParams(
@@ -1573,7 +1982,7 @@ async function() {
 
 
     /* ================================================
-       CAS 1 : URL DIRECTE
+       URL DIRECTE
     ================================================= */
 
     if (fileUrl) {
@@ -1591,7 +2000,7 @@ async function() {
 
 
     /* ================================================
-       CAS 2 : FIRESTORE
+       FIRESTORE
     ================================================= */
 
     if (docId) {
@@ -1607,14 +2016,14 @@ async function() {
 
 
     /* ================================================
-       CAS 3 : RIEN
+       RIEN
     ================================================= */
 
     afficherErreur(
         "Aucun document PDF n'a été fourni."
     );
 
-};
+}
 
 
 /* =========================================================
@@ -1626,4 +2035,5 @@ viewer();
 </script>
 
 </body>
+
 </html>

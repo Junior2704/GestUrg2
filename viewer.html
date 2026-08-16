@@ -778,8 +778,7 @@ let rotation =
 const estElectron =
     !!(
         window.electronPrint &&
-        typeof window.electronPrint.ouvrirPDF ===
-        "function"
+        typeof window.electronPrint.ouvrir === "function"
     );
 
 
@@ -1315,13 +1314,28 @@ async function chargerDocumentFirestore(
         snapshot.data();
 
 
-    const nom =
-        data.nom ||
-        data.name ||
-        data.filename ||
-        data.fileName ||
-        "Document.pdf";
+let nom;
 
+if (data.ord) {
+
+    nom =
+        data.ord.titre ||
+        "Ordonnance";
+
+} else {
+
+    const patient = data.patient || {};
+
+    nom =
+        `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`
+            .replace(/\s+/g, " ")
+            .trim();
+
+}
+
+if (!nom) {
+    nom = "Document";
+}
 
     /* =================================================
        ORDONNANCE
@@ -1915,87 +1929,64 @@ document
 /* =====================================================
    IMPRESSION ELECTRON
 ===================================================== */
+printButton.addEventListener("click", async () => {
 
-printButton.addEventListener(
-    "click",
-    async () => {
+    if (!estElectron) {
+        return;
+    }
 
-        if (!estElectron) {
+    if (!pdfBlob) {
+        alert("Le document n'est pas encore chargé.");
+        return;
+    }
 
-            return;
+    try {
 
-        }
-
-
-        if (!pdfBlob) {
-
-            return;
-
-        }
+        printButton.disabled = true;
+        printButton.innerHTML = "⏳ Préparation...";
 
 
-        try {
-
-            printButton.disabled =
-                true;
+        const arrayBuffer =
+            await pdfBlob.arrayBuffer();
 
 
-            printButton.innerHTML =
-                "⏳ Préparation...";
+        /*
+         * On envoie le PDF à Electron.
+         */
+
+        await window.electronPrint.ouvrir({
+
+            data: new Uint8Array(arrayBuffer),
+
+            nom: nomDocument
+
+        });
 
 
-            const buffer =
-                await pdfBlob.arrayBuffer();
-
-
-            await window.electronPrint
-                .ouvrirPDF({
-
-                    data:
-                        new Uint8Array(
-                            buffer
-                        ),
-
-                    nom:
-                        nomDocument
-
-                });
-
-
-            printButton.innerHTML =
-                "🖨️ Imprimer";
-
-
-            printButton.disabled =
-                false;
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            printButton.innerHTML =
-                "🖨️ Imprimer";
-
-
-            printButton.disabled =
-                false;
-
-
-            alert(
-                "Impossible d'ouvrir la fenêtre d'impression."
-            );
-
-        }
+        printButton.disabled = false;
+        printButton.innerHTML = "🖨️ <span class='printText'>Imprimer</span>";
 
     }
-);
 
+    catch (error) {
 
+        console.error(
+            "Erreur impression Electron :",
+            error
+        );
+
+        printButton.disabled = false;
+
+        printButton.innerHTML =
+            "🖨️ <span class='printText'>Imprimer</span>";
+
+        alert(
+            "Impossible d'ouvrir la fenêtre d'impression."
+        );
+
+    }
+
+});
 /* =====================================================
    NETTOYAGE
 ===================================================== */

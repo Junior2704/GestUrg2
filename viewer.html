@@ -1170,7 +1170,31 @@ async function chargerBlob(
     );
 
 }
+function ouvrirDbTemp() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("gesturg2-temp-pdfs", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("pdfs");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
 
+async function recupererEtSupprimerPdfTemporaire(tempId) {
+    const db = await ouvrirDbTemp();
+
+    const blob = await new Promise((resolve, reject) => {
+        const tx = db.transaction("pdfs", "readonly");
+        const req = tx.objectStore("pdfs").get(tempId);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+    });
+
+    // Nettoyage, qu'on ait trouvé quelque chose ou non
+    const txDel = db.transaction("pdfs", "readwrite");
+    txDel.objectStore("pdfs").delete(tempId);
+
+    return blob;
+}
 
 /* =====================================================
    CHARGER PDF
@@ -1540,7 +1564,44 @@ async function chargerDocument() {
          * DOCUMENT FIRESTORE
          * =============================================
          */
+const tempId =
+            params.get("tempId");
 
+
+        /*
+         * =============================================
+         * PDF TEMPORAIRE (généré côté client, IndexedDB)
+         * =============================================
+         */
+
+        if (tempId) {
+
+            afficherLoader(
+                "Chargement du document..."
+            );
+
+            const blob =
+                await recupererEtSupprimerPdfTemporaire(tempId);
+
+            if (!blob) {
+
+                throw new Error(
+                    "Ce document n'est plus disponible (déjà consulté ou expiré)."
+                );
+
+            }
+
+            await chargerBlob(
+                blob,
+                nom || "Document.pdf"
+            );
+
+            return;
+
+        }
+
+
+        
         if (docId) {
 
             await chargerDocumentFirestore(

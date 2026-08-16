@@ -1219,9 +1219,43 @@ if (hospi.signatureImage) {
   pdf.text(auteurExport, marginX, y);
 
   const nomFichier = `rapport_hospitalisation_n°_${numero}_${(patient.nom || "patient").replace(/\s+/g, "_")}.pdf`;
- const blob = pdf.output("blob");
-const url = URL.createObjectURL(blob);
-window.open(url, "_blank");
+
+  const blob = pdf.output("blob");
+  const tempId = await stockerPdfTemporaire(blob);
+
+  const viewerUrl =
+    `viewer.html?tempId=${encodeURIComponent(tempId)}&nom=${encodeURIComponent(nomFichier)}`;
+
+  window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: nomFichier,
+      url: viewerUrl
+    },
+    "*" // idéalement remplace par ton origine exacte plutôt que "*"
+  );
+}
+
+// Petites fonctions utilitaires (à mettre une fois, par ex. dans un fichier commun)
+function ouvrirDbTemp() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("gesturg2-temp-pdfs", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("pdfs");
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function stockerPdfTemporaire(blob) {
+  const db = await ouvrirDbTemp();
+  const id = crypto.randomUUID();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction("pdfs", "readwrite");
+    tx.objectStore("pdfs").put(blob, id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  return id;
 }
 
 // ---- Helpers de mise en page PDF (mêmes conventions que rapporthospitalisation.html) ----

@@ -1688,12 +1688,7 @@ window.openInShell = function(title, url){
 };
 window.addEventListener("message", (event) => {
 
- if (
-        !navigator.userAgent.toLowerCase().includes("electron") &&
-        event.origin !== "https://junior2704.github.io"
-    ) {
-        return;
-    }  if (!event.data) return;
+ 
 
   if (event.data.type === "OPEN_TAB") {
     openTab(event.data.title, event.data.url);
@@ -2048,12 +2043,7 @@ import {
   window.addEventListener("message", async (event) => {
 
     
- if (
-        !navigator.userAgent.toLowerCase().includes("electron") &&
-        event.origin !== "https://junior2704.github.io"
-    ) {
-        return;
-    }
+
     const data = event.data;
 
     if (!data || data.type !== "NOTIFICATION") {
@@ -2159,7 +2149,7 @@ const snap = await getDoc(doc(db, "medecins", user.uid));
         email: user.email,
         displayName: user.displayName
       }
-    }, "https://junior2704.github.io");
+    }, "*");
   });
 });
 window.addEventListener("message",(event)=>{
@@ -2213,7 +2203,7 @@ document.addEventListener("keydown", (e) => {
                 {
                     type: "APPELER_TICKET"
                 },
-                "https://junior2704.github.io"
+                "*"
             );
 
             console.log("📞 APPELER_TICKET envoyé à bureau.html");
@@ -2231,12 +2221,7 @@ let bureauActuelIframe = null;
  
   window.addEventListener("message", (event) => {
 
- if (
-        !navigator.userAgent.toLowerCase().includes("electron") &&
-        event.origin !== "https://junior2704.github.io"
-    ) {
-        return;
-    }    if (event.data?.source === "bureau-actuel") {
+    if (event.data?.source === "bureau-actuel") {
       bureauActuelIframe = event.data.bureau;
       console.log("📥 Bureau reçu depuis l'iframe :", bureauActuelIframe);
     }
@@ -2251,7 +2236,7 @@ let bureauActuelIframe = null;
   // Redemande explicitement à l'iframe sa valeur actuelle (utile si le parent
   // n'a pas encore reçu de message, par ex. juste après l'ouverture de l'iframe).
   function demanderBureauActuel(iframeEl) {
-    iframeEl.contentWindow.postMessage({ type: "GET_BUREAU_ACTUEL" }, "https://junior2704.github.io");
+    iframeEl.contentWindow.postMessage({ type: "GET_BUREAU_ACTUEL" }, "*");
   }
  
   // ===== Inversion automatique du statut du bureau sélectionné =====
@@ -2632,7 +2617,7 @@ window.lockSession = async function() {
     document.querySelectorAll("iframe").forEach(iframe => {
         iframe.contentWindow.postMessage(
             { type: "APP_LOCK" },
-            "https://junior2704.github.io"
+            "*"
         );
 
         iframe.style.pointerEvents = "none";
@@ -2694,7 +2679,7 @@ function handleUnlockSuccess() {
 
   document.querySelectorAll("iframe").forEach(iframe => {
     iframe.style.pointerEvents = "auto";
-    iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "https://junior2704.github.io");
+    iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
   });
 
   startInactivityTimer();
@@ -2718,7 +2703,7 @@ await signOut(auth);
 
     document.querySelectorAll("iframe").forEach(iframe => {
       iframe.style.pointerEvents = "auto";
-      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "https://junior2704.github.io");
+      iframe.contentWindow.postMessage({ type: "APP_UNLOCK" }, "*");
     });
     window.location.href = "index.html";
   }
@@ -2745,7 +2730,7 @@ window.unlockSession = async function() {
     await reauthenticateWithCredential(auth.currentUser, credential);
 document.querySelector('.login-password-anim')
   .contentWindow
-  .postMessage("Valide", "https://junior2704.github.io");
+  .postMessage("Valide", "*");
         setTimeout(() =>{ 
       handleUnlockSuccess();
     }, 2000);
@@ -2754,7 +2739,7 @@ document.querySelector('.login-password-anim')
   } catch (error) {
         document.querySelector('.login-password-anim')
   .contentWindow
-  .postMessage("Invalide", "https://junior2704.github.io");
+  .postMessage("Invalide", "*");
   setTimeout(() =>{ 
       handleUnlockFail("Mot de passe incorrect", errorDiv);
   },2000);
@@ -2784,7 +2769,7 @@ window.unlockSessionByBadge = async function() {
     if (userSnap.exists() && userSnap.data().idBadge && userSnap.data().idBadge === badgeValue) {
       document.querySelector('.login-badge-anim')
   .contentWindow
-  .postMessage("Valide", "https://junior2704.github.io");
+  .postMessage("Valide", "*");
         setTimeout(() =>{ 
       handleUnlockSuccess();
     }, 2000);
@@ -2793,7 +2778,7 @@ window.unlockSessionByBadge = async function() {
       focusBadgeInput();
       document.querySelector('.login-badge-anim')
   .contentWindow
-  .postMessage("Invalide", "https://junior2704.github.io");
+  .postMessage("Invalide", "*");
   setTimeout(() =>{ 
       handleUnlockFail("Badge non reconnu", errorDiv);
   },2000);

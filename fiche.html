@@ -3510,7 +3510,7 @@ if (!notificationContainer) {
 }
 
 // Fonction pour afficher une bulle
-const ORIGINE_PARENT_BULLE = "https://junior2704.github.io";
+const ORIGINE_PARENT_BULLE = "*";
 
 
 function afficherBulle(message, typeBulle){
@@ -3547,7 +3547,7 @@ function demanderNotification(uid, titre, contenu) {
             titre: titre,
             contenu: contenu
         },
-        "https://junior2704.github.io"
+        "*"
     );
 
 }
@@ -4927,7 +4927,7 @@ async function validerClotureParBadge() {
     // Badge inconnu ou ne correspond pas au médecin connecté
     if (!medecinSnap.exists() || !medecinSnap.data().idBadge || medecinSnap.data().idBadge !== badgeValue) {
       badgeInput.value = "";
-      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "https://junior2704.github.io");
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "*");
       setTimeout(() => {
         focusClotureBadgeInput();
         errorDiv.textContent = "❌ Badge non reconnu.";
@@ -4940,7 +4940,7 @@ async function validerClotureParBadge() {
 
     if (pages.cloture !== true) {
       badgeInput.value = "";
-      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "https://junior2704.github.io");
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "*");
       setTimeout(() => {
         focusClotureBadgeInput();
         errorDiv.textContent = "⛔ Vous n'êtes pas habilité à clôturer par badge. Utilisez le code (CCH).";
@@ -4949,7 +4949,7 @@ async function validerClotureParBadge() {
     }
 
     // ✅ Badge valide et habilité → démarrer la clôture
-    if (badgeAnim) badgeAnim.contentWindow.postMessage("Valide", "https://junior2704.github.io");
+    if (badgeAnim) badgeAnim.contentWindow.postMessage("Valide", "*");
     setTimeout(() => {
       executerCloture();
     }, 1500);
@@ -5073,8 +5073,8 @@ window.parent.postMessage({
     title: `Fiche Patient ${prenom} ${nom}`,
 
     url: `fichepatient.html?id=${patientRef}`
-}, "https://junior2704.github.io");
-        window.parent.postMessage({ type: "CLOSE_TAB" }, "https://junior2704.github.io");
+}, "*");
+        window.parent.postMessage({ type: "CLOSE_TAB" }, "*");
 
       } catch (error) {
         console.error("Erreur clôture hospitalisation :", error);
@@ -5242,7 +5242,7 @@ btnFacturer.addEventListener("click", () => {
       title: `Facturation ${nomfacture.textContent} ${prenomfacture.textContent}`,
       url: `Facturation.html?id=${patientId}`
     },
-    "https://junior2704.github.io"
+    "*"
   );
 });
 
@@ -6703,15 +6703,10 @@ document.querySelector('[data-module="documents"]').addEventListener('click', ()
 
 window.addEventListener("message", (event) => {
 
- if (
-        !navigator.userAgent.toLowerCase().includes("electron") &&
-        event.origin !== "https://junior2704.github.io"
-    ) {
-        return;
-    }  if (window.parent && window.parent !== window) {
+  if (window.parent && window.parent !== window) {
     window.parent.postMessage(
       event.data,      
-      "https://junior2704.github.io"              
+      "*"              
     );
   }
 });
@@ -6733,12 +6728,7 @@ let appLocked = false;
 
 window.addEventListener("message", (event) => {
 
- if (
-        !navigator.userAgent.toLowerCase().includes("electron") &&
-        event.origin !== "https://junior2704.github.io"
-    ) {
-        return;
-    }
+
   if (!event.data) return;
 
   if (event.data.type === "APP_LOCK") {

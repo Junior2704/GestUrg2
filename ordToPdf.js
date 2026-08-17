@@ -153,6 +153,7 @@ b {
             <div class="signature">
                 ${ord.medecin.nom}<br>
                 ${ord.medecin.specialite || ""}
+                ${ord.medecin.signature ? `<br><img src="${ord.medecin.signature}" class="signature-img">` : ""}
             </div>
 
         </div>

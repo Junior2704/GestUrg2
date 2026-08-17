@@ -2225,6 +2225,63 @@ z-index: 3000;
   color: #777;
   font-style: italic;
 }
+
+/* 📧 Liste des emails (modale administrative) */
+.admin-email-list {
+  margin: 6px 0 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.admin-email-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafc;
+}
+
+.admin-email-item input[type="email"] {
+  flex: 1;
+  margin: 0 !important;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.admin-email-item input[type="email"]:invalid:not(:placeholder-shown) {
+  border-color: #e74c3c;
+}
+
+.admin-email-item button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #e74c3c;
+  font-size: 14px;
+  padding: 4px;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+
+.admin-email-item button:hover {
+  transform: scale(1.2);
+}
+
+.admin-email-vide {
+  color: #777;
+  font-style: italic;
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+#btnAjouterEmail {
+  margin-bottom: 15px;
+}
 .acte-card{
     background:#fff;
     border:1px solid #e5e7eb;
@@ -3068,8 +3125,9 @@ z-index: 3000;
     <label for="adminTelephone">Téléphone</label>
     <input type="tel" id="adminTelephone" />
 
-    <label for="adminEmail">Email</label>
-    <input type="email" id="adminEmail" />
+    <label>Email(s)</label>
+    <div id="adminEmailList" class="admin-email-list"></div>
+    <button type="button" id="btnAjouterEmail" class="btn-id">➕ Ajouter un email</button>
 <hr>
 
 <h2>🪪 Vérification de l'identité</h2>
@@ -5048,7 +5106,7 @@ btnAdmin.addEventListener("click", async () => {
     document.getElementById("adminNaissance").value = data.dateNaissance || "";
     document.getElementById("adminAdresse").value = data.adresse || "";
     document.getElementById("adminTelephone").value = data.telephone || "";
-    document.getElementById("adminEmail").value = data.email || "";
+    chargerAdminEmails(data.email || "");
 await chargerHistoriqueVerifications();
     modalAdmin.classList.add("show");
 
@@ -5070,13 +5128,77 @@ function emailsValides(chaineEmails) {
 
     return emails.every(email => regexEmail.test(email));
 }
+
+// ==============================
+// 📧 GESTION LISTE EMAILS (modale administrative)
+// ==============================
+let adminEmails = [];
+
+function chargerAdminEmails(chaineEmails) {
+  adminEmails = (chaineEmails || "")
+    .split("//")
+    .map(e => e.trim())
+    .filter(e => e !== "");
+
+  afficherAdminEmails();
+}
+
+function afficherAdminEmails() {
+  const container = document.getElementById("adminEmailList");
+  container.innerHTML = "";
+
+  if (adminEmails.length === 0) {
+    container.innerHTML = `<div class="admin-email-vide">Aucun email enregistré.</div>`;
+    return;
+  }
+
+  adminEmails.forEach((email, index) => {
+    const div = document.createElement("div");
+    div.classList.add("admin-email-item");
+
+    div.innerHTML = `
+      <input type="email" value="${email.replace(/"/g, "&quot;")}"
+        placeholder="exemple@domaine.fr"
+        onchange="modifierAdminEmail(${index}, this.value)" />
+      <button type="button" onclick="supprimerAdminEmail(${index})">❌</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+window.modifierAdminEmail = function (index, value) {
+  adminEmails[index] = value.trim();
+};
+
+window.supprimerAdminEmail = function (index) {
+  adminEmails.splice(index, 1);
+  afficherAdminEmails();
+};
+
+document.getElementById("btnAjouterEmail").addEventListener("click", () => {
+  adminEmails.push("");
+  afficherAdminEmails();
+
+  const inputs = document.querySelectorAll("#adminEmailList .admin-email-item input[type='email']");
+  const dernier = inputs[inputs.length - 1];
+  if (dernier) dernier.focus();
+});
+
+function construireChaineAdminEmails() {
+  return adminEmails
+    .map(e => e.trim())
+    .filter(e => e !== "")
+    .join("//");
+}
+
 function telephoneValide(telephone) {
     return /^\+?[0-9\s\-().]{8,20}$/.test(telephone);
 }
 btnEnregistrerAdmin.addEventListener("click", async () => {
   const adresse = document.getElementById("adminAdresse").value.trim();
   const telephone = document.getElementById("adminTelephone").value.trim();
-  const email = document.getElementById("adminEmail").value.trim();
+  const email = construireChaineAdminEmails();
   const sexe = document.getElementById("adminSexe").value;
   const civilite = document.getElementById("adminCivilite").value;
 const dateNaissance = document.getElementById("adminNaissance").value.trim();

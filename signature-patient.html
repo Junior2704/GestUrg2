@@ -273,7 +273,26 @@ function resizeCanvas(){
 
 }
 
-window.continuer = () => {
+async function continuer ()  {
+try{
+
+        const params =
+          new URLSearchParams(
+            window.location.search
+          );
+
+        signatureId =
+          params.get("id");
+
+        if(!signatureId){
+
+            throw new Error(
+              "Identifiant manquant"
+            );
+        }
+
+    const ref = doc(db, "signatures-patient", signatureId);
+await updateDoc (ref, {statut : "signature"})
 
     afficherEtape("etape2");
 
@@ -290,9 +309,28 @@ window.continuer = () => {
           });
 
     },100);
+    }
+    catch(error){
+
+        console.error(error);
+
+        document
+          .getElementById("loading")
+          .style.display = "none";
+
+        const e =
+          document.getElementById("error");
+
+        e.style.display = "block";
+
+        e.innerHTML =
+          error.message;
+
+    }
+
 
 };
-
+window.continuer = continuer;
 window.effacerSignature = () => {
 
     signaturePad.clear();
@@ -371,14 +409,9 @@ async function charger(){
             );
         }
 
-        const snap =
-          await getDoc(
-            doc(
-              db,
-              "signatures-patient",
-              signatureId
-            )
-          );
+    const ref = doc(db, "signatures-patient", signatureId);
+
+const snap = await getDoc(ref);
 
         if(!snap.exists()){
 
@@ -419,7 +452,7 @@ async function charger(){
           ${data.dateNaissance || "Non renseignée"}
 
         `;
-
+await updateDoc (ref, {statut : "ouvert"})
         document
           .getElementById("loading")
           .style.display = "none";

@@ -933,6 +933,99 @@ header {
   margin-top: 20px;
 }
 
+/* ===== Onglets Badge / Code (clôture) ===== */
+.idcheck-switch {
+  display: flex;
+  gap: 8px;
+  background: #eef1f6;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.idcheck-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #374151;
+  cursor: pointer;
+  transition: .2s;
+  font-family: inherit;
+}
+
+.idcheck-tab.active {
+  background: linear-gradient(135deg,#0078d4,#2893ff);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,120,212,.30);
+}
+
+.idcheck-panel {
+  display: none;
+  text-align: left;
+}
+
+.idcheck-panel.active {
+  display: block;
+}
+
+.idcheck-badge-iframe-wrapper {
+  width: 100%;
+  max-width: 320px;
+  height: 200px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+}
+
+.idcheck-badge-anim {
+  width: 100%;
+  height: 200px;
+  border: none;
+  display: block;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.idcheck-badge-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+/* Champ du lecteur : masqué visuellement mais focusable */
+.idcheck-badge-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+}
+
+#clotureIdcheckError {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 10px;
+  min-height: 18px;
+  text-align: center;
+  line-height: 18px;
+}
+
+#modalCodeCloture #cloturePanelCode label {
+  display: block;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
 
 
 /* Animation d'apparition douce */
@@ -3047,8 +3140,41 @@ z-index: 3000;
 <div class="modal-overlay" id="modalCodeCloture" style="display:none;">
   <div class="modal">
     <h3>🔒 Clôture de l’hospitalisation</h3>
-    <label for="codeClotureInput">Entrez le CCH (Code de Clôture d'Hospitalisation) :</label>
-    <input type="password" id="codeClotureInput" placeholder="CCH.....">
+
+    <div class="idcheck-switch" id="clotureSwitch" style="display:none;">
+      <button type="button" id="clotureTabBadge" class="idcheck-tab" onclick="switchClotureTab('badge')">🪪 Badge</button>
+      <button type="button" id="clotureTabCode" class="idcheck-tab" onclick="switchClotureTab('code')">🔑 Code</button>
+    </div>
+
+    <!-- VOLET BADGE -->
+    <div id="cloturePanelBadge" class="idcheck-panel" onclick="focusClotureBadgeInput()">
+      <div class="idcheck-badge-iframe-wrapper">
+        <iframe
+          src="animation-badge.html"
+          class="idcheck-badge-anim"
+          scrolling="no"
+          frameborder="0"
+          title="Animation de lecture du badge">
+        </iframe>
+      </div>
+      <p class="idcheck-badge-hint">
+        Approchez votre badge du lecteur…
+      </p>
+      <input
+        type="text"
+        id="clotureBadgeInput"
+        class="idcheck-badge-input"
+        autocomplete="off">
+    </div>
+
+    <!-- VOLET CODE -->
+    <div id="cloturePanelCode" class="idcheck-panel">
+      <label for="codeClotureInput">Entrez le CCH (Code de Clôture d'Hospitalisation) :</label>
+      <input type="password" id="codeClotureInput" placeholder="CCH.....">
+    </div>
+
+    <div id="clotureIdcheckError"></div>
+
     <div class="modal-buttons">
       <button id="btnAnnulerCode" class="btn-id btn-id-c">❌ Annuler</button>
       <button id="btnValiderCode" class="btn-id btn-id-v">✅ Valider</button>
@@ -4597,24 +4723,85 @@ document
 .getElementById("btnContinuerCloture")
 .addEventListener("click",()=>{
 
-    document.getElementById(
-      "modalSignaturePatient"
-    ).style.display = "none";
-
-    inputCode.value = "";
-
-    modalCode.style.display = "flex";
-
-    inputCode.focus();
+    ouvrirModaleClotureValidation();
 
 });
+
+// ==============================
+// 🔐 CLÔTURE : sélection Badge / Code
+// ==============================
+
+// 🔹 Ouvre la modale de validation et détermine l'onglet par défaut
+// (Badge si le médecin a un badge enregistré, sinon Code directement)
+async function ouvrirModaleClotureValidation() {
+  document.getElementById("modalSignaturePatient").style.display = "none";
+  document.getElementById("clotureIdcheckError").textContent = "";
+  inputCode.value = "";
+
+  let hasBadge = false;
+  try {
+    if (auth.currentUser) {
+      const medecinSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+      hasBadge = !!(medecinSnap.exists() && medecinSnap.data().idBadge);
+    }
+  } catch (e) {
+    console.error("Erreur vérification badge médecin :", e);
+  }
+
+  const switchEl = document.getElementById("clotureSwitch");
+  if (hasBadge) {
+    switchEl.style.display = "flex";
+    switchClotureTab("badge");
+  } else {
+    // Pas de badge enregistré : on ne propose que le code
+    switchEl.style.display = "none";
+    switchClotureTab("code");
+  }
+
+  modalCode.style.display = "flex";
+}
+
+window.switchClotureTab = function (tab) {
+  const isBadge = tab === "badge";
+
+  document.getElementById("clotureTabBadge").classList.toggle("active", isBadge);
+  document.getElementById("clotureTabCode").classList.toggle("active", !isBadge);
+  document.getElementById("cloturePanelBadge").classList.toggle("active", isBadge);
+  document.getElementById("cloturePanelCode").classList.toggle("active", !isBadge);
+
+  document.getElementById("clotureIdcheckError").textContent = "";
+
+  if (isBadge) {
+    document.getElementById("clotureBadgeInput").value = "";
+    setTimeout(focusClotureBadgeInput, 50);
+  } else {
+    setTimeout(() => document.getElementById("codeClotureInput").focus({ preventScroll: true }), 50);
+  }
+};
+
+window.focusClotureBadgeInput = function () {
+  const input = document.getElementById("clotureBadgeInput");
+  if (document.getElementById("cloturePanelBadge").classList.contains("active")) {
+    input.focus({ preventScroll: true });
+  }
+};
+
 // 🔹 Annuler → fermer la modale
 btnAnnulerCode.addEventListener("click", () => {
   modalCode.style.display = "none";
 });
 
-// 🔹 Valider le code et exécuter la clôture
+// 🔹 Le bouton "Valider" agit selon le volet actif
 btnValiderCode.addEventListener("click", async () => {
+  if (document.getElementById("cloturePanelBadge").classList.contains("active")) {
+    await validerClotureParBadge();
+  } else {
+    await validerClotureParCode();
+  }
+});
+
+// ===== VÉRIFICATION PAR CODE (CCH) =====
+async function validerClotureParCode() {
   const code = inputCode.value.trim();
   if (!code) {
     afficherBulle("🚨 Veuillez entrer un code", "warning");
@@ -4633,6 +4820,79 @@ btnValiderCode.addEventListener("click", async () => {
     }
 
     // ✅ Code correct → démarrer la clôture
+    await executerCloture();
+
+  } catch (err) {
+    console.error("Erreur lors de la vérification du code :", err);
+    afficherBulle("Erreur de vérification du code", "error");
+  }
+}
+
+// ===== VÉRIFICATION PAR BADGE NFC =====
+async function validerClotureParBadge() {
+  const badgeInput = document.getElementById("clotureBadgeInput");
+  const badgeValue = badgeInput.value.trim();
+  const errorDiv = document.getElementById("clotureIdcheckError");
+  errorDiv.textContent = "";
+
+  if (!badgeValue) return;
+
+  if (!auth.currentUser) {
+    errorDiv.textContent = "Session introuvable, veuillez vous reconnecter.";
+    return;
+  }
+
+  const badgeAnim = document.querySelector("#cloturePanelBadge .idcheck-badge-anim");
+
+  try {
+    const medecinSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
+
+    // Badge inconnu ou ne correspond pas au médecin connecté
+    if (!medecinSnap.exists() || !medecinSnap.data().idBadge || medecinSnap.data().idBadge !== badgeValue) {
+      badgeInput.value = "";
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "https://junior2704.github.io");
+      setTimeout(() => {
+        focusClotureBadgeInput();
+        errorDiv.textContent = "❌ Badge non reconnu.";
+      }, 1500);
+      return;
+    }
+
+    // Badge reconnu → il faut encore vérifier l'habilitation à clôturer
+    const pages = medecinSnap.data().pages || {};
+
+    if (pages.cloture !== true) {
+      badgeInput.value = "";
+      if (badgeAnim) badgeAnim.contentWindow.postMessage("Invalide", "https://junior2704.github.io");
+      setTimeout(() => {
+        focusClotureBadgeInput();
+        errorDiv.textContent = "⛔ Vous n'êtes pas habilité à clôturer par badge. Utilisez le code (CCH).";
+      }, 1500);
+      return;
+    }
+
+    // ✅ Badge valide et habilité → démarrer la clôture
+    if (badgeAnim) badgeAnim.contentWindow.postMessage("Valide", "https://junior2704.github.io");
+    setTimeout(() => {
+      executerCloture();
+    }, 1500);
+
+  } catch (error) {
+    console.error("Erreur lors de la vérification du badge :", error);
+    badgeInput.value = "";
+    errorDiv.textContent = "Erreur lors de la vérification du badge.";
+  }
+}
+
+document.getElementById("clotureBadgeInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && modalCode.style.display !== "none") {
+    e.preventDefault();
+    validerClotureParBadge();
+  }
+});
+
+// 🔹 Exécute la clôture (commun aux deux méthodes de validation)
+async function executerCloture() {
     modalCode.style.display = "none";
     document.getElementById("modalCloture").style.display = "flex";
 const signature = window.signatureId;
@@ -4746,12 +5006,7 @@ window.parent.postMessage({
         document.getElementById("modalCloture").style.display = "none";
       }
     }, 3200);
-
-  } catch (err) {
-    console.error("Erreur lors de la vérification du code :", err);
-    afficherBulle("Erreur de vérification du code", "error");
-  }
-});
+}
 
 
 

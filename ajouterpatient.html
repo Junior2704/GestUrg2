@@ -354,6 +354,72 @@ button:hover { background: #005ea2; }
   border-color: rgba(0, 200, 80, 0.8);
   box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
 }
+
+/* 📧 Liste des emails */
+.admin-email-list {
+  margin: 6px 0 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.admin-email-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafc;
+}
+
+.admin-email-item input[type="email"] {
+  flex: 1;
+  margin: 0 !important;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.admin-email-item input[type="email"]:invalid:not(:placeholder-shown) {
+  border-color: #e74c3c;
+}
+
+.admin-email-item button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-email-item button:hover {
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+}
+
+.admin-email-vide {
+  color: #777;
+  font-style: italic;
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+#btnAjouterEmailPatient {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
 </style>
 </head>
 
@@ -420,8 +486,9 @@ button:hover { background: #005ea2; }
 <label>Téléphone</label>
 <input id="telephone">
 
-<label>Email</label>
-<input type="email" id="email">
+<label>Email(s)</label>
+<div id="emailList" class="admin-email-list"></div>
+<button type="button" id="btnAjouterEmailPatient" class="btn-id">➕ Ajouter un email</button>
 
     <button id="validateIdentity" class="btn-id btn-id-v">➡️ Valider l'identité</button>
   </div>
@@ -557,6 +624,72 @@ const search=document.getElementById("search")
 if (!patientId) {
   console.error("ID patient manquant");
 }
+
+// ==============================
+// 📧 GESTION LISTE EMAILS
+// ==============================
+let patientEmails = [];
+
+function chargerPatientEmails(chaineEmails) {
+  patientEmails = (chaineEmails || "")
+    .split("//")
+    .map(e => e.trim())
+    .filter(e => e !== "");
+
+  afficherPatientEmails();
+}
+
+function afficherPatientEmails() {
+  const container = document.getElementById("emailList");
+  container.innerHTML = "";
+
+  if (patientEmails.length === 0) {
+    container.innerHTML = `<div class="admin-email-vide">Aucun email enregistré.</div>`;
+    return;
+  }
+
+  patientEmails.forEach((email, index) => {
+    const div = document.createElement("div");
+    div.classList.add("admin-email-item");
+
+    div.innerHTML = `
+      <input type="email" value="${email.replace(/"/g, "&quot;")}"
+        placeholder="exemple@domaine.fr"
+        onchange="modifierPatientEmail(${index}, this.value)" />
+      <button type="button" onclick="supprimerPatientEmail(${index})" aria-label="Supprimer cet email">✕</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+window.modifierPatientEmail = function (index, value) {
+  patientEmails[index] = value.trim();
+};
+
+window.supprimerPatientEmail = function (index) {
+  patientEmails.splice(index, 1);
+  afficherPatientEmails();
+};
+
+document.getElementById("btnAjouterEmailPatient").addEventListener("click", () => {
+  patientEmails.push("");
+  afficherPatientEmails();
+
+  const inputs = document.querySelectorAll("#emailList .admin-email-item input[type='email']");
+  const dernier = inputs[inputs.length - 1];
+  if (dernier) dernier.focus();
+});
+
+function construirePatientEmailsChaine() {
+  return patientEmails
+    .map(e => e.trim())
+    .filter(e => e !== "")
+    .join("//");
+}
+
+afficherPatientEmails();
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;
 
@@ -775,7 +908,7 @@ results.style.opacity = 0.5;
 
         adresse.value = p.adresse || "";
         telephone.value = p.telephone || "";
-        email.value = p.email || "";
+        chargerPatientEmails(p.email || "");
         idPatient.value = id;
 
         document.getElementById("medtraitant").value = p.medtraitant || "";
@@ -884,7 +1017,7 @@ document.getElementById("createPatient").onclick = () => {
   civilite.value = "";
   adresse.value = "";
   telephone.value = "";
-  email.value = "";
+  chargerPatientEmails("");
   delete nom.dataset.id; // 🔒 IMPORTANT
   idPatient.value = "";
   patientSelected = true;
@@ -962,7 +1095,7 @@ const positionPatientVal =
   document.querySelector('input[name="positionPatient"]:checked')?.value || "";
   const adresseVal = adresse.value.trim();
   const telephoneVal = telephone.value.trim();
-  const emailVal = email.value.trim();
+  const emailVal = construirePatientEmailsChaine();
 
   const nomVal = nom.value.trim();
   const prenomVal = prenom.value.trim();

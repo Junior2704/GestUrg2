@@ -128,6 +128,11 @@ b {
     background: #2563eb;
     margin: 12px 0;
 }
+    .signature-img {
+    max-height: 60px;
+    max-width: 150px;
+    margin-top: 8px;
+}
         </style>
     </head>
     <body>

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Votre avis — Centre Hospitalier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     CONFIGURATION FIREBASE — à compléter avant mise en ligne
+     1. Créez un projet sur https://console.firebase.google.com
+     2. Activez Firestore Database (mode production)
+     3. Copiez votre configuration ci-dessous
+     4. Ajoutez une règle Firestore autorisant la création dans "avis"
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "VOTRE_PROJET.firebaseapp.com",
+    projectId: "VOTRE_PROJET",
+    storageBucket: "VOTRE_PROJET.appspot.com",
+    messagingSenderId: "VOTRE_SENDER_ID",
+    appId: "VOTRE_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.__db = db;
+  window.__fs = { collection, addDoc, serverTimestamp };
+</script>
+
+<style>
+  :root{
+    --bg: #F6FBFA;
+    --surface: #FFFFFF;
+    --ink: #12312D;
+    --ink-soft: #4C6B66;
+    --teal: #0F766E;
+    --teal-deep: #0B544E;
+    --aqua: #DCF3F0;
+    --coral: #EF6351;
+    --coral-soft: #FDE4DF;
+    --amber: #E2A63A;
+    --line: #E2EEEC;
+    --radius: 22px;
+    --shadow: 0 20px 50px -25px rgba(15, 60, 55, .35);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 500px at 90% -10%, #E7F6F3 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 32px 16px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+
+  .app{ width:100%; max-width:640px; }
+
+  header.hero{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .hero .kicker{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--teal-deep); font-weight:700;
+    background: var(--aqua); padding:6px 14px; border-radius:999px;
+    margin-bottom:14px;
+  }
+  .hero h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(28px, 5vw, 38px);
+    line-height:1.15;
+    margin:0 0 8px;
+    color:var(--teal-deep);
+  }
+  .hero p{ color:var(--ink-soft); margin:0; font-size:15.5px; }
+
+  /* ---- pouls / progression, élément signature ---- */
+  .pulse-wrap{
+    position:relative; height:46px; margin:26px 0 8px;
+  }
+  .pulse-track{
+    position:absolute; inset:0; display:flex; align-items:center;
+  }
+  .pulse-line{ width:100%; height:2px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .pulse-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--teal), var(--coral)); transition:width .5s cubic-bezier(.65,0,.35,1); }
+  .pulse-dot{
+    position:absolute; top:50%; width:14px; height:14px; border-radius:50%;
+    background:var(--surface); border:3px solid var(--teal); transform:translate(-50%,-50%);
+    transition:left .5s cubic-bezier(.65,0,.35,1);
+    box-shadow:0 0 0 5px #fff;
+  }
+  .pulse-dot svg{ position:absolute; inset:-14px; overflow:visible; }
+  .step-label{ text-align:center; font-size:13px; color:var(--ink-soft); font-weight:600; letter-spacing:.02em; }
+  .step-label b{ color:var(--teal-deep); }
+
+  .card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    padding:32px;
+    margin-top:18px;
+  }
+  @media (max-width:520px){ .card{ padding:22px; } }
+
+  .step{ display:none; animation: rise .4s ease both; }
+  .step.active{ display:block; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  h2.step-title{
+    font-family:var(--font-display);
+    font-size:22px; font-weight:600; margin:0 0 4px; color:var(--ink);
+  }
+  p.step-sub{ margin:0 0 22px; color:var(--ink-soft); font-size:14.5px; }
+
+  label.field-label{
+    display:block; font-weight:700; font-size:14px; margin-bottom:10px; color:var(--ink);
+  }
+  .field{ margin-bottom:26px; }
+
+  input[type="date"]{
+    width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid var(--line);
+    font-family:var(--font-body); font-size:15px; color:var(--ink); background:#FBFDFD;
+  }
+  input[type="date"]:focus{ outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal); }
+
+  /* motif — cartes sélectionnables */
+  .motif-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:480px){ .motif-grid{ grid-template-columns:1fr; } }
+  .motif-card{
+    display:flex; align-items:center; gap:10px;
+    border:1.5px solid var(--line); border-radius:14px; padding:13px 14px;
+    cursor:pointer; background:#FBFDFD; font-size:14px; font-weight:600; color:var(--ink);
+    transition: all .18s ease;
+  }
+  .motif-card:hover{ border-color:var(--teal); }
+  .motif-card .emoji{ font-size:19px; }
+  .motif-card input{ display:none; }
+  .motif-card.checked{ border-color:var(--teal); background:var(--aqua); color:var(--teal-deep); }
+
+  /* échelle emoji */
+  .emoji-scale{ display:flex; justify-content:space-between; gap:6px; }
+  .emoji-opt{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:12px 4px; border-radius:14px; border:1.5px solid var(--line); background:#FBFDFD;
+    cursor:pointer; transition:all .18s ease; text-align:center;
+  }
+  .emoji-opt span.e{ font-size:24px; line-height:1; transition:transform .18s ease; }
+  .emoji-opt span.t{ font-size:11px; color:var(--ink-soft); font-weight:600; }
+  .emoji-opt:hover span.e{ transform:scale(1.15); }
+  .emoji-opt.checked{ border-color:var(--teal); background:var(--aqua); }
+  .emoji-opt input{ display:none; }
+  .category-block{ margin-bottom:28px; }
+  .category-block:last-child{ margin-bottom:0; }
+
+  /* NPS slider */
+  .nps-wrap{ padding:6px 2px; }
+  input[type="range"]{
+    width:100%; height:6px; border-radius:6px; appearance:none; background:var(--line); outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    appearance:none; width:26px; height:26px; border-radius:50%;
+    background:var(--surface); border:4px solid var(--coral); cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.15);
+  }
+  .nps-value{ text-align:center; margin-top:10px; font-family:var(--font-display); font-size:30px; color:var(--coral); font-weight:600; }
+  .nps-labels{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:4px; }
+
+  /* chips */
+  .chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    border:1.5px solid var(--line); border-radius:999px; padding:9px 15px; font-size:13.5px; font-weight:600;
+    cursor:pointer; background:#FBFDFD; color:var(--ink-soft); transition:all .16s ease;
+  }
+  .chip:hover{ border-color:var(--teal); }
+  .chip.checked{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+  textarea{
+    width:100%; min-height:110px; padding:14px 16px; border-radius:14px; border:1.5px solid var(--line);
+    font-family:var(--font-body); font-size:14.5px; resize:vertical; background:#FBFDFD; color:var(--ink);
+  }
+  textarea:focus, .motif-card:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:1px; }
+
+  .nav-row{ display:flex; gap:10px; margin-top:30px; }
+  button{ font-family:var(--font-body); cursor:pointer; border:none; }
+  .btn{
+    flex:1; padding:15px 18px; border-radius:14px; font-weight:700; font-size:15px;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .18s ease;
+  }
+  .btn-primary{ background:var(--teal); color:#fff; box-shadow:0 12px 24px -12px rgba(15,118,110,.6); }
+  .btn-primary:hover{ background:var(--teal-deep); transform:translateY(-1px); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); flex:0 0 auto; padding:15px 20px; }
+  .btn-ghost:hover{ border-color:var(--teal); color:var(--teal-deep); }
+
+  /* écran de remerciement */
+  .thanks{ text-align:center; padding:10px 6px 4px; }
+  .thanks .icon{
+    width:74px; height:74px; margin:0 auto 18px; border-radius:50%;
+    background:var(--aqua); display:flex; align-items:center; justify-content:center; font-size:34px;
+    animation: pop .5s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes pop{ from{ transform:scale(0); } to{ transform:scale(1); } }
+  .thanks h2{ font-family:var(--font-display); font-size:25px; color:var(--teal-deep); margin:0 0 8px; }
+  .thanks p{ color:var(--ink-soft); font-size:14.5px; margin:0 auto 22px; max-width:380px; }
+  .recap{ display:flex; justify-content:center; gap:20px; margin:20px 0; flex-wrap:wrap; }
+  .recap div{ background:var(--aqua); border-radius:14px; padding:14px 20px; min-width:110px; }
+  .recap .n{ font-family:var(--font-display); font-size:24px; color:var(--teal-deep); font-weight:600; }
+  .recap .l{ font-size:11.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+
+  .error-msg{ color:var(--coral); font-size:13px; font-weight:600; margin-top:8px; display:none; }
+  .footer-note{ text-align:center; font-size:12px; color:var(--ink-soft); margin-top:18px; opacity:.8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="hero">
+    <span class="kicker">🏥 Votre avis compte</span>
+    <h1>Aidez-nous à mieux vous soigner</h1>
+    <p>Deux minutes suffisent. Votre réponse est anonyme et confidentielle.</p>
+  </header>
+
+  <div class="pulse-wrap" id="pulseWrap">
+    <div class="pulse-track">
+      <div class="pulse-line"><div class="pulse-fill" id="pulseFill"></div></div>
+    </div>
+    <div class="pulse-dot" id="pulseDot" style="left:0%"></div>
+  </div>
+  <div class="step-label" id="stepLabel">Étape <b>1</b> sur <b id="stepTotal">2</b></div>
+
+  <form class="card" id="form" novalidate>
+
+    <!-- Étape 0 : date + motif -->
+    <div class="step active" data-step="0">
+      <h2 class="step-title">Parlons de votre passage</h2>
+      <p class="step-sub">Ces informations nous permettent d'adapter les questions suivantes.</p>
+
+      <div class="field">
+        <label class="field-label" for="datePassage">Date de votre passage</label>
+        <input type="date" id="datePassage" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Motif de votre passage</label>
+        <div class="motif-grid" id="motifGrid"></div>
+      </div>
+
+      <div class="error-msg" id="errStep0">Merci de renseigner la date et le motif de votre passage.</div>
+      <div class="nav-row">
+        <button type="button" class="btn btn-primary" id="toStep1">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- Les étapes de catégories sont injectées ici en JS -->
+    <div id="dynamicSteps"></div>
+
+    <!-- Étape finale : recommandation + commentaire -->
+    <div class="step" data-step="final">
+      <h2 class="step-title">Votre avis global</h2>
+      <p class="step-sub">Un dernier mot, et c'est terminé.</p>
+
+      <div class="field">
+        <label class="field-label">Recommanderiez-vous notre établissement à un proche ?</label>
+        <div class="nps-wrap">
+          <input type="range" id="nps" min="0" max="10" value="8">
+          <div class="nps-value" id="npsValue">8</div>
+          <div class="nps-labels"><span>Pas du tout (0)</span><span>Certainement (10)</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Ce que vous avez le plus apprécié <span style="font-weight:500;color:var(--ink-soft)">(facultatif)</span></label>
+        <div class="chip-group" id="chipsPositifs"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Ce qui pourrait être amélioré <span style="font-weight:500;color:var(--ink-soft)">(facultatif)</span></label>
+        <div class="chip-group" id="chipsAmelioration"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="commentaire">Un commentaire à ajouter ? <span style="font-weight:500;color:var(--ink-soft)">(facultatif)</span></label>
+        <textarea id="commentaire" placeholder="Décrivez librement votre expérience..."></textarea>
+      </div>
+
+      <div class="nav-row">
+        <button type="button" class="btn btn-ghost" id="backFinal">← Retour</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Envoyer mon avis ✓</button>
+      </div>
+    </div>
+
+    <!-- Écran de remerciement -->
+    <div class="step" data-step="thanks">
+      <div class="thanks">
+        <div class="icon">💚</div>
+        <h2>Merci infiniment !</h2>
+        <p>Votre avis a bien été transmis à notre équipe qualité. Il nous aide chaque jour à améliorer votre parcours de soin.</p>
+        <div class="recap" id="recap"></div>
+      </div>
+    </div>
+
+  </form>
+  <p class="footer-note">Vos données sont traitées de manière confidentielle et utilisées uniquement à des fins d'amélioration de la qualité des soins.</p>
+</div>
+
+<script type="module">
+/* ==================== Référentiel des motifs ==================== */
+const MOTIFS = [
+  { id:"consultation", label:"Consultation externe", emoji:"🩺" },
+  { id:"urgences", label:"Urgences", emoji:"🚑" },
+  { id:"hospitalisation", label:"Hospitalisation", emoji:"🛏️" },
+  { id:"chirurgie", label:"Chirurgie", emoji:"🔬" },
+  { id:"maternite", label:"Maternité", emoji:"👶" },
+  { id:"imagerie", label:"Imagerie / Radiologie", emoji:"🩻" },
+  { id:"laboratoire", label:"Laboratoire / Analyses", emoji:"🧪" },
+  { id:"visite", label:"Visite à un proche", emoji:"👥" },
+  { id:"autre", label:"Autre", emoji:"✨" },
+];
+
+/* ==================== Référentiel des catégories ==================== */
+const CATEGORIES = {
+  accueil:        { title:"Accueil et prise de rendez-vous", sub:"L'accueil administratif et l'orientation à votre arrivée." },
+  attente:        { title:"Temps d'attente", sub:"Le délai entre votre arrivée et votre prise en charge." },
+  medical:        { title:"Qualité des soins médicaux", sub:"Le suivi et les explications données par le médecin." },
+  soignant:       { title:"Personnel soignant", sub:"L'écoute et la disponibilité des infirmiers et aides-soignants." },
+  communication:  { title:"Information et communication", sub:"La clarté des informations reçues sur votre état et les suites à venir." },
+  proprete:       { title:"Propreté et hygiène", sub:"La propreté des locaux et du matériel utilisé." },
+  confort:        { title:"Confort", sub:"La chambre, la literie et le calme du service." },
+  restauration:   { title:"Repas et restauration", sub:"La qualité et l'adaptation des repas proposés." },
+  sortie:         { title:"Organisation de la sortie", sub:"La préparation de votre sortie et les documents remis." },
+  signaletique:   { title:"Signalétique et orientation", sub:"La facilité à se repérer dans l'établissement." },
+  accompagnement: { title:"Accompagnement humain", sub:"Le soutien et l'écoute reçus durant votre parcours." },
+};
+
+const SCALE = [
+  { v:1, e:"😞", t:"Mauvais" },
+  { v:2, e:"🙁", t:"Insuffisant" },
+  { v:3, e:"😐", t:"Correct" },
+  { v:4, e:"🙂", t:"Bien" },
+  { v:5, e:"😄", t:"Excellent" },
+];
+
+/* Quelles catégories afficher selon le motif */
+const MOTIF_CATEGORIES = {
+  consultation:    ["accueil","attente","medical","communication","proprete"],
+  urgences:        ["accueil","attente","medical","soignant","communication","accompagnement"],
+  hospitalisation: ["accueil","attente","medical","soignant","proprete","confort","restauration","communication","sortie"],
+  chirurgie:       ["accueil","medical","soignant","communication","confort","restauration","sortie"],
+  maternite:       ["accueil","medical","soignant","accompagnement","confort","restauration","sortie"],
+  imagerie:        ["accueil","attente","medical","proprete","communication"],
+  laboratoire:     ["accueil","attente","soignant","proprete"],
+  visite:          ["accueil","proprete","signaletique","soignant"],
+  autre:           ["accueil","attente","medical","soignant","communication","proprete"],
+};
+
+const CHIPS_POS = ["Accueil chaleureux","Personnel à l'écoute","Rapidité de la prise en charge","Explications claires","Propreté des lieux","Confort de la chambre","Qualité des repas","Professionnalisme médical"];
+const CHIPS_AMEL = ["Temps d'attente","Communication d'information","Confort","Propreté","Qualité des repas","Signalétique","Disponibilité du personnel","Organisation de la sortie"];
+
+/* ==================== État ==================== */
+let state = {
+  motif: null,
+  datePassage: "",
+  notes: {},
+  nps: 8,
+  positifs: new Set(),
+  amelioration: new Set(),
+  commentaire: ""
+};
+let stepsOrder = []; // ["0", "cat:accueil", "cat:attente", ..., "final", "thanks"]
+let currentIndex = 0;
+
+/* ==================== Construction de l'étape 0 ==================== */
+const motifGrid = document.getElementById("motifGrid");
+MOTIFS.forEach(m=>{
+  const label = document.createElement("label");
+  label.className = "motif-card";
+  label.innerHTML = `<input type="radio" name="motif" value="${m.id}"><span class="emoji">${m.emoji}</span><span>${m.label}</span>`;
+  label.querySelector("input").addEventListener("change", ()=>{
+    document.querySelectorAll(".motif-card").forEach(c=>c.classList.remove("checked"));
+    label.classList.add("checked");
+    state.motif = m.id;
+    buildDynamicSteps();
+  });
+  motifGrid.appendChild(label);
+});
+
+const dateInput = document.getElementById("datePassage");
+dateInput.max = new Date().toISOString().split("T")[0];
+dateInput.value = dateInput.max;
+state.datePassage = dateInput.value;
+dateInput.addEventListener("change", ()=> state.datePassage = dateInput.value);
+
+/* ==================== Construction dynamique des étapes catégories ==================== */
+const dynamicWrap = document.getElementById("dynamicSteps");
+
+function buildDynamicSteps(){
+  dynamicWrap.innerHTML = "";
+  const cats = MOTIF_CATEGORIES[state.motif] || MOTIF_CATEGORIES.autre;
+  // Regrouper les catégories par 2 pour des écrans courts et fluides
+  const groups = [];
+  for(let i=0;i<cats.length;i+=2){ groups.push(cats.slice(i,i+2)); }
+
+  groups.forEach((group, gi)=>{
+    const div = document.createElement("div");
+    div.className = "step";
+    div.dataset.step = `cat-${gi}`;
+    div.innerHTML = `
+      <h2 class="step-title">Votre expérience</h2>
+      <p class="step-sub">Évaluez chaque aspect de votre prise en charge.</p>
+      ${group.map(key=>{
+        const c = CATEGORIES[key];
+        return `
+        <div class="category-block">
+          <label class="field-label">${c.title}</label>
+          <p class="step-sub" style="margin-bottom:12px;">${c.sub}</p>
+          <div class="emoji-scale" data-cat="${key}">
+            ${SCALE.map(s=>`
+              <label class="emoji-opt">
+                <input type="radio" name="cat-${key}" value="${s.v}">
+                <span class="e">${s.e}</span>
+                <span class="t">${s.t}</span>
+              </label>`).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+      <div class="error-msg" data-err="cat-${gi}">Merci de répondre à toutes les questions pour continuer.</div>
+      <div class="nav-row">
+        <button type="button" class="btn btn-ghost" data-back>← Retour</button>
+        <button type="button" class="btn btn-primary" data-next>Continuer →</button>
+      </div>
+    `;
+    dynamicWrap.appendChild(div);
+
+    group.forEach(key=>{
+      div.querySelectorAll(`[data-cat="${key}"] input`).forEach(inp=>{
+        inp.addEventListener("change", ()=>{
+          div.querySelectorAll(`[data-cat="${key}"] .emoji-opt`).forEach(o=>o.classList.remove("checked"));
+          inp.closest(".emoji-opt").classList.add("checked");
+          state.notes[key] = Number(inp.value);
+        });
+      });
+    });
+  });
+
+  rebuildStepsOrder();
+}
+
+function rebuildStepsOrder(){
+  const dynSteps = Array.from(dynamicWrap.querySelectorAll(".step")).map(s=>s.dataset.step);
+  stepsOrder = ["0", ...dynSteps, "final", "thanks"];
+  document.getElementById("stepTotal").textContent = stepsOrder.length - 1; // on n'affiche pas "thanks"
+  updateProgress();
+}
+
+/* ==================== Chips (points forts / à améliorer) ==================== */
+function buildChips(containerId, list, targetSet){
+  const el = document.getElementById(containerId);
+  list.forEach(txt=>{
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = txt;
+    chip.addEventListener("click", ()=>{
+      chip.classList.toggle("checked");
+      if(chip.classList.contains("checked")) targetSet.add(txt); else targetSet.delete(txt);
+    });
+    el.appendChild(chip);
+  });
+}
+buildChips("chipsPositifs", CHIPS_POS, state.positifs);
+buildChips("chipsAmelioration", CHIPS_AMEL, state.amelioration);
+
+/* NPS slider */
+const npsInput = document.getElementById("nps");
+const npsValue = document.getElementById("npsValue");
+npsInput.addEventListener("input", ()=>{ npsValue.textContent = npsInput.value; state.nps = Number(npsInput.value); });
+
+/* ==================== Navigation entre étapes ==================== */
+function getStepEl(stepKey){
+  if(stepKey === "0") return document.querySelector('.step[data-step="0"]');
+  if(stepKey === "final") return document.querySelector('.step[data-step="final"]');
+  if(stepKey === "thanks") return document.querySelector('.step[data-step="thanks"]');
+  return dynamicWrap.querySelector(`[data-step="${stepKey}"]`);
+}
+
+function showStep(index){
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+  const key = stepsOrder[index];
+  const el = getStepEl(key);
+  if(el) el.classList.add("active");
+  currentIndex = index;
+  updateProgress();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function updateProgress(){
+  const total = stepsOrder.length - 1; // hors écran "merci"
+  const displayIndex = Math.min(currentIndex, total - 1);
+  const pct = total <= 1 ? 100 : (displayIndex / (total - 1)) * 100;
+  document.getElementById("pulseFill").style.width = pct + "%";
+  document.getElementById("pulseDot").style.left = pct + "%";
+  if(stepsOrder[currentIndex] !== "thanks"){
+    document.getElementById("stepLabel").innerHTML = `Étape <b>${displayIndex+1}</b> sur <b>${total}</b>`;
+  }
+}
+
+document.getElementById("toStep1").addEventListener("click", ()=>{
+  const err = document.getElementById("errStep0");
+  if(!state.motif || !state.datePassage){
+    err.style.display = "block";
+    return;
+  }
+  err.style.display = "none";
+  buildDynamicSteps();
+  showStep(1);
+});
+
+/* Délégation pour les boutons "Continuer / Retour" des étapes dynamiques et finale */
+document.addEventListener("click", (e)=>{
+  if(e.target.matches("[data-next]")){
+    const stepEl = e.target.closest(".step");
+    const cats = stepEl.querySelectorAll(".emoji-scale");
+    let ok = true;
+    cats.forEach(cat=>{
+      const key = cat.dataset.cat;
+      if(!state.notes[key]) ok = false;
+    });
+    const errKey = stepEl.dataset.step;
+    const errEl = document.querySelector(`[data-err="${errKey}"]`);
+    if(!ok){ if(errEl) errEl.style.display = "block"; return; }
+    if(errEl) errEl.style.display = "none";
+    showStep(currentIndex + 1);
+  }
+  if(e.target.matches("[data-back]")){
+    showStep(currentIndex - 1);
+  }
+});
+
+document.getElementById("backFinal").addEventListener("click", ()=> showStep(currentIndex - 1));
+
+/* ==================== Soumission Firestore ==================== */
+const form = document.getElementById("form");
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const submitBtn = document.getElementById("submitBtn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Envoi en cours...";
+
+  state.commentaire = document.getElementById("commentaire").value.trim();
+
+  const noteValues = Object.values(state.notes);
+  const noteMoyenne = noteValues.length ? +(noteValues.reduce((a,b)=>a+b,0)/noteValues.length).toFixed(2) : null;
+
+  const payload = {
+    date_passage: state.datePassage,
+    motif: state.motif,
+    notes: state.notes,
+    note_moyenne: noteMoyenne,
+    recommandation: state.nps,
+    points_forts: Array.from(state.positifs),
+    points_amelioration: Array.from(state.amelioration),
+    commentaire: state.commentaire,
+    date_soumission: window.__fs.serverTimestamp(),
+  };
+
+  try{
+    await window.__fs.addDoc(window.__fs.collection(window.__db, "avis"), payload);
+  }catch(err){
+    console.error("Erreur d'enregistrement Firestore :", err);
+    alert("Une erreur est survenue lors de l'envoi. Merci de réessayer, ou vérifiez la configuration Firebase dans le code de cette page.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Envoyer mon avis ✓";
+    return;
+  }
+
+  document.getElementById("recap").innerHTML = `
+    <div><div class="n">${noteMoyenne ?? "—"}/5</div><div class="l">Note moyenne</div></div>
+    <div><div class="n">${state.nps}/10</div><div class="l">Recommandation</div></div>
+  `;
+  currentIndex = stepsOrder.length - 1;
+  showStep(currentIndex);
+});
+
+/* Initialisation */
+rebuildStepsOrder();
+</script>
+</body>
+</html>

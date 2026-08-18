@@ -21,11 +21,16 @@
     projectId: "urgences-a8ed4"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  window.__db = db;
-  window.__fs = { collection, getDocs, query, orderBy };
-  window.dispatchEvent(new Event("firebase-ready"));
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.__db = db;
+    window.__fs = { collection, getDocs, query, orderBy };
+    window.__dbReady = Promise.resolve();
+  } catch (err) {
+    console.error("Erreur d'initialisation Firebase :", err);
+    window.__dbReady = Promise.reject(err);
+  }
 </script>
 
 <style>
@@ -504,7 +509,18 @@ function drawCharts(evolution, distribution){
   });
 }
 
-window.addEventListener("firebase-ready", loadData);
+window.__dbReady
+  .then(loadData)
+  .catch(err=>{
+    console.error("Firebase indisponible :", err);
+    document.getElementById("statusText").textContent = "Configuration Firebase manquante";
+    document.getElementById("content").innerHTML = `
+      <div class="empty">
+        <div class="e">⚠️</div>
+        <h3 style="font-family:var(--font-display);color:var(--ink);">Configuration Firebase requise</h3>
+        <p>Renseignez vos identifiants Firebase (<code>firebaseConfig</code>) en haut du code de cette page, puis rechargez-la.</p>
+      </div>`;
+  });
 </script>
 </body>
 </html>

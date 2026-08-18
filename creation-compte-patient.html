@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Créer un espace patient</title>
+
+<link rel="icon" type="image/png" href="logog2.png">
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(0,120,212,.13),
+            transparent 35%
+        ),
+        #f4f8fc;
+
+    color: #172b3a;
+}
+
+.card {
+
+    width: 100%;
+    max-width: 460px;
+
+    background: white;
+
+    border-radius: 24px;
+
+    padding: 32px;
+
+    box-shadow:
+        0 15px 45px rgba(31,72,104,.12);
+}
+
+.logo {
+
+    width: 70px;
+    height: 70px;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin: 0 auto 18px;
+}
+
+h1 {
+
+    text-align: center;
+
+    margin: 0;
+
+    font-size: 25px;
+}
+
+.subtitle {
+
+    text-align: center;
+
+    color: #6b7c8f;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    margin: 10px 0 25px;
+}
+
+.patient {
+
+    background: #f4f8fc;
+
+    border: 1px solid #dce8f2;
+
+    border-radius: 16px;
+
+    padding: 16px;
+
+    margin-bottom: 18px;
+}
+
+.patient-name {
+
+    font-size: 19px;
+
+    font-weight: 700;
+
+    margin-bottom: 5px;
+}
+
+.patient-info {
+
+    color: #687d8f;
+
+    font-size: 13px;
+}
+
+.email-box {
+
+    background: #eef7ff;
+
+    border: 1px solid #d4e9fa;
+
+    border-radius: 14px;
+
+    padding: 14px;
+
+    margin-bottom: 20px;
+}
+
+.email-label {
+
+    color: #668096;
+
+    font-size: 12px;
+
+    margin-bottom: 5px;
+}
+
+.email {
+
+    font-weight: 650;
+
+    color: #0078d4;
+
+    word-break: break-word;
+}
+
+button {
+
+    width: 100%;
+
+    height: 54px;
+
+    border: 0;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0084e8,
+            #006cc4
+        );
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 7px 18px rgba(0,120,212,.22);
+
+    transition: .2s;
+}
+
+button:hover {
+
+    transform: translateY(-1px);
+}
+
+button:disabled {
+
+    opacity: .65;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+.message {
+
+    display: none;
+
+    margin-bottom: 18px;
+
+    padding: 13px;
+
+    border-radius: 13px;
+
+    font-size: 14px;
+
+    line-height: 1.45;
+}
+
+.message.show {
+
+    display: block;
+}
+
+.message.error {
+
+    color: #a61b12;
+
+    background: #fff1f0;
+
+    border: 1px solid #ffd2ce;
+}
+
+.message.success {
+
+    color: #176b31;
+
+    background: #edf8ef;
+
+    border: 1px solid #cce8d1;
+}
+
+.loader {
+
+    display: inline-block;
+
+    width: 18px;
+    height: 18px;
+
+    border: 2px solid rgba(255,255,255,.4);
+
+    border-top-color: white;
+
+    border-radius: 50%;
+
+    animation: spin .7s linear infinite;
+
+    vertical-align: middle;
+
+    margin-right: 8px;
+}
+
+@keyframes spin {
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="card">
+
+    <img
+        src="logog2.png"
+        class="logo"
+        alt="GestUrg2"
+    >
+
+    <h1>
+        Créer un espace patient
+    </h1>
+
+    <div class="subtitle">
+
+        Un lien sécurisé sera envoyé au patient
+        afin qu'il puisse créer son espace personnel.
+
+    </div>
+
+
+    <div
+        id="message"
+        class="message"
+    ></div>
+
+
+    <div
+        id="patientBox"
+        class="patient"
+        style="display:none;"
+    >
+
+        <div
+            id="patientName"
+            class="patient-name"
+        ></div>
+
+        <div
+            id="patientInfo"
+            class="patient-info"
+        ></div>
+
+    </div>
+
+
+    <div
+        id="emailBox"
+        class="email-box"
+        style="display:none;"
+    >
+
+        <div class="email-label">
+            Le lien sera envoyé à :
+        </div>
+
+        <div
+            id="patientEmail"
+            class="email"
+        ></div>
+
+    </div>
+
+
+    <button
+        id="sendButton"
+        disabled
+    >
+        Envoyer le lien de création
+    </button>
+
+</div>
+
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+
+<script type="module">
+
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    collection,
+    query,
+    where,
+    getDocs,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+// ============================================================
+// FIREBASE
+// ============================================================
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyBkQ1vuGIr3gcOVm9wdXJpg-dahtCoCe_0",
+
+    authDomain:
+        "urgences-36b53.firebaseapp.com",
+
+    projectId:
+        "urgences-36b53",
+
+    storageBucket:
+        "urgences-36b53.firebasestorage.app",
+
+    messagingSenderId:
+        "135348433847",
+
+    appId:
+        "1:135348433847:web:327d2c5c4aff9ba3d02e32",
+
+    measurementId:
+        "G-S3CV9PX2KY"
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getFirestore(app);
+
+
+// ============================================================
+// EMAILJS
+// ============================================================
+
+const comptesEmailJS = [
+
+    {
+        serviceID: "service_o07vuso",
+        templateID: "template_vj03i4u",
+        publicKey: "CZapZCcxYfJ8-acLS"
+    },
+
+    {
+        serviceID: "service_o3i8ac9",
+        templateID: "template_0wbzbwe",
+        publicKey: "j5G-06rjQm0P6wriE"
+    },
+
+    {
+        serviceID: "service_qij0y5a",
+        templateID: "template_3qdes3p",
+        publicKey: "nh2zkdRVJcGcE-Jwe"
+    }
+
+];
+
+
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+const message =
+    document.getElementById("message");
+
+const patientBox =
+    document.getElementById("patientBox");
+
+const patientName =
+    document.getElementById("patientName");
+
+const patientInfo =
+    document.getElementById("patientInfo");
+
+const emailBox =
+    document.getElementById("emailBox");
+
+const patientEmail =
+    document.getElementById("patientEmail");
+
+const sendButton =
+    document.getElementById("sendButton");
+
+
+// ============================================================
+// ID PATIENT
+// ============================================================
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const patientId =
+    params.get("id");
+
+
+let patientData = null;
+
+let patientEmailValue = "";
+
+
+// ============================================================
+// MESSAGE
+// ============================================================
+
+function afficherMessage(
+    texte,
+    type
+) {
+
+    message.className =
+        "message show " + type;
+
+    message.textContent =
+        texte;
+}
+
+
+// ============================================================
+// TOKEN ALEATOIRE
+// ============================================================
+
+function genererToken() {
+
+    const array =
+        new Uint8Array(32);
+
+    crypto.getRandomValues(array);
+
+    return Array.from(array)
+        .map(byte =>
+            byte.toString(16).padStart(2, "0")
+        )
+        .join("");
+
+}
+
+
+// ============================================================
+// CHARGEMENT PATIENT
+// ============================================================
+
+async function chargerPatient() {
+
+    if (!patientId) {
+
+        afficherMessage(
+            "Aucun patient n'a été indiqué dans le lien.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const patientRef =
+            doc(
+                db,
+                "patients",
+                patientId
+            );
+
+
+        const patientSnap =
+            await getDoc(patientRef);
+
+
+        if (!patientSnap.exists()) {
+
+            afficherMessage(
+                "Le patient demandé n'existe pas.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        patientData =
+            patientSnap.data();
+
+
+        // ====================================================
+        // VERIFICATION ESPACE EXISTANT
+        // ====================================================
+
+        if (
+            patientData.userId ||
+            patientData.espacePatient === true
+        ) {
+
+            afficherMessage(
+                "Ce patient possède déjà un espace patient. Il n'est donc pas possible de lui envoyer une nouvelle invitation.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // EMAIL
+        // ====================================================
+
+        const emailBrut =
+            patientData.email || "";
+
+
+        patientEmailValue =
+            emailBrut
+                .split("//")[0]
+                .trim()
+                .toLowerCase();
+
+
+        if (
+            !patientEmailValue ||
+            !patientEmailValue.includes("@")
+        ) {
+
+            afficherMessage(
+                "Aucune adresse e-mail valide n'est enregistrée pour ce patient.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // AFFICHAGE
+        // ====================================================
+
+        patientName.textContent =
+            `${patientData.prenom || ""} ${patientData.nom || ""}`.trim();
+
+
+        patientInfo.textContent =
+            patientData.dateNaissance
+                ? `Né(e) le ${patientData.dateNaissance}`
+                : "Date de naissance non renseignée";
+
+
+        patientEmail.textContent =
+            patientEmailValue;
+
+
+        patientBox.style.display =
+            "block";
+
+        emailBox.style.display =
+            "block";
+
+        sendButton.disabled =
+            false;
+
+    } catch (error) {
+
+        console.error(error);
+
+        afficherMessage(
+            "Impossible de récupérer la fiche du patient.",
+            "error"
+        );
+
+    }
+
+}
+
+
+chargerPatient();
+
+
+// ============================================================
+// ENVOI
+// ============================================================
+
+sendButton.addEventListener(
+    "click",
+    async () => {
+
+        sendButton.disabled =
+            true;
+
+        sendButton.innerHTML =
+            `<span class="loader"></span> Préparation...`;
+
+        message.className =
+            "message";
+
+
+        try {
+
+            // =================================================
+            // REVERIFICATION DU PATIENT
+            // =================================================
+
+            const patientRef =
+                doc(
+                    db,
+                    "patients",
+                    patientId
+                );
+
+
+            const patientSnap =
+                await getDoc(patientRef);
+
+
+            if (!patientSnap.exists()) {
+
+                throw new Error(
+                    "Patient introuvable."
+                );
+
+            }
+
+
+            const data =
+                patientSnap.data();
+
+
+            // =================================================
+            // REVERIFICATION ESPACE
+            // =================================================
+
+            if (
+                data.userId ||
+                data.espacePatient === true
+            ) {
+
+                throw new Error(
+                    "Ce patient possède déjà un espace patient."
+                );
+
+            }
+
+
+            // =================================================
+            // PREMIER EMAIL
+            // =================================================
+
+            const email =
+                (data.email || "")
+                    .split("//")[0]
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                !email ||
+                !email.includes("@")
+            ) {
+
+                throw new Error(
+                    "Aucune adresse e-mail valide n'est enregistrée pour ce patient."
+                );
+
+            }
+
+
+            // =================================================
+            // INVALIDATION DES ANCIENNES INVITATIONS
+            // =================================================
+
+            const invitationsQuery =
+                query(
+                    collection(
+                        db,
+                        "invitations_patients"
+                    ),
+                    where(
+                        "patientId",
+                        "==",
+                        patientId
+                    ),
+                    where(
+                        "used",
+                        "==",
+                        false
+                    )
+                );
+
+
+            const anciennesInvitations =
+                await getDocs(
+                    invitationsQuery
+                );
+
+
+            for (
+                const invitation
+                of anciennesInvitations.docs
+            ) {
+
+                await updateDoc(
+                    invitation.ref,
+                    {
+                        used: true,
+                        invalidated: true,
+                        invalidatedAt:
+                            serverTimestamp()
+                    }
+                );
+
+            }
+
+
+            // =================================================
+            // GENERATION TOKEN
+            // =================================================
+
+            let token;
+            let tokenExiste;
+
+
+            do {
+
+                token =
+                    genererToken();
+
+
+                const tokenRef =
+                    doc(
+                        db,
+                        "invitations_patients",
+                        token
+                    );
+
+
+                const tokenSnap =
+                    await getDoc(tokenRef);
+
+
+                tokenExiste =
+                    tokenSnap.exists();
+
+            }
+            while (tokenExiste);
+
+
+            // =================================================
+            // EXPIRATION : 24 HEURES
+            // =================================================
+
+            const expiration =
+                new Date(
+                    Date.now() +
+                    24 * 60 * 60 * 1000
+                );
+
+
+            // =================================================
+            // SAUVEGARDE INVITATION
+            // =================================================
+
+            await setDoc(
+                doc(
+                    db,
+                    "invitations_patients",
+                    token
+                ),
+                {
+
+                    patientId:
+                        patientId,
+
+                    email:
+                        email,
+
+                    used:
+                        false,
+
+                    invalidated:
+                        false,
+
+                    dateCreation:
+                        serverTimestamp(),
+
+                    dateExpiration:
+                        expiration.toISOString()
+
+                }
+            );
+
+
+            // =================================================
+            // LIEN
+            // =================================================
+
+            const lien =
+                `https://junior2704.github.io/GestUrg2/portail-patient/activation-compte.html?token=${token}`;
+
+
+            // =================================================
+            // EMAIL HTML
+            // =================================================
+
+            const htmlMessage = `
+
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Création de votre espace patient</title>
+
+</head>
+
+
+<body style="
+margin:0;
+padding:0;
+background-color:#f4f6f9;
+font-family:'Segoe UI',Roboto,Arial,sans-serif;
+color:#333;
+">
+
+
+<table
+width="100%"
+cellpadding="0"
+cellspacing="0"
+style="
+max-width:640px;
+margin:auto;
+background:white;
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
+overflow:hidden;
+"
+>
+
+
+<tr>
+
+<td
+style="
+background-color:#1a73e8;
+padding:24px;
+text-align:center;
+"
+>
+
+<img
+src="https://junior2704.github.io/GestUrg2/logo.png"
+alt="GestUrg2"
+style="
+height:60px;
+display:block;
+margin:0 auto 10px auto;
+"
+>
+
+
+<h1
+style="
+color:white;
+font-size:22px;
+margin:0;
+"
+>
+
+GestUrg2
+
+</h1>
+
+
+<p
+style="
+color:#dce6f3;
+margin:6px 0 0;
+font-size:14px;
+"
+>
+
+Espace patient
+
+</p>
+
+</td>
+
+</tr>
+
+
+<tr>
+
+<td style="padding:30px;">
+
+
+<h2
+style="
+color:#1a73e8;
+font-weight:600;
+margin-top:0;
+"
+>
+
+Créez votre espace patient
+
+</h2>
+
+
+<p
+style="
+font-size:16px;
+line-height:1.6;
+"
+>
+
+Bonjour
+<strong>
+${data.prenom || ""} ${data.nom || ""}
+</strong>,
+
+</p>
+
+
+<p
+style="
+font-size:15px;
+line-height:1.6;
+color:#555;
+"
+>
+
+Votre établissement vous permet désormais
+d'accéder à votre espace patient personnel.
+
+</p>
+
+
+<p
+style="
+font-size:15px;
+line-height:1.6;
+color:#555;
+"
+>
+
+Cliquez sur le bouton ci-dessous pour créer
+votre mot de passe et activer votre espace.
+
+</p>
+
+
+<div
+style="
+text-align:center;
+margin:30px 0;
+"
+>
+
+<a
+href="${lien}"
+style="
+background-color:#1a73e8;
+color:white;
+padding:14px 32px;
+text-decoration:none;
+border-radius:8px;
+font-weight:500;
+display:inline-block;
+"
+>
+
+Créer mon espace patient
+
+</a>
+
+</div>
+
+
+<p
+style="
+font-size:14px;
+line-height:1.6;
+color:#777;
+"
+>
+
+🔒 Pour votre sécurité, ce lien est valable
+pendant <strong>24 heures</strong> et ne peut
+être utilisé qu'une seule fois.
+
+</p>
+
+
+<p
+style="
+font-size:14px;
+color:#777;
+"
+>
+
+Si vous n'êtes pas à l'origine de cette demande,
+vous pouvez simplement ignorer cet e-mail.
+
+</p>
+
+
+<hr
+style="
+border:none;
+border-top:1px solid #e0e0e0;
+margin:30px 0;
+"
+>
+
+
+<p
+style="
+font-size:13px;
+color:#999;
+text-align:center;
+"
+>
+
+Service des Urgences<br>
+
+<em>
+Cet e-mail a été généré automatiquement.
+Fièrement propulsé par GestUrg2
+</em>
+
+</p>
+
+
+</td>
+
+</tr>
+
+</table>
+
+</body>
+
+</html>
+
+`;
+
+
+            // =================================================
+            // EMAILJS
+            // =================================================
+
+            let envoye =
+                false;
+
+            let derniereErreur =
+                "";
+
+
+            for (
+                const compte
+                of comptesEmailJS
+            ) {
+
+                try {
+
+                    console.log(
+                        `📨 Envoi invitation via ${compte.serviceID}`
+                    );
+
+
+                    const htmlFinal =
+                        htmlMessage;
+
+
+                    await emailjs.send(
+                        compte.serviceID,
+                        compte.templateID,
+                        {
+
+                            to_email:
+                                email,
+
+                            subject:
+                                "Créez votre espace patient",
+
+                            html_message:
+                                htmlFinal
+
+                        },
+                        compte.publicKey
+                    );
+
+
+                    envoye =
+                        true;
+
+
+                    break;
+
+                }
+                catch (err) {
+
+                    console.warn(
+                        `Échec ${compte.serviceID}`,
+                        err
+                    );
+
+
+                    derniereErreur =
+                        err &&
+                        err.text
+                            ? err.text
+                            : String(err);
+
+
+                    if (
+                        derniereErreur
+                            .toLowerCase()
+                            .includes("quota")
+                    ) {
+
+                        continue;
+
+                    }
+                    else {
+
+                        break;
+
+                    }
+
+                }
+
+            }
+
+
+            if (!envoye) {
+
+                // On supprime l'invitation si aucun mail
+                // n'a réellement été envoyé.
+
+                await updateDoc(
+                    doc(
+                        db,
+                        "invitations_patients",
+                        token
+                    ),
+                    {
+                        used: true,
+                        invalidated: true
+                    }
+                );
+
+
+                throw new Error(
+                    "Impossible d'envoyer l'e-mail d'invitation."
+                );
+
+            }
+
+
+            // =================================================
+            // SUCCES
+            // =================================================
+
+            afficherMessage(
+                `Le lien de création a été envoyé à ${email}.`,
+                "success"
+            );
+
+
+            sendButton.textContent =
+                "Lien envoyé ✓";
+
+
+        }
+        catch (error) {
+
+            console.error(
+                "Erreur création invitation :",
+                error
+            );
+
+
+            afficherMessage(
+                error.message ||
+                "Une erreur est survenue.",
+                "error"
+            );
+
+
+            sendButton.disabled =
+                false;
+
+            sendButton.textContent =
+                "Réessayer";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>

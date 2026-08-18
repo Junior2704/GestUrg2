@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Créer mon espace patient</title>
+
+<link rel="icon" type="image/png" href="logog2.png">
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    font-family:
+        "Inter",
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(0,120,212,.13),
+            transparent 35%
+        ),
+        #f4f8fc;
+
+    color: #172b3a;
+}
+
+
+.card {
+
+    width: 100%;
+
+    max-width: 450px;
+
+    background: white;
+
+    border-radius: 24px;
+
+    padding: 32px;
+
+    box-shadow:
+        0 15px 45px
+        rgba(31,72,104,.12);
+}
+
+
+.logo {
+
+    width: 70px;
+    height: 70px;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin: 0 auto 18px;
+}
+
+
+h1 {
+
+    text-align: center;
+
+    margin: 0;
+
+    font-size: 25px;
+}
+
+
+.subtitle {
+
+    text-align: center;
+
+    color: #6b7c8f;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    margin: 10px 0 25px;
+}
+
+
+.welcome {
+
+    text-align: center;
+
+    background: #eef7ff;
+
+    border: 1px solid #d4e9fa;
+
+    border-radius: 16px;
+
+    padding: 18px;
+
+    margin-bottom: 22px;
+}
+
+
+.welcome-name {
+
+    color: #0078d4;
+
+    font-size: 20px;
+
+    font-weight: 750;
+}
+
+
+.welcome-email {
+
+    margin-top: 5px;
+
+    color: #718395;
+
+    font-size: 13px;
+
+    word-break: break-word;
+}
+
+
+.field {
+
+    margin-bottom: 18px;
+}
+
+
+label {
+
+    display: block;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    margin-bottom: 8px;
+}
+
+
+input {
+
+    width: 100%;
+
+    height: 52px;
+
+    border: 1px solid #dce5ee;
+
+    border-radius: 13px;
+
+    padding: 0 15px;
+
+    font-size: 16px;
+
+    outline: none;
+
+    background: #fbfdff;
+
+    color: #172b3a;
+
+}
+
+
+input:focus {
+
+    border-color: #0078d4;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(0,120,212,.10);
+
+    background: white;
+}
+
+
+button {
+
+    width: 100%;
+
+    height: 54px;
+
+    border: 0;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0084e8,
+            #006cc4
+        );
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 7px 18px
+        rgba(0,120,212,.22);
+}
+
+
+button:disabled {
+
+    opacity: .65;
+
+    cursor: not-allowed;
+}
+
+
+.message {
+
+    display: none;
+
+    padding: 13px;
+
+    border-radius: 13px;
+
+    margin-bottom: 18px;
+
+    font-size: 14px;
+
+    line-height: 1.45;
+}
+
+
+.message.show {
+
+    display: block;
+}
+
+
+.message.error {
+
+    color: #a61b12;
+
+    background: #fff1f0;
+
+    border: 1px solid #ffd2ce;
+}
+
+
+.message.success {
+
+    color: #176b31;
+
+    background: #edf8ef;
+
+    border: 1px solid #cce8d1;
+}
+
+
+.info {
+
+    margin-top: 18px;
+
+    padding: 13px;
+
+    border-radius: 13px;
+
+    background: #f5f8fa;
+
+    color: #6c7d8b;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+
+.loader {
+
+    display: inline-block;
+
+    width: 18px;
+    height: 18px;
+
+    border: 2px solid rgba(255,255,255,.4);
+
+    border-top-color: white;
+
+    border-radius: 50%;
+
+    animation: spin .7s linear infinite;
+
+    vertical-align: middle;
+
+    margin-right: 8px;
+}
+
+
+@keyframes spin {
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+
+.success-icon {
+
+    width: 70px;
+    height: 70px;
+
+    border-radius: 50%;
+
+    background: #e9f7ed;
+
+    color: #188038;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 35px;
+
+    margin: 0 auto 18px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="card">
+
+    <img
+        src="logog2.png"
+        class="logo"
+        id="logo"
+    >
+
+
+    <h1 id="title">
+        Créer votre espace
+    </h1>
+
+
+    <div
+        id="subtitle"
+        class="subtitle"
+    >
+        Finalisez la création de votre espace
+        patient.
+    </div>
+
+
+    <div
+        id="message"
+        class="message"
+    ></div>
+
+
+    <div
+        id="welcome"
+        class="welcome"
+        style="display:none;"
+    >
+
+        <div
+            id="welcomeName"
+            class="welcome-name"
+        ></div>
+
+        <div
+            id="welcomeEmail"
+            class="welcome-email"
+        ></div>
+
+    </div>
+
+
+    <div id="form" style="display:none;">
+
+        <div class="field">
+
+            <label for="password">
+                Choisissez votre mot de passe
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                autocomplete="new-password"
+                placeholder="Minimum 6 caractères"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label for="passwordConfirm">
+                Confirmez votre mot de passe
+            </label>
+
+            <input
+                type="password"
+                id="passwordConfirm"
+                autocomplete="new-password"
+                placeholder="Retapez votre mot de passe"
+            >
+
+        </div>
+
+
+        <button id="createButton">
+            Créer mon espace
+        </button>
+
+
+        <div class="info">
+
+            🔒 Votre identité est récupérée
+            automatiquement depuis votre dossier patient.
+
+        </div>
+
+    </div>
+
+
+    <button
+        id="loginButton"
+        style="display:none;"
+    >
+        Accéder à mon espace
+    </button>
+
+</div>
+
+
+<script type="module">
+
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    updateDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+    getAuth,
+    createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyBkQ1vuGIr3gcOVm9wdXJpg-dahtCoCe_0",
+
+    authDomain:
+        "urgences-36b53.firebaseapp.com",
+
+    projectId:
+        "urgences-36b53",
+
+    storageBucket:
+        "urgences-36b53.firebasestorage.app",
+
+    messagingSenderId:
+        "135348433847",
+
+    appId:
+        "1:135348433847:web:327d2c5c4aff9ba3d02e32",
+
+    measurementId:
+        "G-S3CV9PX2KY"
+
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const db =
+    getFirestore(app);
+
+
+const auth =
+    getAuth(app);
+
+
+// ============================================================
+// PARAMETRE TOKEN
+// ============================================================
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+
+const token =
+    params.get("token");
+
+
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+const message =
+    document.getElementById("message");
+
+const welcome =
+    document.getElementById("welcome");
+
+const welcomeName =
+    document.getElementById("welcomeName");
+
+const welcomeEmail =
+    document.getElementById("welcomeEmail");
+
+const form =
+    document.getElementById("form");
+
+const createButton =
+    document.getElementById("createButton");
+
+const password =
+    document.getElementById("password");
+
+const passwordConfirm =
+    document.getElementById("passwordConfirm");
+
+const title =
+    document.getElementById("title");
+
+const subtitle =
+    document.getElementById("subtitle");
+
+const loginButton =
+    document.getElementById("loginButton");
+
+
+// ============================================================
+// VARIABLES
+// ============================================================
+
+let invitationData = null;
+
+let patientData = null;
+
+let patientId = null;
+
+
+// ============================================================
+// MESSAGE
+// ============================================================
+
+function afficherMessage(
+    texte,
+    type
+) {
+
+    message.className =
+        "message show " + type;
+
+    message.textContent =
+        texte;
+
+}
+
+
+// ============================================================
+// VERIFICATION TOKEN
+// ============================================================
+
+async function verifierInvitation() {
+
+    if (!token) {
+
+        afficherMessage(
+            "Ce lien de création est incomplet ou invalide.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const invitationRef =
+            doc(
+                db,
+                "invitations_patients",
+                token
+            );
+
+
+        const invitationSnap =
+            await getDoc(
+                invitationRef
+            );
+
+
+        if (!invitationSnap.exists()) {
+
+            afficherMessage(
+                "Ce lien de création n'existe pas ou a déjà été utilisé.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        invitationData =
+            invitationSnap.data();
+
+
+        // ====================================================
+        // DEJA UTILISE
+        // ====================================================
+
+        if (
+            invitationData.used === true ||
+            invitationData.invalidated === true
+        ) {
+
+            afficherMessage(
+                "Ce lien de création a déjà été utilisé ou annulé.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // EXPIRATION
+        // ====================================================
+
+        if (
+            invitationData.dateExpiration
+        ) {
+
+            const expiration =
+                new Date(
+                    invitationData.dateExpiration
+                );
+
+
+            if (
+                Date.now() >
+                expiration.getTime()
+            ) {
+
+                afficherMessage(
+                    "Ce lien de création a expiré. Veuillez demander une nouvelle invitation.",
+                    "error"
+                );
+
+                return;
+            }
+
+        }
+
+
+        patientId =
+            invitationData.patientId;
+
+
+        if (!patientId) {
+
+            afficherMessage(
+                "Cette invitation ne contient pas de patient valide.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // PATIENT
+        // ====================================================
+
+        const patientRef =
+            doc(
+                db,
+                "patients",
+                patientId
+            );
+
+
+        const patientSnap =
+            await getDoc(
+                patientRef
+            );
+
+
+        if (!patientSnap.exists()) {
+
+            afficherMessage(
+                "Le dossier patient associé à cette invitation n'existe plus.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        patientData =
+            patientSnap.data();
+
+
+        // ====================================================
+        // ESPACE DEJA EXISTANT
+        // ====================================================
+
+        if (
+            patientData.userId ||
+            patientData.espacePatient === true
+        ) {
+
+            afficherMessage(
+                "Un espace patient existe déjà pour ce dossier.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // EMAIL
+        // ====================================================
+
+        const email =
+            (patientData.email || "")
+                .split("//")[0]
+                .trim()
+                .toLowerCase();
+
+
+        if (
+            !email ||
+            email !==
+                invitationData.email
+        ) {
+
+            afficherMessage(
+                "L'adresse e-mail associée à cette invitation n'est plus valide.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ====================================================
+        // AFFICHAGE
+        // ====================================================
+
+        welcomeName.textContent =
+            `Bonjour ${patientData.prenom || ""} ${patientData.nom || ""} 👋`;
+
+
+        welcomeEmail.textContent =
+            email;
+
+
+        welcome.style.display =
+            "block";
+
+
+        form.style.display =
+            "block";
+
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        afficherMessage(
+            "Impossible de vérifier cette invitation.",
+            "error"
+        );
+
+    }
+
+}
+
+
+verifierInvitation();
+
+
+// ============================================================
+// CREATION DU COMPTE
+// ============================================================
+
+createButton.addEventListener(
+    "click",
+    async () => {
+
+        const pwd =
+            password.value;
+
+        const confirm =
+            passwordConfirm.value;
+
+
+        // ====================================================
+        // VALIDATION
+        // ====================================================
+
+        if (!pwd) {
+
+            afficherMessage(
+                "Veuillez choisir un mot de passe.",
+                "error"
+            );
+
+            password.focus();
+
+            return;
+        }
+
+
+        if (pwd.length < 6) {
+
+            afficherMessage(
+                "Votre mot de passe doit contenir au moins 6 caractères.",
+                "error"
+            );
+
+            password.focus();
+
+            return;
+        }
+
+
+        if (pwd !== confirm) {
+
+            afficherMessage(
+                "Les deux mots de passe ne correspondent pas.",
+                "error"
+            );
+
+            passwordConfirm.focus();
+
+            return;
+        }
+
+
+        createButton.disabled =
+            true;
+
+        createButton.innerHTML =
+            `<span class="loader"></span> Création...`;
+
+
+        try {
+
+            // =================================================
+            // REVERIFICATION INVITATION
+            // =================================================
+
+            const invitationRef =
+                doc(
+                    db,
+                    "invitations_patients",
+                    token
+                );
+
+
+            const invitationSnap =
+                await getDoc(
+                    invitationRef
+                );
+
+
+            if (!invitationSnap.exists()) {
+
+                throw new Error(
+                    "Cette invitation n'existe plus."
+                );
+
+            }
+
+
+            const invitation =
+                invitationSnap.data();
+
+
+            if (
+                invitation.used === true ||
+                invitation.invalidated === true
+            ) {
+
+                throw new Error(
+                    "Cette invitation a déjà été utilisée."
+                );
+
+            }
+
+
+            // =================================================
+            // REVERIFICATION PATIENT
+            // =================================================
+
+            const patientRef =
+                doc(
+                    db,
+                    "patients",
+                    patientId
+                );
+
+
+            const patientSnap =
+                await getDoc(
+                    patientRef
+                );
+
+
+            if (!patientSnap.exists()) {
+
+                throw new Error(
+                    "Le dossier patient n'existe plus."
+                );
+
+            }
+
+
+            const patient =
+                patientSnap.data();
+
+
+            if (
+                patient.userId ||
+                patient.espacePatient === true
+            ) {
+
+                throw new Error(
+                    "Un espace patient existe déjà pour ce dossier."
+                );
+
+            }
+
+
+            // =================================================
+            // EMAIL
+            // =================================================
+
+            const email =
+                (patient.email || "")
+                    .split("//")[0]
+                    .trim()
+                    .toLowerCase();
+
+
+            // =================================================
+            // CREATION FIREBASE AUTH
+            // =================================================
+
+            const credential =
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    pwd
+                );
+
+
+            const user =
+                credential.user;
+
+
+            // =================================================
+            // ASSOCIATION PATIENT
+            // =================================================
+
+            await updateDoc(
+                patientRef,
+                {
+
+                    userId:
+                        user.uid,
+
+                    espacePatient:
+                        true,
+
+                    dateCreationEspace:
+                        serverTimestamp()
+
+                }
+            );
+
+
+            // =================================================
+            // TOKEN UTILISE
+            // =================================================
+
+            await updateDoc(
+                invitationRef,
+                {
+
+                    used:
+                        true,
+
+                    dateUtilisation:
+                        serverTimestamp(),
+
+                    userId:
+                        user.uid
+
+                }
+            );
+
+
+            // =================================================
+            // SUCCES
+            // =================================================
+
+            form.style.display =
+                "none";
+
+
+            welcome.style.display =
+                "none";
+
+
+            title.textContent =
+                "Votre espace est créé !";
+
+
+            subtitle.textContent =
+                "Votre compte patient est maintenant actif.";
+
+
+            message.className =
+                "message";
+
+
+            loginButton.style.display =
+                "block";
+
+
+            loginButton.onclick =
+                () => {
+
+                    window.location.href =
+                        "connexion-patient.html";
+
+                };
+
+
+            document.querySelector(".logo")
+                .insertAdjacentHTML(
+                    "afterend",
+                    `
+                    <div class="success-icon">
+                        ✓
+                    </div>
+                    `
+                );
+
+
+        }
+        catch (error) {
+
+            console.error(
+                "Erreur création compte :",
+                error
+            );
+
+
+            let texte =
+                "Impossible de créer votre espace.";
+
+
+            switch (
+                error.code
+            ) {
+
+                case "auth/email-already-in-use":
+
+                    texte =
+                        "Un compte existe déjà avec cette adresse e-mail.";
+
+                    break;
+
+
+                case "auth/invalid-email":
+
+                    texte =
+                        "L'adresse e-mail associée à votre dossier n'est pas valide.";
+
+                    break;
+
+
+                case "auth/weak-password":
+
+                    texte =
+                        "Le mot de passe choisi est trop faible.";
+
+                    break;
+
+
+                case "auth/network-request-failed":
+
+                    texte =
+                        "Impossible de contacter le serveur. Vérifiez votre connexion Internet.";
+
+                    break;
+
+            }
+
+
+            if (
+                error.message &&
+                !error.code
+            ) {
+
+                texte =
+                    error.message;
+
+            }
+
+
+            afficherMessage(
+                texte,
+                "error"
+            );
+
+
+            createButton.disabled =
+                false;
+
+            createButton.textContent =
+                "Créer mon espace";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>

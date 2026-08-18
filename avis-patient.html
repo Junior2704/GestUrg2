@@ -2,20 +2,32 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B544E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Votre avis — Centre Hospitalier</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
+<!-- ============================================================
+     CONFIGURATION FIREBASE — à compléter avant mise en ligne
+     1. Créez un projet sur https://console.firebase.google.com
+     2. Activez Firestore Database (mode production)
+     3. Copiez votre configuration ci-dessous
+     4. Ajoutez une règle Firestore autorisant la création dans "avis"
+     ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "VOTRE_PROJET.firebaseapp.com",
+    projectId: "VOTRE_PROJET",
+    storageBucket: "VOTRE_PROJET.appspot.com",
+    messagingSenderId: "VOTRE_SENDER_ID",
+    appId: "VOTRE_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -43,8 +55,8 @@
     --font-body: 'Plus Jakarta Sans', sans-serif;
   }
 
-  *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; overflow-x:hidden; width:100%; }
   body{
     font-family: var(--font-body);
     color: var(--ink);
@@ -53,13 +65,17 @@
       radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
       var(--bg);
     min-height:100vh;
+    min-height:100dvh;
     display:flex;
     align-items:flex-start;
     justify-content:center;
-    padding: 32px 16px 80px;
+    padding: 32px 16px calc(50px + env(safe-area-inset-bottom));
     -webkit-font-smoothing:antialiased;
   }
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+  @media (max-width:480px){
+    body{ padding: 20px 12px calc(40px + env(safe-area-inset-bottom)); }
+  }
 
   .app{ width:100%; max-width:640px; }
 
@@ -111,7 +127,7 @@
     padding:32px;
     margin-top:18px;
   }
-  @media (max-width:520px){ .card{ padding:22px; } }
+  @media (max-width:520px){ .card{ padding:20px 16px; border-radius:18px; } }
 
   .step{ display:none; animation: rise .4s ease both; }
   .step.active{ display:block; }
@@ -130,7 +146,8 @@
 
   input[type="date"]{
     width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid var(--line);
-    font-family:var(--font-body); font-size:15px; color:var(--ink); background:#FBFDFD;
+    font-family:var(--font-body); font-size:16px; color:var(--ink); background:#FBFDFD;
+    min-height:50px; -webkit-appearance:none; appearance:none;
   }
   input[type="date"]:focus{ outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal); }
 
@@ -139,9 +156,10 @@
   @media (max-width:480px){ .motif-grid{ grid-template-columns:1fr; } }
   .motif-card{
     display:flex; align-items:center; gap:10px;
-    border:1.5px solid var(--line); border-radius:14px; padding:13px 14px;
+    border:1.5px solid var(--line); border-radius:14px; padding:14px;
+    min-height:50px;
     cursor:pointer; background:#FBFDFD; font-size:14px; font-weight:600; color:var(--ink);
-    transition: all .18s ease;
+    transition: all .18s ease; touch-action:manipulation;
   }
   .motif-card:hover{ border-color:var(--teal); }
   .motif-card .emoji{ font-size:19px; }
@@ -149,28 +167,40 @@
   .motif-card.checked{ border-color:var(--teal); background:var(--aqua); color:var(--teal-deep); }
 
   /* échelle emoji */
-  .emoji-scale{ display:flex; justify-content:space-between; gap:6px; }
+  .emoji-scale{ display:flex; justify-content:space-between; gap:5px; }
   .emoji-opt{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;
-    padding:12px 4px; border-radius:14px; border:1.5px solid var(--line); background:#FBFDFD;
-    cursor:pointer; transition:all .18s ease; text-align:center;
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
+    min-width:0; min-height:64px; justify-content:center;
+    padding:10px 2px; border-radius:14px; border:1.5px solid var(--line); background:#FBFDFD;
+    cursor:pointer; transition:all .18s ease; text-align:center; touch-action:manipulation;
   }
-  .emoji-opt span.e{ font-size:24px; line-height:1; transition:transform .18s ease; }
-  .emoji-opt span.t{ font-size:11px; color:var(--ink-soft); font-weight:600; }
+  .emoji-opt span.e{ font-size:22px; line-height:1; transition:transform .18s ease; }
+  .emoji-opt span.t{ font-size:10px; color:var(--ink-soft); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   .emoji-opt:hover span.e{ transform:scale(1.15); }
   .emoji-opt.checked{ border-color:var(--teal); background:var(--aqua); }
   .emoji-opt input{ display:none; }
+  @media (max-width:360px){
+    .emoji-scale{ gap:4px; }
+    .emoji-opt{ padding:8px 1px; min-height:58px; }
+    .emoji-opt span.e{ font-size:19px; }
+    .emoji-opt span.t{ font-size:8.5px; }
+  }
   .category-block{ margin-bottom:28px; }
   .category-block:last-child{ margin-bottom:0; }
 
   /* NPS slider */
-  .nps-wrap{ padding:6px 2px; }
+  .nps-wrap{ padding:10px 2px; }
   input[type="range"]{
     width:100%; height:6px; border-radius:6px; appearance:none; background:var(--line); outline:none;
+    touch-action:pan-y;
   }
   input[type="range"]::-webkit-slider-thumb{
-    appearance:none; width:26px; height:26px; border-radius:50%;
+    appearance:none; width:30px; height:30px; border-radius:50%;
     background:var(--surface); border:4px solid var(--coral); cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.15);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:30px; height:30px; border-radius:50%; border:4px solid var(--coral);
+    background:var(--surface); cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.15);
   }
   .nps-value{ text-align:center; margin-top:10px; font-family:var(--font-display); font-size:30px; color:var(--coral); font-weight:600; }
   .nps-labels{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:4px; }
@@ -178,29 +208,37 @@
   /* chips */
   .chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
   .chip{
-    border:1.5px solid var(--line); border-radius:999px; padding:9px 15px; font-size:13.5px; font-weight:600;
+    border:1.5px solid var(--line); border-radius:999px; padding:11px 16px; font-size:13.5px; font-weight:600;
     cursor:pointer; background:#FBFDFD; color:var(--ink-soft); transition:all .16s ease;
+    min-height:40px; display:flex; align-items:center; touch-action:manipulation;
   }
   .chip:hover{ border-color:var(--teal); }
   .chip.checked{ background:var(--teal); border-color:var(--teal); color:#fff; }
 
   textarea{
     width:100%; min-height:110px; padding:14px 16px; border-radius:14px; border:1.5px solid var(--line);
-    font-family:var(--font-body); font-size:14.5px; resize:vertical; background:#FBFDFD; color:var(--ink);
+    font-family:var(--font-body); font-size:16px; resize:vertical; background:#FBFDFD; color:var(--ink);
+    -webkit-appearance:none; appearance:none;
   }
   textarea:focus, .motif-card:has(input:focus-visible){ outline:2px solid var(--teal); outline-offset:1px; }
 
   .nav-row{ display:flex; gap:10px; margin-top:30px; }
-  button{ font-family:var(--font-body); cursor:pointer; border:none; }
+  button{ font-family:var(--font-body); cursor:pointer; border:none; touch-action:manipulation; }
   .btn{
-    flex:1; padding:15px 18px; border-radius:14px; font-weight:700; font-size:15px;
+    flex:1; padding:15px 18px; border-radius:14px; font-weight:700; font-size:15px; min-height:50px;
     display:flex; align-items:center; justify-content:center; gap:8px; transition:all .18s ease;
   }
   .btn-primary{ background:var(--teal); color:#fff; box-shadow:0 12px 24px -12px rgba(15,118,110,.6); }
   .btn-primary:hover{ background:var(--teal-deep); transform:translateY(-1px); }
+  .btn-primary:active{ transform:scale(.98); }
   .btn-primary:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
-  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); flex:0 0 auto; padding:15px 20px; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); flex:0 0 auto; padding:15px 20px; min-height:50px; }
   .btn-ghost:hover{ border-color:var(--teal); color:var(--teal-deep); }
+  .btn-ghost:active{ transform:scale(.98); }
+  @media (max-width:400px){
+    .nav-row{ flex-direction:column-reverse; gap:10px; }
+    .nav-row .btn-ghost{ width:100%; }
+  }
 
   /* écran de remerciement */
   .thanks{ text-align:center; padding:10px 6px 4px; }
@@ -311,7 +349,7 @@
 
   </form>
   <p class="footer-note">Vos données sont traitées de manière confidentielle et utilisées uniquement à des fins d'amélioration de la qualité des soins.
-    Propulsé par GestUrg2
+    Solution porpulsé par GestUrg2
   </p>
 </div>
 

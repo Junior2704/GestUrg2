@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse des avis — Centre Hospitalier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<!-- ============================================================
+     CONFIGURATION FIREBASE — identique à celle de avis-patient.html
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.__db = db;
+  window.__fs = { collection, getDocs, query, orderBy };
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
+
+<style>
+  :root{
+    --bg: #F6FBFA;
+    --surface: #FFFFFF;
+    --ink: #12312D;
+    --ink-soft: #4C6B66;
+    --teal: #0F766E;
+    --teal-deep: #0B544E;
+    --aqua: #DCF3F0;
+    --coral: #EF6351;
+    --coral-soft: #FDE4DF;
+    --amber: #E2A63A;
+    --red: #D64545;
+    --line: #E2EEEC;
+    --radius: 20px;
+    --shadow: 0 20px 50px -28px rgba(15, 60, 55, .35);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:var(--font-body); color:var(--ink); background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+
+  .topbar{
+    background:linear-gradient(120deg, var(--teal-deep), var(--teal));
+    color:#fff; padding:26px 32px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .topbar .brand{ display:flex; align-items:center; gap:12px; }
+  .topbar .brand .ic{ width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .topbar h1{ font-family:var(--font-display); font-weight:600; font-size:21px; margin:0; }
+  .topbar p{ margin:2px 0 0; font-size:13px; opacity:.85; }
+  .topbar .status{ font-size:12.5px; background:rgba(255,255,255,.15); padding:8px 14px; border-radius:999px; display:flex; align-items:center; gap:8px; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#6EE7B7; box-shadow:0 0 0 3px rgba(110,231,183,.3); }
+
+  .wrap{ max-width:1240px; margin:0 auto; padding:28px 24px 70px; }
+
+  .filters{
+    display:flex; gap:12px; flex-wrap:wrap; align-items:center; background:var(--surface);
+    border:1px solid var(--line); border-radius:16px; padding:14px 18px; margin-bottom:24px; box-shadow:var(--shadow);
+  }
+  .filters label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px; }
+  .filters select, .filters input{
+    padding:9px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--font-body); font-size:13.5px; background:#FBFDFD; color:var(--ink);
+  }
+  .filters .grp{ display:flex; flex-direction:column; }
+  .btn-refresh{
+    margin-left:auto; background:var(--teal); color:#fff; border:none; padding:11px 18px; border-radius:10px;
+    font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background .15s;
+  }
+  .btn-refresh:hover{ background:var(--teal-deep); }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  @media (max-width:900px){ .kpi-grid{ grid-template-columns:repeat(2,1fr); } }
+  .kpi{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow);
+  }
+  .kpi .l{ font-size:12px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; }
+  .kpi .v{ font-family:var(--font-display); font-size:32px; font-weight:600; color:var(--teal-deep); }
+  .kpi .v small{ font-size:15px; font-weight:500; color:var(--ink-soft); }
+  .kpi .trend{ font-size:12.5px; margin-top:6px; font-weight:700; }
+  .trend.up{ color:#188A5B; } .trend.down{ color:var(--red); } .trend.flat{ color:var(--ink-soft); }
+
+  .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-bottom:18px; }
+  @media (max-width:960px){ .grid-2{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px 24px; box-shadow:var(--shadow);
+  }
+  .panel h3{ font-family:var(--font-display); font-size:18px; margin:0 0 4px; color:var(--ink); }
+  .panel .sub{ font-size:12.5px; color:var(--ink-soft); margin:0 0 16px; }
+  .chart-box{ position:relative; height:260px; }
+
+  /* Bilan IA — élément signature */
+  .ai-panel{
+    background:linear-gradient(155deg, #0B544E 0%, #0F766E 55%, #14877E 100%);
+    color:#fff; border-radius:var(--radius); padding:26px 28px; margin-bottom:22px; position:relative; overflow:hidden; box-shadow:var(--shadow);
+  }
+  .ai-panel::before{
+    content:""; position:absolute; inset:0; opacity:.15;
+    background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size:18px 18px;
+  }
+  .ai-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; position:relative; flex-wrap:wrap; }
+  .ai-head .tag{ display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.16); padding:6px 13px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.02em; }
+  .ai-head h3{ font-family:var(--font-display); font-size:22px; margin:10px 0 0; font-weight:600; }
+  .btn-regen{ background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.35); padding:9px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-regen:hover{ background:rgba(255,255,255,.28); }
+  .ai-body{ position:relative; margin-top:16px; font-size:14.5px; line-height:1.65; }
+  .ai-body p{ margin:0 0 12px; }
+  .ai-tags{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; position:relative; }
+  .ai-tag{ background:rgba(255,255,255,.14); padding:6px 12px; border-radius:999px; font-size:12.5px; font-weight:600; }
+  .ai-tag.warn{ background:rgba(226,166,58,.35); }
+  .ai-tag.good{ background:rgba(110,231,183,.25); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); padding:8px 10px; border-bottom:1.5px solid var(--line); }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  .badge{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:11.5px; font-weight:700; }
+  .badge.pos{ background:#DDF6EA; color:#188A5B; }
+  .badge.neg{ background:var(--coral-soft); color:#B23A2A; }
+  .badge.neu{ background:#EFF3F2; color:var(--ink-soft); }
+  .motif-pill{ background:var(--aqua); color:var(--teal-deep); padding:3px 9px; border-radius:8px; font-size:11.5px; font-weight:700; }
+
+  .cat-bars{ display:flex; flex-direction:column; gap:12px; }
+  .cat-bar-row{ display:grid; grid-template-columns:150px 1fr 40px; align-items:center; gap:10px; }
+  .cat-bar-row .name{ font-size:13px; font-weight:600; }
+  .bar-track{ height:10px; background:var(--line); border-radius:6px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg, var(--teal), var(--coral)); transition:width .6s ease; }
+  .cat-bar-row .val{ font-size:12.5px; font-weight:700; color:var(--ink-soft); text-align:right; }
+
+  .empty{ text-align:center; padding:60px 20px; color:var(--ink-soft); }
+  .empty .e{ font-size:44px; margin-bottom:14px; }
+  .loading{ text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:14px; }
+  .footer-note{ text-align:center; font-size:12px; color:var(--ink-soft); margin-top:30px; opacity:.8; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="ic">📊</div>
+    <div>
+      <h1>Analyse des avis patients</h1>
+      <p>Vue d'ensemble qualité — Centre Hospitalier</p>
+    </div>
+  </div>
+  <div class="status"><span class="dot"></span> <span id="statusText">Connexion à Firestore...</span></div>
+</div>
+
+<div class="wrap">
+
+  <div class="filters">
+    <div class="grp">
+      <label for="fDateFrom">Du</label>
+      <input type="date" id="fDateFrom">
+    </div>
+    <div class="grp">
+      <label for="fDateTo">Au</label>
+      <input type="date" id="fDateTo">
+    </div>
+    <div class="grp">
+      <label for="fMotif">Motif</label>
+      <select id="fMotif"><option value="">Tous les motifs</option></select>
+    </div>
+    <button class="btn-refresh" id="btnFilter">🔍 Appliquer</button>
+  </div>
+
+  <div id="content">
+    <div class="loading">Chargement des avis...</div>
+  </div>
+
+  <p class="footer-note">
+    L'analyse ci-dessus est générée automatiquement par un moteur de règles à partir des notes et mots-clés soumis par les patients.<br>
+    Pour une analyse sémantique avancée des commentaires libres (véritable IA générative), connectez cette page à un service backend appelant l'API Claude — ne jamais exposer une clé API dans une page publique.
+  </p>
+</div>
+
+<script type="module">
+const MOTIFS_LABELS = {
+  consultation:"Consultation externe", urgences:"Urgences", hospitalisation:"Hospitalisation",
+  chirurgie:"Chirurgie", maternite:"Maternité", imagerie:"Imagerie / Radiologie",
+  laboratoire:"Laboratoire / Analyses", visite:"Visite à un proche", autre:"Autre"
+};
+const CATEGORIES_LABELS = {
+  accueil:"Accueil", attente:"Temps d'attente", medical:"Soins médicaux", soignant:"Personnel soignant",
+  communication:"Communication", proprete:"Propreté", confort:"Confort", restauration:"Restauration",
+  sortie:"Sortie", signaletique:"Signalétique", accompagnement:"Accompagnement"
+};
+
+const POS_WORDS = ["merci","excellent","super","genial","formidable","agreable","gentil","gentille","professionnel","rapide","propre","calme","attentif","attentionne","bienveillant","satisfait","parfait","efficace","chaleureux","ecoute","rassurant","bravo"];
+const NEG_WORDS = ["attente","long","longue","sale","desagreable","impoli","froid","mauvais","deteste","insatisfait","lent","bruit","bruyant","douleur","erreur","probleme","decu","insuffisant","inacceptable","horrible","attente interminable","manque"];
+
+function normalize(str){
+  return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function sentimentFromText(text){
+  const t = normalize(text);
+  if(!t.trim()) return null;
+  let score = 0;
+  POS_WORDS.forEach(w=>{ if(t.includes(w)) score++; });
+  NEG_WORDS.forEach(w=>{ if(t.includes(w)) score--; });
+  if(score > 0) return "pos";
+  if(score < 0) return "neg";
+  return "neu";
+}
+
+let allAvis = [];
+let charts = {};
+
+async function loadData(){
+  try{
+    const q = window.__fs.query(window.__fs.collection(window.__db, "avis"), window.__fs.orderBy("date_passage","desc"));
+    const snap = await window.__fs.getDocs(q);
+    allAvis = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    document.getElementById("statusText").textContent = `Connecté — ${allAvis.length} avis`;
+    populateMotifFilter();
+    render(allAvis);
+  }catch(err){
+    console.error("Erreur de chargement Firestore :", err);
+    document.getElementById("statusText").textContent = "Erreur de connexion";
+    document.getElementById("content").innerHTML = `
+      <div class="empty">
+        <div class="e">⚠️</div>
+        <h3 style="font-family:var(--font-display);color:var(--ink);">Impossible de charger les avis</h3>
+        <p>Vérifiez la configuration Firebase dans le code de cette page, ainsi que les règles de sécurité Firestore.</p>
+      </div>`;
+  }
+}
+
+function populateMotifFilter(){
+  const sel = document.getElementById("fMotif");
+  const motifs = [...new Set(allAvis.map(a=>a.motif).filter(Boolean))];
+  motifs.forEach(m=>{
+    const opt = document.createElement("option");
+    opt.value = m; opt.textContent = MOTIFS_LABELS[m] || m;
+    sel.appendChild(opt);
+  });
+}
+
+function applyFilters(){
+  const from = document.getElementById("fDateFrom").value;
+  const to = document.getElementById("fDateTo").value;
+  const motif = document.getElementById("fMotif").value;
+  const filtered = allAvis.filter(a=>{
+    if(from && a.date_passage < from) return false;
+    if(to && a.date_passage > to) return false;
+    if(motif && a.motif !== motif) return false;
+    return true;
+  });
+  render(filtered);
+}
+document.getElementById("btnFilter").addEventListener("click", applyFilters);
+
+function computeCategoryAverages(list){
+  const sums = {}, counts = {};
+  list.forEach(a=>{
+    if(!a.notes) return;
+    Object.entries(a.notes).forEach(([k,v])=>{
+      sums[k] = (sums[k]||0) + v; counts[k] = (counts[k]||0)+1;
+    });
+  });
+  return Object.keys(sums).map(k=>({ key:k, label:CATEGORIES_LABELS[k]||k, avg:+(sums[k]/counts[k]).toFixed(2), count:counts[k] }))
+    .sort((a,b)=>b.avg-a.avg);
+}
+
+function computeNPS(list){
+  const vals = list.map(a=>a.recommandation).filter(v=>typeof v === "number");
+  if(!vals.length) return null;
+  const promoters = vals.filter(v=>v>=9).length;
+  const detractors = vals.filter(v=>v<=6).length;
+  return Math.round(((promoters - detractors) / vals.length) * 100);
+}
+
+function computeGlobalAvg(list){
+  const vals = list.map(a=>a.note_moyenne).filter(v=>typeof v === "number");
+  if(!vals.length) return null;
+  return +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+}
+
+function computeEvolutionByWeek(list){
+  const byWeek = {};
+  list.forEach(a=>{
+    if(!a.date_passage || typeof a.note_moyenne !== "number") return;
+    const d = new Date(a.date_passage);
+    const monday = new Date(d); monday.setDate(d.getDate() - ((d.getDay()+6)%7));
+    const key = monday.toISOString().split("T")[0];
+    if(!byWeek[key]) byWeek[key] = [];
+    byWeek[key].push(a.note_moyenne);
+  });
+  const keys = Object.keys(byWeek).sort();
+  return {
+    labels: keys.map(k=>{ const d=new Date(k); return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}); }),
+    values: keys.map(k=> +(byWeek[k].reduce((a,b)=>a+b,0)/byWeek[k].length).toFixed(2))
+  };
+}
+
+function computeMotifDistribution(list){
+  const counts = {};
+  list.forEach(a=>{ counts[a.motif] = (counts[a.motif]||0)+1; });
+  return Object.entries(counts).map(([k,v])=>({ label: MOTIFS_LABELS[k]||k, value:v })).sort((a,b)=>b.value-a.value);
+}
+
+function buildBilanIA(list, catAverages, nps, globalAvg){
+  if(!list.length){
+    return { html:`<p>Aucun avis ne correspond aux filtres sélectionnés pour le moment.</p>`, tags:[] };
+  }
+  const best = catAverages[0];
+  const worst = catAverages[catAverages.length-1];
+  const comments = list.map(a=>a.commentaire).filter(Boolean);
+  let pos=0, neg=0, neu=0;
+  comments.forEach(c=>{
+    const s = sentimentFromText(c);
+    if(s==="pos") pos++; else if(s==="neg") neg++; else if(s==="neu") neu++;
+  });
+
+  const npsMention = nps === null ? "" : nps >= 50
+    ? `Le score de recommandation (NPS) est <strong>excellent, à ${nps}</strong>, signe d'une forte fidélité des patients.`
+    : nps >= 0
+    ? `Le score de recommandation (NPS) s'établit à <strong>${nps}</strong>, une base correcte mais avec une marge de progression.`
+    : `Le score de recommandation (NPS) est <strong>négatif (${nps})</strong>, ce qui mérite une attention prioritaire.`;
+
+  const sentimentMention = comments.length
+    ? `Sur ${comments.length} commentaire(s) libre(s) analysé(s), la tonalité générale est ${
+        pos >= neg && pos >= neu ? "majoritairement <strong>positive</strong>" :
+        neg > pos && neg >= neu ? "à dominante <strong>négative</strong>, à surveiller" :
+        "plutôt <strong>neutre</strong>"
+      } (${pos} positif(s), ${neu} neutre(s), ${neg} négatif(s)).`
+    : `Peu de commentaires libres ont été laissés sur cette période — envisager d'encourager les retours qualitatifs.`;
+
+  const html = `
+    <p>Sur <strong>${list.length} avis</strong> analysés, la note moyenne globale est de <strong>${globalAvg ?? "—"}/5</strong>. ${npsMention}</p>
+    <p>Le point fort principal est <strong>« ${best.label} »</strong> (${best.avg}/5), tandis que <strong>« ${worst.label} »</strong> (${worst.avg}/5) constitue l'axe d'amélioration le plus urgent à traiter en priorité.</p>
+    <p>${sentimentMention}</p>
+  `;
+
+  const tags = [];
+  tags.push({ text:`Point fort : ${best.label}`, cls:"good" });
+  tags.push({ text:`À améliorer : ${worst.label}`, cls:"warn" });
+  if(nps !== null && nps < 0) tags.push({ text:"NPS négatif — action prioritaire", cls:"warn" });
+  if(neg > pos) tags.push({ text:"Tonalité des commentaires en baisse", cls:"warn" });
+
+  return { html, tags };
+}
+
+function render(list){
+  const content = document.getElementById("content");
+  if(!list.length){
+    content.innerHTML = `<div class="empty"><div class="e">🗂️</div><h3 style="font-family:var(--font-display);color:var(--ink);">Aucun avis pour cette période</h3><p>Ajustez les filtres ou attendez de nouvelles réponses.</p></div>`;
+    return;
+  }
+
+  const catAverages = computeCategoryAverages(list);
+  const nps = computeNPS(list);
+  const globalAvg = computeGlobalAvg(list);
+  const evolution = computeEvolutionByWeek(list);
+  const distribution = computeMotifDistribution(list);
+  const bilan = buildBilanIA(list, catAverages, nps, globalAvg);
+
+  content.innerHTML = `
+    <div class="ai-panel">
+      <div class="ai-head">
+        <div>
+          <span class="tag">🤖 Bilan automatique</span>
+          <h3>Analyse de la période sélectionnée</h3>
+        </div>
+        <button class="btn-regen" id="btnRegen">↻ Régénérer</button>
+      </div>
+      <div class="ai-body">${bilan.html}</div>
+      <div class="ai-tags">${bilan.tags.map(t=>`<span class="ai-tag ${t.cls}">${t.text}</span>`).join("")}</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="l">Avis reçus</div>
+        <div class="v">${list.length}</div>
+      </div>
+      <div class="kpi">
+        <div class="l">Note moyenne globale</div>
+        <div class="v">${globalAvg ?? "—"} <small>/5</small></div>
+      </div>
+      <div class="kpi">
+        <div class="l">Score NPS</div>
+        <div class="v">${nps ?? "—"}</div>
+      </div>
+      <div class="kpi">
+        <div class="l">Meilleure catégorie</div>
+        <div class="v" style="font-size:19px;">${catAverages[0]?.label ?? "—"}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Évolution de la note moyenne</h3>
+        <p class="sub">Moyenne hebdomadaire sur la période sélectionnée</p>
+        <div class="chart-box"><canvas id="chartEvo"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Répartition par motif</h3>
+        <p class="sub">Origine des avis reçus</p>
+        <div class="chart-box"><canvas id="chartMotif"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Notes moyennes par catégorie</h3>
+        <p class="sub">Toutes catégories confondues, tous motifs</p>
+        <div class="cat-bars">
+          ${catAverages.map(c=>`
+            <div class="cat-bar-row">
+              <div class="name">${c.label}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${c.avg/5*100}%"></div></div>
+              <div class="val">${c.avg}/5</div>
+            </div>`).join("")}
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Derniers commentaires</h3>
+        <p class="sub">Analyse de tonalité automatique</p>
+        <table>
+          <thead><tr><th>Date</th><th>Motif</th><th>Commentaire</th><th>Tonalité</th></tr></thead>
+          <tbody>
+            ${list.filter(a=>a.commentaire).slice(0,8).map(a=>{
+              const s = sentimentFromText(a.commentaire);
+              const badge = s==="pos" ? `<span class="badge pos">Positif</span>` : s==="neg" ? `<span class="badge neg">Négatif</span>` : `<span class="badge neu">Neutre</span>`;
+              return `<tr>
+                <td>${a.date_passage ?? "—"}</td>
+                <td><span class="motif-pill">${MOTIFS_LABELS[a.motif]||a.motif||"—"}</span></td>
+                <td>${a.commentaire}</td>
+                <td>${badge}</td>
+              </tr>`;
+            }).join("") || `<tr><td colspan="4" style="color:var(--ink-soft);">Aucun commentaire libre sur cette période.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("btnRegen").addEventListener("click", ()=>{
+    const b = buildBilanIA(list, catAverages, nps, globalAvg);
+    document.querySelector(".ai-body").innerHTML = b.html;
+    document.querySelector(".ai-tags").innerHTML = b.tags.map(t=>`<span class="ai-tag ${t.cls}">${t.text}</span>`).join("");
+  });
+
+  drawCharts(evolution, distribution);
+}
+
+function drawCharts(evolution, distribution){
+  Object.values(charts).forEach(c=>c && c.destroy());
+
+  const ctxEvo = document.getElementById("chartEvo");
+  charts.evo = new Chart(ctxEvo, {
+    type: "line",
+    data: {
+      labels: evolution.labels,
+      datasets: [{
+        label: "Note moyenne",
+        data: evolution.values,
+        borderColor: "#0F766E",
+        backgroundColor: "rgba(15,118,110,0.12)",
+        borderWidth: 3,
+        tension: 0.35,
+        fill: true,
+        pointBackgroundColor: "#EF6351",
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: { y: { min:0, max:5, grid:{ color:"#E2EEEC" } }, x: { grid:{ display:false } } },
+      plugins: { legend: { display:false } }
+    }
+  });
+
+  const ctxMotif = document.getElementById("chartMotif");
+  charts.motif = new Chart(ctxMotif, {
+    type: "doughnut",
+    data: {
+      labels: distribution.map(d=>d.label),
+      datasets: [{
+        data: distribution.map(d=>d.value),
+        backgroundColor: ["#0F766E","#EF6351","#E2A63A","#6EC1B8","#B5DED4","#F2A88E","#8FBFB5","#D8C08A","#7FA69C"],
+        borderWidth: 2,
+        borderColor: "#fff"
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend: { position:"bottom", labels:{ boxWidth:10, font:{ size:11 } } } }
+    }
+  });
+}
+
+window.addEventListener("firebase-ready", loadData);
+</script>
+</body>
+</html>

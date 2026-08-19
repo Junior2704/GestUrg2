@@ -1846,8 +1846,12 @@ function parsePrescriptionFromEditor() {
   return contenu;
 }
 
-function construireORD() {
+async function construireORD() {
+  const id= getIdFromURL();
+ const docRef = doc(db, "patients", id);
+const docSnap = await getDoc(docRef);
 
+      const patient = docSnap.data();
   const editor = document.getElementById("prescription-text");
   const hospitalisationId =
     patient.hospitalisationActiveId ||
@@ -1889,7 +1893,7 @@ async function genererOrdo(telecharger = false) {
       type: "ordonnance",
       titre: "Ordonnance médicale",
       date: new Date().toLocaleDateString("fr-FR"),
-      lieu: window.medecinLieu || "Lyon",
+      lieu: window.medecinLieu || "",
 
       patient: {
         nom: document.getElementById("patient-last-name")?.value.trim() || "",

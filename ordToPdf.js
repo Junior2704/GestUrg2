@@ -219,7 +219,7 @@ async function ordToPDF(ord) {
     return pdf;
 }
 
-
+window.ordToPDF = ordToPDF;
 // ==============================
 // PATCH html2pdf (COMPAT MODE)
 // ==============================

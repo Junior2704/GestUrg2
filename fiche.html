@@ -5128,22 +5128,27 @@ async function creeraccespatient() {
         ...data,
         documentOrigineId: docSnap.id,
         dateExpiration,
+        emailsAutorises: emails,
       });
     });
 
     await batch.commit();
 
-    // 4. Envoyer le lien de connexion au patient
-    if (!patient.email) {
-      afficherBulle("Documents transmis, mais aucun email renseigné pour le patient", "warning");
+     // 4. Envoyer le lien de connexion au patient
+    const emails = getEmailsPatient(patient.email);
+
+    if (emails.length === 0) {
+      afficherBulle("Documents transmis, mais aucun email valide pour le patient", "warning");
       return;
     }
 
     const actionCodeSettings = {
-      url: "https://votreapp.com/acces-patient", // à adapter à votre URL réelle
+      url: "https://junior2704.github.io/GestUrg2/portail-patient/mesdocuments",
       handleCodeInApp: true,
     };
-    await sendSignInLinkToEmail(auth, patient.email, actionCodeSettings);
+
+    // Envoi au premier email de la liste
+    await sendSignInLinkToEmail(auth, emails[0], actionCodeSettings);
 
     afficherBulle("Dossier clôturé, documents transmis au patient", "success");
 
@@ -5161,6 +5166,15 @@ async function creeraccespatient() {
   }
 }
 window.creeraccespatient = creeraccespatient;
+
+function getEmailsPatient(champEmail) {
+  if (!champEmail) return [];
+  return champEmail
+    .split("//")
+    .map(e => e.trim())
+    .filter(e => e.length > 0);
+}
+
 // Gestion Administrative
 const modalAdmin = document.getElementById("modalAdmin");
 const btnAdmin = document.getElementById("btnAdmin");

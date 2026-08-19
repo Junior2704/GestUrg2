@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes documents médicaux</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ordToPdf.js"></script>
+<style>
+    :root {
+        --primary-color: #007bff;
+        --text-color: #333;
+        --hover-color: #e6f0ff;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f7f9fc;
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1 {
+        color: var(--primary-color);
+        font-size: 1.8em;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    #sousTitre {
+        text-align: center;
+        color: #666;
+        font-size: 0.95em;
+        margin-bottom: 30px;
+    }
+
+    #zoneConnexion {
+        max-width: 420px;
+        margin: 60px auto;
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+
+    #zoneConnexion input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #dbe2ea;
+        border-radius: 8px;
+        font-size: 1em;
+        margin: 12px 0;
+    }
+
+    #zoneConnexion button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: var(--primary-color);
+        color: #fff;
+        font-size: 1em;
+        cursor: pointer;
+    }
+
+    #zoneConnexion button:hover {
+        background: #0069d9;
+    }
+
+    #messageEtat {
+        max-width: 420px;
+        margin: 20px auto;
+        text-align: center;
+        color: #c62828;
+        font-size: 0.9em;
+    }
+
+    #documentList {
+        list-style: none;
+        padding: 0;
+        margin: 0 auto;
+        max-width: 700px;
+    }
+
+    #documentList li {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        margin-bottom: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .doc-type {
+        font-weight: 600;
+        font-size: 1.05em;
+        color: var(--primary-color);
+    }
+
+    .doc-date {
+        font-size: 0.85em;
+        color: #777;
+        display: block;
+        margin-top: 4px;
+    }
+
+    .doc-actions button {
+        cursor: pointer;
+        border: 1px solid #dbe2ea;
+        background: #fff;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 0.9em;
+        margin-left: 8px;
+    }
+
+    .doc-actions button:hover {
+        background: var(--hover-color);
+        border-color: var(--primary-color);
+    }
+
+    #etatVide {
+        text-align: center;
+        color: #666;
+        margin-top: 60px;
+    }
+
+    .spinner-wrap {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.85);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .spinner {
+        border: 6px solid rgba(0,0,0,0.1);
+        border-top: 6px solid var(--primary-color);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+</style>
+</head>
+<body>
+
+<h1>Mes documents médicaux</h1>
+<div id="sousTitre">Accessibles pendant 7 jours à compter de leur envoi</div>
+
+<div id="zoneConnexion" style="display:none;">
+    <p>Merci de confirmer votre adresse email pour accéder à vos documents.</p>
+    <input id="inputEmail" type="email" placeholder="votre.email@exemple.fr">
+    <button id="btnConfirmerEmail">Confirmer</button>
+</div>
+
+<div id="messageEtat"></div>
+
+<ul id="documentList" style="display:none;"></ul>
+<div id="etatVide" style="display:none;">Aucun document disponible pour le moment.</div>
+
+<div class="spinner-wrap" id="loadingScreen">
+    <div class="spinner"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getAuth,
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs,
+    Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Même config que le reste de l'application
+const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const zoneConnexion = document.getElementById("zoneConnexion");
+const messageEtat = document.getElementById("messageEtat");
+const documentList = document.getElementById("documentList");
+const etatVide = document.getElementById("etatVide");
+
+function afficherLoader() {
+    document.getElementById("loadingScreen").style.display = "flex";
+}
+function masquerLoader() {
+    document.getElementById("loadingScreen").style.display = "none";
+}
+
+function afficherErreur(msg) {
+    messageEtat.textContent = msg;
+}
+
+// ==============================
+// CONNEXION PAR LIEN EMAIL
+// ==============================
+async function connexionParLien() {
+    if (!isSignInWithEmailLink(auth, window.location.href)) {
+        return;
+    }
+
+    let email = window.localStorage.getItem("emailPourConnexion");
+
+    if (!email) {
+        zoneConnexion.style.display = "block";
+        document.getElementById("btnConfirmerEmail").addEventListener("click", async () => {
+            const saisi = document.getElementById("inputEmail").value.trim();
+            if (!saisi) return;
+            await finaliserConnexion(saisi);
+        });
+        return;
+    }
+
+    await finaliserConnexion(email);
+}
+
+async function finaliserConnexion(email) {
+    afficherLoader();
+    try {
+        await signInWithEmailLink(auth, email, window.location.href);
+        window.localStorage.removeItem("emailPourConnexion");
+        zoneConnexion.style.display = "none";
+        messageEtat.textContent = "";
+        // Nettoyage de l'URL (retire les paramètres du lien)
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {
+        console.error(e);
+        afficherErreur("Ce lien est invalide, expiré, ou l'adresse ne correspond pas. Merci de redemander un accès auprès de l'établissement.");
+    } finally {
+        masquerLoader();
+    }
+}
+
+// ==============================
+// CHARGEMENT DES DOCUMENTS
+// ==============================
+onAuthStateChanged(auth, async (user) => {
+    if (user && user.email) {
+        await chargerDocuments(user.email);
+    }
+});
+
+async function chargerDocuments(email) {
+    afficherLoader();
+    try {
+        const q = query(
+            collection(db, "documentsPatientPortal"),
+            where("emailsAutorises", "array-contains", email)
+        );
+        const snapshot = await getDocs(q);
+        const maintenant = Timestamp.now().toMillis();
+
+        const docsValides = [];
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.dateExpiration && data.dateExpiration.toMillis() > maintenant) {
+                docsValides.push({ id: docSnap.id, ...data });
+            }
+        });
+
+        afficherListeDocuments(docsValides);
+    } catch (e) {
+        console.error(e);
+        afficherErreur("Erreur lors du chargement de vos documents.");
+    } finally {
+        masquerLoader();
+    }
+}
+
+function afficherListeDocuments(docs) {
+    if (docs.length === 0) {
+        documentList.style.display = "none";
+        etatVide.style.display = "block";
+        return;
+    }
+
+    etatVide.style.display = "none";
+    documentList.style.display = "block";
+    documentList.innerHTML = "";
+
+    docs.forEach((data) => {
+        const nomAffiche = data.ord ? (data.ord.titre || "Ordonnance") : (data.type || "Document");
+
+        const li = document.createElement("li");
+        li.innerHTML = `
+            <div>
+                <span class="doc-type">${nomAffiche}</span>
+                <span class="doc-date">${data.dateCreation || ""}</span>
+            </div>
+            <div class="doc-actions">
+                <button class="btn-voir">Voir</button>
+                <button class="btn-telecharger">Télécharger</button>
+            </div>
+        `;
+
+        li.querySelector(".btn-voir").addEventListener("click", () => ouvrirDocument(data, nomAffiche, false));
+        li.querySelector(".btn-telecharger").addEventListener("click", () => ouvrirDocument(data, nomAffiche, true));
+
+        documentList.appendChild(li);
+    });
+}
+
+// ==============================
+// OUVERTURE / TÉLÉCHARGEMENT
+// ==============================
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
+
+async function obtenirBlob(data) {
+    if (data.ord) {
+        // Ordonnance .ord : régénération du PDF à la volée
+        return await window.ordToPDF(data.ord);
+    }
+    if (data.pdfBase64) {
+        return b64toBlob(data.pdfBase64, data.mime || "application/pdf");
+    }
+    return null;
+}
+
+async function ouvrirDocument(data, nomAffiche, telecharger) {
+    afficherLoader();
+    try {
+        const blob = await obtenirBlob(data);
+        if (!blob) {
+            afficherErreur("Ce document est illisible.");
+            return;
+        }
+
+        const url = URL.createObjectURL(blob);
+
+        if (telecharger) {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = nomAffiche.replace(/[^a-z0-9\-_ ]/gi, "_") + ".pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            const nouvelOnglet = window.open(url, "_blank");
+            if (!nouvelOnglet) {
+                afficherErreur("Le navigateur a bloqué l'ouverture du document. Autorisez les pop-ups pour ce site.");
+            } else {
+                nouvelOnglet.document.title = nomAffiche;
+            }
+        }
+
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+        console.error(e);
+        afficherErreur("Erreur lors de l'ouverture du document.");
+    } finally {
+        masquerLoader();
+    }
+}
+
+connexionParLien();
+</script>
+
+</body>
+</html>

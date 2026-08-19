@@ -3405,7 +3405,8 @@ import {
    Timestamp, 
    serverTimestamp,
    onSnapshot,
-  runTransaction
+  runTransaction,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -5063,6 +5064,7 @@ if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
 
         // ✅ Feedback UI
         afficherBulle("✅ Hospitalisation clôturée", "success");
+        await creeraccespatient();
 const nom = patientData.nom;
         const prenom = patientData.prenom;
 window.parent.postMessage({
@@ -5082,8 +5084,83 @@ window.parent.postMessage({
     }, 3200);
 }
 
+import { sendSignInLinkToEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+async function creeraccespatient() {
+  afficherLoader();
 
+  try {
+    // 1. Récupérer le patient et son hospitalisation active
+    const patientSnap = await getDoc(doc(db, "patients", idPatient));
+    if (!patientSnap.exists()) {
+      afficherBulle("Patient introuvable", "error");
+      return;
+    }
+    const patient = patientSnap.data();
+    const hospitalisationId = patient.hospitalisationActiveId ||
+      (Array.isArray(patient.hospitalisations) ? patient.hospitalisations.slice(-1)[0] : null);
+
+    if (!hospitalisationId) {
+      afficherBulle("Aucune hospitalisation active trouvée", "warning");
+      return;
+    }
+
+    // 2. Récupérer tous les documents de cette hospitalisation
+    const q = query(
+      collection(db, "documents"),
+      where("hospitalisationId", "==", hospitalisationId)
+    );
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      afficherBulle("Aucun document à transmettre au patient", "warning");
+      return;
+    }
+
+    // 3. Les copier dans la collection dédiée, avec expiration à 7 jours
+    const batch = writeBatch(db);
+    const dateExpiration = Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const nouveauDocRef = doc(collection(db, "documentsPatientPortal"));
+      batch.set(nouveauDocRef, {
+        ...data,
+        documentOrigineId: docSnap.id,
+        dateExpiration,
+      });
+    });
+
+    await batch.commit();
+
+    // 4. Envoyer le lien de connexion au patient
+    if (!patient.email) {
+      afficherBulle("Documents transmis, mais aucun email renseigné pour le patient", "warning");
+      return;
+    }
+
+    const actionCodeSettings = {
+      url: "https://votreapp.com/acces-patient", // à adapter à votre URL réelle
+      handleCodeInApp: true,
+    };
+    await sendSignInLinkToEmail(auth, patient.email, actionCodeSettings);
+
+    afficherBulle("Dossier clôturé, documents transmis au patient", "success");
+
+    ajouterEntreeHistorique("Clôture de l'hospitalisation, documents transmis au patient", {
+      patientId: idPatient,
+      hospitalisationId,
+      silencieux: true,
+    });
+
+  } catch (err) {
+    console.error(err);
+    afficherBulle("Erreur lors de la clôture du dossier", "error");
+  } finally {
+    masquerLoader();
+  }
+}
+window.creeraccespatient = creeraccespatient;
 // Gestion Administrative
 const modalAdmin = document.getElementById("modalAdmin");
 const btnAdmin = document.getElementById("btnAdmin");

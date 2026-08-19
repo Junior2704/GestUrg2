@@ -1849,7 +1849,11 @@ function parsePrescriptionFromEditor() {
 function construireORD() {
 
   const editor = document.getElementById("prescription-text");
-
+  const hospitalisationId =
+    patient.hospitalisationActiveId ||
+    (Array.isArray(patient.hospitalisations)
+      ? patient.hospitalisations.slice(-1)[0]
+      : null);
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
   const naissance = document.getElementById("patient-birthdate")?.value.trim() || "";
@@ -1860,10 +1864,10 @@ function construireORD() {
     type: "ordonnance",
     titre: "Ordonnance médicale",
     date: new Date().toLocaleDateString("fr-FR"),
-    lieu: window.medecinLieu || "Lyon",
+    lieu: window.medecinLieu || "",
 
     patient: { nom: lastName, prenom: firstName, date_Naissance: naissance, sexe },
-
+hospitalisationId:hospitalisationId,
     medecin: {
       nom: window.medecinNom || "Dr Non renseigné",
       specialite: window.medecinSpecialite || "",

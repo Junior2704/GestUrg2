@@ -5106,50 +5106,47 @@ async function creeraccespatient() {
     }
 
     // 2. Récupérer tous les documents de cette hospitalisation
-    const q = query(
-      collection(db, "documents"),
-      where("hospitalisationId", "==", hospitalisationId)
-    );
-    const snapshot = await getDocs(q);
+const q = query(
+  collection(db, "documents"),
+  where("hospitalisationId", "==", hospitalisationId)
+);
+const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
-      afficherBulle("Aucun document à transmettre au patient", "warning");
-      return;
-    }
+if (snapshot.empty) {
+  afficherBulle("Aucun document à transmettre au patient", "warning");
+  return;
+}
 
-    // 3. Les copier dans la collection dédiée, avec expiration à 7 jours
-    const batch = writeBatch(db);
-    const dateExpiration = Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000);
+// 2bis. Récupérer les emails AVANT la boucle
+const emails = getEmailsPatient(patient.email);
+if (emails.length === 0) {
+  afficherBulle("Aucun email valide pour le patient, documents non transmis", "warning");
+  return;
+}
 
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const nouveauDocRef = doc(collection(db, "documentsPatientPortal"));
-      batch.set(nouveauDocRef, {
-        ...data,
-        documentOrigineId: docSnap.id,
-        dateExpiration,
-        emailsAutorises: emails,
-      });
-    });
+// 3. Les copier dans la collection dédiée, avec expiration à 7 jours
+const batch = writeBatch(db);
+const dateExpiration = Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await batch.commit();
+snapshot.forEach((docSnap) => {
+  const data = docSnap.data();
+  const nouveauDocRef = doc(collection(db, "documentsPatientPortal"));
+  batch.set(nouveauDocRef, {
+    ...data,
+    documentOrigineId: docSnap.id,
+    dateExpiration,
+    emailsAutorises: emails,
+  });
+});
 
-     // 4. Envoyer le lien de connexion au patient
-    const emails = getEmailsPatient(patient.email);
+await batch.commit();
 
-    if (emails.length === 0) {
-      afficherBulle("Documents transmis, mais aucun email valide pour le patient", "warning");
-      return;
-    }
-
-    const actionCodeSettings = {
-      url: "https://junior2704.github.io/GestUrg2/portail-patient/mesdocuments",
-      handleCodeInApp: true,
-    };
-
-    // Envoi au premier email de la liste
-    await sendSignInLinkToEmail(auth, emails[0], actionCodeSettings);
-
+// 4. Envoyer le lien de connexion (emails déjà calculés)
+const actionCodeSettings = {
+  url: "https://junior2704.github.io/GestUrg2/portail-patient/mesdocuments",
+  handleCodeInApp: true,
+};
+await sendSignInLinkToEmail(auth, emails[0], actionCodeSettings);
     afficherBulle("Dossier clôturé, documents transmis au patient", "success");
 
     ajouterEntreeHistorique("Clôture de l'hospitalisation, documents transmis au patient", {

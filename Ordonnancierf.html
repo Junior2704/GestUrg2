@@ -2847,20 +2847,14 @@ async function chargerAnciennesOrdonnances() {
 const patient = data.patient || {};
 
 const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
-const container = document.createElement("div");
-container.innerHTML = html;
-
-const pdfBlob = await html2pdf()
-  .set({
-    margin: 0,
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  })
-  .from(container)
-  .outputPdf('blob');
-
-
-ouvrirModal(pdfBlob, nom);
+window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: nom,
+      url: `viewer.html.html?id=${data.id}`
+    },
+    "*"
+  );
     return;
 }
 

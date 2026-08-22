@@ -357,11 +357,11 @@ html, body {
       font-weight:600;
       text-align:center;
       ">
-🚨 Attention : valider le certificat va verrouiller sa modification et l’enregistrer définitivement dans le dossier patient.
+      🚨 Attention : valider la prescription va verrouiller la modification et l’enregistrer définitivement dans le dossier patient.
     </div>
 
     <!-- Prévisualisation -->
-<h3 style="margin-top:10px; text-align:left;">Certificat médical :</h3>
+    <h3 style="margin-top:10px; text-align:left;">Prescription :</h3>
     <div id="preview-ordo" 
         style="background:#f8f9fa; padding:15px; border-radius:8px;
                border:1px solid #ddd; text-align:left; max-height:250px;
@@ -449,8 +449,8 @@ onAuthStateChanged(auth, async (user) => {
 
         if (!pages[pageKey]) {
 const modal = document.getElementById("modal-no-access");
-          if (modal) { masquerLoader();
-          modal.style.display = "flex";  }     
+          if (modal) masquerLoader();
+          modal.style.display = "flex";       
           console.warn("Accès refusé à", currentPage);
         }
       } else {
@@ -522,290 +522,120 @@ window.masquerLoader = function() {
     }
   }
 function imprimer() {
-  if (!window.pdfIdExistante) {
-    afficherBulle(
-      "❌ Aucun document disponible pour impression",
-      "alerte"
-    );
-    return;
-  }
-
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: "Certificat médical",
-      url: `viewer.html?docId=${window.pdfIdExistante}`
-    },
-    "https://junior2704.github.io"
-  );
-}
-
-window.imprimer = imprimer;
-
-
-// ==========================================================
-// 📥 TÉLÉCHARGEMENT DU CERTIFICAT
-// ==========================================================
-
-async function telechargerCertif() {
-  try {
-    const ord = construireORDCertificat();
-
-    if (typeof window.ordToPDF !== "function") {
-      afficherBulle(
-        "❌ La fonction ordToPDF est introuvable",
-        "alerte"
-      );
-      console.error("ordToPDF n'est pas disponible.");
-      return;
+    // Vérifie que l'ID du document existe
+    if (!window.pdfIdExistante) {
+        afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+        return;
     }
 
-    await window.ordToPDF(ord);
-
-    afficherBulle(
-      "📥 PDF téléchargé",
-      "administratif"
-    );
-
-  } catch (error) {
-    console.error("Erreur téléchargement certificat :", error);
-
-    afficherBulle(
-      "❌ Erreur lors de la génération du PDF",
-      "alerte"
-    );
-  }
-}
-
-window.telechargerCertif = telechargerCertif;
-
-
-// ==========================================================
-// 🔔 NOTIFICATIONS
-// ==========================================================
-
-const ORIGINE_PARENT_BULLE = "https://junior2704.github.io";
-
-function afficherBulle(message, typeBulle = "administratif") {
-
-  if (window.parent === window) {
-    console.warn(
-      "afficherBulle appelée sans parent :",
-      message
-    );
-    return;
-  }
-
-  window.parent.postMessage(
-    {
-      source: "notification-bulle",
-      message: message,
-      typeBulle: typeBulle
-    },
-    ORIGINE_PARENT_BULLE
-  );
-}
-
-window.afficherBulle = afficherBulle;
-
-
-// Relais des notifications provenant d'une iframe enfant
-window.addEventListener("message", (event) => {
-
-  if (
-    event.data &&
-    event.data.source === "notification-bulle" &&
-    window.parent !== window
-  ) {
+    // Envoie le message au parent pour ouvrir un nouvel onglet
     window.parent.postMessage(
-      event.data,
-      ORIGINE_PARENT_BULLE
+        {
+            type: "OPEN_TAB",
+            title: "Certificat médical",
+            url: `viewer.html?docId=${window.pdfIdExistante}` // URL avec l'ID existant
+        },
+        "*"
     );
+}
+window.imprimer=imprimer;
+
+function telechargerCertif() {
+
+  const ord = construireORDCertificat(); // ✅ ton modèle .ord
+
+  ordToPDF(ord); // ✅ conversion PDF avec ton template
+
+  afficherBulle("📥 PDF téléchargé", "success");
+}
+window.telechargerCertif =telechargerCertif;
+  // utilitaire notifications
+  const ORIGINE_PARENT_BULLE = "*";
+
+
+function afficherBulle(message, typeBulle){
+
+  if(window.parent === window){
+
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+
+    return;
+
   }
 
+  window.parent.postMessage(
+
+    {
+      source:"notification-bulle",
+      message,
+      typeBulle
+    },
+
+    ORIGINE_PARENT_BULLE
+
+  );
+
+}
+
+
+/* relais : si ce code lui-même iframe d'autres codes qui
+   demandent une bulle, on transmet plus haut à notre tour */
+
+window.addEventListener("message",(event)=>{
+
+  if(
+    event.data &&
+    event.data.source==="notification-bulle" &&
+    window.parent!==window
+  ){
+
+    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
+
+  }
+
+});)
+contenu.push({ type: "newline" });
+contenu.push({ type: "newline" });
+  conditions.forEach((c, index) => {
+    const cb = document.getElementById(c.id);
+    if (cb && cb.checked) {
+      let valeur = (document.getElementById(c.inputId)?.value || "").trim();
+      if (index === 2 || index === 3) valeur += " jour(s)";
+
+     contenu.push({
+  type: "text",
+  value: `- ${c.label} ${valeur}`
 });
-
-
-// ==========================================================
-// 📄 CONSTRUCTION DU .ORD DU CERTIFICAT
-// ==========================================================
-
-function construireORDCertificat() {
-
-  const conditions = [
-    {
-      id: "condition1",
-      inputId: "input1",
-      label: "Le patient est apte à entrer en classe de",
-      suffix: "."
-    },
-    {
-      id: "condition2",
-      inputId: "input2",
-      label: "Le patient ne présente aucune contre-indication à la pratique du",
-      suffix: "."
-    },
-    {
-      id: "condition3",
-      inputId: "input3",
-      label: "Dispense de sport pour une durée de",
-      suffix: " jour(s) à compter de ce jour."
-    },
-    {
-      id: "condition4",
-      inputId: "input4",
-      label: "Dispense de piscine pour une durée de",
-      suffix: " jour(s) à compter de ce jour."
-    },
-    {
-      id: "condition5",
-      inputId: "input5",
-      label: "Absence de l'école / lycée / travail pour une durée de",
-      suffix: " jour(s) à compter de ce jour."
-    },
-    {
-      id: "condition6",
-      inputId: "input6",
-      label: "Présence de son/ses parent(s)/tuteur(s) auprès de lui en permanence pour une durée de",
-      suffix: " jour(s) à compter de ce jour."
-    },
-    {
-      id: "condition7",
-      inputId: null,
-      label: "Présence ce jour à l'hôpital",
-      suffix: "."
+      contenu.push({ type: "newline" });
     }
-  ];
-
-  const contenu = [];
-
-  contenu.push({
-    type: "text",
-    value: "Je soussigné(e), médecin responsable,"
   });
-
-  contenu.push({
-    type: "newline"
-  });
-
-  contenu.push({
-    type: "text",
-    value: `certifie avoir examiné ${document.getElementById("sexe")?.value || "le patient"} ${document.getElementById("prenom")?.value || ""} ${document.getElementById("nom")?.value || ""}.`
-  });
-
-  contenu.push({
-    type: "newline"
-  });
-
-  contenu.push({
-    type: "newline"
-  });
-
-
-  // --------------------------------------------------------
-  // Mentions sélectionnées
-  // --------------------------------------------------------
-
-  conditions.forEach((condition) => {
-
-    const checkbox = document.getElementById(condition.id);
-
-    if (!checkbox || !checkbox.checked) {
-      return;
-    }
-
-    let valeur = "";
-
-    if (condition.inputId) {
-      const input = document.getElementById(condition.inputId);
-
-      if (input) {
-        valeur = input.value.trim();
-      }
-    }
-
-    let texte = condition.label;
-
-    if (valeur) {
-      texte += ` ${valeur}`;
-    }
-
-    texte += condition.suffix;
-
-    contenu.push({
-      type: "text",
-      value: `- ${texte}`
-    });
-
-    contenu.push({
-      type: "newline"
-    });
-
-  });
-
-
-  contenu.push({
-    type: "newline"
-  });
-
-  contenu.push({
-    type: "newline"
-  });
-
-
-  // --------------------------------------------------------
-  // Formule finale
-  // --------------------------------------------------------
-
-  contenu.push({
-    type: "text",
-    value:
-      `Certificat remis en main propre à la demande de l'intéressé(e) le ${new Date().toLocaleDateString("fr-FR")} pour faire valoir ce que de droit.`
-  });
-
-
-  // --------------------------------------------------------
-  // Objet ORD
-  // --------------------------------------------------------
-
+  contenu.push({ type: "newline" });
+contenu.push({
+  type: "text",
+  value: `Certificat remis en main propre à la demande de l'intéressé(e) le ${new Date().toLocaleDateString("fr-FR")} pour faire valoir ce que de droit`
+})
   return {
     type: "certificat",
-    titre: "Certificat médical",
-
-    date: new Date().toLocaleDateString("fr-FR"),
-
+    titre: "Certficat médical",
+ date: new Date().toLocaleDateString("fr-FR"),
     lieu: window.medecinLieu || "Non renseigné",
-
     patient: {
-      nom: document.getElementById("nom")?.value.trim() || "",
-      prenom: document.getElementById("prenom")?.value.trim() || "",
+      nom: document.getElementById('nom').value.trim(),
+      prenom: document.getElementById('prenom').value.trim(),
+date_Naissance: document.getElementById('dateNaissance').value .split("-") .reverse() .join("/"),
 
-      date_Naissance:
-        document.getElementById("dateNaissance")?.value
-          ? document
-              .getElementById("dateNaissance")
-              .value
-              .split("-")
-              .reverse()
-              .join("/")
-          : "",
-
-      sexe: document.getElementById("sexe")?.value || "M"
+      sexe: document.getElementById('sexe').value
     },
-
     medecin: {
-      nom: window.medecinNom || "",
-      specialite: window.medecinSpecialite || "",
-      lieu: window.medecinLieu || ""
+      nom: window.medecinNom,
+      specialite: window.medecinSpecialite,
+      lieu: window.medecinLieu
     },
-
     contenu: contenu,
-
     dateCreation: new Date().toISOString()
   };
 }
-
-window.construireORDCertificat = construireORDCertificat;
+  // ========== Validation & enregistrement (documents) ==========
   async function validerCertificat() {
   const nom = document.getElementById('nom').value.trim();
   const prenom = document.getElementById('prenom').value.trim();
@@ -842,6 +672,7 @@ window.construireORDCertificat = construireORDCertificat;
   try {
     const idUnique = Math.random().toString(36).substring(2,10);
     const dateFormatted = formatDate(new Date());
+    const fileName = `Certificat - ${prenom} ${nom}.pdf`;
 
     if (!patientId) {
       afficherBulle("Erreur : aucun patientId reçu", "alerte");
@@ -881,15 +712,7 @@ const ord = construireORDCertificat();
   document.getElementById("postValidationActions").style.display = "block";
 }
 window.validerCertificat=validerCertificat;
-function formatDate(date) {
-  if (!(date instanceof Date) || isNaN(date)) {
-    return "";
-  }
 
-  return date.toLocaleDateString("fr-FR");
-}
-
-window.formatDate = formatDate;
   // ========== Envoi par email==========
   async function envoyerCertificatParEmail(destinataires = []) {
     if (!Array.isArray(destinataires) || destinataires.length === 0) {
@@ -1170,55 +993,19 @@ const id = new URLSearchParams(window.location.search).get('id');
     masquerLoader();
 };
   // reset form
-function reinitialiserForm() {
-
-  document.getElementById("nom").value = "";
-  document.getElementById("prenom").value = "";
-  document.getElementById("dateNaissance").value = "";
-  document.getElementById("sexe").value = "M";
-
-  for (let i = 1; i <= 7; i++) {
-
-    const checkbox = document.getElementById(`condition${i}`);
-    const input = document.getElementById(`input${i}`);
-
-    if (checkbox) {
-      checkbox.checked = false;
-    }
-
-    if (input) {
-      input.value = "";
-      input.style.display = "none";
-    }
+  function reinitialiserForm() {
+    document.getElementById('nom').value = "";
+    document.getElementById('prenom').value = "";
+    document.getElementById('dateNaissance').value = "";
+    document.getElementById('sexe').value = "";
+    ['condition1', 'condition2', 'condition3', 'condition4'].forEach((id, index) => {
+      const checkbox = document.getElementById(id);
+      const input = document.getElementById('input' + (index + 1));
+      if (checkbox) checkbox.checked = false;
+      if (input) { input.value = ""; input.style.display = 'none'; }
+    });
   }
-
-  // Réactive les champs si le formulaire avait été verrouillé
-  const allInputs = document.querySelectorAll(
-    "#patientForm input, #patientForm select, #patientForm button"
-  );
-
-  allInputs.forEach((element) => {
-    element.disabled = false;
-  });
-
-  const btnInitial = document.getElementById("btnGenererInitial");
-
-  if (btnInitial) {
-    btnInitial.style.display = "inline-flex";
-  }
-
-  const postValidationActions =
-    document.getElementById("postValidationActions");
-
-  if (postValidationActions) {
-    postValidationActions.style.display = "none";
-  }
-
-  window.pdfIdExistante = null;
-}
-
-window.reinitialiserForm = reinitialiserForm;
-
+  window.reinitialiserForm=reinitialiserForm;
 /* --------------------------------------------------
    🔶 OUVERTURE DE LA MODALE DE CONFIRMATION
 -------------------------------------------------- */

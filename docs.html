@@ -1229,13 +1229,66 @@ document.getElementById("btnConfirmDelete").onclick = async function () {
 
 };
 function parseDateFR(dateStr) {
-    if (!dateStr) return new Date(0); // valeur par défaut
-    const [datePart, timePart] = dateStr.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const [hours, minutes, seconds] = timePart.split(":").map(Number);
-    return new Date(year, month - 1, day, hours, minutes, seconds);
-}
 
+    // Pas de date
+    if (!dateStr) {
+        return new Date(0);
+    }
+
+    // Déjà un objet Date
+    if (dateStr instanceof Date) {
+        return isNaN(dateStr.getTime()) ? new Date(0) : dateStr;
+    }
+
+    // Timestamp Firestore
+    if (typeof dateStr.toDate === "function") {
+        const date = dateStr.toDate();
+        return isNaN(date.getTime()) ? new Date(0) : date;
+    }
+
+    // Conversion en chaîne
+    if (typeof dateStr !== "string") {
+        return new Date(0);
+    }
+
+    try {
+
+        const parts = dateStr.trim().split(" ");
+
+        const datePart = parts[0];
+        const timePart = parts[1] || "00:00:00";
+
+        const dateParts = datePart.split("/");
+
+        if (dateParts.length !== 3) {
+            return new Date(0);
+        }
+
+        const [day, month, year] = dateParts.map(Number);
+
+        const timeParts = timePart.split(":");
+
+        const hours = Number(timeParts[0]) || 0;
+        const minutes = Number(timeParts[1]) || 0;
+        const seconds = Number(timeParts[2]) || 0;
+
+        const date = new Date(
+            year,
+            month - 1,
+            day,
+            hours,
+            minutes,
+            seconds
+        );
+
+        return isNaN(date.getTime()) ? new Date(0) : date;
+
+    } catch (error) {
+
+        console.warn("Date invalide :", dateStr, error);
+        return new Date(0);
+    }
+}
 
 window.afficherLoader = function() {
   let loader = document.getElementById("loadingScreen");

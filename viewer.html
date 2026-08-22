@@ -1545,11 +1545,9 @@ async function chargerDocument() {
         );
 
 
-    const fileUrl =
-        params.get(
-            "file"
-        );
-
+ const fileUrl =
+    params.get("file") ||
+    params.get("url");
 
     const nom =
         params.get(
@@ -1619,44 +1617,106 @@ const tempId =
          * =============================================
          */
 
-        if (fileUrl) {
+if (fileUrl) {
 
-            afficherLoader(
-                "Téléchargement du document..."
-            );
+    afficherLoader(
+        "Téléchargement du document..."
+    );
 
+    let urlPDF =
+        decodeURIComponent(fileUrl);
 
-            const response =
-                await fetch(
-                    decodeURIComponent(
-                        fileUrl
-                    )
+    /*
+     * Si l'URL est relative :
+     *
+     * ?file=fiche_conseil_-_entorse.pdf
+     *
+     * on la transforme en URL absolue.
+     */
+    if (
+        !urlPDF.startsWith("http://") &&
+        !urlPDF.startsWith("https://") &&
+        !urlPDF.startsWith("/")
+    ) {
+
+        urlPDF =
+            new URL(
+                urlPDF,
+                window.location.href
+            ).href;
+
+    }
+
+    const response =
+        await fetch(
+            urlPDF
+        );
+
+    if (!response.ok) {
+
+        throw new Error(
+            `Erreur HTTP ${response.status}`
+        );
+
+    }
+
+    const blob =
+        await response.blob();
+
+    /*
+     * Vérification basique :
+     * on s'attend à recevoir un PDF.
+     */
+    if (
+        blob.type &&
+        !blob.type.includes("pdf")
+    ) {
+
+        console.warn(
+            "Le serveur n'a pas retourné un MIME type PDF :",
+            blob.type
+        );
+
+    }
+
+    /*
+     * Si aucun nom n'est fourni,
+     * on récupère le nom depuis l'URL.
+     */
+    let nomPDF =
+        nom;
+
+    if (!nomPDF) {
+
+        try {
+
+            const urlObj =
+                new URL(
+                    urlPDF
                 );
 
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `Erreur HTTP ${response.status}`
+            nomPDF =
+                decodeURIComponent(
+                    urlObj.pathname
+                        .split("/")
+                        .pop()
                 );
-
-            }
-
-
-            const blob =
-                await response.blob();
-
-
-            await chargerBlob(
-                blob,
-                nom ||
-                "Document.pdf"
-            );
-
-
-            return;
 
         }
+
+        catch (_) {}
+
+    }
+
+    await chargerBlob(
+        blob,
+        nomPDF ||
+        "Document.pdf"
+    );
+
+    return;
+
+}
 
 
         /*

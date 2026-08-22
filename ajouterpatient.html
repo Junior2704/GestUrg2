@@ -583,7 +583,14 @@ button:hover { background: #005ea2; }
 <div id="infoModal" class="modal-overlay">
   <div class="modal-box">
     <p id="infoModalText"></p>
-    <button onclick="closeInfoModal()" class="btn-id">OK</button>
+
+    <div id="infoModalButtons" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+      <button onclick="closeInfoModal()" class="btn-id">OK</button>
+
+      <button id="btnOuvrirFicheUrgences" class="btn-id btn-id-v" style="display:none;">
+        🏥 Ouvrir la Fiche Urgences
+      </button>
+    </div>
   </div>
 </div>
 
@@ -800,10 +807,41 @@ let patientSelected = false;
 let identityValidated = false;
 
 
-function showInfoModal(message, reset = false) {
+function showInfoModal(message, reset = false, ouvrirFiche = false, patientId = null, nom = "", prenom = "") {
+
   infoModalText.textContent = message;
   infoModal.classList.add("show");
   infoModal.dataset.reset = reset ? "1" : "0";
+
+  const btnFiche = document.getElementById("btnOuvrirFicheUrgences");
+
+  if (ouvrirFiche && patientId) {
+
+    btnFiche.style.display = "inline-flex";
+
+    btnFiche.onclick = () => {
+
+      const titre = `Fiche Urgences ${nom} ${prenom}`.trim();
+
+      window.parent.postMessage(
+        {
+          type: "OPEN_TAB",
+          title: titre,
+          url: `fiche.html?id=${patientId}`
+        },
+        "*"
+      );
+
+      // Ferme la modale après ouverture
+      infoModal.classList.remove("show");
+    };
+
+  } else {
+
+    btnFiche.style.display = "none";
+    btnFiche.onclick = null;
+
+  }
 }
 
 window.closeInfoModal = function() {
@@ -1181,8 +1219,14 @@ if (patientId) {
         searchIndex: buildSearchIndex(nomVal, prenomVal, naissanceVal)
       });
 
-      showInfoModal("✅ Nouvelle hospitalisation créée !", true);
-
+showInfoModal(
+  "✅ Nouvelle hospitalisation créée !",
+  true,
+  true,
+  patientId,
+  nomVal,
+  prenomVal
+);
     } else {
       // 🔹 Nouveau patient
       const searchIndex = buildSearchIndex(nomVal, prenomVal, naissanceVal);
@@ -1235,8 +1279,14 @@ if (patientId) {
 
       nom.dataset.id = newPatientRef.id;
 
-      showInfoModal("✅ Nouveau patient créé !", true);
-    }
+showInfoModal(
+  "✅ Nouveau patient créé !",
+  true,
+  true,
+  newPatientRef.id,
+  nomVal,
+  prenomVal
+);    }
 
   } catch (err) {
     console.error(err);

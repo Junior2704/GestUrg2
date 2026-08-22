@@ -550,50 +550,68 @@ function telechargerCertif() {
 }
 window.telechargerCertif =telechargerCertif;
   // utilitaire notifications
-  const ORIGINE_PARENT_BULLE = "*";
+  function afficherBulle(msg, type = 'info') {
+    const container = document.getElementById('notification-container');
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.padding = '10px 14px';
+    el.style.borderRadius = '8px';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    el.style.fontSize = '14px';
+    el.style.fontWeight = '500';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    el.style.transition = 'opacity 0.25s, transform 0.25s';
 
+    switch (type) {
+      case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
+      case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
+      case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
+      default: el.style.background = '#333'; el.style.color = '#fff'; break;
+    }
 
-function afficherBulle(message, typeBulle){
+    container.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
 
-  if(window.parent === window){
-
-    console.warn("afficherBulle appelée sans parent, message perdu :", message);
-
-    return;
-
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-8px)';
+      el.addEventListener('transitionend', () => el.remove());
+    }, 3000);
   }
 
-  window.parent.postMessage(
-
-    {
-      source:"notification-bulle",
-      message,
-      typeBulle
-    },
-
-    ORIGINE_PARENT_BULLE
-
-  );
-
-}
-
-
-/* relais : si ce code lui-même iframe d'autres codes qui
-   demandent une bulle, on transmet plus haut à notre tour */
-
-window.addEventListener("message",(event)=>{
-
-  if(
-    event.data &&
-    event.data.source==="notification-bulle" &&
-    window.parent!==window
-  ){
-
-    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
-
+  // format date
+  window.formatDate = function(date) {
+    const pad = n => n.toString().padStart(2, '0');
+    const jour = pad(date.getDate());
+    const mois = pad(date.getMonth() + 1);
+    const annee = date.getFullYear();
+    const heures = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const secondes = pad(date.getSeconds());
+    return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
   }
+function construireORDCertificat() {
 
-});)
+  const conditions = [
+    { id: 'condition1', inputId: 'input1', label: "Le patient est apte, tant physiquement que psychologiquement à rentrer en classe de ", suffix: "." },
+    { id: 'condition2', inputId: 'input2', label: "L'état de santé du patient ne s'oppose en aucun point à la pratique du ", suffix: "." },
+    { id: 'condition3', inputId: 'input3', label: "L'état de santé du patient nécessite une dispense de sport pour une durée de ", suffix: " jour(s) à compter de ce jour." },
+    { id: 'condition4', inputId: 'input4', label: "L'état de santé du patient nécessite une dispense de piscine pour une durée de ", suffix: " jour(s) à compter de ce jour." },
+    { id: 'condition5', inputId: 'input5', label: "L'état de santé du patient nécessite une absence de l'école / du collèe / du lycée / du travail pour une durée de ", suffix: " jour(s) à compter de ce jour." },
+    { id: 'condition6', inputId: 'input6', label: "L'état de santé du patient nécessite la présence de son/ses parent(s)/tuteurs auprès de lui en permanence pour une durée de ", suffix: " jour(s) à compter de ce jour." },
+    { id: 'condition7', inputId: "", label: "Le patient a été pris en charge ce jour à l’hôpital.", suffix: "" }
+
+  ];
+
+  const contenu = [];
+  const nom = document.getElementById('nom').value.trim();
+      const prenom = document.getElementById('prenom').value.trim();
+      const naissance = document.getElementById('dateNaissance').value;
+contenu.push({
+  type: "text",
+  value: `Je soussigné ${window.medecinNom}, certifie sur l'honneur avoir ausculté ce jour ${prenom} ${nom}, né(e) le ${naissance} et certifie sur l'honneur que : `
+})
 contenu.push({ type: "newline" });
 contenu.push({ type: "newline" });
   conditions.forEach((c, index) => {

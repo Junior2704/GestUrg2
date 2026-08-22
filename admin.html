@@ -784,7 +784,6 @@ input[type="checkbox"] {
         <th>Editer</th>
         <th>Changer MDP</th>
         <th>Suppression</th>
-        <th>Gestion badge</th>
         <th>Urgences</th>
         <th>Tableau</th>
         <th>App mobile</th>
@@ -1168,139 +1167,6 @@ window.fermerModale = () => {
   document.getElementById("editModal").style.display = "none";
 };
 
-// ==========================
-// 🪪 GESTION DES BADGES
-// ==========================
-let badgeUserId = null;
-let badgeUserNom = null;
-let badgeModeActuel = null; // "ajout" ou "modif"
-
-window.ouvrirBadgeModal = (id, nom, badge) => {
-  badgeUserId = id;
-  badgeUserNom = nom;
-  document.getElementById("badgeModal").style.display = "flex";
-  document.getElementById("badgeModalNom").textContent = nom;
-  afficherEtatBadge(badge);
-};
-
-function afficherEtatBadge(badge) {
-  const statutBox = document.getElementById("badgeStatutBox");
-  const statutTexte = document.getElementById("badgeStatutTexte");
-  const actions = document.getElementById("badgeActions");
-
-  if (badge) {
-    statutBox.style.background = "#e6f7e9";
-    statutTexte.innerHTML = `✅ Badge enregistré : <strong>${badge}</strong>`;
-    actions.innerHTML = `
-      <button style="background:#0078d4;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="ouvrirLectureBadge('modif')">✏️ Modifier</button>
-      <button style="background:#ff0000;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="supprimerBadge()">🗑️ Supprimer</button>
-    `;
-  } else {
-    statutBox.style.background = "#fdeaea";
-    statutTexte.innerHTML = "❌ Aucun badge enregistré";
-    actions.innerHTML = `
-      <button style="background:#4caf50;color:white;padding:8px 15px;border:none;border-radius:8px;" onclick="ouvrirLectureBadge('ajout')">➕ Ajouter un badge</button>
-    `;
-  }
-}
-
-window.fermerBadgeModal = () => {
-  document.getElementById("badgeModal").style.display = "none";
-  badgeUserId = null;
-  badgeUserNom = null;
-};
-
-window.ouvrirLectureBadge = (mode) => {
-  badgeModeActuel = mode;
-  document.getElementById("lireBadgeTitre").textContent =
-    mode === "modif" ? "📡 Scannez le nouveau badge" : "📡 Scannez le badge";
-  document.getElementById("lireBadgeModal").style.display = "flex";
-  const input = document.getElementById("badgeInputCache");
-  input.value = "";
-  setTimeout(() => input.focus(), 50);
-};
-
-window.fermerLectureBadge = () => {
-  document.getElementById("lireBadgeModal").style.display = "none";
-  document.getElementById("badgeInputCache").value = "";
-};
-function showColumnInfo(button) {
-  const text = button.dataset.info;
-  const popup = document.getElementById("columnInfoPopup");
-
-  popup.textContent = text;
-  popup.classList.add("active");
-
-  const rect = button.getBoundingClientRect();
-
-  let left = rect.left;
-  let top = rect.bottom + 8;
-
-  if (left + 280 > window.innerWidth - 10) {
-    left = window.innerWidth - 290;
-  }
-
-  if (top + 120 > window.innerHeight - 10) {
-    top = rect.top - 130;
-  }
-
-  popup.style.left = left + "px";
-  popup.style.top = top + "px";
-}
-
-// Fermer en cliquant ailleurs
-document.addEventListener("click", function(e) {
-  if (
-    !e.target.closest(".info-btn") &&
-    !e.target.closest(".info-popup")
-  ) {
-    document.getElementById("columnInfoPopup")
-      .classList.remove("active");
-  }
-});
-
-document.getElementById("badgeInputCache").addEventListener("keydown", async (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    const valeur = e.target.value.trim();
-    if (!valeur) return;
-    await enregistrerBadge(valeur);
-  }
-});
-
-async function enregistrerBadge(valeur) {
-  if (!badgeUserId) return;
-  try {
-    const ref = doc(db, "medecins", badgeUserId);
-    await updateDoc(ref, { idBadge: valeur });
-    afficherBulle(badgeModeActuel === "modif" ? "✅ Badge modifié" : "✅ Badge enregistré", "success");
-    await envoyerNotification(badgeUserId, "🪪 Nouveau badge enregistré", "Un nouveau badge d'accès vient d'être enregistré pour votre compte GestUrg2");
-    fermerLectureBadge();
-    afficherEtatBadge(valeur);
-    chargerUtilisateurs();
-  } catch (err) {
-    console.error(err);
-    afficherBulle("❌ Erreur lors de l'enregistrement du badge", "error");
-  }
-}
-
-window.supprimerBadge = async () => {
-  if (!badgeUserId) return;
-  const confirmation = confirm(`Voulez-vous vraiment supprimer le badge de ${badgeUserNom} ?`);
-  if (!confirmation) return;
-  try {
-    const ref = doc(db, "medecins", badgeUserId);
-    await updateDoc(ref, { idBadge: "" });
-    afficherBulle("✅ Badge supprimé", "success");
-        await envoyerNotification(badgeUserId, "🪪 Badge supprimé", "Votre badge d'accès à votre compte GestUrg2 vient d'être supprimé");
-
-    afficherEtatBadge(null);
-    chargerUtilisateurs();
-  } catch (err) {
-    console.error(err);
-    afficherBulle("❌ Erreur lors de la suppression du badge", "error");
-  }
-};
 async function envoyerMailResetEmailJS(email, nom, motDePasseTemp) {
   const htmlMessage = `
     
@@ -1488,15 +1354,7 @@ tr.innerHTML = `
   }
 </td>
 
-<td>
-  <button class="badgeBtn"
-    data-id="${id}"
-    data-nom="${data.nom || ""}"
-    data-badge="${data.idBadge || ""}"
-    style="background:${data.idBadge ? "#4caf50" : "#0078d4"};color:white;">
-    ${data.idBadge ? "🪪 Badge" : "➕ Badge"}
-  </button>
-</td>
+
       
   <td><input type="checkbox" ${pages.urgences ? "checked" : ""} onchange="toggleAccess('${id}', 'urgences', this.checked)"></td>
     <td><input type="checkbox" ${pages.regulation ? "checked" : ""} onchange="toggleAccess('${id}', 'regulation', this.checked)"></td>

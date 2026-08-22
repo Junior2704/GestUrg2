@@ -1107,19 +1107,32 @@ examen.dateRealisation = formatDateHeure(new Date().toISOString());
 
     const ord = window.genererOrdCompteRendu(examen, patientData, compteRendu);
 
-    await addDoc(collection(db, "documents"), {
-      patientId: patientId || null,
-      type: `Compte-rendu ${examen.type || "examen"}`,
-      dateCreation: formatDateHeure(new Date().toISOString()),
-      contenu: compteRendu,
-      ord
-    });
+ const docRef = await addDoc(collection(db, "documents"), {
+    patientId: patientId || null,
+    type: `Compte-rendu ${examen.type || "examen"}`,
+    dateCreation: formatDateHeure(new Date().toISOString()),
+    contenu: compteRendu,
+    ord
+});
+
+const id = docRef.id;
+
+
 
     if (window.ordToPDF) {
       const pdfBlob = await window.ordToPDF(ord);
       const url = URL.createObjectURL(pdfBlob);
       const ouvrirBtn = document.getElementById("ouvrirCompteRenduBtn");
-      if (ouvrirBtn) ouvrirBtn.onclick = () => window.open(url, "_blank");
+      if (ouvrirBtn) ouvrirBtn.onclick = () =>{ 
+        const nom = `Compte-rendu ${examen.type || "examen"}`;
+window.parent.postMessage(
+    {
+      type: "OPEN_TAB",
+      title: nom,
+      url: `viewer.html.html?id=${id}`
+    },
+    "*"
+  );}
       const modalPret = document.getElementById("modal-compte-rendu-pret");
       if (modalPret) modalPret.style.display = "flex";
     }

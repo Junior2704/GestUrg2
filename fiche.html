@@ -5159,105 +5159,76 @@ document.getElementById("clotureBadgeInput").addEventListener("keydown", functio
 });
 
 async function executerCloture() {
-
-    modalCode.style.display = "none";
-
-    // ==================================================
-    // RÉCUPÉRATION DU PATIENT AVANT LA CLÔTURE
-    // ==================================================
+    if (modalCode) modalCode.style.display = "none";
 
     const patientRef = doc(db, "patients", patientId);
-
     const patientSnap = await getDoc(patientRef);
 
     if (!patientSnap.exists()) {
-        afficherBulle(
-            "🚨 Patient introuvable",
-            "error"
-        );
+        afficherBulle("🚨 Patient introuvable", "error");
         return;
     }
 
     const patientData = patientSnap.data();
-
-    // --------------------------------------------------
-    // RECHERCHE DE L'EMAIL PATIENT
-    // --------------------------------------------------
-
-    const emailPatient =
+    const emailPatient = (
         patientData.email ||
         patientData.emailPatient ||
         patientData.mail ||
-        "";
+        ""
+    ).trim();
 
-    // ==================================================
-    // SI PAS D'EMAIL → AVERTISSEMENT
-    // ==================================================
+    // Pas d'e-mail : demander confirmation avant de poursuivre.
+    if (!emailPatient) {
+        const modalAvertissement = document.getElementById("modalAvertissementEmail");
+        const btnAnnuler = document.getElementById("btnAnnulerClotureEmail");
+        const btnContinuer = document.getElementById("btnContinuerClotureEmail");
 
-    if (!emailPatient || !emailPatient.trim()) {
-
-        const modalAvertissement =
-            document.getElementById("modalAvertissementEmail");
+        if (!modalAvertissement || !btnAnnuler || !btnContinuer) {
+            console.error("Éléments de la modale d'avertissement e-mail introuvables.");
+            afficherBulle("❌ Impossible d'afficher l'avertissement e-mail", "error");
+            return;
+        }
 
         modalAvertissement.style.display = "flex";
 
-        return new Promise((resolve) => {
-
-            const btnAnnuler =
-                document.getElementById(
-                    "btnAnnulerClotureEmail"
-                );
-
-            const btnContinuer =
-                document.getElementById(
-                    "btnContinuerClotureEmail"
-                );
-
-            // -----------------------------
-            // ANNULER
-            // -----------------------------
-
-            btnAnnuler.onclick = () => {
-
-                modalAvertissement.style.display =
-                    "none";
-
-                resolve();
+        const continuer = await new Promise(resolve => {
+            const annuler = () => {
+                modalAvertissement.style.display = "none";
+                btnAnnuler.onclick = null;
+                btnContinuer.onclick = null;
+                resolve(false);
             };
 
-
-            // -----------------------------
-            // CONTINUER
-            // -----------------------------
-
-            btnContinuer.onclick = () => {
-
-                modalAvertissement.style.display =
-                    "none";
-
-                // On relance réellement la clôture
-                executerClotureSansAvertissement();
-
-                resolve();
+            const poursuivre = () => {
+                modalAvertissement.style.display = "none";
+                btnAnnuler.onclick = null;
+                btnContinuer.onclick = null;
+                resolve(true);
             };
 
+            btnAnnuler.onclick = annuler;
+            btnContinuer.onclick = poursuivre;
         });
+
+        if (!continuer) return;
     }
 
-    // Si un email existe, on lance directement
     return executerClotureSansAvertissement();
 }
 
 async function executerClotureSansAvertissement() {
 
-    document.getElementById("modalCloture").style.display =
-        "flex";
+    const modalCloture = document.getElementById("modalCloture");
+    const bar = document.getElementById("clotureBar");
+    const texte = document.getElementById("clotureProgressText");
 
-    const bar =
-        document.getElementById("clotureBar");
+    if (!modalCloture || !bar || !texte) {
+        throw new Error("Éléments de la modale de progression introuvables");
+    }
 
-    const texte =
-        document.getElementById("clotureProgressText");
+    bar.style.width = "0%";
+    texte.textContent = "Préparation...";
+    modalCloture.style.display = "flex";
 
     const signatureId =
         window.signatureId;
@@ -5550,20 +5521,12 @@ async function executerClotureSansAvertissement() {
         await setDoc(
             documentRef,
             {
-                patientId:
-                    patientId,
-
-                dateCreation:
-                    dateCreation,
-
-                type:
-                    type,
-
-                contenu:
-                    contenu,
-
-                ord:
-                    ord
+                patientId: patientId,
+                hospitalisationId: hospitalisationId,
+                dateCreation: dateCreation,
+                type: type,
+                contenu: contenu,
+                ord: ord
             }
         );
 
@@ -5762,7 +5725,7 @@ async function executerClotureSansAvertissement() {
             "none";
     }
 }
-function afficherSuccesCloture(accessResult) {
+function afficherSuccesCloture(accessResult = {}) {
 
     const modal =
         document.getElementById(

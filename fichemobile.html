@@ -2312,14 +2312,30 @@ async function handleScanResult(value){
     return;
   }
 
-  // 1) QR code interne de l'application → ouverture en iframe
-  if (value.includes(INTERNAL_DOMAIN)){
-    let url = value;
-    if (!/^https?:\/\//i.test(url)) url = "https://" + url.replace(/^\/+/, "");
+// 1) QR code interne GestUrg2 → ouverture dans l'application
+try {
+  const url = new URL(
+    /^https?:\/\//i.test(value)
+      ? value
+      : "https://" + value.replace(/^\/+/, "")
+  );
+
+  const hostname = url.hostname.toLowerCase();
+  const pathname = url.pathname.toLowerCase();
+
+  const isGestUrg2 =
+    hostname === "junior2704.github.io" &&
+    pathname.startsWith("/gesturg2/");
+
+  if (isGestUrg2) {
     setScanStatus("Ouverture du lien dans l'application…");
-    openScanFrame(url);
+    openScanFrame(url.href);
     return;
   }
+
+} catch (e) {
+  // Ce n'est pas une URL → on continue vers la recherche patient
+}
 
   // 2) autre lien externe → non ouvert automatiquement (sécurité)
   if (/^https?:\/\//i.test(value)){

@@ -8,454 +8,1690 @@
   <link rel="preconnect" href="https://www.gstatic.com">
 
 <style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    font-family: "Inter", "Segoe UI", sans-serif;
-    background: linear-gradient(135deg, #f0f7ff, #e6eef8);
-    color: #0b2240;
-    overflow: hidden;
+
+/* ============================================================
+   GESTURG2 — AFFICHAGE GUICHET
+   Style cohérent avec l'espace patient / avis
+============================================================ */
+
+:root {
+  --bg: #F6FBFA;
+  --surface: #FFFFFF;
+
+  --ink: #12312D;
+  --ink-soft: #4C6B66;
+
+  --teal: #0F766E;
+  --teal-deep: #0B544E;
+  --aqua: #DCF3F0;
+
+  --coral: #EF6351;
+  --coral-soft: #FDE4DF;
+
+  --green: #22A06B;
+  --green-soft: #E3F5EC;
+
+  --amber: #E2A63A;
+  --amber-soft: #FFF4D9;
+
+  --line: #E2EEEC;
+
+  --radius: 22px;
+
+  --shadow:
+    0 20px 50px -25px rgba(15, 60, 55, .35);
+
+  --shadow-soft:
+    0 10px 30px rgba(15, 60, 55, .12);
+
+  --font-display:
+    'Fraunces',
+    Georgia,
+    serif;
+
+  --font-body:
+    'Plus Jakarta Sans',
+    'Segoe UI',
+    Arial,
+    sans-serif;
+}
+
+
+/* ============================================================
+   BASE
+============================================================ */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+
+  overflow: hidden;
+
+  font-family: var(--font-body);
+
+  color: var(--ink);
+
+  background:
+    radial-gradient(
+      1100px 550px at 90% -10%,
+      #E7F6F3 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% 110%,
+      #FBEDE9 0%,
+      transparent 55%
+    ),
+    var(--bg);
+
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  * {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
   }
 
-  /* ===== HEADER ===== */
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+header {
+
+  position: fixed;
+
+  top: 20px;
+  left: 24px;
+  right: 24px;
+
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 14px 28px;
+
+  background:
+    rgba(255,255,255,.92);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    22px;
+
+  box-shadow:
+    var(--shadow);
+
+  backdrop-filter:
+    blur(18px);
+
+  -webkit-backdrop-filter:
+    blur(18px);
+
+  z-index: 50;
+
+}
+
+
+/* Logo */
+
+header img {
+
+  width: 58px;
+  height: 58px;
+
+  object-fit: contain;
+
+  border-radius: 14px;
+
+  flex-shrink: 0;
+
+}
+
+
+/* Titre */
+
+header h1 {
+
+  flex: 1;
+
+  margin: 0;
+
+  text-align: center;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(25px, 2.4vw, 36px);
+
+  font-weight:
+    600;
+
+  line-height:
+    1.15;
+
+  letter-spacing:
+    -.02em;
+
+  color:
+    var(--teal-deep);
+
+}
+
+
+/* Date / heure */
+
+#datetime {
+
+  min-width: 245px;
+
+  text-align: right;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  color:
+    var(--ink-soft);
+
+  font-weight:
+    600;
+
+}
+
+
+/* ============================================================
+   ÉCRAN PRINCIPAL
+============================================================ */
+
+main {
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  padding:
+    150px 40px 90px;
+
+}
+
+
+/* Nom du guichet */
+
+#guichetNom {
+
+  margin-bottom: 18px;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(42px, 5vw, 72px);
+
+  font-weight:
+    600;
+
+  line-height:
+    1.05;
+
+  letter-spacing:
+    -.025em;
+
+  color:
+    var(--teal-deep);
+
+}
+
+
+/* ============================================================
+   MESSAGE DU GUICHET
+============================================================ */
+
+#guichetMessage {
+
+  display: none;
+
+  margin:
+    0 auto 26px;
+
+  max-width:
+    1000px;
+
+}
+
+
+#guichetMessage.visible {
+  display: inline-block;
+}
+
+
+#guichetMessage .msg-texte {
+
+  display: inline-block;
+
+  line-height: 1.4;
+
+}
+
+
+/* Faible */
+
+#guichetMessage.importance-faible .msg-texte {
+
+  padding:
+    8px 16px;
+
+  font-size:
+    15px;
+
+  font-weight:
+    600;
+
+  color:
+    var(--ink-soft);
+
+  background:
+    rgba(255,255,255,.75);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    999px;
+
+}
+
+
+/* Moyenne */
+
+#guichetMessage.importance-moyenne .msg-texte {
+
+  padding:
+    14px 24px;
+
+  font-size:
+    clamp(17px, 1.8vw, 24px);
+
+  font-weight:
+    700;
+
+  color:
+    var(--teal-deep);
+
+  background:
+    var(--aqua);
+
+  border:
+    1px solid #C8EAE5;
+
+  border-radius:
+    16px;
+
+  box-shadow:
+    0 12px 30px
+    rgba(15,118,110,.12);
+
+}
+
+
+/* Forte */
+
+#guichetMessage.importance-forte .msg-texte {
+
+  padding:
+    14px 24px;
+
+  font-size:
+    clamp(18px, 2vw, 27px);
+
+  font-weight:
+    800;
+
+  color:
+    #B9382A;
+
+  background:
+    var(--coral-soft);
+
+  border:
+    1px solid #F6C9C1;
+
+  border-radius:
+    16px;
+
+  box-shadow:
+    0 12px 30px
+    rgba(239,99,81,.18);
+
+  animation:
+    clignoterMessage 1.8s ease-in-out infinite;
+
+}
+
+
+@keyframes clignoterMessage {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: .86;
+    transform: scale(1.015);
+  }
+
+}
+
+
+/* ============================================================
+   ZONE D'APPEL
+============================================================ */
+
+#zoneAppel {
+
+  min-width:
+    480px;
+
+  min-height:
+    270px;
+
+  padding:
+    50px 80px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    rgba(255,255,255,.94);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    28px;
+
+  box-shadow:
+    var(--shadow);
+
+  transition:
+    all .35s ease;
+
+}
+
+
+/* En attente */
+
+#labelAttente {
+
+  font-size:
+    clamp(18px, 1.7vw, 24px);
+
+  font-weight:
+    600;
+
+  color:
+    var(--ink-soft);
+
+}
+
+
+/* Appel actif */
+
+#zoneAppel.appel-actif {
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--teal-deep),
+      var(--teal)
+    );
+
+  border-color:
+    transparent;
+
+  box-shadow:
+    0 25px 60px
+    rgba(15,118,110,.35);
+
+  animation:
+    pulseAppel 1.8s ease-in-out infinite;
+
+}
+
+
+@keyframes pulseAppel {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.015);
+  }
+
+}
+
+
+/* Label "Numéro appelé" */
+
+#labelAppel {
+
+  display: none;
+
+  margin-bottom:
+    12px;
+
+  font-size:
+    18px;
+
+  font-weight:
+    700;
+
+  color:
+    rgba(255,255,255,.85);
+
+}
+
+
+/* Numéro */
+
+#numeroAppele {
+
+  display: none;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(80px, 10vw, 150px);
+
+  font-weight:
+    600;
+
+  line-height:
+    .95;
+
+  letter-spacing:
+    -.04em;
+
+  color:
+    #fff;
+
+}
+
+
+/* Affichage appel */
+
+#zoneAppel.appel-actif #labelAppel,
+#zoneAppel.appel-actif #numeroAppele {
+
+  display: block;
+
+}
+
+
+#zoneAppel.appel-actif #labelAttente {
+
+  display: none;
+
+}
+
+
+/* ============================================================
+   ÉCRAN GUICHET FERMÉ
+============================================================ */
+
+#ecranFerme {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 40;
+
+  display: none;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  text-align:
+    center;
+
+  padding:
+    30px;
+
+  color:
+    var(--ink);
+
+  background:
+    radial-gradient(
+      700px 400px at 50% 20%,
+      #E7F6F3,
+      transparent 70%
+    ),
+    var(--bg);
+
+}
+
+
+#ecranFerme .icone {
+
+  width:
+    100px;
+
+  height:
+    100px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  margin-bottom:
+    24px;
+
+  font-size:
+    46px;
+
+  background:
+    var(--coral-soft);
+
+  border:
+    1px solid #F6C9C1;
+
+  border-radius:
+    50%;
+
+}
+
+
+#ecranFerme h2 {
+
+  margin:
+    0 0 12px;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(32px, 4vw, 52px);
+
+  font-weight:
+    600;
+
+  color:
+    var(--teal-deep);
+
+}
+
+
+#ecranFerme p {
+
+  margin:
+    0;
+
+  max-width:
+    600px;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    17px;
+
+  line-height:
+    1.6;
+
+}
+
+
+/* ============================================================
+   BOUTON FLOTTANT
+============================================================ */
+
+#controlBtn {
+
+  position:
+    fixed;
+
+  top:
+    28px;
+
+  right:
+    30px;
+
+  width:
+    52px;
+
+  height:
+    52px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(18,49,45,.92);
+
+  color:
+    #fff;
+
+  font-size:
+    21px;
+
+  cursor:
+    pointer;
+
+  box-shadow:
+    0 10px 25px
+    rgba(0,0,0,.2);
+
+  z-index:
+    2000;
+
+  opacity:
+    0;
+
+  pointer-events:
+    none;
+
+  transition:
+    all .25s ease;
+
+}
+
+
+#controlBtn.visible {
+
+  opacity:
+    1;
+
+  pointer-events:
+    auto;
+
+}
+
+
+#controlBtn:hover {
+
+  transform:
+    translateY(-2px);
+
+  background:
+    var(--teal);
+
+}
+
+
+/* ============================================================
+   MODALES
+============================================================ */
+
+.modal-overlay {
+
+  position:
+    fixed;
+
+  inset:
+    0;
+
+  display:
+    none;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    20px;
+
+  background:
+    rgba(18,49,45,.65);
+
+  backdrop-filter:
+    blur(8px);
+
+  -webkit-backdrop-filter:
+    blur(8px);
+
+  z-index:
+    100001;
+
+}
+
+
+.modal-box {
+
+  width:
+    min(520px, 100%);
+
+  padding:
+    34px;
+
+  text-align:
+    center;
+
+  background:
+    var(--surface);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:
+    22px;
+
+  box-shadow:
+    0 30px 80px
+    rgba(0,0,0,.25);
+
+  animation:
+    modalRise .3s ease both;
+
+}
+
+
+@keyframes modalRise {
+
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+}
+
+
+.modal-box .modal-icon {
+
+  width:
+    68px;
+
+  height:
+    68px;
+
+  margin:
+    0 auto 18px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  font-size:
+    30px;
+
+  background:
+    var(--aqua);
+
+  border-radius:
+    50%;
+
+}
+
+
+.modal-box h2 {
+
+  margin:
+    0 0 10px;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    25px;
+
+  font-weight:
+    600;
+
+  color:
+    var(--teal-deep);
+
+}
+
+
+.modal-box p {
+
+  margin:
+    0 0 24px;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    14.5px;
+
+  line-height:
+    1.6;
+
+}
+
+
+#panelBureau .modal-box {
+
+  max-width:
+    500px;
+
+}
+
+
+/* ============================================================
+   LISTE DES GUICHETS
+============================================================ */
+
+.bureau-liste {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    9px;
+
+  max-height:
+    340px;
+
+  overflow-y:
+    auto;
+
+  margin-bottom:
+    20px;
+
+  padding:
+    2px;
+
+}
+
+
+.bureau-item {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  padding:
+    14px 16px;
+
+  background:
+    #FBFDFD;
+
+  border:
+    1.5px solid var(--line);
+
+  border-radius:
+    14px;
+
+  color:
+    var(--ink);
+
+  font-size:
+    14px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+  text-align:
+    left;
+
+  transition:
+    all .18s ease;
+
+}
+
+
+.bureau-item:hover {
+
+  border-color:
+    var(--teal);
+
+  background:
+    var(--aqua);
+
+  transform:
+    translateY(-1px);
+
+}
+
+
+.bureau-item.actif {
+
+  border-color:
+    var(--teal);
+
+  background:
+    var(--aqua);
+
+  color:
+    var(--teal-deep);
+
+  box-shadow:
+    0 5px 16px
+    rgba(15,118,110,.12);
+
+}
+
+
+/* ============================================================
+   BADGE STATUT
+============================================================ */
+
+.bureau-statut {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  padding:
+    5px 10px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+
+  white-space:
+    nowrap;
+
+}
+
+
+.bureau-statut::before {
+
+  content:
+    "";
+
+  width:
+    7px;
+
+  height:
+    7px;
+
+  border-radius:
+    50%;
+
+}
+
+
+.bureau-statut.ouvert {
+
+  color:
+    #167047;
+
+  background:
+    var(--green-soft);
+
+}
+
+
+.bureau-statut.ouvert::before {
+
+  background:
+    var(--green);
+
+}
+
+
+.bureau-statut.ferme {
+
+  color:
+    #B9382A;
+
+  background:
+    var(--coral-soft);
+
+}
+
+
+.bureau-statut.ferme::before {
+
+  background:
+    var(--coral);
+
+}
+
+
+/* ============================================================
+   ACTIONS
+============================================================ */
+
+.panel-actions {
+
+  display:
+    flex;
+
+  gap:
+    9px;
+
+}
+
+
+.btn-id {
+
+  all:
+    unset;
+
+  flex:
+    1;
+
+  min-height:
+    46px;
+
+  padding:
+    10px 14px;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    6px;
+
+  border:
+    1.5px solid var(--line);
+
+  border-radius:
+    13px;
+
+  background:
+    #FBFDFD;
+
+  color:
+    var(--ink-soft);
+
+  font-family:
+    var(--font-body);
+
+  font-size:
+    13px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+  transition:
+    all .18s ease;
+
+}
+
+
+.btn-id:hover {
+
+  border-color:
+    var(--teal);
+
+  color:
+    var(--teal-deep);
+
+  background:
+    var(--aqua);
+
+}
+
+
+.btn-id-c {
+
+  color:
+    #B9382A;
+
+  border-color:
+    #F2C8C1;
+
+}
+
+
+.btn-id-c:hover {
+
+  color:
+    #A52E22;
+
+  background:
+    var(--coral-soft);
+
+  border-color:
+    var(--coral);
+
+}
+
+
+.btn-id-v:hover {
+
+  color:
+    #167047;
+
+  background:
+    var(--green-soft);
+
+  border-color:
+    var(--green);
+
+}
+
+
+/* ============================================================
+   LOADER
+============================================================ */
+
+#loader-overlay {
+
+  position:
+    fixed;
+
+  inset:
+    0;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    18px;
+
+  z-index:
+    100000;
+
+  color:
+    #fff;
+
+  font-size:
+    15px;
+
+  font-weight:
+    700;
+
+  background:
+    rgba(11,84,78,.94);
+
+  backdrop-filter:
+    blur(8px);
+
+}
+
+
+#loader-overlay .spinner {
+
+  width:
+    54px;
+
+  height:
+    54px;
+
+  border:
+    5px solid
+    rgba(255,255,255,.25);
+
+  border-top-color:
+    #fff;
+
+  border-radius:
+    50%;
+
+  animation:
+    spin .8s linear infinite;
+
+}
+
+
+@keyframes spin {
+
+  to {
+    transform:
+      rotate(360deg);
+  }
+
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+#footer {
+
+  position:
+    fixed;
+
+  left:
+    0;
+
+  right:
+    0;
+
+  bottom:
+    0;
+
+  width:
+    100%;
+
+  padding:
+    11px 20px
+    calc(11px + env(safe-area-inset-bottom));
+
+  text-align:
+    center;
+
+  color:
+    var(--ink-soft);
+
+  font-size:
+    12px;
+
+  font-weight:
+    600;
+
+  background:
+    rgba(255,255,255,.88);
+
+  border-top:
+    1px solid var(--line);
+
+  backdrop-filter:
+    blur(12px);
+
+  -webkit-backdrop-filter:
+    blur(12px);
+
+  z-index:
+    100;
+
+}
+
+
+/* ============================================================
+   SCROLLBAR
+============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background:
+    transparent;
+}
+
+::-webkit-scrollbar-thumb {
+
+  background:
+    #B9D9D5;
+
+  border-radius:
+    999px;
+
+}
+
+::-webkit-scrollbar-thumb:hover {
+
+  background:
+    var(--teal);
+
+}
+
+
+/* ============================================================
+   GRAND ÉCRAN
+============================================================ */
+
+@media (min-width: 1700px) {
+
   header {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    right: 20px;
-    background: linear-gradient(90deg, #0b2240 0%, #004b8d 50%, #0078d4 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 30px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: 14px;
-    z-index: 50;
+    min-height: 94px;
+    padding: 16px 34px;
   }
 
   header img {
-    height: 60px;
-    width: auto;
-    border-radius: 8px;
-    object-fit: contain;
-  }
-
-  header h1 {
-    flex: 1;
-    text-align: center;
-    font-size: 1.7rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #ffffff;
-    margin: 0;
-  }
-
-  #datetime {
-    font-size: 1.15rem;
-    color: #e0ecff;
-    text-align: right;
-    min-width: 210px;
-  }
-
-  /* ===== ÉCRAN PRINCIPAL ===== */
-  main {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 160px 40px 40px;
-    box-sizing: border-box;
+    width: 68px;
+    height: 68px;
   }
 
   #guichetNom {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #004b8d;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-
-  /* ===== MESSAGE DU GUICHET (selon importance) ===== */
-  #guichetMessage {
-    display: none;
-    margin: 0 auto 30px;
-    max-width: 900px;
-  }
-
-  #guichetMessage.visible {
-    display: inline-block;
-  }
-
-  #guichetMessage .msg-texte {
-    display: inline-block;
-  }
-
-  /* Peu important : discret, gris, léger */
-  #guichetMessage.importance-faible .msg-texte {
-    font-size: 1.15rem;
-    font-weight: 500;
-    color: #64748b;
-  }
-
-  /* Moyennement important : bleu, un peu plus marqué, avec pastille */
-  #guichetMessage.importance-moyenne .msg-texte {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #0078d4;
-    background: transparent;
-    padding: 14px 30px;
-    border-radius: 16px;
-    box-shadow: 0 6px 22px rgba(0, 120, 212, 0.45);
-}
-
-  /* Très important : rouge, grand, mis en évidence, clignotant */
-  #guichetMessage.importance-forte .msg-texte {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #dc3545;
-    background: transparent;
-    padding: 14px 30px;
-    border-radius: 16px;
-    box-shadow: 0 6px 22px rgba(220,53,69,0.45);
-  }
-
-  @keyframes clignoterMessage {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.85; transform: scale(1.03); }
+    font-size: 82px;
   }
 
   #zoneAppel {
-    background: #ffffff;
-    border-radius: 28px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.12);
-    padding: 60px 90px;
-    min-width: 420px;
+    min-width: 600px;
+    min-height: 330px;
+    padding: 60px 100px;
   }
 
-  #zoneAppel.appel-actif {
-    background: linear-gradient(135deg, #003366, #0078d4);
-    box-shadow: 0 10px 50px rgba(0,90,180,0.45);
-    animation: pulseAppel 1.6s ease-in-out infinite;
+}
+
+
+/* ============================================================
+   ÉCRANS PLUS PETITS
+============================================================ */
+
+@media (max-width: 900px) {
+
+  header {
+
+    left: 14px;
+    right: 14px;
+
+    top: 14px;
+
+    padding:
+      12px 18px;
+
   }
 
-  @keyframes pulseAppel {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+  header img {
+
+    width: 48px;
+    height: 48px;
+
   }
 
-  #labelAttente {
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: #7a8ba3;
+  header h1 {
+
+    font-size:
+      22px;
+
   }
 
-  #labelAppel {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #ffffff;
-    opacity: 0.9;
-    margin-bottom: 10px;
-    display: none;
+  #datetime {
+
+    min-width:
+      160px;
+
+    font-size:
+      11px;
+
+  }
+
+  main {
+
+    padding:
+      130px 20px 70px;
+
+  }
+
+  #zoneAppel {
+
+    min-width:
+      min(480px, 90vw);
+
+  }
+
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 600px) {
+
+  html,
+  body {
+    overflow-y: auto;
+  }
+
+  header {
+
+    position:
+      relative;
+
+    top:
+      auto;
+
+    left:
+      auto;
+
+    right:
+      auto;
+
+    margin:
+      12px;
+
+    flex-wrap:
+      wrap;
+
+    justify-content:
+      center;
+
+    gap:
+      8px;
+
+  }
+
+  header img {
+
+    width:
+      48px;
+
+    height:
+      48px;
+
+  }
+
+  header h1 {
+
+    flex:
+      1 1 100%;
+
+    order:
+      3;
+
+    font-size:
+      22px;
+
+  }
+
+  #datetime {
+
+    min-width:
+      auto;
+
+    font-size:
+      10px;
+
+  }
+
+  main {
+
+    min-height:
+      calc(100vh - 130px);
+
+    height:
+      auto;
+
+    padding:
+      40px 14px 70px;
+
+  }
+
+  #guichetNom {
+
+    font-size:
+      42px;
+
+  }
+
+  #zoneAppel {
+
+    width:
+      100%;
+
+    min-width:
+      0;
+
+    min-height:
+      220px;
+
+    padding:
+      40px 20px;
+
+    border-radius:
+      22px;
+
   }
 
   #numeroAppele {
-    font-size: 8rem;
-    font-weight: 900;
-    color: #dc3545;
-    line-height: 1;
-    display: none;
-  }
 
-  #zoneAppel.appel-actif #labelAppel,
-  #zoneAppel.appel-actif #numeroAppele {
-    display: block;
-  }
+    font-size:
+      80px;
 
-  #zoneAppel.appel-actif #numeroAppele {
-    color: #ffffff;
-  }
-
-  #zoneAppel.appel-actif #labelAttente {
-    display: none;
-  }
-
-  @media (min-width: 1700px) {
-    #guichetNom { font-size: 3.8rem; }
-    #numeroAppele { font-size: 10rem; }
-  }
-
-  /* ===== ÉCRAN GUICHET FERMÉ ===== */
-  #ecranFerme {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #37424f, #1c2530);
-    color: #fff;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    z-index: 40;
-  }
-
-  #ecranFerme .icone {
-    font-size: 5rem;
-    margin-bottom: 20px;
-  }
-
-  #ecranFerme h2 {
-    font-size: 2.8rem;
-    margin: 0 0 12px;
-    letter-spacing: 1px;
-  }
-
-  #ecranFerme p {
-    font-size: 1.3rem;
-    color: #c7d2e0;
-    margin: 0;
-  }
-
-  /* ===== BOUTON FLOTTANT DE RÉGLAGE ===== */
-  #controlBtn {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    background: rgba(11,34,64,0.85);
-    color: #fff;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-    z-index: 2000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s ease;
-  }
-
-  #controlBtn.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* ===== PANNEAU DE SÉLECTION DU GUICHET ===== */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(11, 34, 64, 0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100001;
-  }
-
-  .modal-box {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 32px 40px;
-    max-width: 520px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  }
-
-  .modal-box .modal-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
-  }
-
-  .modal-box h2 {
-    color: #0b2240;
-    margin: 0 0 12px;
-    font-size: 1.5rem;
-  }
-
-  .modal-box p {
-    color: #364152;
-    font-size: 1.05rem;
-    line-height: 1.5;
-    margin: 0 0 20px;
-  }
-
-  #panelBureau .modal-box {
-    max-width: 460px;
-  }
-
-  .bureau-liste {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 340px;
-    overflow-y: auto;
-    margin-bottom: 18px;
-  }
-
-  .bureau-item {
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1.5px solid #d6e0ee;
-    background: #f8fbff;
-    font-weight: 600;
-    font-size: 1.05rem;
-    color: #0b2240;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .bureau-statut {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-  }
-
-  .bureau-statut::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .bureau-statut.ouvert {
-    color: #157a3d;
-    background: rgba(25, 170, 90, 0.12);
-  }
-
-  .bureau-statut.ouvert::before {
-    background: #22b25a;
-  }
-
-  .bureau-statut.ferme {
-    color: #b91c2c;
-    background: rgba(220, 53, 69, 0.12);
-  }
-
-  .bureau-statut.ferme::before {
-    background: #dc3545;
-  }
-
-  .bureau-item:hover {
-    border-color: #0078d4;
-    background: #eaf3ff;
-  }
-
-  .bureau-item.actif {
-    border-color: #0078d4;
-    background: #dbeaff;
-    color: #004b8d;
   }
 
   .panel-actions {
-    display: flex;
-    gap: 10px;
+
+    flex-direction:
+      column;
+
   }
 
-  /* ===== BOUTONS COMMUNS ===== */
-  .btn-id {
-    all: unset;
-    background: transparent;
-    color: #000;
-    border: 1.5px solid rgba(0, 0, 0, 0.2);
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex: 1;
-    box-sizing: border-box;
+  .modal-box {
+
+    padding:
+      25px 18px;
+
   }
 
-  .btn-id:hover {
-    background: rgba(0, 120, 255, 0.12);
-    border-color: rgba(0, 120, 255, 0.6);
-    color: #0078ff;
+  #controlBtn {
+
+    top:
+      18px;
+
+    right:
+      18px;
+
   }
 
-  .btn-id-c {
-    color: #d32f2f;
-    border-color: rgba(211,47,47,0.4);
+  #footer {
+
+    font-size:
+      11px;
+
   }
 
-  .btn-id-c:hover {
-    background: rgba(255, 0, 0, 0.10);
-    border-color: rgba(255, 0, 0, 0.6);
-    color: #e60000;
-  }
-
-  .btn-id-v:hover {
-    background: rgba(0, 200, 80, 0.12);
-    border-color: rgba(0, 200, 80, 0.6);
-    color: #00b35a;
-  }
-
-  /* ===== LOADER ===== */
-  #loader-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(11, 34, 64, 0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 18px;
-    z-index: 100000;
-    color: #fff;
-    font-size: 1.3rem;
-    font-weight: 600;
-  }
-
-  #loader-overlay .spinner {
-    width: 56px;
-    height: 56px;
-    border: 6px solid rgba(255,255,255,0.25);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  ::-webkit-scrollbar { width: 10px; }
-  ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
-  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #2196f3, #1565c0); border-radius: 10px; }
-  /* ===== FOOTER ===== */
-#footer {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  padding: 12px 20px;
-  margin-top: 25px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
 }
+
+
+/* ============================================================
+   TRÈS PETITS ÉCRANS
+============================================================ */
+
+@media (max-width: 380px) {
+
+  #guichetNom {
+    font-size:
+      34px;
+  }
+
+  #numeroAppele {
+    font-size:
+      64px;
+  }
+
+}
+</style>
 </style>
 </head>
 <body>

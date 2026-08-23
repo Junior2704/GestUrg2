@@ -1,14 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>Mail-To Simplifié</title>
   <link rel="icon" type="image/jpeg" href="logog2.png">
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -42,6 +37,12 @@
     .email-list label {
       display: block;
       margin-bottom: 8px;
+    }
+
+    .email-list .empty {
+      color: #888;
+      font-size: 14px;
+      font-style: italic;
     }
 
     .loader-logo {
@@ -168,15 +169,8 @@
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     .loader-wrapper {
@@ -210,13 +204,8 @@
     }
 
     @keyframes spin {
-      0% {
-        transform: translate(-50%, -50%) rotate(0deg);
-      }
-
-      100% {
-        transform: translate(-50%, -50%) rotate(360deg);
-      }
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
     .btn-id {
@@ -254,19 +243,6 @@
       box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
     }
 
-    .btn-id-c:hover {
-      background: rgba(255, 0, 0, 0.10);
-      border-color: rgba(255, 0, 0, 0.6);
-      color: #e60000;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-    }
-
-    .btn-id-c:focus {
-      border-color: rgba(255, 0, 0, 0.8);
-      box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-    }
-
     .btn-id-v:hover {
       background: rgba(0, 200, 80, 0.12);
       border-color: rgba(0, 200, 80, 0.6);
@@ -280,28 +256,17 @@
       box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
     }
 
-    /* Chrome, Edge, Opera */
-    ::-webkit-scrollbar {
-      width: 12px;
-      height: 12px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #eef3ff;
-      border-radius: 10px;
-    }
-
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
     ::-webkit-scrollbar-thumb {
       background: linear-gradient(180deg, #2196f3, #1565c0);
       border-radius: 10px;
       border: 2px solid #eef3ff;
     }
-
     ::-webkit-scrollbar-thumb:hover {
       background: linear-gradient(180deg, #42a5f5, #1976d2);
     }
 
-    /* Firefox */
     * {
       scrollbar-width: thin;
       scrollbar-color: #2196f3 #eef3ff;
@@ -315,12 +280,12 @@
 
     <h2>📧 Envoyer un email</h2>
 
-    <p>
-      Sélectionnez les destinataires et rédigez votre message :
-    </p>
+    <p>Sélectionnez les destinataires et rédigez votre message :</p>
 
     <!-- DESTINATAIRES -->
-    <div class="email-list" id="emailList"></div>
+    <div class="email-list" id="emailList">
+      <span class="empty">Chargement des destinataires...</span>
+    </div>
 
     <!-- AUTRE EMAIL -->
     <label>
@@ -328,30 +293,16 @@
       <strong>Autre email :</strong>
     </label>
 
-    <input
-      type="email"
-      id="otherEmailInput"
-      placeholder="exemple@mail.com"
-      disabled
-    >
+    <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled>
 
     <!-- MESSAGE -->
     <label style="margin-top:20px; display:block;">
       <strong>Message :</strong>
-
-      <textarea
-        id="messageText"
-        rows="7"
-        placeholder="Votre message..."
-      ></textarea>
+      <textarea id="messageText" rows="7" placeholder="Votre message..."></textarea>
     </label>
 
     <!-- BOUTON -->
-    <button
-      class="btn-id btn-id-v"
-      id="btnEnvoyerMail"
-      type="button"
-    >
+    <button class="btn-id btn-id-v" id="btnEnvoyerMail" type="button">
       Envoyer
     </button>
 
@@ -359,52 +310,52 @@
 
 
   <!-- ===== MODALE ENVOI ===== -->
-
   <div id="loadingModal">
-
     <div class="modal-content">
-
       <div class="loader-wrapper">
-
-        <img
-          src="https://junior2704.github.io/GestUrg2/logo.png"
-          class="loader-logo"
-          alt="Logo"
-        >
-
+        <img src="https://junior2704.github.io/GestUrg2/logo.png" class="loader-logo" alt="Logo">
         <div class="loader-ring"></div>
-
       </div>
-
       <p>Envoi en cours...</p>
-
     </div>
-
   </div>
 
 
   <!-- ===== MODALE ACCÈS REFUSÉ ===== -->
-
   <div id="modal-no-access" class="modalna">
-
     <div class="card">
-
       <h2>⛔️ Accès refusé</h2>
-
-      <p>
-        Vous n’avez pas accès à cette page.
-      </p>
-
+      <p>Vous n'avez pas accès à cette page.</p>
     </div>
-
   </div>
 
 
   <!-- ========================================================= -->
-  <!-- FIREBASE / DESTINATAIRES / ENVOI -->
+  <!-- SCRIPT UNIQUE (module) : Firebase + destinataires + envoi -->
   <!-- ========================================================= -->
 
-  <script>
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    /* =========================================================
+       FIREBASE — une seule initialisation
+       ========================================================= */
 
     const firebaseConfig = {
       apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -412,29 +363,23 @@
       projectId: "urgences-a8ed4"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const db = firebase.firestore();
 
-    const otherCheck =
-      document.getElementById("otherEmailCheck");
+    /* =========================================================
+       RÉFÉRENCES DOM
+       ========================================================= */
 
-    const otherInput =
-      document.getElementById("otherEmailInput");
-
-    const emailList =
-      document.getElementById("emailList");
-
-    const btnEnvoyerMail =
-      document.getElementById("btnEnvoyerMail");
-
-    const loadingModal =
-      document.getElementById("loadingModal");
-
-    const patientId =
-      new URLSearchParams(window.location.search).get("id");
+    const otherCheck = document.getElementById("otherEmailCheck");
+    const otherInput = document.getElementById("otherEmailInput");
+    const emailList = document.getElementById("emailList");
+    const btnEnvoyerMail = document.getElementById("btnEnvoyerMail");
+    const loadingModal = document.getElementById("loadingModal");
 
     let destinataires = [];
+    let currentUid = null;
 
 
     /* =========================================================
@@ -442,17 +387,12 @@
        ========================================================= */
 
     if (otherCheck && otherInput) {
-
       otherCheck.addEventListener("change", (e) => {
-
         otherInput.disabled = !e.target.checked;
-
         if (!e.target.checked) {
           otherInput.value = "";
         }
-
       });
-
     }
 
 
@@ -461,24 +401,13 @@
        ========================================================= */
 
     const show = (id) => {
-
       const element = document.getElementById(id);
-
-      if (element) {
-        element.style.display = "flex";
-      }
-
+      if (element) element.style.display = "flex";
     };
 
-
     const hide = (id) => {
-
       const element = document.getElementById(id);
-
-      if (element) {
-        element.style.display = "none";
-      }
-
+      if (element) element.style.display = "none";
     };
 
 
@@ -488,104 +417,113 @@
 
     const ORIGINE_PARENT_BULLE = "*";
 
-
     function afficherBulle(message, typeBulle) {
-
       if (window.parent === window) {
-
-        console.warn(
-          "afficherBulle appelée sans parent :",
-          message
-        );
-
+        console.warn("afficherBulle appelée sans parent :", message);
         return;
-
       }
-
       window.parent.postMessage(
-        {
-          source: "notification-bulle",
-          message: message,
-          typeBulle: typeBulle
-        },
+        { source: "notification-bulle", message, typeBulle },
         ORIGINE_PARENT_BULLE
       );
-
     }
 
-
     window.addEventListener("message", (event) => {
-
       if (
         event.data &&
         event.data.source === "notification-bulle" &&
         window.parent !== window
       ) {
-
-        window.parent.postMessage(
-          event.data,
-          ORIGINE_PARENT_BULLE
-        );
-
+        window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
       }
-
     });
 
 
     /* =========================================================
-       ENVOI DU MAIL VIA TON SERVEUR
+       CHARGEMENT DES DESTINATAIRES (collection "medecins")
+       -> case à cocher par médecin (hors utilisateur connecté),
+          value = email
        ========================================================= */
 
-    async function envoyerMailServeur(
-      destinataires,
-      sujet,
-      html
-    ) {
+    async function chargerDestinataires() {
+
+      try {
+
+        const snap = await getDocs(collection(db, "medecins"));
+
+        emailList.innerHTML = "";
+
+        let count = 0;
+
+        snap.forEach((docSnap) => {
+
+          if (docSnap.id === currentUid) return; // on n'affiche pas soi-même
+
+          const data = docSnap.data();
+          const email = data.email;
+          if (!email) return;
+
+          const label = document.createElement("label");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = email;
+
+          const texte = document.createTextNode(
+            " " + (data.nom || email) +
+            (data.specialite ? ` (${data.specialite})` : "")
+          );
+
+          label.appendChild(checkbox);
+          label.appendChild(texte);
+          emailList.appendChild(label);
+
+          count++;
+
+        });
+
+        if (count === 0) {
+          emailList.innerHTML =
+            '<span class="empty">Aucun destinataire disponible.</span>';
+        }
+
+      } catch (error) {
+
+        console.error("Erreur chargement destinataires :", error);
+
+        emailList.innerHTML =
+          '<span class="empty">Impossible de charger les destinataires.</span>';
+
+      }
+
+    }
+
+
+    /* =========================================================
+       ENVOI DU MAIL VIA LE SERVEUR
+       ========================================================= */
+
+    async function envoyerMailServeur(destinataires, sujet, html) {
 
       const response = await fetch(
         "https://gesturg2-server.onrender.com/api/mail/send",
         {
           method: "POST",
-
-          headers: {
-            "Content-Type": "application/json"
-          },
-
-          body: JSON.stringify({
-
-            to: destinataires,
-
-            subject: sujet,
-
-            html: html
-
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: destinataires, subject: sujet, html })
         }
       );
 
-
       let result = {};
-
       try {
-
         result = await response.json();
-
       } catch (e) {
-
         result = {};
-
       }
-
 
       if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Le serveur n'a pas pu envoyer le mail."
-        );
-
+        throw new Error(result.message || "Le serveur n'a pas pu envoyer le mail.");
       }
-
 
       return result;
 
@@ -596,536 +534,180 @@
        BOUTON ENVOYER
        ========================================================= */
 
-    btnEnvoyerMail.addEventListener(
-      "click",
-      async () => {
+    btnEnvoyerMail.addEventListener("click", async () => {
 
-        /* -----------------------------------------------------
-           RÉCUPÉRATION DU MESSAGE
-        ----------------------------------------------------- */
+      const message = document.getElementById("messageText").value.trim();
 
-        const message =
-          document
-            .getElementById("messageText")
-            .value
-            .trim();
+      if (!message) {
+        afficherBulle("Veuillez saisir un message.", "alerte");
+        return;
+      }
 
+      const cases = document.querySelectorAll(
+        '#emailList input[type="checkbox"]:checked'
+      );
 
-        if (!message) {
+      destinataires = [];
 
-          afficherBulle(
-            "Veuillez saisir un message.",
-            "alerte"
-          );
+      cases.forEach((checkbox) => {
+        if (checkbox.value) destinataires.push(checkbox.value.trim());
+      });
 
+      if (otherCheck.checked && otherInput.value.trim()) {
+
+        const autreEmail = otherInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(autreEmail)) {
+          afficherBulle("L'adresse email saisie n'est pas valide.", "alerte");
           return;
-
         }
 
+        destinataires.push(autreEmail);
 
-        /* -----------------------------------------------------
-           RÉCUPÉRATION DES DESTINATAIRES COCHÉS
-        ----------------------------------------------------- */
+      }
 
-        const cases =
-          document.querySelectorAll(
-            '#emailList input[type="checkbox"]:checked'
-          );
+      if (destinataires.length === 0) {
+        afficherBulle("Veuillez sélectionner au moins un destinataire.", "alerte");
+        return;
+      }
 
+      destinataires = [...new Set(destinataires)];
 
-        destinataires = [];
+      const sujet = "Message depuis GestUrg2";
 
+      const messageSecurise = message
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
 
-        cases.forEach((checkbox) => {
-
-          if (checkbox.value) {
-
-            destinataires.push(
-              checkbox.value.trim()
-            );
-
-          }
-
-        });
-
-
-        /* -----------------------------------------------------
-           AUTRE EMAIL
-        ----------------------------------------------------- */
-
-        if (
-          otherCheck.checked &&
-          otherInput.value.trim()
-        ) {
-
-          const autreEmail =
-            otherInput.value.trim();
-
-
-          /*
-           * Vérification simple de l'adresse.
-           */
-
-          const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-
-          if (!emailRegex.test(autreEmail)) {
-
-            afficherBulle(
-              "L'adresse email saisie n'est pas valide.",
-              "alerte"
-            );
-
-            return;
-
-          }
-
-
-          destinataires.push(
-            autreEmail
-          );
-
-        }
-
-
-        /* -----------------------------------------------------
-           VÉRIFICATION DESTINATAIRES
-        ----------------------------------------------------- */
-
-        if (destinataires.length === 0) {
-
-          afficherBulle(
-            "Veuillez sélectionner au moins un destinataire.",
-            "alerte"
-          );
-
-          return;
-
-        }
-
-
-        /* -----------------------------------------------------
-           SUPPRESSION DES DOUBLONS
-        ----------------------------------------------------- */
-
-        destinataires =
-          [...new Set(destinataires)];
-
-
-        /* -----------------------------------------------------
-           SUJET
-        -----------------------------------------------------
-
-           Tu peux changer cette ligne si tu veux un sujet
-           différent.
-        */
-
-        const sujet =
-          "Message depuis GestUrg2";
-
-
-        /* -----------------------------------------------------
-           CONVERSION DU MESSAGE EN HTML
-        -----------------------------------------------------
-
-           On échappe les caractères HTML avant de mettre
-           le texte dans le mail.
-
-           Les retours à la ligne deviennent <br>.
-        */
-
-        const messageSecurise =
-          message
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;")
-            .replace(/\n/g, "<br>");
-
-
-        const htmlMail = `
+      const htmlMail = `
 <!DOCTYPE html>
-
 <html lang="fr">
-
 <head>
-
   <meta charset="UTF-8">
-
 </head>
-
-<body style="
-  font-family: Arial, sans-serif;
-  color: #222;
-  line-height: 1.6;
-">
-
-  <div style="
-    max-width: 700px;
-    margin: auto;
-  ">
-
-    <h2 style="
-      color: #1a237e;
-    ">
-      📧 Message GestUrg2
-    </h2>
-
-    <div style="
-      padding: 18px;
-      background: #f5f7fb;
-      border-radius: 10px;
-      border-left: 4px solid #2563eb;
-    ">
-
+<body style="font-family: Arial, sans-serif; color: #222; line-height: 1.6;">
+  <div style="max-width: 700px; margin: auto;">
+    <h2 style="color: #1a237e;">📧 Message GestUrg2</h2>
+    <div style="padding: 18px; background: #f5f7fb; border-radius: 10px; border-left: 4px solid #2563eb;">
       ${messageSecurise}
-
     </div>
-
-    <p style="
-      margin-top: 25px;
-      color: #777;
-      font-size: 13px;
-    ">
-
+    <p style="margin-top: 25px; color: #777; font-size: 13px;">
       Message envoyé depuis GestUrg2.
-
     </p>
-
   </div>
-
 </body>
-
 </html>
 `;
 
+      loadingModal.style.display = "flex";
+      btnEnvoyerMail.disabled = true;
 
-        /* -----------------------------------------------------
-           AFFICHAGE LOADER
-        ----------------------------------------------------- */
+      try {
 
-        loadingModal.style.display = "flex";
+        const result = await envoyerMailServeur(destinataires, sujet, htmlMail);
+        console.log("Réponse serveur :", result);
 
-        btnEnvoyerMail.disabled = true;
+        afficherBulle("Email envoyé avec succès.", "administratif");
 
+        document.getElementById("messageText").value = "";
+        otherInput.value = "";
+        otherCheck.checked = false;
+        otherInput.disabled = true;
 
-        try {
+        document
+          .querySelectorAll('#emailList input[type="checkbox"]')
+          .forEach((checkbox) => { checkbox.checked = false; });
 
-          /* ---------------------------------------------------
-             ENVOI AU SERVEUR
-          --------------------------------------------------- */
+      } catch (error) {
 
-          const result =
-            await envoyerMailServeur(
-              destinataires,
-              sujet,
-              htmlMail
-            );
+        console.error("Erreur lors de l'envoi :", error);
+        afficherBulle("Erreur lors de l'envoi : " + error.message, "alerte");
 
+      } finally {
 
-          console.log(
-            "Réponse serveur :",
-            result
-          );
-
-
-          /* ---------------------------------------------------
-             SUCCÈS
-          --------------------------------------------------- */
-
-          afficherBulle(
-            "Email envoyé avec succès.",
-            "administratif"
-          );
-
-
-          /*
-           * Nettoyage du formulaire
-           */
-
-          document
-            .getElementById("messageText")
-            .value = "";
-
-
-          otherInput.value = "";
-
-          otherCheck.checked = false;
-
-          otherInput.disabled = true;
-
-
-          /*
-           * Décocher les destinataires
-           */
-
-          document
-            .querySelectorAll(
-              '#emailList input[type="checkbox"]'
-            )
-            .forEach((checkbox) => {
-
-              checkbox.checked = false;
-
-            });
-
-
-        } catch (error) {
-
-          console.error(
-            "Erreur lors de l'envoi :",
-            error
-          );
-
-
-          afficherBulle(
-            "Erreur lors de l'envoi : " +
-            error.message,
-            "alerte"
-          );
-
-
-        } finally {
-
-          loadingModal.style.display = "none";
-
-          btnEnvoyerMail.disabled = false;
-
-        }
+        loadingModal.style.display = "none";
+        btnEnvoyerMail.disabled = false;
 
       }
-    );
+
+    });
 
 
-  </script>
+    /* =========================================================
+       AUTHENTIFICATION FIREBASE
+       ========================================================= */
 
+    onAuthStateChanged(auth, async (user) => {
 
-  <!-- ========================================================= -->
-  <!-- AUTHENTIFICATION FIREBASE -->
-  <!-- ========================================================= -->
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-  <script type="module">
+      currentUid = user.uid;
 
-    import {
-      initializeApp
-    } from
-      "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      try {
 
+        const docRef = doc(db, "medecins", user.uid);
+        const docSnap = await getDoc(docRef);
 
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from
-      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        if (!docSnap.exists()) {
+          alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+          window.location.href = "index.html";
+          return;
+        }
 
+        const data = docSnap.data();
 
-    import {
-      getFirestore,
-      doc,
-      getDoc
-    } from
-      "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        window.medecinNom = data.nom || "";
+        window.medecinSpecialite = data.specialite || "";
+        window.medecinLieu = data.lieu || "";
 
+        /* --------------------------------------------------
+           CONTRÔLE DES PAGES
+        -------------------------------------------------- */
 
-    const firebaseConfig = {
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
 
-      apiKey:
-        "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+        const currentPage = currentPath
+          .substring(currentPath.lastIndexOf("/") + 1)
+          .replace(".html", "");
 
-      authDomain:
-        "urgences-a8ed4.firebaseapp.com",
+        const pageMapping = { "mailtof": "mailto" };
+        const pageKey = pageMapping[currentPage] || currentPage;
 
-      projectId:
-        "urgences-a8ed4"
+        console.log("Page actuelle :", currentPage);
+        console.log("Page Firestore :", pageKey);
 
-    };
+        if (!pages[pageKey]) {
 
+          const modal = document.getElementById("modal-no-access");
+          if (modal) modal.style.display = "flex";
 
-    const app =
-      initializeApp(firebaseConfig);
-
-
-    const auth =
-      getAuth(app);
-
-
-    const db =
-      getFirestore(app);
-
-
-    let medecinNom = "";
-    let medecinSpecialite = "";
-    let medecinLieu = "";
-
-
-    onAuthStateChanged(
-      auth,
-      async (user) => {
-
-        if (!user) {
-
-          window.location.href =
-            "index.html";
-
+          console.warn("Accès refusé à", currentPage);
           return;
 
         }
 
+        console.log("Accès autorisé à", currentPage);
 
-        try {
+        /* On ne charge les destinataires qu'une fois l'accès confirmé */
+        chargerDestinataires();
 
-          const docRef =
-            doc(
-              db,
-              "medecins",
-              user.uid
-            );
+      } catch (error) {
 
-
-          const docSnap =
-            await getDoc(docRef);
-
-
-          if (!docSnap.exists()) {
-
-            alert(
-              "Utilisateur non trouvé, veuillez vous reconnecter."
-            );
-
-            window.location.href =
-              "index.html";
-
-            return;
-
-          }
-
-
-          const data =
-            docSnap.data();
-
-
-          medecinNom =
-            data.nom || "";
-
-          medecinSpecialite =
-            data.specialite || "";
-
-          medecinLieu =
-            data.lieu || "";
-
-
-          /*
-           * Variables globales
-           */
-
-          window.medecinNom =
-            medecinNom;
-
-          window.medecinSpecialite =
-            medecinSpecialite;
-
-          window.medecinLieu =
-            medecinLieu;
-
-
-          /* ---------------------------------------------------
-             CONTRÔLE DES PAGES
-          --------------------------------------------------- */
-
-          const pages =
-            data.pages || {};
-
-
-          const currentPath =
-            window.location.pathname;
-
-
-          const currentPage =
-            currentPath
-              .substring(
-                currentPath.lastIndexOf("/") + 1
-              )
-              .replace(".html", "");
-
-
-          const pageMapping = {
-
-            "mailtof": "mailto"
-
-          };
-
-
-          const pageKey =
-            pageMapping[currentPage] ||
-            currentPage;
-
-
-          console.log(
-            "Page actuelle :",
-            currentPage
-          );
-
-
-          console.log(
-            "Page Firestore :",
-            pageKey
-          );
-
-
-          if (!pages[pageKey]) {
-
-            const modal =
-              document.getElementById(
-                "modal-no-access"
-              );
-
-
-            if (modal) {
-
-              modal.style.display =
-                "flex";
-
-            }
-
-
-            console.warn(
-              "Accès refusé à",
-              currentPage
-            );
-
-
-            return;
-
-          }
-
-
-          console.log(
-            "Accès autorisé à",
-            currentPage
-          );
-
-
-      
-
-
-        } catch (error) {
-
-          console.error(
-            "Erreur chargement médecin :",
-            error
-          );
-
-
-          alert(
-            "Une erreur est survenue, veuillez réessayer plus tard."
-          );
-
-        }
+        console.error("Erreur chargement médecin :", error);
+        alert("Une erreur est survenue, veuillez réessayer plus tard.");
 
       }
-    );
+
+    });
 
 
     /* =========================================================
@@ -1134,80 +716,35 @@
 
     let appLocked = false;
 
+    window.addEventListener("message", (event) => {
 
-    window.addEventListener(
-      "message",
-      (event) => {
+      if (!event.data) return;
 
-        /*
-         * On conserve ton fonctionnement actuel.
-         */
-
-        if (event.origin !== "*") {
-
-          return;
-
-        }
-
-
-        if (!event.data) {
-
-          return;
-
-        }
-
-
-        if (
-          event.data.type ===
-          "APP_LOCK"
-        ) {
-
-          appLocked = true;
-
-          document.body.style.filter =
-            "grayscale(0.8)";
-
-        }
-
-
-        if (
-          event.data.type ===
-          "APP_UNLOCK"
-        ) {
-
-          appLocked = false;
-
-          document.body.style.filter =
-            "none";
-
-        }
-
+      if (event.data.type === "APP_LOCK") {
+        appLocked = true;
+        document.body.style.filter = "grayscale(0.8)";
       }
-    );
+
+      if (event.data.type === "APP_UNLOCK") {
+        appLocked = false;
+        document.body.style.filter = "none";
+      }
+
+    });
 
 
     /* =========================================================
        PROTECTION DES BOUTONS
        ========================================================= */
 
-    document.addEventListener(
-      "click",
-      function(e) {
-
-        if (appLocked) {
-
-          e.stopPropagation();
-
-          e.preventDefault();
-
-        }
-
-      },
-      true
-    );
+    document.addEventListener("click", function(e) {
+      if (appLocked) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }, true);
 
   </script>
 
 </body>
 </html>
-```

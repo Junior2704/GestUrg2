@@ -295,29 +295,19 @@ const token =
 // ======================================================
 
 const loading =
-    document.getElementById(
-        "loading"
-    );
+    document.getElementById("loading");
 
 const errorElement =
-    document.getElementById(
-        "error"
-    );
+    document.getElementById("error");
 
 const formulaire =
-    document.getElementById(
-        "formulaire"
-    );
+    document.getElementById("formulaire");
 
 const dateNaissance =
-    document.getElementById(
-        "dateNaissance"
-    );
+    document.getElementById("dateNaissance");
 
 const btnConnexion =
-    document.getElementById(
-        "btnConnexion"
-    );
+    document.getElementById("btnConnexion");
 
 
 // ======================================================
@@ -331,7 +321,6 @@ function afficherErreur(message) {
 
     errorElement.style.display =
         "block";
-
 }
 
 
@@ -351,13 +340,10 @@ async function verifierLien() {
         );
 
         return;
-
     }
-
 
     loading.style.display =
         "block";
-
 
     try {
 
@@ -365,9 +351,7 @@ async function verifierLien() {
             await fetch(
                 `${SERVER}/api/patient-access/verify`,
                 {
-
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
                         "Content-Type":
@@ -378,16 +362,18 @@ async function verifierLien() {
                         JSON.stringify({
                             token
                         })
-
                 }
             );
-
 
         const resultat =
             await response.json();
 
+        console.log(
+            "Vérification du lien :",
+            resultat
+        );
 
-        if (!resultat.success) {
+        if (!response.ok || !resultat.success) {
 
             formulaire.style.display =
                 "none";
@@ -398,19 +384,17 @@ async function verifierLien() {
             );
 
             return;
-
         }
 
-
-        console.log(
-            "Lien valide :",
-            resultat
-        );
-
+        // Le lien est valide.
+        // On laisse le formulaire visible.
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Erreur vérification lien :",
+            error
+        );
 
         formulaire.style.display =
             "none";
@@ -423,9 +407,7 @@ async function verifierLien() {
 
         loading.style.display =
             "none";
-
     }
-
 }
 
 
@@ -440,7 +422,6 @@ btnConnexion.addEventListener(
         errorElement.style.display =
             "none";
 
-
         if (!dateNaissance.value) {
 
             afficherErreur(
@@ -448,9 +429,16 @@ btnConnexion.addEventListener(
             );
 
             return;
-
         }
 
+        if (!token) {
+
+            afficherErreur(
+                "Lien d'accès invalide."
+            );
+
+            return;
+        }
 
         btnConnexion.disabled =
             true;
@@ -458,75 +446,107 @@ btnConnexion.addEventListener(
         btnConnexion.textContent =
             "Vérification...";
 
-
         try {
+
+            // ==================================================
+            // AUTHENTIFICATION
+            // ==================================================
 
             const response =
                 await fetch(
                     `${SERVER}/api/patient-access/authenticate`,
                     {
+                        method: "POST",
 
-                        method:
-                            "POST",
-
-                        credentials:
-                            "include",
+                        credentials: "include",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json"
-
                         },
 
                         body:
                             JSON.stringify({
-
                                 token,
-
                                 dateNaissance:
                                     dateNaissance.value
-
                             })
-
                     }
                 );
-
 
             const resultat =
                 await response.json();
 
-
-            if (!resultat.success) {
-
-                afficherErreur(
-                    resultat.error ||
-                    "Authentification impossible."
-                );
-
-                return;
-
-            }
-
-
             console.log(
-                "Authentification réussie",
+                "Authentification :",
                 resultat
             );
 
+            if (!response.ok || !resultat.success) {
 
-            // IMPORTANT :
-            // le token ne sera plus nécessaire.
-            // La session est maintenant portée
-            // par le cookie HTTPOnly.
+                afficherErreur(
+                    resultat.error ||
+                    "Date de naissance incorrecte."
+                );
+
+                return;
+            }
+
+
+            // ==================================================
+            // VÉRIFIER QUE LA SESSION EXISTE BIEN
+            // ==================================================
+
+            const sessionResponse =
+                await fetch(
+                    `${SERVER}/api/patient-access/session`,
+                    {
+                        method: "GET",
+                        credentials: "include"
+                    }
+                );
+
+            const session =
+                await sessionResponse.json();
+
+            console.log(
+                "Session patient :",
+                session
+            );
+
+            if (
+                !sessionResponse.ok ||
+                !session.success
+            ) {
+
+                afficherErreur(
+                    "La session patient n'a pas pu être créée."
+                );
+
+                return;
+            }
+
+
+            // ==================================================
+            // AUTHENTIFICATION COMPLÈTE
+            // ==================================================
+
+            console.log(
+                "Session patient valide."
+            );
+
+            // Le token présent dans l'URL
+            // n'est plus nécessaire.
 
             window.location.href =
                 "patient.html";
 
-
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "Erreur authentification :",
+                error
+            );
 
             afficherErreur(
                 "Impossible de contacter le serveur."
@@ -539,9 +559,7 @@ btnConnexion.addEventListener(
 
             btnConnexion.textContent =
                 "Accéder à mes documents";
-
         }
-
     }
 );
 

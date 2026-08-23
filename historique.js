@@ -503,7 +503,7 @@ export async function construireHistoriqueOrd(db, patientId, hospitalisationId, 
     // ---- Hospitalisation ----
 
     contenu.push(...titreSection(
-        `🏥 Hospitalisation${numero ? " n°" + numero : ""}${estActive ? " (EN COURS)" : ""}`
+        `🏥 Hospitalisation${numero ? " n°" + numero : hospitalisationId}${estActive ? " (EN COURS)" : ""}`
     ));
     contenu.push(ligneChamp("Admission", hospi.dateDebut));
     contenu.push(ligneChamp("Sortie", hospi.dateFin || (estActive ? "En cours" : "—")));

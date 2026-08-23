@@ -11,11 +11,20 @@
 >
 
 <title>Mes documents - GestUrg2</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+<!-- ======================================================
+     HTML2PDF
+====================================================== -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+<!-- ======================================================
+     CONVERSION ORD → PDF
+====================================================== -->
+
 <script src="../ordToPdf.js"></script>
+
 
 <style>
 
@@ -40,6 +49,10 @@ body {
 
 }
 
+
+/* ======================================================
+   HEADER
+====================================================== */
 
 header {
 
@@ -95,8 +108,23 @@ header h1 {
     cursor:
         pointer;
 
+    font-size:
+        14px;
+
 }
 
+
+.logout:hover {
+
+    background:
+        rgba(255,255,255,.25);
+
+}
+
+
+/* ======================================================
+   CONTENEUR
+====================================================== */
 
 .container {
 
@@ -111,6 +139,10 @@ header h1 {
 
 }
 
+
+/* ======================================================
+   PATIENT
+====================================================== */
 
 .patient-card {
 
@@ -138,8 +170,15 @@ header h1 {
     margin-top:
         0;
 
+    color:
+        #0078d4;
+
 }
 
+
+/* ======================================================
+   DOCUMENTS
+====================================================== */
 
 .documents {
 
@@ -212,6 +251,20 @@ header h1 {
 }
 
 
+.document-date {
+
+    color:
+        #999;
+
+    font-size:
+        13px;
+
+    margin-top:
+        5px;
+
+}
+
+
 .document button {
 
     border:
@@ -232,8 +285,34 @@ header h1 {
     cursor:
         pointer;
 
+    white-space:
+        nowrap;
+
 }
 
+
+.document button:hover {
+
+    background:
+        #006abc;
+
+}
+
+
+.document button:disabled {
+
+    opacity:
+        .6;
+
+    cursor:
+        wait;
+
+}
+
+
+/* ======================================================
+   MESSAGES
+====================================================== */
 
 .message {
 
@@ -255,102 +334,104 @@ header h1 {
         #c62828;
 
 }
+
+
 /* ======================================================
-   VIEWER PDF
+   LOADER DOCUMENT
 ====================================================== */
 
-.pdf-viewer {
+.loader {
 
-    position: fixed;
+    display:
+        inline-block;
 
-    inset: 0;
+    width:
+        16px;
 
-    background: #111;
+    height:
+        16px;
 
-    z-index: 99999;
+    border:
+        2px solid
+        rgba(255,255,255,.4);
 
-    display: none;
+    border-top-color:
+        white;
 
-    flex-direction: column;
+    border-radius:
+        50%;
 
-}
+    animation:
+        rotation .7s linear infinite;
 
+    vertical-align:
+        middle;
 
-/* HEADER */
-
-.pdf-viewer-header {
-
-    height: 60px;
-
-    flex-shrink: 0;
-
-    background: #0078d4;
-
-    color: white;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    padding: 0 20px;
-
-    font-weight: 600;
+    margin-right:
+        7px;
 
 }
 
 
-#btnFermerPdf {
+@keyframes rotation {
 
-    border: none;
-
-    background: rgba(255,255,255,.15);
-
-    color: white;
-
-    padding: 9px 15px;
-
-    border-radius: 8px;
-
-    cursor: pointer;
-
-    font-size: 14px;
+    to {
+        transform:
+            rotate(360deg);
+    }
 
 }
 
 
-#btnFermerPdf:hover {
+/* ======================================================
+   MOBILE
+====================================================== */
 
-    background: rgba(255,255,255,.25);
+@media (max-width: 600px) {
+
+    header {
+
+        padding:
+            15px;
+
+    }
+
+    header h1 {
+
+        font-size:
+            18px;
+
+    }
+
+    .container {
+
+        margin-top:
+            20px;
+
+        padding:
+            0 12px;
+
+    }
+
+    .document {
+
+        flex-direction:
+            column;
+
+        align-items:
+            stretch;
+
+    }
+
+    .document button {
+
+        width:
+            100%;
+
+    }
 
 }
 
-
-/* PDF */
-
-.pdf-viewer-content {
-
-    flex: 1;
-
-    min-height: 0;
-
-    background: #333;
-
-}
-
-
-#pdfFrame {
-
-    width: 100%;
-
-    height: 100%;
-
-    border: none;
-
-    background: white;
-
-}
 </style>
 
 </head>
@@ -378,6 +459,10 @@ header h1 {
 <div class="container">
 
 
+    <!-- ==================================================
+         PATIENT
+    ================================================== -->
+
     <div
         class="patient-card"
         id="patientCard"
@@ -393,6 +478,10 @@ header h1 {
     </h2>
 
 
+    <!-- ==================================================
+         DOCUMENTS
+    ================================================== -->
+
     <div
         id="documents"
         class="documents"
@@ -405,38 +494,7 @@ header h1 {
     </div>
 
 </div>
-<!-- ======================================================
-     VIEWER PDF
-====================================================== -->
 
-<div id="pdfViewer" class="pdf-viewer">
-
-    <div class="pdf-viewer-header">
-
-        <div id="pdfViewerTitle">
-            Document
-        </div>
-
-        <button
-            type="button"
-            id="btnFermerPdf"
-        >
-            ✕ Fermer
-        </button>
-
-    </div>
-
-
-    <div class="pdf-viewer-content">
-
-        <iframe
-            id="pdfFrame"
-            title="Document PDF"
-        ></iframe>
-
-    </div>
-
-</div>
 
 <script>
 
@@ -459,13 +517,11 @@ async function chargerSession() {
             await fetch(
                 `${SERVER}/api/patient-access/session`,
                 {
-
                     method:
                         "GET",
 
                     credentials:
                         "include"
-
                 }
             );
 
@@ -474,7 +530,10 @@ async function chargerSession() {
             await response.json();
 
 
-        if (!resultat.success) {
+        if (
+            response.status === 401 ||
+            !resultat.success
+        ) {
 
             window.location.href =
                 "patient-login.html";
@@ -502,15 +561,24 @@ async function chargerSession() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Erreur session :",
+            error
+        );
+
 
         document.getElementById(
             "patientCard"
         ).innerHTML = `
+
             <div class="error">
+
                 Impossible de contacter le serveur.
+
             </div>
+
         `;
+
 
         return false;
 
@@ -534,15 +602,18 @@ function afficherPatient() {
     ).innerHTML = `
 
         <h2>
-            Bonjour ${escapeHtml(
-                patient.prenom
-            )} ${escapeHtml(
-                patient.nom
-            )}
+
+            Bonjour
+            ${escapeHtml(patient.prenom)}
+            ${escapeHtml(patient.nom)}
+
         </h2>
 
         <p>
-            Vous êtes connecté à votre espace patient.
+
+            Vous êtes connecté à votre
+            espace patient.
+
         </p>
 
     `;
@@ -551,7 +622,7 @@ function afficherPatient() {
 
 
 // ======================================================
-// CHARGER DOCUMENTS
+// CHARGER LES DOCUMENTS
 // ======================================================
 
 async function chargerDocuments() {
@@ -568,13 +639,11 @@ async function chargerDocuments() {
             await fetch(
                 `${SERVER}/api/patient-access/documents`,
                 {
-
                     method:
                         "GET",
 
                     credentials:
                         "include"
-
                 }
             );
 
@@ -583,33 +652,49 @@ async function chargerDocuments() {
             await response.json();
 
 
+        // --------------------------------------------------
+        // SESSION EXPIRÉE
+        // --------------------------------------------------
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "patient-login.html";
+
+            return;
+
+        }
+
+
+        // --------------------------------------------------
+        // ERREUR
+        // --------------------------------------------------
+
         if (!resultat.success) {
 
-            if (
-                response.status === 401
-            ) {
-
-                window.location.href =
-                    "patient-login.html";
-
-                return;
-
-            }
-
-
             container.innerHTML = `
-                <div class="message">
+
+                <div class="message error">
+
                     ${escapeHtml(
                         resultat.error ||
                         "Impossible de charger les documents."
                     )}
+
                 </div>
+
             `;
 
             return;
 
         }
 
+
+        // --------------------------------------------------
+        // AUCUN DOCUMENT
+        // --------------------------------------------------
 
         if (
             !resultat.documents ||
@@ -617,9 +702,13 @@ async function chargerDocuments() {
         ) {
 
             container.innerHTML = `
+
                 <div class="message">
+
                     Aucun document disponible.
+
                 </div>
+
             `;
 
             return;
@@ -627,65 +716,121 @@ async function chargerDocuments() {
         }
 
 
-        container.innerHTML = "";
+        container.innerHTML =
+            "";
 
 
- resultat.documents.forEach(
-    doc => {
+        // --------------------------------------------------
+        // AFFICHER LES DOCUMENTS
+        // --------------------------------------------------
 
-        const element =
-            document.createElement("div");
+        resultat.documents.forEach(
+            documentMedical => {
 
-        element.className =
-            "document";
+                const element =
+                    document.createElement(
+                        "div"
+                    );
 
-        element.innerHTML = `
 
-            <div class="document-info">
+                element.className =
+                    "document";
 
-                <div class="document-title">
-                    ${escapeHtml(
-                        doc.titre ||
-                        "Document"
-                    )}
-                </div>
 
-                <div class="document-type">
-                    ${escapeHtml(
-                        doc.type ||
-                        "Document médical"
-                    )}
-                </div>
+                element.innerHTML = `
 
-            </div>
+                    <div class="document-info">
 
-            <button type="button">
-                Ouvrir
-            </button>
+                        <div class="document-title">
 
-        `;
+                            ${escapeHtml(
+                                documentMedical.titre ||
+                                "Document"
+                            )}
 
-        element
-            .querySelector("button")
-            .addEventListener(
-                "click",
-                () => {
-                    ouvrirDocument(doc.id);
-                }
-            );
+                        </div>
 
-        container.appendChild(element);
+                        <div class="document-type">
 
-    }
-);
+                            ${escapeHtml(
+                                documentMedical.type ||
+                                "Document médical"
+                            )}
+
+                        </div>
+
+                        ${
+                            documentMedical.dateCreation
+                                ? `
+                                    <div class="document-date">
+
+                                        ${escapeHtml(
+                                            documentMedical.dateCreation
+                                        )}
+
+                                    </div>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-open-document"
+                    >
+
+                        Ouvrir
+
+                    </button>
+
+                `;
+
+
+                const bouton =
+                    element.querySelector(
+                        ".btn-open-document"
+                    );
+
+
+                bouton.addEventListener(
+                    "click",
+                    () => {
+
+                        ouvrirDocument(
+                            documentMedical.id,
+                            bouton
+                        );
+
+                    }
+                );
+
+
+                container.appendChild(
+                    element
+                );
+
+            }
+        );
+
+
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Erreur documents :",
+            error
+        );
+
 
         container.innerHTML = `
-            <div class="message">
+
+            <div class="message error">
+
                 Impossible de charger les documents.
+
             </div>
+
         `;
 
     }
@@ -697,42 +842,52 @@ async function chargerDocuments() {
 // OUVRIR UN DOCUMENT
 // ======================================================
 
-async function ouvrirDocument(documentId) {
+async function ouvrirDocument(
+    documentId,
+    bouton
+) {
 
-    const viewer =
-        document.getElementById("pdfViewer");
+    if (!documentId) {
 
-    const frame =
-        document.getElementById("pdfFrame");
+        return;
 
-    const titre =
-        document.getElementById("pdfViewerTitle");
+    }
 
 
     try {
 
-        // ==================================================
-        // AFFICHER LE VIEWER
-        // ==================================================
+        // --------------------------------------------------
+        // BOUTON
+        // --------------------------------------------------
 
-        viewer.style.display = "flex";
+        if (bouton) {
 
-        titre.textContent =
-            "Chargement du document...";
+            bouton.disabled =
+                true;
 
-        frame.src = "about:blank";
+            bouton.innerHTML = `
+
+                <span class="loader"></span>
+                Ouverture...
+
+            `;
+
+        }
 
 
-        // ==================================================
+        // --------------------------------------------------
         // RÉCUPÉRER LE DOCUMENT
-        // ==================================================
+        // --------------------------------------------------
 
         const response =
             await fetch(
                 `${SERVER}/api/patient-access/documents/${encodeURIComponent(documentId)}`,
                 {
-                    method: "GET",
-                    credentials: "include"
+                    method:
+                        "GET",
+
+                    credentials:
+                        "include"
                 }
             );
 
@@ -741,13 +896,44 @@ async function ouvrirDocument(documentId) {
             await response.json();
 
 
-        // ==================================================
-        // ERREUR
-        // ==================================================
+        // --------------------------------------------------
+        // SESSION EXPIRÉE
+        // --------------------------------------------------
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "patient-login.html";
+
+            return;
+
+        }
+
+
+        // --------------------------------------------------
+        // ACCÈS REFUSÉ
+        // --------------------------------------------------
+
+        if (
+            response.status === 403
+        ) {
+
+            alert(
+                "Vous n'avez pas accès à ce document."
+            );
+
+            return;
+
+        }
+
+
+        // --------------------------------------------------
+        // AUTRE ERREUR
+        // --------------------------------------------------
 
         if (!resultat.success) {
-
-            fermerViewerPdf();
 
             alert(
                 resultat.error ||
@@ -759,23 +945,27 @@ async function ouvrirDocument(documentId) {
         }
 
 
-        const documentData =
+        const documentMedical =
             resultat.document;
 
 
-        // ==================================================
-        // VÉRIFICATION
-        // ==================================================
+        // --------------------------------------------------
+        // VÉRIFIER LE FORMAT ORD
+        // --------------------------------------------------
 
         if (
-            !documentData.ord ||
-            typeof documentData.ord !== "object"
+            !documentMedical.ord ||
+            typeof documentMedical.ord !== "object"
         ) {
 
-            fermerViewerPdf();
+            console.error(
+                "Format ORD absent :",
+                documentMedical
+            );
+
 
             alert(
-                "Ce document ne possède pas de format ORD valide."
+                "Ce document ne peut pas être affiché."
             );
 
             return;
@@ -783,29 +973,61 @@ async function ouvrirDocument(documentId) {
         }
 
 
-        // ==================================================
-        // TITRE
-        // ==================================================
-
-        titre.textContent =
-            documentData.ord.titre ||
-            documentData.type ||
-            "Document médical";
+        console.log(
+            "ORD récupéré :",
+            documentMedical.ord
+        );
 
 
-        // ==================================================
-        // GÉNÉRER LE PDF
-        // ==================================================
+        // --------------------------------------------------
+        // VÉRIFIER ordToPDF
+        // --------------------------------------------------
 
-        const pdfBlob =
-            await ordToPDF(
-                documentData.ord
+        if (
+            typeof window.ordToPDF !==
+            "function"
+        ) {
+
+            console.error(
+                "ordToPDF indisponible"
             );
 
 
-        // ==================================================
+            alert(
+                "Le système PDF n'est pas disponible."
+            );
+
+            return;
+
+        }
+
+
+        // --------------------------------------------------
+        // GÉNÉRER LE PDF
+        // --------------------------------------------------
+
+        const pdfBlob =
+            await window.ordToPDF(
+                documentMedical.ord
+            );
+
+
+        // --------------------------------------------------
+        // VÉRIFIER LE PDF
+        // --------------------------------------------------
+
+        if (!pdfBlob) {
+
+            throw new Error(
+                "Le PDF n'a pas été généré."
+            );
+
+        }
+
+
+        // --------------------------------------------------
         // CRÉER URL TEMPORAIRE
-        // ==================================================
+        // --------------------------------------------------
 
         const pdfUrl =
             URL.createObjectURL(
@@ -813,20 +1035,46 @@ async function ouvrirDocument(documentId) {
             );
 
 
-        // ==================================================
-        // AFFICHER PDF
-        // ==================================================
+        // --------------------------------------------------
+        // OUVRIR LE PDF
+        // --------------------------------------------------
 
-        frame.src =
-            pdfUrl;
+        const nouvelleFenetre =
+            window.open(
+                pdfUrl,
+                "_blank"
+            );
 
 
-        // ==================================================
-        // NETTOYAGE
-        // ==================================================
+        if (!nouvelleFenetre) {
 
-        frame.dataset.pdfUrl =
-            pdfUrl;
+            alert(
+                "Votre navigateur bloque l'ouverture du PDF. Autorisez les fenêtres pop-up pour GestUrg2."
+            );
+
+            URL.revokeObjectURL(
+                pdfUrl
+            );
+
+            return;
+
+        }
+
+
+        // On laisse le navigateur utiliser
+        // temporairement l'URL du PDF.
+
+
+        setTimeout(
+            () => {
+
+                URL.revokeObjectURL(
+                    pdfUrl
+                );
+
+            },
+            60000
+        );
 
 
     } catch (error) {
@@ -836,79 +1084,29 @@ async function ouvrirDocument(documentId) {
             error
         );
 
-        fermerViewerPdf();
 
         alert(
-            "Impossible de générer le PDF."
+            "Impossible de générer le document PDF."
         );
 
-    }
 
-}
+    } finally {
 
-function fermerViewerPdf() {
+        if (bouton) {
 
-    const viewer =
-        document.getElementById("pdfViewer");
+            bouton.disabled =
+                false;
 
-    const frame =
-        document.getElementById("pdfFrame");
-
-
-    // Libérer l'URL Blob
-    const ancienneUrl =
-        frame.dataset.pdfUrl;
-
-
-    if (ancienneUrl) {
-
-        URL.revokeObjectURL(
-            ancienneUrl
-        );
-
-    }
-
-
-    frame.dataset.pdfUrl = "";
-
-    frame.src = "about:blank";
-
-    viewer.style.display = "none";
-
-}
-document
-    .getElementById("btnFermerPdf")
-    .addEventListener(
-        "click",
-        fermerViewerPdf
-    );
-    
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key === "Escape"
-        ) {
-
-            const viewer =
-                document.getElementById(
-                    "pdfViewer"
-                );
-
-            if (
-                viewer.style.display ===
-                "flex"
-            ) {
-
-                fermerViewerPdf();
-
-            }
+            bouton.textContent =
+                "Ouvrir";
 
         }
 
     }
-);
+
+}
+
+
 // ======================================================
 // DÉCONNEXION
 // ======================================================
@@ -919,24 +1117,40 @@ document
         "click",
         async () => {
 
+            const bouton =
+                document.getElementById(
+                    "btnLogout"
+                );
+
+
+            bouton.disabled =
+                true;
+
+
+            bouton.textContent =
+                "Déconnexion...";
+
+
             try {
 
                 await fetch(
                     `${SERVER}/api/patient-access/logout`,
                     {
-
                         method:
                             "POST",
 
                         credentials:
                             "include"
-
                     }
                 );
 
+
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Erreur déconnexion :",
+                    error
+                );
 
             }
 
@@ -955,11 +1169,31 @@ document
 function escapeHtml(value) {
 
     return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 
@@ -973,9 +1207,13 @@ function escapeHtml(value) {
     const connecte =
         await chargerSession();
 
+
     if (!connecte) {
+
         return;
+
     }
+
 
     await chargerDocuments();
 

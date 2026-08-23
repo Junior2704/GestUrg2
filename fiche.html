@@ -2527,6 +2527,109 @@ z-index: 3000;
     border:none;
     border-radius:10px;
 }
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.modal-box {
+    width: 450px;
+    max-width: calc(100vw - 40px);
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.modal-box h2 {
+    margin: 10px 0 15px;
+    font-size: 22px;
+}
+
+.modal-box p {
+    color: #555;
+    line-height: 1.5;
+}
+
+.modal-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+}
+
+.modal-icon.warning {
+    background: #fff3cd;
+}
+
+.modal-icon.success {
+    background: #d4edda;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.modal-actions button {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 22px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #0078d4;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0069b8;
+}
+
+.btn-secondary {
+    background: #e9ecef;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #dfe3e6;
+}
+
+.emails-envoyes {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f5f7fa;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.emails-envoyes .email-titre {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.emails-envoyes .email-ligne {
+    padding: 5px 0;
+    color: #333;
+    word-break: break-all;
+}
 </style>
 </head>
 <body>
@@ -3097,7 +3200,83 @@ z-index: 3000;
     <p style="margin-top:10px; color:#666;">Merci de patienter</p>
   </div>
 </div>
+<!-- ========================================= -->
+<!-- AVERTISSEMENT : PAS D'EMAIL -->
+<!-- ========================================= -->
 
+<div id="modalAvertissementEmail" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+
+        <div class="modal-icon warning">
+            ⚠️
+        </div>
+
+        <h2>Adresse e-mail absente</h2>
+
+        <p>
+            Aucun e-mail n'est renseigné pour ce patient.
+        </p>
+
+        <p>
+            Le dossier patient sécurisé <strong>ne pourra pas lui être envoyé par e-mail</strong>.
+        </p>
+
+        <p>
+            Voulez-vous tout de même poursuivre la clôture de l'hospitalisation ?
+        </p>
+
+        <div class="modal-actions">
+            <button
+                type="button"
+                id="btnAnnulerClotureEmail"
+                class="btn-secondary">
+                Annuler
+            </button>
+
+            <button
+                type="button"
+                id="btnContinuerClotureEmail"
+                class="btn-primary">
+                Continuer
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ========================================= -->
+<!-- RÉUSSITE -->
+<!-- ========================================= -->
+
+<div id="modalSuccesCloture" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+
+        <div class="modal-icon success">
+            ✓
+        </div>
+
+        <h2>Hospitalisation clôturée</h2>
+
+        <p>
+            Le dossier a été clôturé avec succès.
+        </p>
+
+        <div id="emailsEnvoyesContainer" class="emails-envoyes">
+            <!-- rempli par JavaScript -->
+        </div>
+
+        <div class="modal-actions">
+            <button
+                type="button"
+                id="btnOkSuccesCloture"
+                class="btn-primary">
+                OK
+            </button>
+        </div>
+
+    </div>
+</div>
 
 <!-- Modal Gestion Administrative -->
 <div class="modal-overlay" id="modalAdmin">
@@ -4979,20 +5158,109 @@ document.getElementById("clotureBadgeInput").addEventListener("keydown", functio
   }
 });
 
-// 🔹 Exécute la clôture (commun aux deux méthodes de validation)
 async function executerCloture() {
 
     modalCode.style.display = "none";
-    document.getElementById("modalCloture").style.display = "flex";
 
-    const bar = document.getElementById("clotureBar");
-    const texte = document.getElementById("clotureProgressText");
+    // ==================================================
+    // RÉCUPÉRATION DU PATIENT AVANT LA CLÔTURE
+    // ==================================================
 
-    const signatureId = window.signatureId;
+    const patientRef = doc(db, "patients", patientId);
+
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
+        afficherBulle(
+            "🚨 Patient introuvable",
+            "error"
+        );
+        return;
+    }
+
+    const patientData = patientSnap.data();
 
     // --------------------------------------------------
-    // PROGRESSION RÉELLE
+    // RECHERCHE DE L'EMAIL PATIENT
     // --------------------------------------------------
+
+    const emailPatient =
+        patientData.email ||
+        patientData.emailPatient ||
+        patientData.mail ||
+        "";
+
+    // ==================================================
+    // SI PAS D'EMAIL → AVERTISSEMENT
+    // ==================================================
+
+    if (!emailPatient || !emailPatient.trim()) {
+
+        const modalAvertissement =
+            document.getElementById("modalAvertissementEmail");
+
+        modalAvertissement.style.display = "flex";
+
+        return new Promise((resolve) => {
+
+            const btnAnnuler =
+                document.getElementById(
+                    "btnAnnulerClotureEmail"
+                );
+
+            const btnContinuer =
+                document.getElementById(
+                    "btnContinuerClotureEmail"
+                );
+
+            // -----------------------------
+            // ANNULER
+            // -----------------------------
+
+            btnAnnuler.onclick = () => {
+
+                modalAvertissement.style.display =
+                    "none";
+
+                resolve();
+            };
+
+
+            // -----------------------------
+            // CONTINUER
+            // -----------------------------
+
+            btnContinuer.onclick = () => {
+
+                modalAvertissement.style.display =
+                    "none";
+
+                // On relance réellement la clôture
+                executerClotureSansAvertissement();
+
+                resolve();
+            };
+
+        });
+    }
+
+    // Si un email existe, on lance directement
+    return executerClotureSansAvertissement();
+}
+
+async function executerClotureSansAvertissement() {
+
+    document.getElementById("modalCloture").style.display =
+        "flex";
+
+    const bar =
+        document.getElementById("clotureBar");
+
+    const texte =
+        document.getElementById("clotureProgressText");
+
+    const signatureId =
+        window.signatureId;
 
     const totalEtapes = 9;
     let etape = 0;
@@ -5002,9 +5270,12 @@ async function executerCloture() {
         etape++;
 
         const pourcentage =
-            Math.round((etape / totalEtapes) * 100);
+            Math.round(
+                (etape / totalEtapes) * 100
+            );
 
-        bar.style.width = `${pourcentage}%`;
+        bar.style.width =
+            `${pourcentage}%`;
 
         if (texte) {
             texte.textContent =
@@ -5088,11 +5359,9 @@ async function executerCloture() {
             );
 
         if (!hospitalisationId) {
-
             throw new Error(
                 "Aucune hospitalisation active"
             );
-
         }
 
 
@@ -5107,11 +5376,9 @@ async function executerCloture() {
             await getDoc(hospiRef);
 
         if (!hospiSnap.exists()) {
-
             throw new Error(
                 "Hospitalisation introuvable"
             );
-
         }
 
         const hospiData =
@@ -5137,19 +5404,16 @@ async function executerCloture() {
 
 
         const now =
-            new Date().toLocaleString(
-                "fr-FR"
-            );
+            new Date().toLocaleString("fr-FR");
 
 
         // ==================================================
-        // 4. CLÔTURER L'HOSPITALISATION
+        // 4. CLÔTURE
         // ==================================================
 
         progression(
             "Enregistrement de la clôture..."
         );
-
 
         const sectionCloture =
             `Clôture :\n` +
@@ -5164,9 +5428,7 @@ async function executerCloture() {
         await updateDoc(
             hospiRef,
             {
-
-                dateFin:
-                    now,
+                dateFin: now,
 
                 dateFinTS:
                     Timestamp.now(),
@@ -5197,7 +5459,6 @@ async function executerCloture() {
                     `Rapport d'hospitalisation pour ` +
                     `${patientData.nom} ${patientData.prenom}.\n\n` +
                     sectionCloture
-
             }
         );
 
@@ -5210,7 +5471,6 @@ async function executerCloture() {
             "Enregistrement dans l'historique..."
         );
 
-
         await ajouterEntreeHistorique(
             "Hospitalisation clôturée",
             {
@@ -5219,73 +5479,143 @@ async function executerCloture() {
             }
         );
 
-progression("Création du rapport d'hospitalisation...")
-const ord = await construireHistoriqueOrd(db, patientId, hospitalisationId, {
-      inclureJournal: false,
-      numero: null,
-      logo: "https://junior2704.github.io/GestUrg2/logo.png",
-      lieu: "Urgences - HOPJ",
-      medecin: {
-        nom: window.medecinNom || "",
-        specialite: window.medecinSpecialite || "",
-        type: window.medecinType || ""
-      }
-    });
-const date = new Date(Date.now() - 60 * 1000);
 
-const dateCreation = date.toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-});
+        // ==================================================
+        // 6. RAPPORT
+        // ==================================================
 
-const contenu = `Rapport d'hospitalisation n° ${hospitalisationId}`;
-const type = "Rapport d'hospitalisation";
+        progression(
+            "Création du rapport d'hospitalisation..."
+        );
 
-// Firestore génère automatiquement un ID unique
-const documentRef = doc(collection(db, "documents"));
-const idUnique = documentRef.id;
+        const ord =
+            await construireHistoriqueOrd(
+                db,
+                patientId,
+                hospitalisationId,
+                {
+                    inclureJournal: false,
+                    numero: null,
+                    logo:
+                        "https://junior2704.github.io/GestUrg2/logo.png",
+                    lieu:
+                        "Urgences - HOPJ",
+                    medecin: {
+                        nom:
+                            window.medecinNom || "",
+                        specialite:
+                            window.medecinSpecialite || "",
+                        type:
+                            window.medecinType || ""
+                    }
+                }
+            );
 
-await setDoc(documentRef, {
-    patientId: patientId,
-    dateCreation: dateCreation,
-    type: type,
-    contenu: contenu,
-    ord: ord,
-});
+
+        const date =
+            new Date(
+                Date.now() - 60 * 1000
+            );
+
+
+        const dateCreation =
+            date.toLocaleString(
+                "fr-FR",
+                {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false
+                }
+            );
+
+
+        const contenu =
+            `Rapport d'hospitalisation n° ${hospitalisationId}`;
+
+        const type =
+            "Rapport d'hospitalisation";
+
+
+        const documentRef =
+            doc(collection(db, "documents"));
+
+        const idUnique =
+            documentRef.id;
+
+
+        await setDoc(
+            documentRef,
+            {
+                patientId:
+                    patientId,
+
+                dateCreation:
+                    dateCreation,
+
+                type:
+                    type,
+
+                contenu:
+                    contenu,
+
+                ord:
+                    ord
+            }
+        );
+
+
+        // ==================================================
+        // 7. ACCÈS PATIENT
+        // ==================================================
 
         progression(
             "Création de l'accès sécurisé patient..."
         );
 
 
-      const currentUser = getAuth().currentUser;
+        const currentUser =
+            getAuth().currentUser;
 
-if (!currentUser) {
-    throw new Error("Utilisateur non authentifié (session Firebase expirée)");
-}
+        if (!currentUser) {
+            throw new Error(
+                "Utilisateur non authentifié (session Firebase expirée)"
+            );
+        }
 
-const idToken = await currentUser.getIdToken(/* forceRefresh */ true);
 
-const accessResponse = await fetch(
-    "https://gesturg2-server.onrender.com/api/patient-access/create",
-    {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`   // ← ajouté
-        },
-        body: JSON.stringify({
-            patientId: patientId,
-            hospitalisationId: hospitalisationId
-        })
-    }
-);
+        const idToken =
+            await currentUser.getIdToken(true);
+
+
+        const accessResponse =
+            await fetch(
+                "https://gesturg2-server.onrender.com/api/patient-access/create",
+                {
+                    method: "POST",
+
+                    credentials: "include",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${idToken}`
+                    },
+
+                    body: JSON.stringify({
+                        patientId:
+                            patientId,
+
+                        hospitalisationId:
+                            hospitalisationId
+                    })
+                }
+            );
 
 
         const accessResult =
@@ -5296,12 +5626,10 @@ const accessResponse = await fetch(
             !accessResponse.ok ||
             !accessResult.success
         ) {
-
             throw new Error(
                 accessResult.error ||
                 "Impossible de créer l'accès patient"
             );
-
         }
 
 
@@ -5312,7 +5640,7 @@ const accessResponse = await fetch(
 
 
         // ==================================================
-        // 7. NOTIFICATION + FIN DE L'HOSPITALISATION ACTIVE
+        // 8. NOTIFICATION + FIN HOSPITALISATION
         // ==================================================
 
         progression(
@@ -5340,7 +5668,6 @@ const accessResponse = await fetch(
         await updateDoc(
             patientRef,
             {
-
                 pdcStatut:
                     "Attente enregistrement",
 
@@ -5349,13 +5676,12 @@ const accessResponse = await fetch(
 
                 hospitalisationActive:
                     "false"
-
             }
         );
 
 
         // ==================================================
-        // 8. TERMINÉ
+        // 9. TERMINÉ
         // ==================================================
 
         progression(
@@ -5363,8 +5689,8 @@ const accessResponse = await fetch(
         );
 
 
-        // On force visuellement 100 %
-        bar.style.width = "100%";
+        bar.style.width =
+            "100%";
 
         if (texte) {
             texte.textContent =
@@ -5372,9 +5698,28 @@ const accessResponse = await fetch(
         }
 
 
-        afficherBulle(
-            "✅ Hospitalisation clôturée et accès patient créé",
-            "success"
+        // ==================================================
+        // FERMETURE PROGRESSION
+        // ==================================================
+
+        await new Promise(
+            resolve =>
+                setTimeout(resolve, 800)
+        );
+
+
+        document.getElementById(
+            "modalCloture"
+        ).style.display =
+            "none";
+
+
+        // ==================================================
+        // MODALE DE SUCCÈS
+        // ==================================================
+
+        afficherSuccesCloture(
+            accessResult
         );
 
 
@@ -5388,48 +5733,6 @@ const accessResponse = await fetch(
                 nombreDocuments:
                     accessResult.nombreDocuments
             }
-        );
-
-
-        // Petit délai pour laisser voir le 100 %
-        await new Promise(
-            resolve =>
-                setTimeout(resolve, 800)
-        );
-
-
-        // ==================================================
-        // RETOUR À LA FICHE PATIENT
-        // ==================================================
-
-        const nom =
-            patientData.nom;
-
-        const prenom =
-            patientData.prenom;
-
-
-        window.parent.postMessage(
-            {
-                type:
-                    "OPEN_TAB",
-
-                title:
-                    `Fiche Patient ${prenom} ${nom}`,
-
-                url:
-                    `fichepatient.html?id=${patientId}`
-            },
-            "*"
-        );
-
-
-        window.parent.postMessage(
-            {
-                type:
-                    "CLOSE_TAB"
-            },
-            "*"
         );
 
 
@@ -5448,21 +5751,157 @@ const accessResponse = await fetch(
 
 
         if (texte) {
-
             texte.textContent =
                 "Échec de la clôture";
-
         }
 
 
-    } finally {
-
         document.getElementById(
             "modalCloture"
-        ).style.display = "none";
+        ).style.display =
+            "none";
+    }
+}
+function afficherSuccesCloture(accessResult) {
 
+    const modal =
+        document.getElementById(
+            "modalSuccesCloture"
+        );
+
+    const container =
+        document.getElementById(
+            "emailsEnvoyesContainer"
+        );
+
+
+    // ---------------------------------------------
+    // RÉCUPÉRATION DES EMAILS
+    // ---------------------------------------------
+
+    let emails = [];
+
+    if (
+        Array.isArray(
+            accessResult.emailsEnvoyes
+        )
+    ) {
+        emails =
+            accessResult.emailsEnvoyes;
+    }
+    else if (
+        Array.isArray(
+            accessResult.emails
+        )
+    ) {
+        emails =
+            accessResult.emails;
+    }
+    else if (
+        accessResult.emailEnvoye
+    ) {
+        emails = [
+            accessResult.emailEnvoye
+        ];
+    }
+    else if (
+        accessResult.email
+    ) {
+        emails = [
+            accessResult.email
+        ];
     }
 
+
+    // ---------------------------------------------
+    // AFFICHAGE
+    // ---------------------------------------------
+
+    if (emails.length > 0) {
+
+        container.innerHTML = `
+            <div class="email-titre">
+                📧 Dossier envoyé à :
+            </div>
+
+            ${emails.map(email => `
+                <div class="email-ligne">
+                    ✓ ${email}
+                </div>
+            `).join("")}
+        `;
+
+    } else {
+
+        container.innerHTML = `
+            <div class="email-titre">
+                ℹ️ Aucun e-mail envoyé
+            </div>
+
+            <div class="email-ligne">
+                Le dossier reste accessible depuis GestUrg2.
+            </div>
+        `;
+    }
+
+
+    // ---------------------------------------------
+    // AFFICHAGE MODALE
+    // ---------------------------------------------
+
+    modal.style.display =
+        "flex";
+
+
+    // ---------------------------------------------
+    // BOUTON OK
+    // ---------------------------------------------
+
+    document.getElementById(
+        "btnOkSuccesCloture"
+    ).onclick = () => {
+
+        modal.style.display =
+            "none";
+
+
+        const nom =
+            document
+                .querySelector("[data-patient-nom]")
+                ?.textContent || "";
+
+
+        // -----------------------------------------
+        // OUVERTURE FICHE PATIENT
+        // -----------------------------------------
+
+        window.parent.postMessage(
+            {
+                type:
+                    "OPEN_TAB",
+
+                title:
+                    `Fiche Patient ${window.patientPrenom || ""} ${window.patientNom || ""}`,
+
+                url:
+                    `fichepatient.html?id=${patientId}`
+            },
+            "*"
+        );
+
+
+        // -----------------------------------------
+        // FERMETURE ONGLET ACTUEL
+        // -----------------------------------------
+
+        window.parent.postMessage(
+            {
+                type:
+                    "CLOSE_TAB"
+            },
+            "*"
+        );
+    };
 }
 
 function getEmailsPatient(champEmail) {

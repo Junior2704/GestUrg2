@@ -54,17 +54,20 @@ function renderContenu(contenu) {
     let html = "";
     let blocCourant = "";
 
-    function flushBloc() {
+function flushBloc() {
 
-        if (blocCourant.trim() !== "") {
+    if (blocCourant.trim() !== "") {
 
-            html +=
-                `<div class="bloc"><span class="line">${blocCourant}</span></div>`;
+        html += `
+            <div class="bloc">
+                <div class="line">${blocCourant}</div>
+            </div>
+        `;
 
-        }
-
-        blocCourant = "";
     }
+
+    blocCourant = "";
+}
 
     contenu.forEach(item => {
 
@@ -197,20 +200,26 @@ function generateHTML(ord) {
     border-top: 2px solid #2563eb;
     margin: 12px 0;
 }
-    .contenu span {
+.contenu {
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: normal;
+}
+
+.line {
+    display: block;
     white-space: pre-wrap;
-    display: inline;
+}
+
+b {
+    font-weight: bold;
 }
     .bold {
     font-weight: bold;
     display: inline;
     white-space: pre-wrap;
 }
-    .contenu {
-    font-size: 15px;
-    line-height: 1.6;
-    white-space: normal;
-}
+
 
 /* ==============================
    CORRECTIF PAGINATION
@@ -263,6 +272,17 @@ table {
 tr {
     page-break-inside: avoid;
     break-inside: avoid;
+}
+    .line {
+    display: block;
+}
+
+b {
+    font-weight: bold;
+}
+
+.newline {
+    height: 1em;
 }
         </style>
     </head>
@@ -338,12 +358,9 @@ async function ordToPDF(ord) {
                 format: 'a4',
                 orientation: 'portrait'
             },
-            pagebreak: {
-                // 'css'    -> respecte les page-break-inside: avoid ajoutés ci-dessus
-                // 'legacy' -> filet de sécurité pour les éléments non couverts par 'css'
-                mode: ['css', 'legacy'],
-                avoid: ['.bloc', 'table', 'tr', '.header', '.titre', '.patient', '.signature']
-            }
+           pagebreak: {
+    mode: ['css']
+}
         })
         .from(container)
         .outputPdf('blob');

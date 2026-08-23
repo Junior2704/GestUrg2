@@ -500,71 +500,54 @@ async function chargerDocuments() {
         container.innerHTML = "";
 
 
-        resultat.documents.forEach(
-            document => {
+ resultat.documents.forEach(
+    doc => {
 
-                const element =
-                    document.createElement(
-                        "div"
-                    );
+        const element =
+            document.createElement("div");
 
-                element.className =
-                    "document";
+        element.className =
+            "document";
 
+        element.innerHTML = `
 
-                element.innerHTML = `
+            <div class="document-info">
 
-                    <div class="document-info">
+                <div class="document-title">
+                    ${escapeHtml(
+                        doc.titre ||
+                        "Document"
+                    )}
+                </div>
 
-                        <div class="document-title">
+                <div class="document-type">
+                    ${escapeHtml(
+                        doc.type ||
+                        "Document médical"
+                    )}
+                </div>
 
-                            ${escapeHtml(
-                                document.titre ||
-                                "Document"
-                            )}
+            </div>
 
-                        </div>
+            <button type="button">
+                Ouvrir
+            </button>
 
-                        <div class="document-type">
+        `;
 
-                            ${escapeHtml(
-                                document.type ||
-                                "Document médical"
-                            )}
+        element
+            .querySelector("button")
+            .addEventListener(
+                "click",
+                () => {
+                    ouvrirDocument(doc.id);
+                }
+            );
 
-                        </div>
+        container.appendChild(element);
 
-                    </div>
-
-                    <button>
-                        Ouvrir
-                    </button>
-
-                `;
-
-
-                element
-                    .querySelector("button")
-                    .addEventListener(
-                        "click",
-                        () => {
-
-                            ouvrirDocument(
-                                document.id
-                            );
-
-                        }
-                    );
-
-
-                container.appendChild(
-                    element
-                );
-
-            }
-        );
-
-
+    }
+);
     } catch (error) {
 
         console.error(error);

@@ -1741,37 +1741,40 @@ if (!ord.patient) {
 
   if (patientId) {
 
-    try {
+  try {
 
-const documentRef = doc(collection(db, "documents"));
-      const dateFormatted = formatDate(new Date());
+    // Création d'une référence avec un ID unique
+    const documentRef = doc(collection(db, "documents"));
+    const dateFormatted = formatDate(new Date());
 
-      window.pdfIdExistante = documentRef;
+    // On conserve l'ID si nécessaire pour la suite
+    window.pdfIdExistante = documentRef.id;
 
-      await setDoc(
-        doc(db, "documents", documentRef),
-        {
-          patientId: patientId,
-          dateCreation: dateFormatted,
+    // Enregistrement directement avec la référence créée
+    await setDoc(documentRef, {
+      patientId: patientId,
+      dateCreation: dateFormatted,
+      type: "Ordonnance médicale",
+      contenu: prescriptionText,
 
-          type: "Ordonnance médicale",
-contenu: prescriptionText,
-          // 🔥 NOUVEAU : stockage structuré
-          ord: ord,
+      // Stockage structuré
+      ord: ord
+    });
 
-        }
-      );
+    console.log(
+      "✅ Ordonnance enregistrée avec ID unique :",
+      documentRef.id
+    );
 
-      console.log("✅ Ordonnance enregistrée avec ID unique :", documentRef);
-        await chargerAnciennesOrdonnances();
-      afficherBulle("✅ Ordonnance enregistrée !", "success");
-    
+    await chargerAnciennesOrdonnances();
 
-    } catch (err) {
-      console.error(err);
-    }
+    afficherBulle("✅ Ordonnance enregistrée !", "success");
 
+  } catch (err) {
+    console.error("❌ Erreur enregistrement ordonnance :", err);
   }
+
+}
 
 }
 

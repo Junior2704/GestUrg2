@@ -1743,13 +1743,13 @@ if (!ord.patient) {
 
     try {
 
-      const idUnique = Math.random().toString(36).substring(2, 10);
+const documentRef = doc(collection(db, "documents"));
       const dateFormatted = formatDate(new Date());
 
-      window.pdfIdExistante = idUnique;
+      window.pdfIdExistante = documentRef;
 
       await setDoc(
-        doc(db, "documents", idUnique),
+        doc(db, "documents", documentRef),
         {
           patientId: patientId,
           dateCreation: dateFormatted,
@@ -1762,7 +1762,7 @@ contenu: prescriptionText,
         }
       );
 
-      console.log("✅ Ordonnance enregistrée avec ID unique :", idUnique);
+      console.log("✅ Ordonnance enregistrée avec ID unique :", documentRef);
         await chargerAnciennesOrdonnances();
       afficherBulle("✅ Ordonnance enregistrée !", "success");
     

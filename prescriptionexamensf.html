@@ -681,7 +681,7 @@ window.masquerLoader = function() {
     }, 300); // délai pour l’animation
   }
 };
-function construireORD() {
+async function construireORD() {
 
   // 🔥 au lieu du textarea → examens
 const prescriptionText = construirePrescriptionText();
@@ -689,9 +689,17 @@ const prescriptionText = construirePrescriptionText();
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
 const inputDate = document.getElementById("patient-birthdate");
+const id = new URLSearchParams(window.location.search).get('id');
 
 let dateNaissance = "";
+const docRef = doc(db, "patients", id);
+const docSnap = await getDoc(docRef);
 
+      const patient = docSnap.data();
+  const editor = document.getElementById("prescription-text");
+  const hospitalisationId =
+    patient.hospitalisationActiveId ||
+    "";
 if (inputDate?.value) {
   const date = new Date(inputDate.value);
   dateNaissance = date.toLocaleDateString("fr-FR");
@@ -749,7 +757,7 @@ contenu.push({ type: "newline" });
     },
 
     contenu: contenu,
-
+hospitalisationId : hospitalisationId,
     signature: true
   };
 }

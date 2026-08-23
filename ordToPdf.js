@@ -3,6 +3,15 @@
 // ==============================
 // CONTENU RENDER
 // ==============================
+//
+// CORRECTIF PAGINATION :
+// Le contenu structuré n'est plus injecté dans UN SEUL <span> géant
+// (impossible à protéger d'une coupure de page). Il est maintenant
+// découpé en "blocs" indépendants (un par groupe de lignes entre deux
+// "newline"/"separator"), chacun avec page-break-inside: avoid.
+// html2pdf (mode 'css') peut ainsi éviter de couper un bloc en deux
+// et le fait basculer entier sur la page suivante si besoin.
+// ==============================
 function renderContenu(contenu) {
 
     // ==================================================
@@ -12,14 +21,16 @@ function renderContenu(contenu) {
     if (typeof contenu === "string") {
 
         return `
-            <span class="line">
-                ${contenu
-                    .replaceAll("&", "&amp;")
-                    .replaceAll("<", "&lt;")
-                    .replaceAll(">", "&gt;")
-                    .replaceAll("\n", "<br>")
-                }
-            </span>
+            <div class="bloc">
+                <span class="line">
+                    ${contenu
+                        .replaceAll("&", "&amp;")
+                        .replaceAll("<", "&lt;")
+                        .replaceAll(">", "&gt;")
+                        .replaceAll("\n", "<br>")
+                    }
+                </span>
+            </div>
         `;
 
     }
@@ -37,12 +48,23 @@ function renderContenu(contenu) {
 
 
     // ==================================================
-    // CONTENU STRUCTURÉ
+    // CONTENU STRUCTURÉ -> DÉCOUPAGE EN BLOCS
     // ==================================================
 
-    let html =
-        `<span class="line">`;
+    let html = "";
+    let blocCourant = "";
 
+    function flushBloc() {
+
+        if (blocCourant.trim() !== "") {
+
+            html +=
+                `<div class="bloc"><span class="line">${blocCourant}</span></div>`;
+
+        }
+
+        blocCourant = "";
+    }
 
     contenu.forEach(item => {
 
@@ -50,7 +72,7 @@ function renderContenu(contenu) {
 
             case "text":
 
-                html +=
+                blocCourant +=
                     item.value || "";
 
                 break;
@@ -58,7 +80,7 @@ function renderContenu(contenu) {
 
             case "bold":
 
-                html +=
+                blocCourant +=
                     `<b>${item.value || ""}</b>`;
 
                 break;
@@ -66,7 +88,9 @@ function renderContenu(contenu) {
 
             case "newline":
 
-                html +=
+                // Un saut de ligne reste À L'INTÉRIEUR du bloc courant
+                // (on veut garder un label + sa valeur ensemble).
+                blocCourant +=
                     `<div class="newline"></div>`;
 
                 break;
@@ -74,8 +98,12 @@ function renderContenu(contenu) {
 
             case "separator":
 
+                // Le séparateur ferme le bloc courant (nouvelle section)
+                // et devient lui-même un bloc protégé.
+                flushBloc();
+
                 html +=
-                    `<div class="separator"></div>`;
+                    `<div class="bloc separator-bloc"><div class="separator"></div></div>`;
 
                 break;
 
@@ -83,10 +111,7 @@ function renderContenu(contenu) {
 
     });
 
-
-    html +=
-        `</span>`;
-
+    flushBloc();
 
     return html;
 
@@ -124,6 +149,8 @@ function generateHTML(ord) {
                 justify-content: space-between;
                 border-bottom: 2px solid #2563eb;
                 padding-bottom: 10px;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
             .logo { height: 70px; }
@@ -133,6 +160,8 @@ function generateHTML(ord) {
                 font-size: 24px;
                 margin: 20px 0;
                 color: #2563eb;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
         .patient {
@@ -141,12 +170,16 @@ function generateHTML(ord) {
     border-radius: 8px;
     margin-bottom: 20px;
     font-size: 14px;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 
             .signature {
                 margin-top: 30px;
                 text-align: right;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 .separator {
     border-top: 2px solid #2563eb;
@@ -165,6 +198,23 @@ function generateHTML(ord) {
     font-size: 15px;
     line-height: 1.6;
     white-space: normal;
+}
+
+/* ==============================
+   CORRECTIF PAGINATION
+   Chaque bloc (section / paragraphe) ne doit jamais
+   être coupé au milieu par un saut de page. S'il ne
+   tient pas dans l'espace restant, il bascule entier
+   sur la page suivante.
+   ============================== */
+.bloc {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 4px;
+}
+
+.bloc.separator-bloc {
+    margin-bottom: 8px;
 }
 
 .line {
@@ -190,6 +240,17 @@ b {
     max-height: 60px;
     max-width: 150px;
     margin-top: 8px;
+}
+
+/* Tableaux (constantes, actes, médicaments, documents, journal) :
+   jamais coupés au milieu d'une ligne */
+table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
         </style>
     </head>
@@ -266,7 +327,10 @@ async function ordToPDF(ord) {
                 orientation: 'portrait'
             },
             pagebreak: {
-                mode: ['css']
+                // 'css'    -> respecte les page-break-inside: avoid ajoutés ci-dessus
+                // 'legacy' -> filet de sécurité pour les éléments non couverts par 'css'
+                mode: ['css', 'legacy'],
+                avoid: ['.bloc', 'table', 'tr', '.header', '.titre', '.patient', '.signature']
             }
         })
         .from(container)

@@ -5240,35 +5240,29 @@ async function executerCloture() {
         );
 
 
-        const accessResponse =
-            await fetch(
-                "https://gesturg2-server.onrender.com/api/patient-access/create",
-                {
+      const currentUser = getAuth().currentUser;
 
-                    method:
-                        "POST",
+if (!currentUser) {
+    throw new Error("Utilisateur non authentifié (session Firebase expirée)");
+}
 
-                    credentials:
-                        "include",
+const idToken = await currentUser.getIdToken(/* forceRefresh */ true);
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            patientId:
-                                patientId,
-
-                            hospitalisationId:
-                                hospitalisationId
-
-                        })
-
-                }
-            );
+const accessResponse = await fetch(
+    "https://gesturg2-server.onrender.com/api/patient-access/create",
+    {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`   // ← ajouté
+        },
+        body: JSON.stringify({
+            patientId: patientId,
+            hospitalisationId: hospitalisationId
+        })
+    }
+);
 
 
         const accessResult =

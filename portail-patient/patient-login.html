@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Accès patient - GestUrg2</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-family:
+        Inter,
+        Arial,
+        sans-serif;
+
+    background:
+        #f4f7fa;
+
+}
+
+.card {
+
+    width: 420px;
+
+    max-width:
+        calc(100% - 30px);
+
+    background:
+        white;
+
+    border-radius:
+        18px;
+
+    padding:
+        35px;
+
+    box-shadow:
+        0 10px 40px
+        rgba(0,0,0,.10);
+
+    text-align:
+        center;
+
+}
+
+.logo {
+
+    width:
+        80px;
+
+    height:
+        80px;
+
+    object-fit:
+        contain;
+
+    margin-bottom:
+        15px;
+
+}
+
+h1 {
+
+    margin:
+        0 0 10px;
+
+    color:
+        #0078d4;
+
+}
+
+.subtitle {
+
+    color:
+        #666;
+
+    margin-bottom:
+        30px;
+
+}
+
+label {
+
+    display:
+        block;
+
+    text-align:
+        left;
+
+    font-weight:
+        600;
+
+    margin-bottom:
+        8px;
+
+}
+
+input {
+
+    width:
+        100%;
+
+    padding:
+        14px;
+
+    border:
+        1px solid #ddd;
+
+    border-radius:
+        10px;
+
+    font-size:
+        16px;
+
+    margin-bottom:
+        15px;
+
+}
+
+button {
+
+    width:
+        100%;
+
+    padding:
+        14px;
+
+    border:
+        none;
+
+    border-radius:
+        10px;
+
+    background:
+        #0078d4;
+
+    color:
+        white;
+
+    font-size:
+        16px;
+
+    font-weight:
+        600;
+
+    cursor:
+        pointer;
+
+}
+
+button:disabled {
+
+    opacity:
+        .6;
+
+    cursor:
+        not-allowed;
+
+}
+
+#error {
+
+    display:
+        none;
+
+    background:
+        #ffe5e5;
+
+    color:
+        #c62828;
+
+    padding:
+        12px;
+
+    border-radius:
+        10px;
+
+    margin-bottom:
+        20px;
+
+}
+
+#loading {
+
+    display:
+        none;
+
+    color:
+        #666;
+
+    margin:
+        20px 0;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="card">
+
+    <img
+        src="logog2.png"
+        class="logo"
+        alt="GestUrg2"
+    >
+
+    <h1>
+        Espace patient
+    </h1>
+
+    <div class="subtitle">
+        Vérification de votre identité
+    </div>
+
+
+    <div id="loading">
+        Vérification du lien...
+    </div>
+
+
+    <div id="error"></div>
+
+
+    <div id="formulaire">
+
+        <label for="dateNaissance">
+            Date de naissance
+        </label>
+
+        <input
+            id="dateNaissance"
+            type="date"
+            autocomplete="bday"
+        >
+
+        <button
+            id="btnConnexion"
+            type="button"
+        >
+            Accéder à mes documents
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const SERVER =
+    "https://gesturg2-server.onrender.com";
+
+
+// ======================================================
+// RÉCUPÉRER LE TOKEN
+// ======================================================
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const token =
+    params.get("token");
+
+
+// ======================================================
+// ÉLÉMENTS
+// ======================================================
+
+const loading =
+    document.getElementById(
+        "loading"
+    );
+
+const errorElement =
+    document.getElementById(
+        "error"
+    );
+
+const formulaire =
+    document.getElementById(
+        "formulaire"
+    );
+
+const dateNaissance =
+    document.getElementById(
+        "dateNaissance"
+    );
+
+const btnConnexion =
+    document.getElementById(
+        "btnConnexion"
+    );
+
+
+// ======================================================
+// AFFICHER ERREUR
+// ======================================================
+
+function afficherErreur(message) {
+
+    errorElement.textContent =
+        message;
+
+    errorElement.style.display =
+        "block";
+
+}
+
+
+// ======================================================
+// VÉRIFIER LE TOKEN
+// ======================================================
+
+async function verifierLien() {
+
+    if (!token) {
+
+        formulaire.style.display =
+            "none";
+
+        afficherErreur(
+            "Lien d'accès manquant ou invalide."
+        );
+
+        return;
+
+    }
+
+
+    loading.style.display =
+        "block";
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${SERVER}/api/patient-access/verify`,
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            token
+                        })
+
+                }
+            );
+
+
+        const resultat =
+            await response.json();
+
+
+        if (!resultat.success) {
+
+            formulaire.style.display =
+                "none";
+
+            afficherErreur(
+                resultat.error ||
+                "Lien invalide ou expiré."
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "Lien valide :",
+            resultat
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        formulaire.style.display =
+            "none";
+
+        afficherErreur(
+            "Impossible de contacter le serveur."
+        );
+
+    } finally {
+
+        loading.style.display =
+            "none";
+
+    }
+
+}
+
+
+// ======================================================
+// AUTHENTIFICATION
+// ======================================================
+
+btnConnexion.addEventListener(
+    "click",
+    async () => {
+
+        errorElement.style.display =
+            "none";
+
+
+        if (!dateNaissance.value) {
+
+            afficherErreur(
+                "Veuillez saisir votre date de naissance."
+            );
+
+            return;
+
+        }
+
+
+        btnConnexion.disabled =
+            true;
+
+        btnConnexion.textContent =
+            "Vérification...";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${SERVER}/api/patient-access/authenticate`,
+                    {
+
+                        method:
+                            "POST",
+
+                        credentials:
+                            "include",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                token,
+
+                                dateNaissance:
+                                    dateNaissance.value
+
+                            })
+
+                    }
+                );
+
+
+            const resultat =
+                await response.json();
+
+
+            if (!resultat.success) {
+
+                afficherErreur(
+                    resultat.error ||
+                    "Authentification impossible."
+                );
+
+                return;
+
+            }
+
+
+            console.log(
+                "Authentification réussie",
+                resultat
+            );
+
+
+            // IMPORTANT :
+            // le token ne sera plus nécessaire.
+            // La session est maintenant portée
+            // par le cookie HTTPOnly.
+
+            window.location.href =
+                "patient.html";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            afficherErreur(
+                "Impossible de contacter le serveur."
+            );
+
+        } finally {
+
+            btnConnexion.disabled =
+                false;
+
+            btnConnexion.textContent =
+                "Accéder à mes documents";
+
+        }
+
+    }
+);
+
+
+// ======================================================
+// DÉMARRAGE
+// ======================================================
+
+verifierLien();
+
+</script>
+
+</body>
+
+</html>

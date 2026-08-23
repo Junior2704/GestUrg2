@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Mes documents - GestUrg2</title>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    font-family:
+        Inter,
+        Arial,
+        sans-serif;
+
+    background:
+        #f4f7fa;
+
+    color:
+        #222;
+
+}
+
+
+header {
+
+    background:
+        #0078d4;
+
+    color:
+        white;
+
+    padding:
+        18px 25px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+}
+
+
+header h1 {
+
+    margin:
+        0;
+
+    font-size:
+        22px;
+
+}
+
+
+.logout {
+
+    border:
+        none;
+
+    background:
+        rgba(255,255,255,.15);
+
+    color:
+        white;
+
+    padding:
+        10px 15px;
+
+    border-radius:
+        8px;
+
+    cursor:
+        pointer;
+
+}
+
+
+.container {
+
+    max-width:
+        900px;
+
+    margin:
+        30px auto;
+
+    padding:
+        0 20px;
+
+}
+
+
+.patient-card {
+
+    background:
+        white;
+
+    padding:
+        25px;
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 5px 20px
+        rgba(0,0,0,.07);
+
+    margin-bottom:
+        25px;
+
+}
+
+
+.patient-card h2 {
+
+    margin-top:
+        0;
+
+}
+
+
+.documents {
+
+    display:
+        grid;
+
+    gap:
+        15px;
+
+}
+
+
+.document {
+
+    background:
+        white;
+
+    border-radius:
+        12px;
+
+    padding:
+        18px;
+
+    box-shadow:
+        0 4px 15px
+        rgba(0,0,0,.06);
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        15px;
+
+}
+
+
+.document-info {
+
+    flex:
+        1;
+
+}
+
+
+.document-title {
+
+    font-weight:
+        600;
+
+    margin-bottom:
+        5px;
+
+}
+
+
+.document-type {
+
+    color:
+        #777;
+
+    font-size:
+        14px;
+
+}
+
+
+.document button {
+
+    border:
+        none;
+
+    background:
+        #0078d4;
+
+    color:
+        white;
+
+    padding:
+        10px 15px;
+
+    border-radius:
+        8px;
+
+    cursor:
+        pointer;
+
+}
+
+
+.message {
+
+    text-align:
+        center;
+
+    padding:
+        40px;
+
+    color:
+        #777;
+
+}
+
+
+.error {
+
+    color:
+        #c62828;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>
+        GestUrg2 — Espace patient
+    </h1>
+
+    <button
+        class="logout"
+        id="btnLogout"
+    >
+        Se déconnecter
+    </button>
+
+</header>
+
+
+<div class="container">
+
+
+    <div
+        class="patient-card"
+        id="patientCard"
+    >
+
+        Chargement...
+
+    </div>
+
+
+    <h2>
+        Mes documents
+    </h2>
+
+
+    <div
+        id="documents"
+        class="documents"
+    >
+
+        <div class="message">
+            Chargement des documents...
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const SERVER =
+    "https://gesturg2-server.onrender.com";
+
+
+let session = null;
+
+
+// ======================================================
+// CHARGER LA SESSION
+// ======================================================
+
+async function chargerSession() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${SERVER}/api/patient-access/session`,
+                {
+
+                    method:
+                        "GET",
+
+                    credentials:
+                        "include"
+
+                }
+            );
+
+
+        const resultat =
+            await response.json();
+
+
+        if (!resultat.success) {
+
+            window.location.href =
+                "patient-login.html";
+
+            return false;
+
+        }
+
+
+        session =
+            resultat;
+
+
+        console.log(
+            "Session patient :",
+            session
+        );
+
+
+        afficherPatient();
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "patientCard"
+        ).innerHTML = `
+            <div class="error">
+                Impossible de contacter le serveur.
+            </div>
+        `;
+
+        return false;
+
+    }
+
+}
+
+
+// ======================================================
+// AFFICHER PATIENT
+// ======================================================
+
+function afficherPatient() {
+
+    const patient =
+        session.patient;
+
+
+    document.getElementById(
+        "patientCard"
+    ).innerHTML = `
+
+        <h2>
+            Bonjour ${escapeHtml(
+                patient.prenom
+            )} ${escapeHtml(
+                patient.nom
+            )}
+        </h2>
+
+        <p>
+            Vous êtes connecté à votre espace patient.
+        </p>
+
+    `;
+
+}
+
+
+// ======================================================
+// CHARGER DOCUMENTS
+// ======================================================
+
+async function chargerDocuments() {
+
+    const container =
+        document.getElementById(
+            "documents"
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${SERVER}/api/patient-access/documents`,
+                {
+
+                    method:
+                        "GET",
+
+                    credentials:
+                        "include"
+
+                }
+            );
+
+
+        const resultat =
+            await response.json();
+
+
+        if (!resultat.success) {
+
+            if (
+                response.status === 401
+            ) {
+
+                window.location.href =
+                    "patient-login.html";
+
+                return;
+
+            }
+
+
+            container.innerHTML = `
+                <div class="message">
+                    ${escapeHtml(
+                        resultat.error ||
+                        "Impossible de charger les documents."
+                    )}
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        if (
+            !resultat.documents ||
+            resultat.documents.length === 0
+        ) {
+
+            container.innerHTML = `
+                <div class="message">
+                    Aucun document disponible.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML = "";
+
+
+        resultat.documents.forEach(
+            document => {
+
+                const element =
+                    document.createElement(
+                        "div"
+                    );
+
+                element.className =
+                    "document";
+
+
+                element.innerHTML = `
+
+                    <div class="document-info">
+
+                        <div class="document-title">
+
+                            ${escapeHtml(
+                                document.titre ||
+                                "Document"
+                            )}
+
+                        </div>
+
+                        <div class="document-type">
+
+                            ${escapeHtml(
+                                document.type ||
+                                "Document médical"
+                            )}
+
+                        </div>
+
+                    </div>
+
+                    <button>
+                        Ouvrir
+                    </button>
+
+                `;
+
+
+                element
+                    .querySelector("button")
+                    .addEventListener(
+                        "click",
+                        () => {
+
+                            ouvrirDocument(
+                                document.id
+                            );
+
+                        }
+                    );
+
+
+                container.appendChild(
+                    element
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML = `
+            <div class="message">
+                Impossible de charger les documents.
+            </div>
+        `;
+
+    }
+
+}
+
+
+// ======================================================
+// OUVRIR UN DOCUMENT
+// ======================================================
+
+async function ouvrirDocument(
+    documentId
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                `${SERVER}/api/patient-access/documents/${encodeURIComponent(documentId)}`,
+                {
+
+                    method:
+                        "GET",
+
+                    credentials:
+                        "include"
+
+                }
+            );
+
+
+        const resultat =
+            await response.json();
+
+
+        if (!resultat.success) {
+
+            alert(
+                resultat.error ||
+                "Impossible d'ouvrir le document."
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "Document autorisé :",
+            resultat.document
+        );
+
+
+        /*
+         * POUR L'INSTANT :
+         * on affiche le contenu retourné.
+         *
+         * On branchera ensuite ici ton viewer PDF.
+         */
+
+        console.log(
+            resultat.document
+        );
+
+
+        alert(
+            "Document récupéré. Voir la console."
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Impossible de contacter le serveur."
+        );
+
+    }
+
+}
+
+
+// ======================================================
+// DÉCONNEXION
+// ======================================================
+
+document
+    .getElementById("btnLogout")
+    .addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                await fetch(
+                    `${SERVER}/api/patient-access/logout`,
+                    {
+
+                        method:
+                            "POST",
+
+                        credentials:
+                            "include"
+
+                    }
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+
+            window.location.href =
+                "patient-login.html";
+
+        }
+    );
+
+
+// ======================================================
+// PROTECTION XSS
+// ======================================================
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+// ======================================================
+// DÉMARRAGE
+// ======================================================
+
+(async () => {
+
+    const connecte =
+        await chargerSession();
+
+    if (!connecte) {
+        return;
+    }
+
+    await chargerDocuments();
+
+})();
+
+</script>
+
+</body>
+
+</html>

@@ -4,34 +4,92 @@
 // CONTENU RENDER
 // ==============================
 function renderContenu(contenu) {
-    let html = `<span class="line">`;
+
+    // ==================================================
+    // CONTENU TEXTE SIMPLE
+    // ==================================================
+
+    if (typeof contenu === "string") {
+
+        return `
+            <span class="line">
+                ${contenu
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll("\n", "<br>")
+                }
+            </span>
+        `;
+
+    }
+
+
+    // ==================================================
+    // CONTENU VIDE
+    // ==================================================
+
+    if (!Array.isArray(contenu)) {
+
+        return "";
+
+    }
+
+
+    // ==================================================
+    // CONTENU STRUCTURÉ
+    // ==================================================
+
+    let html =
+        `<span class="line">`;
+
 
     contenu.forEach(item => {
 
         switch (item.type) {
 
             case "text":
-                html += `${item.value}`;
+
+                html +=
+                    item.value || "";
+
                 break;
+
 
             case "bold":
-                html += `<b>${item.value}</b>`;
+
+                html +=
+                    `<b>${item.value || ""}</b>`;
+
                 break;
 
-           case "newline":
-    html += `<div class="newline"></div>`;
-    break;
 
-case "separator":
-    html += `<div class="separator"></div>`;
-    break;
+            case "newline":
 
-            
+                html +=
+                    `<div class="newline"></div>`;
+
+                break;
+
+
+            case "separator":
+
+                html +=
+                    `<div class="separator"></div>`;
+
+                break;
+
         }
+
     });
 
-    html += `</span>`;
+
+    html +=
+        `</span>`;
+
+
     return html;
+
 }
 
 // ==============================

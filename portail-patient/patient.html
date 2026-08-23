@@ -11,7 +11,11 @@
 >
 
 <title>Mes documents - GestUrg2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+<script src="../ordToPdf.js"></script>
 
 <style>
 
@@ -251,7 +255,102 @@ header h1 {
         #c62828;
 
 }
+/* ======================================================
+   VIEWER PDF
+====================================================== */
 
+.pdf-viewer {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: #111;
+
+    z-index: 99999;
+
+    display: none;
+
+    flex-direction: column;
+
+}
+
+
+/* HEADER */
+
+.pdf-viewer-header {
+
+    height: 60px;
+
+    flex-shrink: 0;
+
+    background: #0078d4;
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 20px;
+
+    font-weight: 600;
+
+}
+
+
+#btnFermerPdf {
+
+    border: none;
+
+    background: rgba(255,255,255,.15);
+
+    color: white;
+
+    padding: 9px 15px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+}
+
+
+#btnFermerPdf:hover {
+
+    background: rgba(255,255,255,.25);
+
+}
+
+
+/* PDF */
+
+.pdf-viewer-content {
+
+    flex: 1;
+
+    min-height: 0;
+
+    background: #333;
+
+}
+
+
+#pdfFrame {
+
+    width: 100%;
+
+    height: 100%;
+
+    border: none;
+
+    background: white;
+
+}
 </style>
 
 </head>
@@ -306,7 +405,38 @@ header h1 {
     </div>
 
 </div>
+<!-- ======================================================
+     VIEWER PDF
+====================================================== -->
 
+<div id="pdfViewer" class="pdf-viewer">
+
+    <div class="pdf-viewer-header">
+
+        <div id="pdfViewerTitle">
+            Document
+        </div>
+
+        <button
+            type="button"
+            id="btnFermerPdf"
+        >
+            ✕ Fermer
+        </button>
+
+    </div>
+
+
+    <div class="pdf-viewer-content">
+
+        <iframe
+            id="pdfFrame"
+            title="Document PDF"
+        ></iframe>
+
+    </div>
+
+</div>
 
 <script>
 
@@ -567,23 +697,42 @@ async function chargerDocuments() {
 // OUVRIR UN DOCUMENT
 // ======================================================
 
-async function ouvrirDocument(
-    documentId
-) {
+async function ouvrirDocument(documentId) {
+
+    const viewer =
+        document.getElementById("pdfViewer");
+
+    const frame =
+        document.getElementById("pdfFrame");
+
+    const titre =
+        document.getElementById("pdfViewerTitle");
+
 
     try {
+
+        // ==================================================
+        // AFFICHER LE VIEWER
+        // ==================================================
+
+        viewer.style.display = "flex";
+
+        titre.textContent =
+            "Chargement du document...";
+
+        frame.src = "about:blank";
+
+
+        // ==================================================
+        // RÉCUPÉRER LE DOCUMENT
+        // ==================================================
 
         const response =
             await fetch(
                 `${SERVER}/api/patient-access/documents/${encodeURIComponent(documentId)}`,
                 {
-
-                    method:
-                        "GET",
-
-                    credentials:
-                        "include"
-
+                    method: "GET",
+                    credentials: "include"
                 }
             );
 
@@ -592,7 +741,13 @@ async function ouvrirDocument(
             await response.json();
 
 
+        // ==================================================
+        // ERREUR
+        // ==================================================
+
         if (!resultat.success) {
+
+            fermerViewerPdf();
 
             alert(
                 resultat.error ||
@@ -604,42 +759,156 @@ async function ouvrirDocument(
         }
 
 
-        console.log(
-            "Document autorisé :",
-            resultat.document
-        );
+        const documentData =
+            resultat.document;
 
 
-        /*
-         * POUR L'INSTANT :
-         * on affiche le contenu retourné.
-         *
-         * On branchera ensuite ici ton viewer PDF.
-         */
+        // ==================================================
+        // VÉRIFICATION
+        // ==================================================
 
-        console.log(
-            resultat.document
-        );
+        if (
+            !documentData.ord ||
+            typeof documentData.ord !== "object"
+        ) {
+
+            fermerViewerPdf();
+
+            alert(
+                "Ce document ne possède pas de format ORD valide."
+            );
+
+            return;
+
+        }
 
 
-        alert(
-            "Document récupéré. Voir la console."
-        );
+        // ==================================================
+        // TITRE
+        // ==================================================
+
+        titre.textContent =
+            documentData.ord.titre ||
+            documentData.type ||
+            "Document médical";
+
+
+        // ==================================================
+        // GÉNÉRER LE PDF
+        // ==================================================
+
+        const pdfBlob =
+            await ordToPDF(
+                documentData.ord
+            );
+
+
+        // ==================================================
+        // CRÉER URL TEMPORAIRE
+        // ==================================================
+
+        const pdfUrl =
+            URL.createObjectURL(
+                pdfBlob
+            );
+
+
+        // ==================================================
+        // AFFICHER PDF
+        // ==================================================
+
+        frame.src =
+            pdfUrl;
+
+
+        // ==================================================
+        // NETTOYAGE
+        // ==================================================
+
+        frame.dataset.pdfUrl =
+            pdfUrl;
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Erreur ouverture document :",
+            error
+        );
+
+        fermerViewerPdf();
 
         alert(
-            "Impossible de contacter le serveur."
+            "Impossible de générer le PDF."
         );
 
     }
 
 }
 
+function fermerViewerPdf() {
 
+    const viewer =
+        document.getElementById("pdfViewer");
+
+    const frame =
+        document.getElementById("pdfFrame");
+
+
+    // Libérer l'URL Blob
+    const ancienneUrl =
+        frame.dataset.pdfUrl;
+
+
+    if (ancienneUrl) {
+
+        URL.revokeObjectURL(
+            ancienneUrl
+        );
+
+    }
+
+
+    frame.dataset.pdfUrl = "";
+
+    frame.src = "about:blank";
+
+    viewer.style.display = "none";
+
+}
+document
+    .getElementById("btnFermerPdf")
+    .addEventListener(
+        "click",
+        fermerViewerPdf
+    );
+    
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            const viewer =
+                document.getElementById(
+                    "pdfViewer"
+                );
+
+            if (
+                viewer.style.display ===
+                "flex"
+            ) {
+
+                fermerViewerPdf();
+
+            }
+
+        }
+
+    }
+);
 // ======================================================
 // DÉCONNEXION
 // ======================================================

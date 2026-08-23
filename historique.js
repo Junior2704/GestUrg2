@@ -675,7 +675,8 @@ export async function construireHistoriqueOrd(db, patientId, hospitalisationId, 
             signature: medecin.signature || null
         },
 
-        contenu
+        contenu,
+        hospitalisationId : hospitalisationId
 
     };
 

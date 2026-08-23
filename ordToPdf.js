@@ -20,18 +20,18 @@ function renderContenu(contenu) {
 
     if (typeof contenu === "string") {
 
-        return `
-            <div class="bloc">
-                <span class="line">
-                    ${contenu
-                        .replaceAll("&", "&amp;")
-                        .replaceAll("<", "&lt;")
-                        .replaceAll(">", "&gt;")
-                        .replaceAll("\n", "<br>")
-                    }
-                </span>
-            </div>
-        `;
+      return `
+    <div class="bloc">
+        <div class="line">
+            ${contenu
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\n", "<br>")
+            }
+        </div>
+    </div>
+`;
 
     }
 

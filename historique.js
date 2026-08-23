@@ -503,7 +503,7 @@ export async function construireHistoriqueOrd(db, patientId, hospitalisationId, 
     // ---- Hospitalisation ----
 
     contenu.push(...titreSection(
-        `🏥 Hospitalisation${numero ? " n°" + numero : hospitalisationId}${estActive ? " (EN COURS)" : ""}`
+        `🏥 Hospitalisation${numero ? " n°" + numero : " " + hospitalisationId}${estActive ? " (EN COURS)" : ""}`
     ));
     contenu.push(ligneChamp("Admission", hospi.dateDebut));
     contenu.push(ligneChamp("Sortie", hospi.dateFin || (estActive ? "En cours" : "—")));
@@ -661,7 +661,7 @@ export async function construireHistoriqueOrd(db, patientId, hospitalisationId, 
 
         lieu,
 
-        titre: `Rapport d'hospitalisation${numero ? " n°" + numero : ""}${estActive ? " — EN COURS" : ""}`,
+        titre: `Rapport d'hospitalisation${numero ? " n°" + numero : " " + hospitalisationId}${estActive ? " — EN COURS" : ""}`,
 
         patient: {
             prenom: patient.prenom || "",

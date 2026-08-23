@@ -397,5 +397,4 @@ if (_oldHtml2pdf) {
 window.ordToPDF = ordToPDF;
 window.generateHTML = generateHTML;
 window.renderContenu = renderContenu;
-
 })();

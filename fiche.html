@@ -3083,6 +3083,17 @@ z-index: 3000;
     <div style="background:#eee; border-radius: 10px; overflow:hidden; margin-top: 15px;">
       <div id="clotureBar" style="height: 12px; background-color: #0078d4; width: 0%; transition: width 0.3s;"></div>
     </div>
+    <div
+    id="clotureProgressText"
+    style="
+        margin-top:10px;
+        text-align:center;
+        color:#666;
+        font-size:14px;
+    "
+>
+    Préparation...
+</div>
     <p style="margin-top:10px; color:#666;">Merci de patienter</p>
   </div>
 </div>
@@ -4969,202 +4980,474 @@ document.getElementById("clotureBadgeInput").addEventListener("keydown", functio
 
 // 🔹 Exécute la clôture (commun aux deux méthodes de validation)
 async function executerCloture() {
+
     modalCode.style.display = "none";
     document.getElementById("modalCloture").style.display = "flex";
-const signature = window.signatureId;
 
-const signatureSnap = await getDoc(
-  doc(db, "signatures-patient", signature)
-);
-
-const signatureData = signatureSnap.data();
     const bar = document.getElementById("clotureBar");
-    bar.style.width = "0%";
-    let progress = 0;
+    const texte = document.getElementById("clotureProgressText");
 
-    const interval = setInterval(() => {
-      progress += 1;
-      bar.style.width = `${progress}%`;
-      if (progress >= 100) clearInterval(interval);
-    }, 30);
+    const signatureId = window.signatureId;
 
-    // 🕓 Simulation du traitement de clôture
-    setTimeout(async () => {
-      try {
-        // 1️⃣ Récupérer le patient
-        const patientRef = doc(db, "patients", patientId);
-        const patientSnap = await getDoc(patientRef);
-        const patientData = patientSnap.data();
-        if (!patientData) throw new Error("Patient introuvable");
+    // --------------------------------------------------
+    // PROGRESSION RÉELLE
+    // --------------------------------------------------
 
-        // 2️⃣ Déterminer l'hospitalisation active
-        const hospitalisationId = patientData.hospitalisationActiveId
-                                  || patientData.hospitalisations?.slice(-1)[0];
-        if (!hospitalisationId) {
-          afficherBulle("🚨 Aucune hospitalisation active", "warning");
-          return;
+    const totalEtapes = 8;
+    let etape = 0;
+
+    function progression(message) {
+
+        etape++;
+
+        const pourcentage =
+            Math.round((etape / totalEtapes) * 100);
+
+        bar.style.width = `${pourcentage}%`;
+
+        if (texte) {
+            texte.textContent =
+                `${message} (${pourcentage} %)`;
         }
 
-        // 3️⃣ Récupérer le document hospitalisation
-        const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-        const hospiSnap = await getDoc(hospiRef);
-if (!hospiSnap.exists()) throw new Error("Hospitalisation introuvable");
-        const hospiData = hospiSnap.data();
-        const now = new Date().toLocaleString();
+        console.log(
+            `[CLÔTURE ${pourcentage}%] ${message}`
+        );
+    }
 
-        // Identité du soignant qui clôture (déjà chargée à la connexion)
-        const medecinCloture = window.medecinNom
-          ? `${window.medecinNom}${window.medecinType ? " (" + window.medecinType + ")" : ""}`
-          : "Utilisateur inconnu";
 
-        const refusSignature = !!signatureData?.refusSignature;
+    try {
 
-        // Section "Clôture" ajoutée au rapport
+        // ==================================================
+        // 1. RÉCUPÉRER LA SIGNATURE
+        // ==================================================
+
+        progression(
+            "Vérification de la signature du patient..."
+        );
+
+        const signatureSnap = await getDoc(
+            doc(
+                db,
+                "signatures-patient",
+                signatureId
+            )
+        );
+
+        if (!signatureSnap.exists()) {
+            throw new Error(
+                "Signature patient introuvable"
+            );
+        }
+
+        const signatureData =
+            signatureSnap.data();
+
+
+        // ==================================================
+        // 2. RÉCUPÉRER LE PATIENT
+        // ==================================================
+
+        progression(
+            "Récupération du dossier patient..."
+        );
+
+        const patientRef =
+            doc(db, "patients", patientId);
+
+        const patientSnap =
+            await getDoc(patientRef);
+
+        if (!patientSnap.exists()) {
+            throw new Error(
+                "Patient introuvable"
+            );
+        }
+
+        const patientData =
+            patientSnap.data();
+
+
+        // ==================================================
+        // 3. RÉCUPÉRER L'HOSPITALISATION ACTIVE
+        // ==================================================
+
+        progression(
+            "Récupération de l'hospitalisation..."
+        );
+
+        const hospitalisationId =
+            patientData.hospitalisationActiveId ||
+            (
+                Array.isArray(
+                    patientData.hospitalisations
+                )
+                    ? patientData.hospitalisations.slice(-1)[0]
+                    : null
+            );
+
+        if (!hospitalisationId) {
+
+            throw new Error(
+                "Aucune hospitalisation active"
+            );
+
+        }
+
+
+        const hospiRef =
+            doc(
+                db,
+                "hospitalisations",
+                hospitalisationId
+            );
+
+        const hospiSnap =
+            await getDoc(hospiRef);
+
+        if (!hospiSnap.exists()) {
+
+            throw new Error(
+                "Hospitalisation introuvable"
+            );
+
+        }
+
+        const hospiData =
+            hospiSnap.data();
+
+
+        // ==================================================
+        // IDENTITÉ DU SOIGNANT
+        // ==================================================
+
+        const medecinCloture =
+            window.medecinNom
+                ? `${window.medecinNom}${
+                    window.medecinType
+                        ? " (" + window.medecinType + ")"
+                        : ""
+                  }`
+                : "Utilisateur inconnu";
+
+
+        const refusSignature =
+            !!signatureData?.refusSignature;
+
+
+        const now =
+            new Date().toLocaleString(
+                "fr-FR"
+            );
+
+
+        // ==================================================
+        // 4. CLÔTURER L'HOSPITALISATION
+        // ==================================================
+
+        progression(
+            "Enregistrement de la clôture..."
+        );
+
+
         const sectionCloture =
-          `Clôture :\n` +
-          `Hospitalisation clôturée le ${now} par ${medecinCloture}.\n` +
-          (refusSignature
-            ? `Signature du patient : Refus de signer.`
-            : `Signature du patient : Signée (voir signature jointe).`);
+            `Clôture :\n` +
+            `Hospitalisation clôturée le ${now} par ${medecinCloture}.\n` +
+            (
+                refusSignature
+                    ? "Signature du patient : Refus de signer."
+                    : "Signature du patient : Signée (voir signature jointe)."
+            );
 
-        // 4️⃣ Mettre à jour l'hospitalisation
-        await updateDoc(hospiRef, {
-          dateFin: now,
-          dateFinTS: Timestamp.now(),
-          signature: signature,
-            signatureStatut: signatureData?.refusSignature
-    ? "Refus de signer"
-    : "Signé",
-  signatureImage: refusSignature ? null : (signatureData?.signatureImage || null),
-  clotureAuteur: medecinCloture,
-  clotureDate: now,
-  rapport: `Rapport d'hospitalisation pour ${patientData.nom} ${patientData.prenom}.\n\n${sectionCloture}`
-        });
 
-        // Traçage de la clôture AVANT que l'hospitalisation active ne soit effacée du patient
-        await ajouterEntreeHistorique("Hospitalisation clôturée", {
-          hospitalisationId,
-          silencieux: true
-        });
-// 🔔 Notification de clôture à tous les membres de l'équipe
-        const destinatairesCloture = getUidsEquipe(hospiData.equipe);
+        await updateDoc(
+            hospiRef,
+            {
+
+                dateFin:
+                    now,
+
+                dateFinTS:
+                    Timestamp.now(),
+
+                signature:
+                    signatureId,
+
+                signatureStatut:
+                    refusSignature
+                        ? "Refus de signer"
+                        : "Signé",
+
+                signatureImage:
+                    refusSignature
+                        ? null
+                        : (
+                            signatureData?.signatureImage ||
+                            null
+                        ),
+
+                clotureAuteur:
+                    medecinCloture,
+
+                clotureDate:
+                    now,
+
+                rapport:
+                    `Rapport d'hospitalisation pour ` +
+                    `${patientData.nom} ${patientData.prenom}.\n\n` +
+                    sectionCloture
+
+            }
+        );
+
+
+        // ==================================================
+        // 5. HISTORIQUE
+        // ==================================================
+
+        progression(
+            "Enregistrement dans l'historique..."
+        );
+
+
+        await ajouterEntreeHistorique(
+            "Hospitalisation clôturée",
+            {
+                hospitalisationId,
+                silencieux: true
+            }
+        );
+
+
+        // ==================================================
+        // 6. CRÉER L'ACCÈS PATIENT
+        // ==================================================
+        //
+        // IMPORTANT :
+        // On le fait AVANT de vider hospitalisationActiveId
+        //
+        // Le serveur va :
+        // - vérifier le patient
+        // - vérifier l'hospitalisation
+        // - récupérer les documents
+        // - vérifier l'email
+        // - créer le token
+        //
+        // ==================================================
+
+        progression(
+            "Création de l'accès sécurisé patient..."
+        );
+
+
+        const accessResponse =
+            await fetch(
+                "https://gesturg2-server.onrender.com/api/patient-access/create",
+                {
+
+                    method:
+                        "POST",
+
+                    credentials:
+                        "include",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            patientId:
+                                patientId,
+
+                            hospitalisationId:
+                                hospitalisationId
+
+                        })
+
+                }
+            );
+
+
+        const accessResult =
+            await accessResponse.json();
+
+
+        if (
+            !accessResponse.ok ||
+            !accessResult.success
+        ) {
+
+            throw new Error(
+                accessResult.error ||
+                "Impossible de créer l'accès patient"
+            );
+
+        }
+
+
+        console.log(
+            "Accès patient créé :",
+            accessResult
+        );
+
+
+        // ==================================================
+        // 7. NOTIFICATION + FIN DE L'HOSPITALISATION ACTIVE
+        // ==================================================
+
+        progression(
+            "Finalisation du dossier..."
+        );
+
+
+        const destinatairesCloture =
+            getUidsEquipe(
+                hospiData.equipe
+            );
+
 
         demanderNotificationMulti(
-          destinatairesCloture,
-          "🔒 Clôture d'hospitalisation",
-          `Patient : ${patientData.prenom} ${patientData.nom}\n` +
-          `Clôturée le ${now}\n` +
-          `Par : ${medecinCloture}`
+            destinatairesCloture,
+
+            "🔒 Clôture d'hospitalisation",
+
+            `Patient : ${patientData.prenom} ${patientData.nom}\n` +
+            `Clôturée le ${now}\n` +
+            `Par : ${medecinCloture}`
         );
-        // 🔄 Mise à jour automatique du statut PDC sur le patient
-        await updateDoc(patientRef, {
-          pdcStatut: "Attente enregistrement",
-          hospitalisationActiveId: "",
-          hospitalisationActive: "false" // plus d'hospitalisation active
-        });
 
-        // ✅ Feedback UI
-        afficherBulle("✅ Hospitalisation clôturée", "success");
-        await creeraccespatient();
-const nom = patientData.nom;
-        const prenom = patientData.prenom;
-window.parent.postMessage({
-    type: "OPEN_TAB",
-    title: `Fiche Patient ${prenom} ${nom}`,
 
-    url: `fichepatient.html?id=${patientId}`
-}, "*");
-        window.parent.postMessage({ type: "CLOSE_TAB" }, "*");
+        await updateDoc(
+            patientRef,
+            {
 
-      } catch (error) {
-        console.error("Erreur clôture hospitalisation :", error);
-        afficherBulle("🚨 Erreur de clôture", "error");
-      } finally {
-        document.getElementById("modalCloture").style.display = "none";
-      }
-    }, 3200);
+                pdcStatut:
+                    "Attente enregistrement",
+
+                hospitalisationActiveId:
+                    "",
+
+                hospitalisationActive:
+                    "false"
+
+            }
+        );
+
+
+        // ==================================================
+        // 8. TERMINÉ
+        // ==================================================
+
+        progression(
+            "Clôture terminée"
+        );
+
+
+        // On force visuellement 100 %
+        bar.style.width = "100%";
+
+        if (texte) {
+            texte.textContent =
+                "Clôture terminée (100 %)";
+        }
+
+
+        afficherBulle(
+            "✅ Hospitalisation clôturée et accès patient créé",
+            "success"
+        );
+
+
+        console.log(
+            "Clôture complète :",
+            {
+                patientId,
+                hospitalisationId,
+                accessId:
+                    accessResult.accessId,
+                nombreDocuments:
+                    accessResult.nombreDocuments
+            }
+        );
+
+
+        // Petit délai pour laisser voir le 100 %
+        await new Promise(
+            resolve =>
+                setTimeout(resolve, 800)
+        );
+
+
+        // ==================================================
+        // RETOUR À LA FICHE PATIENT
+        // ==================================================
+
+        const nom =
+            patientData.nom;
+
+        const prenom =
+            patientData.prenom;
+
+
+        window.parent.postMessage(
+            {
+                type:
+                    "OPEN_TAB",
+
+                title:
+                    `Fiche Patient ${prenom} ${nom}`,
+
+                url:
+                    `fichepatient.html?id=${patientId}`
+            },
+            "*"
+        );
+
+
+        window.parent.postMessage(
+            {
+                type:
+                    "CLOSE_TAB"
+            },
+            "*"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Erreur clôture hospitalisation :",
+            error
+        );
+
+
+        afficherBulle(
+            `🚨 ${error.message || "Erreur de clôture"}`,
+            "error"
+        );
+
+
+        if (texte) {
+
+            texte.textContent =
+                "Échec de la clôture";
+
+        }
+
+
+    } finally {
+
+        document.getElementById(
+            "modalCloture"
+        ).style.display = "none";
+
+    }
+
 }
-
 import { sendSignInLinkToEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-async function creeraccespatient() {
-  afficherLoader();
-
-  try {
-    // 1. Récupérer le patient et son hospitalisation active
- const idPatient = document.getElementById("idPatient").textContent.trim();
-const patientSnap = await getDoc(doc(db, "patients", idPatient));
-    if (!patientSnap.exists()) {
-      afficherBulle("Patient introuvable", "error");
-      return;
-    }
-    const patient = patientSnap.data();
-    const hospitalisationId = patient.hospitalisationActiveId ||
-      (Array.isArray(patient.hospitalisations) ? patient.hospitalisations.slice(-1)[0] : null);
-
-    if (!hospitalisationId) {
-      afficherBulle("Aucune hospitalisation active trouvée", "warning");
-      return;
-    }
-
-    // 2. Récupérer tous les documents de cette hospitalisation
-const q = query(
-  collection(db, "documents"),
-  where("ord.hospitalisationId", "==", hospitalisationId)
-);
-const snapshot = await getDocs(q);
-
-if (snapshot.empty) {
-  afficherBulle("Aucun document à transmettre au patient", "warning");
-  return;
-}
-
-// 2bis. Récupérer les emails AVANT la boucle
-const emails = getEmailsPatient(patient.email);
-if (emails.length === 0) {
-  afficherBulle("Aucun email valide pour le patient, documents non transmis", "warning");
-  return;
-}
-
-// 3. Les copier dans la collection dédiée, avec expiration à 7 jours
-const batch = writeBatch(db);
-const dateExpiration = Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-snapshot.forEach((docSnap) => {
-  const data = docSnap.data();
-  const nouveauDocRef = doc(collection(db, "documentsPatientPortal"));
-  batch.set(nouveauDocRef, {
-    ...data,
-    documentOrigineId: docSnap.id,
-    dateExpiration,
-    emailsAutorises: emails,
-  });
-});
-
-await batch.commit();
-
-// 4. Envoyer le lien de connexion (emails déjà calculés)
-const actionCodeSettings = {
-  url: "https://junior2704.github.io/GestUrg2/portail-patient/mesdocuments",
-  handleCodeInApp: true,
-};
-await sendSignInLinkToEmail(auth, emails[0], actionCodeSettings);
-    afficherBulle("Dossier clôturé, documents transmis au patient", "success");
-
-    ajouterEntreeHistorique("Clôture de l'hospitalisation, documents transmis au patient", {
-      patientId: idPatient,
-      hospitalisationId,
-      silencieux: true,
-    });
-
-  } catch (err) {
-    console.error(err);
-    afficherBulle("Erreur lors de la clôture du dossier", "error");
-  } finally {
-    masquerLoader();
-  }
-}
-window.creeraccespatient = creeraccespatient;
 
 function getEmailsPatient(champEmail) {
   if (!champEmail) return [];

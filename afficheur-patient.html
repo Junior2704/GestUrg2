@@ -4,34 +4,67 @@
     <link rel="icon" type="image/jpeg" href="logog2.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0B544E">
   <title>Affichage Patients - Urgences</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Firebase v10 (modulaire) : importé via <script type="module"> en bas de page -->
   <link rel="preconnect" href="https://www.gstatic.com">
 
   <style>
+    :root{
+      --bg: #F6FBFA;
+      --surface: #FFFFFF;
+      --ink: #12312D;
+      --ink-soft: #4C6B66;
+      --teal: #0F766E;
+      --teal-deep: #0B544E;
+      --aqua: #DCF3F0;
+      --coral: #EF6351;
+      --coral-soft: #FDE4DF;
+      --amber: #E2A63A;
+      --amber-soft: #FBEEDA;
+      --violet: #7C5CBF;
+      --violet-soft: #EAE3F7;
+      --rose: #C2467F;
+      --rose-soft: #F8E0EC;
+      --line: #E2EEEC;
+      --radius: 22px;
+      --shadow: 0 20px 50px -25px rgba(15, 60, 55, .35);
+      --shadow-sm: 0 10px 26px -16px rgba(15, 60, 55, .35);
+      --font-display: 'Fraunces', serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    *{ box-sizing: border-box; }
+
     html, body {
       height: 100%;
       margin: 0;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #f0f7ff, #e6eef8);
-      color: #0b2240;
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1100px 500px at 90% -10%, #E7F6F3 0%, transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
+        var(--bg);
+      color: var(--ink);
       display: flex;
       flex-direction: column;
       align-items: center;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* --- HEADER --- */
     header {
       width: 100%;
-      background: linear-gradient(90deg, #0b2240 0%, #004b8d 50%, #0078d4 100%);
+      background: linear-gradient(90deg, var(--teal-deep) 0%, var(--teal) 60%, #16A398 100%);
       color: white;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 30px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      border-radius: 18px;
 	  margin-top: 20px;
     }
 
@@ -40,14 +73,17 @@
       width: auto;
       border-radius: 8px;
       object-fit: contain;
+      background: rgba(255,255,255,.9);
+      padding: 4px;
     }
 
     header h1 {
       flex: 1;
       text-align: center;
+      font-family: var(--font-display);
       font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: 1px;
+      font-weight: 600;
+      letter-spacing: .3px;
       text-transform: uppercase;
       color: #ffffff;
       margin: 0;
@@ -55,15 +91,18 @@
 
     #datetime {
       font-size: 1.1rem;
-      color: #e0ecff;
+      color: var(--aqua);
+      font-weight: 600;
     }
 
     /* === TITRES DE SECTIONS === */
 .section-title {
   width: 100%;
   text-align: center;
+  font-family: var(--font-display);
   font-size: 1.8rem;
-  color: #004b8d;
+  font-weight: 600;
+  color: var(--teal-deep);
   text-transform: uppercase;
   margin-bottom: 10px;
   letter-spacing: 0.5px;
@@ -92,11 +131,12 @@
 .card {
   flex: 1;
   min-width: 0;
-  background: white;
-  border-radius: 16px;
+  background: var(--surface);
+  border-radius: 18px;
   padding: 16px;
   text-align: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
   transition: transform 0.2s ease;
 }
 
@@ -105,25 +145,27 @@
 }
 
 .card h2 {
+  font-family: var(--font-display);
   font-size: 2.8rem;
-  color: #0b2240;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin: 0;
 }
 
 .card p {
   font-size: 1.1rem;
-  color: #64748b;
+  color: var(--ink-soft);
   margin-top: 5px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Couleurs par type */
-.card.total { border-top: 6px solid #0078d4; }
-.card.attente { border-top: 6px solid #4caf50; }
-.card.pec { border-top: 6px solid #ff9800; }
-.card.couche { border-top: 6px solid #6f42c1; }
-.card.critique { border-top: 6px solid #161414; }
-.card.admin { border-top: 6px solid #41e14e; }
+.card.total { border-top: 6px solid var(--teal); }
+.card.attente { border-top: 6px solid var(--amber); }
+.card.pec { border-top: 6px solid var(--coral); }
+.card.couche { border-top: 6px solid var(--violet); }
+.card.critique { border-top: 6px solid var(--teal-deep); }
+.card.admin { border-top: 6px solid var(--rose); }
 
 /* === SECTION : CIRCUITS PARTICULIERS === */
 #dashboard-circuits {
@@ -141,63 +183,66 @@
 }
 
 .circuit-card {
-  background: linear-gradient(135deg, #f8fbff, #eef5ff);
-  border-radius: 14px;
+  background: var(--surface);
+  border-radius: 16px;
   padding: 14px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
   text-align: center;
 }
 
 .circuit-card h3 {
+  font-family: var(--font-display);
   font-size: 2.2rem;
-  color: #0078d4;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin: 0;
 }
 
 .circuit-card p {
   font-size: 1.1rem;
-  color: #1e3a8a;
-  font-weight: 500;
+  color: var(--ink);
+  font-weight: 600;
   margin-top: 4px;
 }
 
 .circuit-attente {
   font-size: 0.85rem;
-  color: #47607f;
+  color: var(--ink-soft);
   margin-top: 6px;
   font-weight: 600;
 }
 
 .circuit-duree {
   font-size: 0.85rem;
-  color: #6b7d94;
+  color: var(--ink-soft);
   margin-top: 2px;
   font-weight: 500;
 }
 
 /* --- Couleurs personnalisées --- */
 .circuit-card.general {
-  border-top: 6px solid #1976D2; /* Bleu général */
+  border-top: 6px solid var(--teal); /* Général */
 }
 
 .circuit-card.pediatrie {
-  border-top: 6px solid #7CB342; /* Vert doux */
+  border-top: 6px solid var(--amber); /* Pédiatrie */
 }
 
 .circuit-card.traumato {
-  border-top: 6px solid #D84315; /* Orange foncé */
+  border-top: 6px solid var(--coral); /* Traumatologie */
 }
 
 .circuit-card.ophtalmo {
-  border-top: 6px solid #6A1B9A; /* Violet */
+  border-top: 6px solid var(--violet); /* Ophtalmologie */
 }
 
 .circuit-card.gyn {
-  border-top: 6px solid #C2185B; /* Rose foncé */
+  border-top: 6px solid var(--rose); /* Gynécologie */
 }
 
 .circuit-card.psy {
-  border-top: 6px solid #00897B; /* Bleu-vert apaisant */
+  border-top: 6px solid var(--teal-deep); /* Psychiatrie */
 }
 
 
@@ -214,9 +259,10 @@
   width: 95%;              /* 🔹 largeur fluide mais contenue */
   max-width: 1200px;        /* 🔹 limite maximale */
   text-align: center;
-  background: rgba(255,255,255,0.95);
-  border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 40px 20px 60px;
   position: relative;
   max-height: 340px;
@@ -224,9 +270,10 @@
   z-index: 10;
 }
     .info-title {
+      font-family: var(--font-display);
       font-size: 2rem;
-      font-weight: 700;
-      color: #004b8d;
+      font-weight: 600;
+      color: var(--teal-deep);
       margin-bottom: 25px;
     }
 
@@ -257,15 +304,16 @@
     }
 
     .step-anim .title {
+      font-family: var(--font-display);
       font-size: 2.5rem;
       font-weight: 600;
       margin-bottom: 6px;
-      color: #0b2240;
+      color: var(--ink);
     }
 
     .step-anim .text {
       font-size: 2rem;
-      color: #364152;
+      color: var(--ink-soft);
       max-width: 1100px;
       margin: 0 auto;
     }
@@ -273,8 +321,8 @@
     .note {
       margin-top: 320px;
       font-size: 1.5rem;
-      color: #1f3b70;
-      font-weight: 500;
+      color: var(--teal-deep);
+      font-weight: 600;
       position: relative;
       z-index: 20;
     }
@@ -283,7 +331,7 @@
       width: 100%;
       text-align: center;
       font-size: 0.9rem;
-      color: #556;
+      color: var(--ink-soft);
       padding-bottom: 10px;
     }
 	
@@ -301,21 +349,21 @@
 .bubble {
   max-width: 300px;
   padding: 10px 15px;
-  border-radius: 8px;
+  border-radius: 12px;
   color: white;
-  font-family: sans-serif;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  font-family: var(--font-body);
+  box-shadow: var(--shadow-sm);
   animation: fadeout 0.5s ease-in-out 1.5s forwards;
   word-wrap: break-word;
   text-align: left;
 }
 
 .administratif {
-  background-color: #2196F3; /* bleu */
+  background-color: var(--teal);
 }
 
 .alerte {
-  background-color: #f44336; /* rouge */
+  background-color: var(--coral);
 }
 
 @keyframes fadeout {
@@ -348,9 +396,10 @@
   right: 20px;
   width: 280px;
   height: calc(100vh - 140px);
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 12px;
   display: none; /* activé dynamiquement */
   z-index: 1000;
@@ -359,8 +408,10 @@
 #appels h2 {
   margin: 0 0 10px;
   text-align: center;
+  font-family: var(--font-display);
   font-size: 1.1rem;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
 }
 
 #listeAppels {
@@ -373,16 +424,16 @@
 
 #aucunAppel {
   text-align: center;
-  color: #666;
+  color: var(--ink-soft);
   font-size: 0.95rem;
   margin-top: 20px;
 }
 
 /* ===== APPEL ===== */
 .appel {
-  background: #003366;
+  background: var(--teal-deep);
   color: white;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px;
   text-align: center;
   opacity: 1;
@@ -394,8 +445,9 @@
 }
 
 .appel .numero {
+  font-family: var(--font-display);
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .appel .bureau {
@@ -407,13 +459,13 @@
 .appel.nouveau {
   opacity: 0;
   transform: translateY(-20px);
-  background-color: #005fa3;
+  background-color: var(--teal);
 }
 
 .appel.visible {
   opacity: 1;
   transform: translateY(0);
-  background-color: #003366;
+  background-color: var(--teal-deep);
 }
 /* ===== PANNEAU INFOS GAUCHE ===== */
 #infos-gauche {
@@ -422,9 +474,10 @@
   left: 20px;
   width: 280px;
   height: calc(100vh - 140px);
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 16px;
   z-index: 1000;
 
@@ -442,29 +495,31 @@
 }
 
 .heure-case {
-  background: #003366;
+  background: var(--teal-deep);
   color: #ffffff;
+  font-family: var(--font-display);
   font-size: 3.2rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 14px;
   min-width: 70px;
   text-align: center;
-  box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
 }
 
 .separateur {
+  font-family: var(--font-display);
   font-size: 3rem;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0 6px;
-  color: #003366;
+  color: var(--teal-deep);
 }
 
 /* ===== DATE ===== */
 .date {
   font-size: 1.2rem;
-  font-weight: 600;
-  color: #003366;
+  font-weight: 700;
+  color: var(--teal-deep);
   text-align: center;
 }
 
@@ -473,9 +528,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #f1f6ff;
+  background: var(--aqua);
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -496,27 +551,29 @@
 }
 
 .temps-urgences-valeur {
+  font-family: var(--font-display);
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   line-height: 1.15;
 }
 
 .temps-urgences-label {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--ink-soft);
 }
 
 .temps-urgences-sep {
   height: 1px;
-  background: #dbe4f0;
+  background: var(--line);
   margin: 2px 0;
 }
 
 #titleTempsUrgences {
+  font-family: var(--font-display);
   font-size: 1.4rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin-top: -10px;
   margin-bottom: -4px;
 }
@@ -527,7 +584,7 @@
 .rss-title {
   font-weight: 700;
   font-size: 1rem;
-  color: #003366;
+  color: var(--teal-deep);
   margin-bottom: 6px;
   text-align: center;
 }
@@ -537,12 +594,12 @@
   padding: 0;
   margin: 0;
   font-size: 0.9rem;
-  color: #1f3b70;
+  color: var(--ink-soft);
 }
 
 #rss-list li {
   padding: 6px 4px;
-  border-bottom: 1px solid #dbe4f0;
+  border-bottom: 1px solid var(--line);
 }
 
 #rss-list li:last-child {
@@ -558,29 +615,29 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #eef3ff;
+    background: var(--aqua);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
+    background: linear-gradient(180deg, var(--teal), var(--teal-deep));
     border-radius: 10px;
-    border: 2px solid #eef3ff;
+    border: 2px solid var(--aqua);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
+    background: linear-gradient(180deg, #16A398, var(--teal));
 }
 
 /* Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
+    scrollbar-color: var(--teal) var(--aqua);
 }
 #infoPlus {
   width: 100%;
-  background: #f8fbff;
-  border-radius: 12px;
+  background: var(--aqua);
+  border-radius: 14px;
   padding: 15px;
   box-sizing: border-box;
   text-align: center;
@@ -592,21 +649,22 @@
 }
 
 #infoTitre {
+  font-family: var(--font-display);
   font-size: 1.2rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin-bottom: 8px;
 }
 
 #infoTexte {
   font-size: 1rem;
   line-height: 1.4;
-  color: #1f3b70;
+  color: var(--ink-soft);
 }
 #relaxBox {
   width: 100%;
-  background: #f8fbff;
-  border-radius: 12px;
+  background: var(--aqua);
+  border-radius: 14px;
   padding: 15px;
   box-sizing: border-box;
   text-align: center;
@@ -617,48 +675,51 @@
   height: 90px;
   margin: 10px auto;
   border-radius: 50%;
-  background: radial-gradient(circle, #7ec8ff, #3d8bfd);
-  box-shadow: 0 0 20px rgba(61,139,253,.4);
+  background: radial-gradient(circle, #6FD6C9, var(--teal));
+  box-shadow: 0 0 20px rgba(15,118,110,.4);
   transition: transform 4s ease-in-out;
 }
 
 #respirationTexte {
+  font-family: var(--font-display);
   font-size: 1.4rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin-top: 25px;
 }
 #titlerespiration {
+  font-family: var(--font-display);
   font-size: 1.4rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin-top: -15px;
   margin-bottom: 28px;
 }
 #natureInfo {
   margin-top: 15px;
   font-size: 1rem;
-  color: #1f3b70;
+  color: var(--ink-soft);
   line-height: 1.4;
   min-height: 60px;
 }
 #feteTitle {
+  font-family: var(--font-display);
   font-size: 1.2rem;
-  font-weight: 700;
-  color: #003366;
+  font-weight: 600;
+  color: var(--teal-deep);
   margin-bottom: 6px;
 }
 
 #feteTexte {
   font-size: 1rem;
-  color: #1f3b70;
-  font-weight: 500;
+  color: var(--ink-soft);
+  font-weight: 600;
 }
 #citationBox{
   width:100%;
   margin-top:15px;
-  background:#f8fbff;
-  border-radius:12px;
+  background:var(--aqua);
+  border-radius:14px;
   padding:15px;
   box-sizing:border-box;
   text-align:center;
@@ -669,16 +730,17 @@
 }
 
 #citationTitre{
+  font-family: var(--font-display);
   font-size:1.2rem;
-  font-weight:700;
-  color:#003366;
+  font-weight:600;
+  color:var(--teal-deep);
   margin-bottom:10px;
 }
 
 #citationTexte{
   font-size:1.2rem;
   line-height:1.5;
-  color:#1f3b70;
+  color:var(--ink-soft);
   font-style:italic;
   opacity:0;
   transform:translateY(10px);
@@ -694,7 +756,7 @@
 #loader-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 34, 64, 0.92);
+  background: rgba(11, 49, 45, 0.92);
   display: none;
   align-items: center;
   justify-content: center;
@@ -702,6 +764,7 @@
   gap: 18px;
   z-index: 100000;
   color: #fff;
+  font-family: var(--font-body);
   font-size: 1.3rem;
   font-weight: 600;
 }
@@ -723,7 +786,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 34, 64, 0.85);
+  background: rgba(11, 49, 45, 0.85);
   display: none;
   align-items: center;
   justify-content: center;
@@ -731,12 +794,13 @@
 }
 
 .modal-box {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
   padding: 40px 50px;
   max-width: 520px;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
 }
 
 .modal-box .modal-icon {
@@ -745,13 +809,15 @@
 }
 
 .modal-box h2 {
-  color: #0b2240;
+  font-family: var(--font-display);
+  color: var(--teal-deep);
   margin: 0 0 12px;
   font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .modal-box p {
-  color: #364152;
+  color: var(--ink-soft);
   font-size: 1.05rem;
   line-height: 1.5;
   margin: 0 0 20px;
@@ -761,11 +827,13 @@
 .btn-id {
   all: unset;
   background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  color: var(--ink);
+  border: 1.5px solid var(--line);
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
   display: inline-flex;
@@ -775,46 +843,46 @@
 }
 
 .btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
+  background: var(--aqua);
+  border-color: var(--teal);
+  color: var(--teal-deep);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-id:active {
   transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+  box-shadow: 0 3px 8px rgba(15,118,110,.15);
 }
 
 .btn-id:focus {
   outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15,118,110,.15);
 }
 .btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
+  background: var(--coral-soft);
+  border-color: var(--coral);
+  color: var(--coral);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+  box-shadow: 0 6px 15px -8px rgba(239, 99, 81, .5);
 }
 
 .btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(239, 99, 81, .15);
 }
 .btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
+  background: var(--aqua);
+  border-color: var(--teal);
+  color: var(--teal-deep);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+  box-shadow: 0 6px 15px -8px rgba(15, 118, 110, .5);
 }
 
 .btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, .15);
 }
 /* ===== FOOTER ===== */
 #footer {
@@ -823,11 +891,12 @@
   text-align: center;
   padding: 12px 20px;
   margin-top: 25px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border-top: 1px solid var(--line);
+  opacity: .8;
 }
 
 </style>
@@ -1067,7 +1136,7 @@
   </main>
 <!-- ===== FOOTER ===== -->
 <footer id="footer">
-  Fièrement propulsé par GestUg2 🚀
+  Fièrement propulsé par GestUrg2 🚀
 </footer>
   <script type="module">
     // --- IMPORTS FIREBASE v10 (modulaire) ---

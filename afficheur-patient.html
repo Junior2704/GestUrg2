@@ -9,2055 +9,827 @@
   <!-- Firebase v10 (modulaire) : importé via <script type="module"> en bas de page -->
   <link rel="preconnect" href="https://www.gstatic.com">
 
-<style>
-/* =========================================================
-   GESTURG2 — AFFICHAGE PATIENTS
-   LAYOUT PLEIN ÉCRAN SANS SCROLL
-   ========================================================= */
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #f0f7ff, #e6eef8);
+      color: #0b2240;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-/* =========================================================
-   RESET
-   ========================================================= */
+    /* --- HEADER --- */
+    header {
+      width: 100%;
+      background: linear-gradient(90deg, #0b2240 0%, #004b8d 50%, #0078d4 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border-radius: 10px;
+	  margin-top: 20px;
+    }
 
-* {
-    box-sizing: border-box;
-}
+    header img {
+      height: 60px;
+      width: auto;
+      border-radius: 8px;
+      object-fit: contain;
+    }
 
-html,
-body {
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
-    margin: 0;
-    padding: 0;
+    header h1 {
+      flex: 1;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin: 0;
+    }
 
-    overflow: hidden;
+    #datetime {
+      font-size: 1.1rem;
+      color: #e0ecff;
+    }
 
-    font-family: "Inter", "Segoe UI", Arial, sans-serif;
-
-    color: #0b2240;
-
-    background:
-        linear-gradient(
-            135deg,
-            #f0f7ff 0%,
-            #e6eef8 100%
-        );
-}
-
-/* Suppression scrollbar page */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-    display: none;
-}
-
-html,
-body {
-    scrollbar-width: none;
-}
-
-
-/* =========================================================
-   STRUCTURE GÉNÉRALE
-   ========================================================= */
-
-body {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-
-    height: 100vh;
-    min-height: 0;
-}
-
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-header {
-    flex: 0 0 auto;
-
-    width: calc(100% - 20px);
-    height: clamp(58px, 7vh, 82px);
-
-    margin: 8px 10px 4px;
-    padding: 7px 22px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    background:
-        linear-gradient(
-            90deg,
-            #0b2240 0%,
-            #004b8d 50%,
-            #0078d4 100%
-        );
-
-    color: white;
-
-    border-radius: 12px;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.15);
-
-    overflow: hidden;
-}
-
-header img {
-    height: clamp(38px, 5vh, 60px);
-    width: auto;
-
-    border-radius: 7px;
-
-    object-fit: contain;
-
-    flex-shrink: 0;
-}
-
-header h1 {
-    flex: 1;
-
-    margin: 0 20px;
-
-    text-align: center;
-
-    font-size: clamp(
-        1.2rem,
-        2.1vw,
-        2rem
-    );
-
-    line-height: 1.1;
-
-    font-weight: 700;
-
-    letter-spacing: 1px;
-
-    text-transform: uppercase;
-
-    color: #ffffff;
-
-    white-space: nowrap;
-}
-
-#datetime {
-    flex-shrink: 0;
-
-    min-width: 130px;
-
-    text-align: right;
-
-    font-size: clamp(
-        0.75rem,
-        1vw,
-        1.1rem
-    );
-
-    color: #e0ecff;
-}
-
-
-/* =========================================================
-   MAIN
-   ========================================================= */
-
-main {
-    flex: 1 1 auto;
-
-    min-height: 0;
-
-    width: 100%;
-
-    padding:
-        2px
-        10px
-        0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    overflow: hidden;
-}
-
-
-/* =========================================================
-   TITRES DE SECTION
-   ========================================================= */
-
+    /* === TITRES DE SECTIONS === */
 .section-title {
-    width: 100%;
-
-    margin:
-        2px
-        0
-        4px;
-
-    text-align: center;
-
-    font-size: clamp(
-        0.9rem,
-        1.35vw,
-        1.8rem
-    );
-
-    line-height: 1.1;
-
-    color: #004b8d;
-
-    text-transform: uppercase;
-
-    letter-spacing: 0.5px;
+  width: 100%;
+  text-align: center;
+  font-size: 1.8rem;
+  color: #004b8d;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
 }
 
-
-/* =========================================================
-   ACTIVITÉ GÉNÉRALE
-   ========================================================= */
-
+/* === SECTION : ACTIVITÉ GLOBALE === */
 #dashboard-general {
-    flex: 0 0 auto;
-
-    width: 100%;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .general-row {
-    width: 100%;
-    max-width: 1400px;
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(6, minmax(0, 1fr));
-
-    gap: clamp(6px, 0.8vw, 18px);
-
-    margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 18px;
+  width: 100%;
+  max-width: 1400px;
+  margin-top: 10px;
 }
 
-
-/* =========================================================
-   CARTES ACTIVITÉ
-   ========================================================= */
-
+/* === STYLE DES CARTES === */
 .card {
-    min-width: 0;
-
-    padding:
-        clamp(5px, 0.7vh, 12px)
-        clamp(6px, 0.7vw, 16px);
-
-    background: #ffffff;
-
-    border-radius: 12px;
-
-    text-align: center;
-
-    box-shadow:
-        0 3px 10px rgba(0, 0, 0, 0.09);
-
-    overflow: hidden;
-
-    transition:
-        transform 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
 }
 
 .card:hover {
-    transform: scale(1.02);
+  transform: scale(1.03);
 }
 
 .card h2 {
-    margin: 0;
-
-    font-size: clamp(
-        1.5rem,
-        2.4vw,
-        2.8rem
-    );
-
-    line-height: 1;
-
-    color: #0b2240;
+  font-size: 2.8rem;
+  color: #0b2240;
+  margin: 0;
 }
 
 .card p {
-    margin:
-        4px
-        0
-        0;
-
-    font-size: clamp(
-        0.65rem,
-        0.9vw,
-        1.1rem
-    );
-
-    line-height: 1.1;
-
-    color: #64748b;
-
-    font-weight: 500;
-
-    white-space: nowrap;
+  font-size: 1.1rem;
+  color: #64748b;
+  margin-top: 5px;
+  font-weight: 500;
 }
 
+/* Couleurs par type */
+.card.total { border-top: 6px solid #0078d4; }
+.card.attente { border-top: 6px solid #4caf50; }
+.card.pec { border-top: 6px solid #ff9800; }
+.card.couche { border-top: 6px solid #6f42c1; }
+.card.critique { border-top: 6px solid #161414; }
+.card.admin { border-top: 6px solid #41e14e; }
 
-/* Couleurs */
-.card.total {
-    border-top: 5px solid #0078d4;
-}
-
-.card.attente {
-    border-top: 5px solid #4caf50;
-}
-
-.card.pec {
-    border-top: 5px solid #ff9800;
-}
-
-.card.couche {
-    border-top: 5px solid #6f42c1;
-}
-
-.card.critique {
-    border-top: 5px solid #161414;
-}
-
-.card.admin {
-    border-top: 5px solid #41e14e;
-}
-
-
-/* =========================================================
-   CIRCUITS
-   ========================================================= */
-
+/* === SECTION : CIRCUITS PARTICULIERS === */
 #dashboard-circuits {
-    flex: 0 0 auto;
-
-    width: 100%;
-
-    text-align: center;
+  width: 100%;
+  text-align: center;
 }
 
 .circuits-grid {
-    width: 100%;
-    max-width: 1200px;
-
-    margin: 0 auto;
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(6, minmax(0, 1fr));
-
-    gap: clamp(5px, 0.7vw, 16px);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .circuit-card {
-    min-width: 0;
-
-    padding:
-        clamp(5px, 0.6vh, 12px)
-        clamp(5px, 0.6vw, 14px);
-
-    background:
-        linear-gradient(
-            135deg,
-            #f8fbff,
-            #eef5ff
-        );
-
-    border-radius: 10px;
-
-    box-shadow:
-        0 3px 8px rgba(0, 0, 0, 0.08);
-
-    text-align: center;
-
-    overflow: hidden;
+  background: linear-gradient(135deg, #f8fbff, #eef5ff);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  text-align: center;
 }
 
 .circuit-card h3 {
-    margin: 0;
-
-    font-size: clamp(
-        1.3rem,
-        1.9vw,
-        2.2rem
-    );
-
-    line-height: 1;
-
-    color: #0078d4;
+  font-size: 2.2rem;
+  color: #0078d4;
+  margin: 0;
 }
 
 .circuit-card p {
-    margin:
-        3px
-        0
-        0;
-
-    font-size: clamp(
-        0.65rem,
-        0.85vw,
-        1.1rem
-    );
-
-    line-height: 1.1;
-
-    color: #1e3a8a;
-
-    font-weight: 500;
-
-    white-space: nowrap;
+  font-size: 1.1rem;
+  color: #1e3a8a;
+  font-weight: 500;
+  margin-top: 4px;
 }
 
-.circuit-attente,
+.circuit-attente {
+  font-size: 0.85rem;
+  color: #47607f;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
 .circuit-duree {
-    margin-top: 2px;
-
-    font-size: clamp(
-        0.58rem,
-        0.7vw,
-        0.85rem
-    );
-
-    line-height: 1.1;
-
-    color: #6b7d94;
-
-    font-weight: 500;
-
-    white-space: nowrap;
+  font-size: 0.85rem;
+  color: #6b7d94;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
-
-/* Couleurs circuits */
-
+/* --- Couleurs personnalisées --- */
 .circuit-card.general {
-    border-top: 5px solid #1976D2;
+  border-top: 6px solid #1976D2; /* Bleu général */
 }
 
 .circuit-card.pediatrie {
-    border-top: 5px solid #7CB342;
+  border-top: 6px solid #7CB342; /* Vert doux */
 }
 
 .circuit-card.traumato {
-    border-top: 5px solid #D84315;
+  border-top: 6px solid #D84315; /* Orange foncé */
 }
 
 .circuit-card.ophtalmo {
-    border-top: 5px solid #6A1B9A;
+  border-top: 6px solid #6A1B9A; /* Violet */
 }
 
 .circuit-card.gyn {
-    border-top: 5px solid #C2185B;
+  border-top: 6px solid #C2185B; /* Rose foncé */
 }
 
 .circuit-card.psy {
-    border-top: 5px solid #00897B;
+  border-top: 6px solid #00897B; /* Bleu-vert apaisant */
 }
 
 
-/* =========================================================
-   ZONE ANIMATION
-   ========================================================= */
-
-.info-animation {
-    position: relative;
-
-    flex: 1 1 auto;
-
-    min-height: 0;
-
-    width: min(95%, 1200px);
-
-    margin:
-        5px
-        auto
-        3px;
-
-    padding:
-        8px
-        20px
-        6px;
-
-    background:
-        rgba(255, 255, 255, 0.95);
-
-    border-radius: 16px;
-
-    box-shadow:
-        0 4px 14px rgba(0, 0, 0, 0.08);
-
-    overflow: hidden;
-
-    z-index: 10;
-}
-
-
-/* =========================================================
-   TITRE ANIMATION
-   ========================================================= */
-
-.info-title {
-    position: relative;
-
-    z-index: 30;
-
-    margin:
-        0
-        0
-        3px;
-
-    font-size: clamp(
-        0.95rem,
-        1.45vw,
-        2rem
-    );
-
-    line-height: 1.1;
-
-    font-weight: 700;
-
-    color: #004b8d;
-
-    text-align: center;
-}
-
-
-/* =========================================================
-   ÉTAPES
-   ========================================================= */
-
-.step-anim {
-    position: absolute;
-
-    left: 50%;
-
-    top: clamp(
-        38px,
-        6vh,
-        90px
-    );
-
-    width: calc(100% - 40px);
-
-    transform:
-        translateX(-50%)
-        translateY(20px);
-
-    opacity: 0;
-
-    text-align: center;
-
-    transition:
-        all 1s ease;
-}
-
-.step-anim.active {
-    opacity: 1;
-
-    transform:
-        translateX(-50%)
-        translateY(0);
-}
-
-.step-anim .icon {
-    height: clamp(
-        40px,
-        6vh,
-        70px
-    );
-
-    width: clamp(
-        40px,
-        6vh,
-        70px
-    );
-
-    margin:
-        0
-        auto
-        4px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: clamp(
-        2rem,
-        3vw,
-        3rem
-    );
-}
-
-.step-logo {
-    height: clamp(
-        40px,
-        6vh,
-        70px
-    );
-
-    width: clamp(
-        40px,
-        6vh,
-        70px
-    );
-
-    object-fit: contain;
-
-    display: block;
-
-    margin: 0 auto;
-}
-
-.step-anim .title {
-    margin:
-        0
-        0
-        5px;
-
-    font-size: clamp(
-        1.15rem,
-        1.9vw,
-        2.5rem
-    );
-
-    line-height: 1.1;
-
-    font-weight: 600;
-
-    color: #0b2240;
-}
-
-.step-anim .text {
-    max-width: 1100px;
-
-    margin: 0 auto;
-
-    font-size: clamp(
-        0.8rem,
-        1.3vw,
-        2rem
-    );
-
-    line-height: 1.25;
-
-    color: #364152;
-}
-
-
-/* =========================================================
-   NOTE EN BAS DE L'ANIMATION
-   ========================================================= */
-
-.note {
-    position: absolute;
-
-    left: 20px;
-    right: 20px;
-    bottom: 5px;
-
-    margin: 0;
-
-    z-index: 30;
-
-    text-align: center;
-
-    font-size: clamp(
-        0.65rem,
-        0.9vw,
-        1.5rem
-    );
-
-    line-height: 1.1;
-
-    color: #1f3b70;
-
-    font-weight: 500;
-}
-
-
-/* =========================================================
-   ANIMATION ICÔNES
-   ========================================================= */
-
-@keyframes pop {
-    0% {
-        transform: scale(0.6);
-        opacity: 0;
-    }
-
-    80% {
-        transform: scale(1.15);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
-.step-anim.active .icon {
-    animation:
-        pop 0.6s ease forwards;
-}
-
-
-/* =========================================================
-   PANNEAU APPELS
-   ========================================================= */
-
-#appels {
-    position: fixed;
-
-    top: 90px;
-    right: 20px;
-
-    width: 280px;
-
-    height: calc(100vh - 115px);
-
-    max-height: calc(100vh - 115px);
-
-    background: #ffffff;
-
-    border-radius: 14px;
-
-    box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.15);
-
-    padding: 12px;
-
-    display: none;
-
-    z-index: 1000;
-
-    overflow: hidden;
-}
-
-#appels h2 {
-    margin:
-        0
-        0
-        8px;
-
-    text-align: center;
-
-    font-size: 1.1rem;
-
-    color: #003366;
-}
-
-#listeAppels {
-    height: calc(100% - 35px);
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8px;
-
-    overflow-y: auto;
-}
-
-#aucunAppel {
-    text-align: center;
-
-    color: #666;
-
-    font-size: 0.95rem;
-
-    margin-top: 20px;
-}
-
-
-/* =========================================================
-   APPELS
-   ========================================================= */
-
-.appel {
-    flex-shrink: 0;
-
-    background: #003366;
-
-    color: white;
-
-    border-radius: 12px;
-
-    padding: 10px;
-
-    text-align: center;
-
-    opacity: 1;
-
-    transform: translateY(0);
-
-    transition:
-        transform 0.45s cubic-bezier(
-            0.22,
-            1,
-            0.36,
-            1
-        ),
-        opacity 0.45s ease,
-        background-color 1.5s ease;
-}
-
-.appel .numero {
-    font-size: 1.6rem;
-
-    font-weight: 700;
-}
-
-.appel .bureau {
-    font-size: 1.1rem;
-
-    opacity: 0.9;
-}
-
-.appel.nouveau {
-    opacity: 0;
-
-    transform: translateY(-20px);
-
-    background-color: #005fa3;
-}
-
-.appel.visible {
-    opacity: 1;
-
-    transform: translateY(0);
-
-    background-color: #003366;
-}
-
-
-/* =========================================================
-   PANNEAU INFORMATIONS GAUCHE
-   ========================================================= */
-
-#infos-gauche {
-    position: fixed;
-
-    top: 90px;
-    left: 20px;
-
-    width: 280px;
-
-    height: calc(100vh - 115px);
-
-    max-height: calc(100vh - 115px);
-
-    padding: 14px;
-
-    background: #ffffff;
-
-    border-radius: 14px;
-
-    box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.15);
-
-    z-index: 1000;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    gap: 12px;
-
-    overflow: hidden;
-}
-
-
-/* =========================================================
-   HEURE
-   ========================================================= */
-
-.bloc-heure {
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.heure-case {
-    background: #003366;
-
-    color: #ffffff;
-
-    font-size: clamp(
-        2rem,
-        3vw,
-        3.2rem
-    );
-
-    font-weight: 700;
-
-    padding: 7px 10px;
-
-    border-radius: 9px;
-
-    min-width: 60px;
-
-    text-align: center;
-
-    box-shadow:
-        inset 0 0 8px rgba(0, 0, 0, 0.3);
-}
-
-.separateur {
-    font-size: 2.5rem;
-
-    font-weight: 700;
-
-    margin: 0 5px;
-
-    color: #003366;
-}
-
-
-/* =========================================================
-   DATE
-   ========================================================= */
-
-.date {
-    flex-shrink: 0;
-
-    font-size: 1.1rem;
-
-    font-weight: 600;
-
-    color: #003366;
-
-    text-align: center;
-}
-
-
-/* =========================================================
-   FÊTE
-   ========================================================= */
-
-#feteTexte {
-    flex-shrink: 0;
-
-    font-size: 0.95rem;
-
-    color: #1f3b70;
-
-    text-align: center;
-
-    line-height: 1.3;
-}
-
-
-/* =========================================================
-   TEMPS AUX URGENCES
-   ========================================================= */
-
-.temps-urgences {
-    flex-shrink: 0;
-
-    width: 100%;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 7px;
-
-    background: #f1f6ff;
-
-    padding: 10px;
-
-    border-radius: 11px;
-}
-
-#titleTempsUrgences {
-    font-size: 1.15rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    margin: 0 0 2px;
-
-    text-align: center;
-}
-
-.temps-urgences-ligne {
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-}
-
-.temps-urgences-icone {
-    flex-shrink: 0;
-
-    font-size: 1.8rem;
-
-    line-height: 1;
-}
-
-.temps-urgences-texte {
-    min-width: 0;
-
-    text-align: left;
-}
-
-.temps-urgences-valeur {
-    font-size: 1.35rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    line-height: 1.1;
-}
-
-.temps-urgences-label {
-    font-size: 0.72rem;
-
-    color: #555;
-
-    line-height: 1.15;
-}
-
-.temps-urgences-sep {
-    height: 1px;
-
-    background: #dbe4f0;
-
-    margin: 1px 0;
-}
-
-
-/* =========================================================
-   RELAXATION
-   ========================================================= */
-
-#relaxBox {
-    flex-shrink: 0;
-
-    width: 100%;
-
-    background: #f8fbff;
-
-    border-radius: 11px;
-
-    padding: 10px;
-
-    text-align: center;
-}
-
-#titlerespiration {
-    font-size: 1.15rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    margin: 0 0 8px;
-}
-
-#relaxCircle {
-    width: 70px;
-
-    height: 70px;
-
-    margin: 5px auto;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(
-            circle,
-            #7ec8ff,
-            #3d8bfd
-        );
-
-    box-shadow:
-        0 0 20px rgba(
-            61,
-            139,
-            253,
-            0.4
-        );
-
-    transition:
-        transform 4s ease-in-out;
-}
-
-#respirationTexte {
-    font-size: 1.15rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    margin-top: 8px;
-}
-
-#natureInfo {
-    margin-top: 8px;
-
-    font-size: 0.85rem;
-
-    color: #1f3b70;
-
-    line-height: 1.3;
-
-    min-height: 40px;
-}
-
-
-/* =========================================================
-   CITATION
-   ========================================================= */
-
-#citationBox {
-    flex-shrink: 0;
-
-    width: 100%;
-
-    margin-top: 0;
-
-    background: #f8fbff;
-
-    border-radius: 11px;
-
-    padding: 10px;
-
-    text-align: center;
-
-    min-height: 90px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: center;
-}
-
-#citationTitre {
-    font-size: 1.05rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    margin-bottom: 6px;
-}
-
-#citationTexte {
-    font-size: 1rem;
-
-    line-height: 1.35;
-
-    color: #1f3b70;
-
-    font-style: italic;
-
-    opacity: 0;
-
-    transform: translateY(10px);
-
-    transition:
-        all 0.8s ease;
-}
-
-#citationTexte.visible {
-    opacity: 1;
-
-    transform: translateY(0);
-}
-
-
-/* =========================================================
-   INFORMATIONS SUPPLÉMENTAIRES
-   ========================================================= */
-
-#infoPlus {
-    width: 100%;
-
-    background: #f8fbff;
-
-    border-radius: 11px;
-
-    padding: 10px;
-
-    text-align: center;
-}
-
-#infoIcon {
-    font-size: 2.5rem;
-
-    margin-bottom: 5px;
-}
-
-#infoTitre {
-    font-size: 1.1rem;
-
-    font-weight: 700;
-
-    color: #003366;
-
-    margin-bottom: 5px;
-}
-
-#infoTexte {
-    font-size: 0.9rem;
-
-    line-height: 1.3;
-
-    color: #1f3b70;
-}
-
-
-/* =========================================================
-   RSS
-   ========================================================= */
-
-.rss-title {
-    font-weight: 700;
-
-    font-size: 1rem;
-
-    color: #003366;
-
-    margin-bottom: 5px;
-
-    text-align: center;
-}
-
-#rss-list {
-    list-style: none;
-
-    padding: 0;
-
-    margin: 0;
-
-    font-size: 0.85rem;
-
-    color: #1f3b70;
-}
-
-#rss-list li {
-    padding: 5px 4px;
-
-    border-bottom:
-        1px solid #dbe4f0;
-}
-
-#rss-list li:last-child {
-    border-bottom: none;
-}
-
-
-/* =========================================================
-   BULLES
-   ========================================================= */
-
-#bubble-container {
-    position: fixed;
-
-    top: 20px;
-    right: 20px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-
-    z-index: 9999;
-
-    align-items: flex-end;
-}
-
-.bubble {
-    max-width: 300px;
-
-    padding: 10px 15px;
-
-    border-radius: 8px;
-
-    color: white;
-
-    font-family: sans-serif;
-
-    box-shadow:
-        0 2px 5px rgba(0, 0, 0, 0.2);
-
-    animation:
-        fadeout 0.5s ease-in-out 1.5s forwards;
-
-    word-wrap: break-word;
-
-    text-align: left;
-}
-
-.administratif {
-    background-color: #2196F3;
-}
-
-.alerte {
-    background-color: #f44336;
-}
-
-@keyframes fadeout {
-    to {
-        opacity: 0;
-
-        transform:
-            translateX(-20px);
-    }
-}
-
-
-/* =========================================================
-   LOADER
-   ========================================================= */
-
-#loader-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    background:
-        rgba(
-            11,
-            34,
-            64,
-            0.92
-        );
-
-    display: none;
-
-    align-items: center;
-
-    justify-content: center;
-
-    flex-direction: column;
-
-    gap: 18px;
-
-    z-index: 100000;
-
-    color: #fff;
-
-    font-size: 1.3rem;
-
-    font-weight: 600;
-}
-
-#loader-overlay .spinner {
-    width: 56px;
-
-    height: 56px;
-
-    border:
-        6px solid
-        rgba(255, 255, 255, 0.25);
-
-    border-top-color: #ffffff;
-
-    border-radius: 50%;
-
-    animation:
-        spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-
-/* =========================================================
-   MODALES
-   ========================================================= */
-
-.modal-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    background:
-        rgba(
-            11,
-            34,
-            64,
-            0.85
-        );
-
-    display: none;
-
-    align-items: center;
-
-    justify-content: center;
-
-    z-index: 100001;
-}
-
-.modal-box {
-    width: min(
-        90vw,
-        520px
-    );
-
-    background: #ffffff;
-
-    border-radius: 16px;
-
-    padding: 30px 35px;
-
-    text-align: center;
-
-    box-shadow:
-        0 10px 40px rgba(
-            0,
-            0,
-            0,
-            0.3
-        );
-}
-
-.modal-box .modal-icon {
-    font-size: 3rem;
-
-    margin-bottom: 12px;
-}
-
-.modal-box h2 {
-    color: #0b2240;
-
-    margin:
-        0
-        0
-        10px;
-
-    font-size: 1.5rem;
-}
-
-.modal-box p {
-    color: #364152;
-
-    font-size: 1.05rem;
-
-    line-height: 1.5;
-
-    margin:
-        0
-        0
-        20px;
-}
-
-
-/* =========================================================
-   BOUTONS
-   ========================================================= */
-
-.btn-id {
-    all: unset;
-
-    background: transparent;
-
-    color: #000;
-
-    border:
-        1.5px solid
-        rgba(0, 0, 0, 0.2);
-
-    padding: 10px 16px;
-
-    border-radius: 10px;
-
-    font-size: 14px;
-
-    cursor: pointer;
-
-    transition:
-        all 0.25s ease;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    backdrop-filter: blur(2px);
+/* --- Télé grand écran --- */
+@media (min-width: 1600px) {
+  .card h2 { font-size: 3.2rem; }
+  .circuit-card h3 { font-size: 2.6rem; }
 }
 
-.btn-id:hover {
-    background:
-        rgba(
-            0,
-            120,
-            255,
-            0.12
-        );
 
-    border-color:
-        rgba(
-            0,
-            120,
-            255,
-            0.6
-        );
-
-    color: #0078ff;
-
-    transform:
-        translateY(-1px);
-
-    box-shadow:
-        0 6px 15px
-        rgba(
-            0,
-            120,
-            255,
-            0.15
-        );
-}
-
-.btn-id:active {
-    transform:
-        translateY(0);
-
-    box-shadow:
-        0 3px 8px
-        rgba(
-            0,
-            120,
-            255,
-            0.1
-        );
-}
-
-.btn-id:focus {
-    outline: none;
-
-    border-color:
-        rgba(
-            0,
-            120,
-            255,
-            0.8
-        );
-
-    box-shadow:
-        0 0 0 3px
-        rgba(
-            0,
-            120,
-            255,
-            0.15
-        );
-}
-
-.btn-id-c:hover {
-    background:
-        rgba(
-            255,
-            0,
-            0,
-            0.10
-        );
-
-    border-color:
-        rgba(
-            255,
-            0,
-            0,
-            0.6
-        );
-
-    color: #e60000;
-}
-
-.btn-id-c:focus {
-    border-color:
-        rgba(
-            255,
-            0,
-            0,
-            0.8
-        );
-
-    box-shadow:
-        0 0 0 3px
-        rgba(
-            255,
-            0,
-            0,
-            0.15
-        );
-}
-
-.btn-id-v:hover {
-    background:
-        rgba(
-            0,
-            200,
-            80,
-            0.12
-        );
-
-    border-color:
-        rgba(
-            0,
-            200,
-            80,
-            0.6
-        );
-
-    color: #00b35a;
-}
-
-.btn-id-v:focus {
-    border-color:
-        rgba(
-            0,
-            200,
-            80,
-            0.8
-        );
-
-    box-shadow:
-        0 0 0 3px
-        rgba(
-            0,
-            200,
-            80,
-            0.15
-        );
-}
-
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
-#footer {
-    flex: 0 0 auto;
-
-    width: 100%;
-
-    height: 30px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 0 10px;
-
-    margin: 0;
-
-    background: #f8fafc;
-
-    border-top:
-        1px solid #e2e8f0;
-
-    color: #64748b;
-
-    font-size: 12px;
-
-    font-weight: 500;
-
-    text-align: center;
+    /* --- ANIMATION INFO PATIENTS --- */
+  .info-animation {
+  margin: 50px auto 0 auto; 
+  width: 95%;              /* 🔹 largeur fluide mais contenue */
+  max-width: 1200px;        /* 🔹 limite maximale */
+  text-align: center;
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  padding: 40px 20px 60px;
+  position: relative;
+  max-height: 340px;
+  overflow: hidden;
+  z-index: 10;
 }
-
-
-/* =========================================================
-   ÉCRANS BAS — 768px DE HAUTEUR ET MOINS
-   ========================================================= */
-
-@media (max-height: 800px) {
-
-    header {
-        height: 58px;
-
-        margin-top: 4px;
-        margin-bottom: 2px;
-
-        padding: 5px 15px;
-    }
-
-    header img {
-        height: 42px;
-    }
-
-    header h1 {
-        font-size: 1.3rem;
-    }
-
-    #datetime {
-        font-size: 0.75rem;
-    }
-
-    .section-title {
-        margin: 1px 0 2px;
-
-        font-size: 0.95rem;
-    }
-
-    .card {
-        padding: 4px 6px;
-    }
-
-    .card h2 {
-        font-size: 1.55rem;
-    }
-
-    .card p {
-        font-size: 0.65rem;
-
-        margin-top: 2px;
-    }
-
-    .circuit-card {
-        padding: 4px 5px;
-    }
-
-    .circuit-card h3 {
-        font-size: 1.35rem;
-    }
-
-    .circuit-card p,
-    .circuit-duree {
-        font-size: 0.6rem;
-    }
-
-    .info-animation {
-        margin-top: 3px;
-
-        padding:
-            5px
-            15px
-            4px;
-    }
-
     .info-title {
-        font-size: 0.95rem;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #004b8d;
+      margin-bottom: 25px;
     }
 
     .step-anim {
-        top: 35px;
+      position: absolute;
+      left: 50%;
+      top: 90px;
+      transform: translateX(-50%) translateY(30px);
+      opacity: 0;
+      width: 100%;
+      transition: all 1s ease;
     }
 
-    .step-anim .icon,
-    .step-logo {
-        height: 42px;
-        width: 42px;
-    }
-
-    .step-anim .title {
-        font-size: 1.25rem;
-    }
-
-    .step-anim .text {
-        font-size: 0.8rem;
-
-        line-height: 1.15;
-    }
-
-    .note {
-        font-size: 0.65rem;
-
-        bottom: 3px;
-    }
-
-    #footer {
-        height: 24px;
-
-        font-size: 10px;
-    }
-}
-
-
-/* =========================================================
-   TRÈS PETITE HAUTEUR
-   ========================================================= */
-
-@media (max-height: 650px) {
-
-    header {
-        height: 45px;
-
-        margin-top: 2px;
-
-        padding:
-            2px
-            10px;
-    }
-
-    header img {
-        height: 32px;
-    }
-
-    header h1 {
-        font-size: 1rem;
-    }
-
-    #datetime {
-        font-size: 0.65rem;
-    }
-
-    .section-title {
-        font-size: 0.8rem;
-    }
-
-    .card {
-        padding: 3px 4px;
-    }
-
-    .card h2 {
-        font-size: 1.3rem;
-    }
-
-    .card p {
-        font-size: 0.55rem;
-    }
-
-    .circuit-card {
-        padding: 2px 3px;
-    }
-
-    .circuit-card h3 {
-        font-size: 1.1rem;
-    }
-
-    .circuit-card p,
-    .circuit-duree {
-        font-size: 0.5rem;
-    }
-
-    .info-animation {
-        margin-top: 2px;
-
-        padding:
-            3px
-            10px;
-    }
-
-    .info-title {
-        font-size: 0.75rem;
-    }
-
-    .step-anim {
-        top: 27px;
-    }
-
-    .step-anim .icon,
-    .step-logo {
-        height: 30px;
-        width: 30px;
+    .step-anim.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     .step-anim .icon {
-        font-size: 1.5rem;
+      font-size: 3rem;
+      animation: pop 0.6s ease forwards;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      80% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); }
     }
 
     .step-anim .title {
-        font-size: 0.95rem;
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #0b2240;
     }
 
     .step-anim .text {
-        font-size: 0.65rem;
-
-        line-height: 1.1;
+      font-size: 2rem;
+      color: #364152;
+      max-width: 1100px;
+      margin: 0 auto;
     }
 
     .note {
-        font-size: 0.55rem;
-
-        bottom: 2px;
+      margin-top: 320px;
+      font-size: 1.5rem;
+      color: #1f3b70;
+      font-weight: 500;
+      position: relative;
+      z-index: 20;
     }
 
-    #footer {
-        height: 18px;
-
-        font-size: 9px;
+    footer {
+      width: 100%;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #556;
+      padding-bottom: 10px;
     }
+	
+		#bubble-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  align-items: flex-end;
 }
 
-
-/* =========================================================
-   ÉCRANS TRÈS LARGES
-   ========================================================= */
-
-@media (min-width: 1800px) {
-
-    .general-row {
-        max-width: 1500px;
-    }
-
-    .circuits-grid {
-        max-width: 1300px;
-    }
-
-    .info-animation {
-        max-width: 1400px;
-    }
+.bubble {
+  max-width: 300px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: white;
+  font-family: sans-serif;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  animation: fadeout 0.5s ease-in-out 1.5s forwards;
+  word-wrap: break-word;
+  text-align: left;
 }
 
-
-/* =========================================================
-   PANNEAUX LATÉRAUX — PETITE HAUTEUR
-   ========================================================= */
-
-@media (max-height: 800px) {
-
-    #infos-gauche,
-    #appels {
-        top: 70px;
-
-        height: calc(100vh - 90px);
-
-        max-height: calc(100vh - 90px);
-    }
-
-    #infos-gauche {
-        padding: 9px;
-
-        gap: 8px;
-    }
-
-    .heure-case {
-        font-size: 2rem;
-
-        padding: 5px 8px;
-
-        min-width: 50px;
-    }
-
-    .separateur {
-        font-size: 2rem;
-
-        margin: 0 4px;
-    }
-
-    .date {
-        font-size: 0.9rem;
-    }
-
-    #feteTexte {
-        font-size: 0.8rem;
-    }
-
-    .temps-urgences {
-        padding: 8px;
-
-        gap: 5px;
-    }
-
-    #titleTempsUrgences {
-        font-size: 0.95rem;
-    }
-
-    .temps-urgences-icone {
-        font-size: 1.5rem;
-    }
-
-    .temps-urgences-valeur {
-        font-size: 1.1rem;
-    }
-
-    .temps-urgences-label {
-        font-size: 0.65rem;
-    }
-
-    #citationBox {
-        min-height: 70px;
-
-        padding: 7px;
-    }
-
-    #citationTitre {
-        font-size: 0.9rem;
-    }
-
-    #citationTexte {
-        font-size: 0.8rem;
-    }
+.administratif {
+  background-color: #2196F3; /* bleu */
 }
 
-
-/* =========================================================
-   SCROLLBAR INTERNE UNIQUEMENT
-   ========================================================= */
-
-#listeAppels::-webkit-scrollbar {
-    width: 7px;
+.alerte {
+  background-color: #f44336; /* rouge */
 }
 
-#listeAppels::-webkit-scrollbar-track {
-    background: #eef3ff;
-
-    border-radius: 10px;
+@keyframes fadeout {
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
 }
 
-#listeAppels::-webkit-scrollbar-thumb {
-    background:
-        linear-gradient(
-            180deg,
-            #2196f3,
-            #1565c0
-        );
+.step-anim .icon {
+  font-size: 48px;       /* taille des emoji */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  width: 70px;
+  margin: 0 auto 10px;
+}
+.step-logo {
+  height: 80px;          /* taille idéale */
+  width: 80px;           /* carré */
+  object-fit: contain;   /* empêche les déformations */
+  display: block;
+  margin: 0 auto;
+}
+/* ===== PANNEAU APPELS ===== */
+#appels {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  width: 280px;
+  height: calc(100vh - 140px);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  padding: 12px;
+  display: none; /* activé dynamiquement */
+  z-index: 1000;
+}
 
-    border-radius: 10px;
+#appels h2 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #003366;
 }
 
 #listeAppels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
+}
+
+#aucunAppel {
+  text-align: center;
+  color: #666;
+  font-size: 0.95rem;
+  margin-top: 20px;
+}
+
+/* ===== APPEL ===== */
+.appel {
+  background: #003366;
+  color: white;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    background-color 1.5s ease;
+}
+
+.appel .numero {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.appel .bureau {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* Nouvel appel */
+.appel.nouveau {
+  opacity: 0;
+  transform: translateY(-20px);
+  background-color: #005fa3;
+}
+
+.appel.visible {
+  opacity: 1;
+  transform: translateY(0);
+  background-color: #003366;
+}
+/* ===== PANNEAU INFOS GAUCHE ===== */
+#infos-gauche {
+  position: fixed;
+  top: 90px;
+  left: 20px;
+  width: 280px;
+  height: calc(100vh - 140px);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  padding: 16px;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+/* ===== HEURE ===== */
+.bloc-heure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heure-case {
+  background: #003366;
+  color: #ffffff;
+  font-size: 3.2rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 70px;
+  text-align: center;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+}
+
+.separateur {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 6px;
+  color: #003366;
+}
+
+/* ===== DATE ===== */
+.date {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #003366;
+  text-align: center;
+}
+
+/* ===== TEMPS AUX URGENCES ===== */
+.temps-urgences {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f1f6ff;
+  padding: 14px;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.temps-urgences-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.temps-urgences-icone {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.temps-urgences-texte {
+  text-align: left;
+}
+
+.temps-urgences-valeur {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #003366;
+  line-height: 1.15;
+}
+
+.temps-urgences-label {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.temps-urgences-sep {
+  height: 1px;
+  background: #dbe4f0;
+  margin: 2px 0;
+}
+
+#titleTempsUrgences {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: -10px;
+  margin-bottom: -4px;
+}
+#infos-gauche {
+  overflow: visible;
+}
+
+.rss-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #003366;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+#rss-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1f3b70;
+}
+
+#rss-list li {
+  padding: 6px 4px;
+  border-bottom: 1px solid #dbe4f0;
+}
+
+#rss-list li:last-child {
+  border-bottom: none;
+}
+
+
+
+  /* Chrome, Edge, Opera */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eef3ff;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2196f3, #1565c0);
+    border-radius: 10px;
+    border: 2px solid #eef3ff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #42a5f5, #1976d2);
+}
+
+/* Firefox */
+* {
     scrollbar-width: thin;
-
-    scrollbar-color:
-        #2196f3
-        #eef3ff;
+    scrollbar-color: #2196f3 #eef3ff;
+}
+#infoPlus {
+  width: 100%;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: center;
 }
 
-
-/* =========================================================
-   SÉCURITÉ : AUCUN ÉLÉMENT NE DOIT FORCER LE BODY À GRANDIR
-   ========================================================= */
-
-main,
-#dashboard-general,
-#dashboard-circuits,
-.info-animation {
-    max-height: 100%;
+#infoIcon {
+  font-size: 3rem;
+  margin-bottom: 10px;
 }
 
+#infoTitre {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003366;
+  margin-bottom: 8px;
+}
 
-/* =========================================================
-   FIN
-   ========================================================= */
+#infoTexte {
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #1f3b70;
+}
+#relaxBox {
+  width: 100%;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+#relaxCircle {
+  width: 90px;
+  height: 90px;
+  margin: 10px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7ec8ff, #3d8bfd);
+  box-shadow: 0 0 20px rgba(61,139,253,.4);
+  transition: transform 4s ease-in-out;
+}
+
+#respirationTexte {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: 25px;
+}
+#titlerespiration {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003366;
+  margin-top: -15px;
+  margin-bottom: 28px;
+}
+#natureInfo {
+  margin-top: 15px;
+  font-size: 1rem;
+  color: #1f3b70;
+  line-height: 1.4;
+  min-height: 60px;
+}
+#feteTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003366;
+  margin-bottom: 6px;
+}
+
+#feteTexte {
+  font-size: 1rem;
+  color: #1f3b70;
+  font-weight: 500;
+}
+#citationBox{
+  width:100%;
+  margin-top:15px;
+  background:#f8fbff;
+  border-radius:12px;
+  padding:15px;
+  box-sizing:border-box;
+  text-align:center;
+  min-height:110px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#citationTitre{
+  font-size:1.2rem;
+  font-weight:700;
+  color:#003366;
+  margin-bottom:10px;
+}
+
+#citationTexte{
+  font-size:1.2rem;
+  line-height:1.5;
+  color:#1f3b70;
+  font-style:italic;
+  opacity:0;
+  transform:translateY(10px);
+  transition:all .8s ease;
+}
+
+#citationTexte.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ===== LOADER ===== */
+#loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 64, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 100000;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+#loader-overlay .spinner {
+  width: 56px;
+  height: 56px;
+  border: 6px solid rgba(255,255,255,0.25);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== MODALES ACCÈS / ERREUR ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 64, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100001;
+}
+
+.modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px 50px;
+  max-width: 520px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modal-box .modal-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.modal-box h2 {
+  color: #0b2240;
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+}
+
+.modal-box p {
+  color: #364152;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+/* ===== BOUTONS COMMUNS APP (.btn-id) ===== */
+.btn-id {
+  all: unset;
+  background: transparent;
+  color: #000;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(2px);
+}
+
+.btn-id:hover {
+  background: rgba(0, 120, 255, 0.12);
+  border-color: rgba(0, 120, 255, 0.6);
+  color: #0078ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+}
+
+.btn-id:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+}
+
+.btn-id:focus {
+  outline: none;
+  border-color: rgba(0, 120, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+}
+.btn-id-c:hover {
+  background: rgba(255, 0, 0, 0.10);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #e60000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+}
+
+.btn-id-c:focus {
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+.btn-id-v:hover {
+  background: rgba(0, 200, 80, 0.12);
+  border-color: rgba(0, 200, 80, 0.6);
+  color: #00b35a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+}
+
+.btn-id-v:focus {
+  border-color: rgba(0, 200, 80, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+}
+/* ===== FOOTER ===== */
+#footer {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 12px 20px;
+  margin-top: 25px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
 </style>
 </head>
 <body>

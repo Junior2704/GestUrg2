@@ -5,7 +5,11 @@
 
 <meta charset="UTF-8">
 <title>Borne d’accueil – Urgences</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B544E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -16,55 +20,132 @@
 
 <style>
 :root{
-  --blue:#0b5ed7;
-  --bg:#f4f7fb;
-  --card:#ffffff;
+  --bg: #F6FBFA;
+  --surface: #FFFFFF;
+  --ink: #12312D;
+  --ink-soft: #4C6B66;
+  --teal: #0F766E;
+  --teal-deep: #0B544E;
+  --aqua: #DCF3F0;
+  --coral: #EF6351;
+  --coral-soft: #FDE4DF;
+  --amber: #E2A63A;
+  --amber-soft: #FBEEDA;
+  --violet: #6D5DD3;
+  --violet-soft: #E9E5FA;
+  --line: #E2EEEC;
+  --radius: 20px;
+  --shadow: 0 20px 50px -25px rgba(15, 60, 55, .35);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
 }
 
 *{box-sizing:border-box}
 
-body{
+html, body{
+  height:100%;
   margin:0;
-  font-family:"Inter","Segoe UI",Arial,sans-serif;
-  background:var(--bg);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1100px 500px at 90% -10%, #E7F6F3 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
+    var(--bg);
+  color: var(--ink);
   min-height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
-  color:#0b2240;
+  -webkit-font-smoothing: antialiased;
+  padding:20px;
 }
 
 .card{
-  background:var(--card);
+  background: var(--surface);
   width:100%;
-  max-width:520px;
-  border-radius:20px;
-  box-shadow:0 14px 35px rgba(0,0,0,.12);
-  padding:30px;
+  max-width:560px;
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding:0 0 34px;
   text-align:center;
+  overflow:hidden;
 }
 
-h1{
-  margin-top:0;
+.hero{
+  background: linear-gradient(90deg, #0B544E 0%, #0F766E 55%, #14958B 100%);
+  color:#fff;
+  padding:28px 24px 32px;
+  margin-bottom:30px;
+}
+
+.hero .kicker{
+  display:inline-block;
+  font-size:.95rem;
+  font-weight:700;
+  background: rgba(255,255,255,.15);
+  padding:6px 14px;
+  border-radius:999px;
+  margin-bottom:14px;
+}
+
+.hero h1{
+  margin:0 0 8px;
+  font-family: var(--font-display);
+  font-weight:600;
   font-size:2rem;
+  letter-spacing:.3px;
+}
+
+.hero p{
+  margin:0;
+  font-size:1.05rem;
+  color:#DCF3F0;
+}
+
+.motifs-wrap{
+  padding:0 26px;
+}
+
+.motifs-wrap > p{
+  font-size:1.05rem;
+  color: var(--ink-soft);
+  font-weight:600;
+  margin:0 0 18px;
 }
 
 .motifs{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:16px;
-  margin-top:25px;
 }
 
 button{
-  padding:18px;
-  font-size:1.1rem;
-  font-weight:600;
-  border-radius:14px;
-  border:none;
+  padding:20px 14px;
+  font-family: var(--font-body);
+  font-size:1.05rem;
+  font-weight:700;
+  border-radius:16px;
+  border:1.5px solid var(--line);
   cursor:pointer;
-  background:var(--blue);
-  color:white;
+  background: var(--aqua);
+  color: var(--teal-deep);
+  transition: all .25s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+button:hover{
+  background: var(--teal);
+  color:#fff;
+  border-color: var(--teal);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -10px rgba(15,118,110,.4);
+}
+
+button:active{
+  transform: translateY(0);
 }
 
 button:disabled{
@@ -72,19 +153,26 @@ button:disabled{
   cursor:not-allowed;
 }
 
+/* Bouton "Sortie" distinct, en corail */
+/*.motifs button:nth-child(7){
+  background: var(--coral-soft);
+  color:#C43F2E;
+  border-color: var(--coral-soft);
+}
+.motifs button:nth-child(7):hover{
+  background: var(--coral);
+  color:#fff;
+  border-color: var(--coral);
+}*/
 
-.numero{
-  font-size:4rem;
-  font-weight:800;
-  color:#dc3545;
-  margin:20px 0;
+.footer-note{
+  margin-top:26px;
+  padding:0 26px;
+  font-size:.85rem;
+  color: var(--ink-soft);
+  font-weight:600;
 }
 
-.footer{
-  margin-top:20px;
-  font-size:.9rem;
-  color:#667;
-}
 /* ================= TICKET THERMIQUE 58mm ================= */
 /* 🔒 Le ticket ne doit JAMAIS être visible à l'écran */
 #ticket {
@@ -213,7 +301,7 @@ button:disabled{
 .modal-wait {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 40, 36, 0.85);
   display: none;
   justify-content: center;
   align-items: center;
@@ -221,12 +309,13 @@ button:disabled{
 }
 
 .modal-box {
-  background: white;
+  background: var(--surface);
   width: 340px;
   padding: 32px 28px;
-  border-radius: 22px;
+  border-radius: var(--radius);
   text-align: center;
-  box-shadow: 0 30px 60px rgba(0,0,0,.35);
+  box-shadow: var(--shadow);
+  border:1px solid var(--line);
 }
 
 .modal-icon {
@@ -236,17 +325,21 @@ button:disabled{
 
 .modal-box h2 {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight:600;
   font-size: 1.5rem;
+  color: var(--teal-deep);
 }
 
 .modal-sub {
   margin: 6px 0 20px;
-  color: #64748b;
+  color: var(--ink-soft);
   font-size: 1rem;
+  font-weight:500;
 }
 
 .modal-ticket {
-  background: #f1f5f9;
+  background: var(--aqua);
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 20px;
@@ -254,13 +347,15 @@ button:disabled{
 
 .modal-ticket .label {
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--ink-soft);
+  font-weight:600;
 }
 
 .modal-numero {
+  font-family: var(--font-display);
   font-size: 3.8rem;
-  font-weight: 900;
-  color: #dc2626;
+  font-weight: 700;
+  color: var(--coral);
   line-height: 1;
 }
 
@@ -278,16 +373,17 @@ button:disabled{
 
 .qr-text {
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--ink-soft);
   margin-top: 6px;
+  font-weight:600;
 }
 
 /* Loader moderne */
 .loader {
   width: 36px;
   height: 36px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #0b5ed7;
+  border: 4px solid var(--aqua);
+  border-top-color: var(--teal);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto;
@@ -307,33 +403,39 @@ button:disabled{
 }
 
 ::-webkit-scrollbar-track {
-    background: #eef3ff;
+    background: var(--aqua);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
+    background: linear-gradient(180deg, var(--teal), var(--teal-deep));
     border-radius: 10px;
-    border: 2px solid #eef3ff;
+    border: 2px solid var(--aqua);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
+    background: linear-gradient(180deg, #14958B, var(--teal));
 }
 
 /* Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+    scrollbar-color: var(--teal) var(--aqua);
+}
+</style>
 </head>
 
 <body>
 
 <div class="card" id="borne">
-  <h1>Bienvenue aux Urgences</h1>
-  <p>Veuillez choisir le motif de votre venue</p>
 
+  <div class="hero">
+    <span class="kicker">🏥 Service des Urgences</span>
+    <h1>Bienvenue aux Urgences</h1>
+    <p>Veuillez choisir le motif de votre venue</p>
+  </div>
+
+  <div class="motifs-wrap">
   <div class="motifs">
   <button onclick="prendreTicket('Urgences diverses','general')">🩺 Urgences diverses</button>
   <button onclick="prendreTicket('Traumatologie','traumato')">🦴 Traumatologie</button>
@@ -346,8 +448,11 @@ button:disabled{
 
 
   <button onclick="prendreTicket('Autres','autres')">❓ Autres</button>
-  
+
 </div>
+  </div>
+
+  <p class="footer-note">Solution fièrement propulsée par GestUrg2 🚀</p>
 
 
 

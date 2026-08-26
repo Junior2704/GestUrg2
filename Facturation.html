@@ -328,10 +328,17 @@
   </div>
 </div>
 
-<script>
+<script type="module">
   // ---------------------------------------------------------------------
-  // Firebase init
+  // Firebase init (SDK modulaire v10)
   // ---------------------------------------------------------------------
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc,
+    query, where, orderBy, limit
+  } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -340,8 +347,9 @@
     messagingSenderId: "392921498200",
     appId: "1:392921498200:web:7ccce767332c67c697c02d"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
   const FACTURE_COLLECTION = 'facture';
 
   const state = {
@@ -389,8 +397,6 @@
     ['dateEntree', 'dateSortie', 'chambre', 'medecin', 'nbJours'].forEach(id => {
       $(id).closest('div').style.display = showDates ? '' : (id === 'nbJours' ? '' : '');
     });
-    // Champs de dates/chambre toujours visibles mais seulement utiles en hospitalisation ;
-    // on les laisse éditables dans tous les cas pour rester souple, on calcule juste nbJours.
     computeNbJours();
   }
 
@@ -407,8 +413,6 @@
   // ---------------------------------------------------------------------
   // Autocomplete prestations (référentiel Facturables)
   // ---------------------------------------------------------------------
-  // Un seul listener global "click" pour fermer les suggestions ouvertes,
-  // au lieu d'en empiler un par ligne (fuite mémoire corrigée).
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.serviceSuggestions').forEach(box => {
       const input = box.parentElement.querySelector('.serviceInput');
@@ -446,7 +450,7 @@
   // ---------------------------------------------------------------------
   // Lignes de prestations
   // ---------------------------------------------------------------------
-  function addLine(line = { description:'', quantity:1, unitPrice:0 }) {
+  function addLine(line = { description: '', quantity: 1, unitPrice: 0 }) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="left service-cell">
@@ -472,7 +476,6 @@
     });
 
     tr.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
-      // empêche les quantités/prix négatifs saisis manuellement
       if (i.classList.contains('qty') && Number(i.value) < 1) i.value = 1;
       if (i.classList.contains('unitPrice') && Number(i.value) < 0) i.value = 0;
       recompute();
@@ -486,11 +489,11 @@
   }
 
   function escapeAttr(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function addPayment(payment = {}) {
-    const now = new Date().toISOString().slice(0,10);
+    const now = new Date().toISOString().slice(0, 10);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input class="pDate" type="date" value="${payment.date || now}" /></td>
@@ -617,6 +620,8 @@
       payments: readPayments(),
       totals,
       statutPaiement: totals.restePayer <= 0.009 ? 'complet' : 'incomplet',
+      // Traçabilité : facture rattachée au compte connecté
+      creePar: window.medecinUid || null,
       updatedAt: new Date().toISOString()
     };
   }
@@ -654,8 +659,8 @@
   async function loadPatientById(patientId, { silent } = {}) {
     if (!patientId) return;
     try {
-      const snap = await db.collection('patients').doc(patientId).get();
-      if (!snap.exists) {
+      const snap = await getDoc(doc(db, 'patients', patientId));
+      if (!snap.exists()) {
         if (!silent) $('patientMsg').textContent = "❌ Aucun patient trouvé pour cet ID.";
         return;
       }
@@ -664,7 +669,7 @@
       $('prenom').value = p.prenom || '';
       if (p.dateNaissance) {
         const d = p.dateNaissance.toDate ? p.dateNaissance.toDate() : new Date(p.dateNaissance);
-        if (!Number.isNaN(d.getTime())) $('naissance').value = d.toISOString().slice(0,10);
+        if (!Number.isNaN(d.getTime())) $('naissance').value = d.toISOString().slice(0, 10);
       }
       if (!silent) $('patientMsg').textContent = `✅ Patient chargé (${p.prenom || ''} ${p.nom || ''}).`;
     } catch (err) {
@@ -683,8 +688,8 @@
 
   async function loadFacturables() {
     try {
-      const doc = await db.collection('referentiels').doc('Facturables').get();
-      state.facturables = doc.exists ? (doc.data() || {}) : {};
+      const snap = await getDoc(doc(db, 'referentiels', 'Facturables'));
+      state.facturables = snap.exists() ? (snap.data() || {}) : {};
     } catch (err) {
       console.error(err);
       state.facturables = {};
@@ -698,7 +703,7 @@
   function formatDateDisplay(iso) {
     if (!iso) return '-';
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso).slice(0,19).replace('T',' ');
+    if (Number.isNaN(d.getTime())) return String(iso).slice(0, 19).replace('T', ' ');
     return d.toLocaleString('fr-FR');
   }
 
@@ -750,16 +755,17 @@
 
     try {
       const patientId = $('patientId').value.trim();
+      const col = collection(db, FACTURE_COLLECTION);
       let snap;
       if (patientId) {
         // Un filtre where() sur patientId sans orderBy évite un index composite;
         // le tri est ensuite fait côté client.
-        snap = await db.collection(FACTURE_COLLECTION).where('patientId', '==', patientId).limit(200).get();
+        snap = await getDocs(query(col, where('patientId', '==', patientId), limit(200)));
       } else {
-        snap = await db.collection(FACTURE_COLLECTION).orderBy('updatedAt', 'desc').limit(120).get();
+        snap = await getDocs(query(col, orderBy('updatedAt', 'desc'), limit(120)));
       }
 
-      state.historyDocs = snap.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+      state.historyDocs = snap.docs.map(d => ({ id: d.id, data: d.data() }));
       state.historyDocs.sort((a, b) => {
         const da = a.data.updatedAt || a.data.createdAt || '';
         const db_ = b.data.updatedAt || b.data.createdAt || '';
@@ -778,8 +784,8 @@
   async function loadInvoiceById(id) {
     if (!id) return;
     try {
-      const snap = await db.collection(FACTURE_COLLECTION).doc(id).get();
-      if (!snap.exists) {
+      const snap = await getDoc(doc(db, FACTURE_COLLECTION, id));
+      if (!snap.exists()) {
         alert('Facture introuvable.');
         return;
       }
@@ -827,14 +833,13 @@
     setSaveMsg('Enregistrement en cours...');
 
     try {
-      const col = db.collection(FACTURE_COLLECTION);
       if (state.currentInvoiceId) {
-        // La facture existe déjà (champ "facture" = ID connu) : on met à jour le même document.
-        await col.doc(state.currentInvoiceId).set(payload, { merge: true });
+        // La facture existe déjà : on met à jour le même document.
+        await setDoc(doc(db, FACTURE_COLLECTION, state.currentInvoiceId), payload, { merge: true });
       } else {
         // Nouvelle facture : Firestore génère l'ID, qu'on conserve ensuite comme identifiant de la facture.
         payload.createdAt = payload.updatedAt;
-        const ref = await col.add(payload);
+        const ref = await addDoc(collection(db, FACTURE_COLLECTION), payload);
         state.currentInvoiceId = ref.id;
       }
 
@@ -859,7 +864,7 @@
 
     setBusy(true);
     try {
-      await db.collection(FACTURE_COLLECTION).doc(state.currentInvoiceId).delete();
+      await deleteDoc(doc(db, FACTURE_COLLECTION, state.currentInvoiceId));
       setSaveMsg(`🗑 Facture ${state.currentInvoiceId} supprimée.`, 'ok');
       resetForm();
       await searchInvoices();
@@ -959,7 +964,7 @@
             </tr>
           </thead>
           <tbody>
-            ${(f.payments.length ? f.payments : [{date:'-', mode:'-', amount:0}]).map(p => `
+            ${(f.payments.length ? f.payments : [{ date: '-', mode: '-', amount: 0 }]).map(p => `
               <tr>
                 <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.date}</td>
                 <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.mode}</td>
@@ -1046,44 +1051,49 @@
   window.__loadInvoice = (id) => loadInvoiceById(id);
 
   // ---------------------------------------------------------------------
-  // Événements
+  // Liaison des événements + démarrage de l'app (une seule fois, après auth)
   // ---------------------------------------------------------------------
-  $('addLineBtn').addEventListener('click', () => addLine());
-  $('addPaymentBtn').addEventListener('click', () => addPayment());
-  $('reloadFacturablesBtn').addEventListener('click', async () => {
-    await loadFacturables();
-    setSaveMsg('🔄 Référentiel des prestations rechargé.', 'ok');
-  });
-  $('regimeSecu').addEventListener('change', recompute);
-  $('mutuellePct').addEventListener('input', recompute);
-  $('invoiceType').addEventListener('change', updateTypeFieldsVisibility);
-  $('dateEntree').addEventListener('input', computeNbJours);
-  $('dateSortie').addEventListener('input', computeNbJours);
+  let eventsBound = false;
+  function bindEvents() {
+    if (eventsBound) return; // évite les doublons si onAuthStateChanged se redéclenche
+    eventsBound = true;
 
-  $('loadPatientBtn').addEventListener('click', async () => {
-    const id = $('patientId').value.trim();
-    if (!id) { alert("Renseigne un ID patient."); return; }
-    await loadPatientById(id);
-  });
+    $('addLineBtn').addEventListener('click', () => addLine());
+    $('addPaymentBtn').addEventListener('click', () => addPayment());
+    $('reloadFacturablesBtn').addEventListener('click', async () => {
+      await loadFacturables();
+      setSaveMsg('🔄 Référentiel des prestations rechargé.', 'ok');
+    });
+    $('regimeSecu').addEventListener('change', recompute);
+    $('mutuellePct').addEventListener('input', recompute);
+    $('invoiceType').addEventListener('change', updateTypeFieldsVisibility);
+    $('dateEntree').addEventListener('input', computeNbJours);
+    $('dateSortie').addEventListener('input', computeNbJours);
 
-  $('loadInvoiceByIdBtn').addEventListener('click', async () => {
-    const id = $('historyInvoiceId').value.trim();
-    if (!id) { alert('Renseigne un ID facture.'); return; }
-    await loadInvoiceById(id);
-  });
+    $('loadPatientBtn').addEventListener('click', async () => {
+      const id = $('patientId').value.trim();
+      if (!id) { alert("Renseigne un ID patient."); return; }
+      await loadPatientById(id);
+    });
 
-  $('searchInvoicesBtn').addEventListener('click', searchInvoices);
-  $('saveBtn').addEventListener('click', saveInvoice);
-  $('pdfBtn').addEventListener('click', generatePdf);
-  $('deleteBtn').addEventListener('click', deleteInvoice);
-  $('resetBtn').addEventListener('click', () => {
-    if (confirm('Repartir sur une nouvelle facture vierge ?')) resetForm();
-  });
+    $('loadInvoiceByIdBtn').addEventListener('click', async () => {
+      const id = $('historyInvoiceId').value.trim();
+      if (!id) { alert('Renseigne un ID facture.'); return; }
+      await loadInvoiceById(id);
+    });
 
-  // ---------------------------------------------------------------------
-  // Initialisation
-  // ---------------------------------------------------------------------
-  (async function init() {
+    $('searchInvoicesBtn').addEventListener('click', searchInvoices);
+    $('saveBtn').addEventListener('click', saveInvoice);
+    $('pdfBtn').addEventListener('click', generatePdf);
+    $('deleteBtn').addEventListener('click', deleteInvoice);
+    $('resetBtn').addEventListener('click', () => {
+      if (confirm('Repartir sur une nouvelle facture vierge ?')) resetForm();
+    });
+  }
+
+  async function startApp() {
+    bindEvents();
+
     const connStatus = $('connStatus');
     try {
       await loadFacturables();
@@ -1108,7 +1118,70 @@
     if (factureId) await loadInvoiceById(factureId);
 
     await searchInvoices();
-  })();
+  }
+
+  // ---------------------------------------------------------------------
+  // Authentification — la facturation ne démarre qu'une fois l'utilisateur
+  // identifié et autorisé sur cette page
+  // ---------------------------------------------------------------------
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Pas d'utilisateur connecté : redirige vers la page de connexion.
+      window.location.href = "login.html";
+      return;
+    }
+
+    try {
+      if (typeof window.afficherLoader === 'function') window.afficherLoader();
+
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        window.medecinNom = data.nom || "";
+        window.medecinSpecialite = data.specialite || "";
+        window.medecinLieu = data.lieu || "";
+        window.medecinType = data.type || "";
+        window.medecinUid = user.uid;
+
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = window.medecinNom;
+
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = window.medecinSpecialite;
+
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = window.medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+          const modal = document.getElementById("modal-no-access");
+          if (typeof window.masquerLoader === 'function') window.masquerLoader();
+          if (modal) modal.style.display = "flex";
+          console.warn("Accès refusé à", currentPage);
+          return; // on n'initialise pas la facturation si l'accès est refusé
+        }
+      } else {
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+
+      // Utilisateur authentifié et autorisé : on démarre la facturation
+      await startApp();
+
+      if (typeof window.masquerLoader === 'function') window.masquerLoader();
+    } catch (error) {
+      const modal = document.getElementById("modal-error");
+      if (typeof window.masquerLoader === 'function') window.masquerLoader();
+      if (modal) modal.style.display = "flex";
+      console.error("Erreur chargement médecin :", error);
+    }
+  });
 </script>
 </body>
 </html>

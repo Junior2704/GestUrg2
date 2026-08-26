@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg:#eef2f7;
@@ -23,19 +23,21 @@
       --muted:#6b7280;
     }
     * { box-sizing:border-box; }
-    body { margin:0; font-family:Segoe UI, Arial, sans-serif; color:var(--text); background:linear-gradient(120deg,#eef2f7,#f7f9fc); }
+    body { margin:0; font-family:"Segoe UI", Arial, sans-serif; color:var(--text); background:linear-gradient(120deg,#eef2f7,#f7f9fc); }
     .container { max-width:1300px; margin:20px auto; padding:0 14px; }
     h1 { text-align:center; margin:8px 0 16px; }
     h2 { margin:0 0 12px; font-size:1.15rem; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 5px 20px rgba(15,23,42,.06); padding:16px; margin-bottom:14px; }
+    .card.disabled-section { opacity:.5; pointer-events:none; }
     .grid { display:grid; gap:10px; }
     .grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .grid-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .grid-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .grid-5 { grid-template-columns:repeat(5,minmax(0,1fr)); }
     label { display:block; font-size:.88rem; font-weight:700; margin-bottom:4px; }
-    input, select, button { font:inherit; }
-    input, select { width:100%; border:1px solid #cfd8e3; border-radius:10px; padding:9px; background:#fff; }
-    input:disabled { background:#f7f9fc; color:#475569; }
+    input, select, button, textarea { font:inherit; }
+    input, select, textarea { width:100%; border:1px solid #cfd8e3; border-radius:10px; padding:9px; background:#fff; }
+    input:disabled, select:disabled { background:#f7f9fc; color:#475569; }
     .line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .btn { border:none; border-radius:10px; padding:9px 12px; font-weight:700; cursor:pointer; }
     .btn-primary { background:var(--primary); color:#fff; }
@@ -43,8 +45,10 @@
     .btn-warning { background:var(--warning); color:#fff; }
     .btn-danger { background:var(--danger); color:#fff; }
     .btn-light { background:#e5e7eb; color:#111827; }
-    .btn:disabled { opacity:.65; cursor:not-allowed; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
     .muted { color:var(--muted); font-size:.85rem; }
+    .error-text { color:var(--danger); font-size:.85rem; font-weight:700; }
+    .ok-text { color:var(--success); font-size:.85rem; font-weight:700; }
 
     table { width:100%; border-collapse:collapse; }
     th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; vertical-align:middle; }
@@ -62,110 +66,114 @@
       max-height:180px; overflow:auto; display:none; z-index:25;
       box-shadow:0 8px 22px rgba(0,0,0,.08);
     }
-    .serviceSuggestions div { padding:8px; cursor:pointer; }
+    .serviceSuggestions div { padding:8px; cursor:pointer; text-align:left; }
     .serviceSuggestions div:hover { background:#eff6ff; }
 
     .history-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
     .history-table-wrap { max-height:280px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; }
 
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.75rem; font-weight:800; }
+    .badge-complet { background:#dcfce7; color:#166534; }
+    .badge-incomplet { background:#fee2e2; color:#991b1b; }
+    .type-tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:.72rem; font-weight:800; background:#e0e7ff; color:#3730a3; }
+
     @media (max-width:1000px) {
-      .grid-2,.grid-3,.grid-4,.kpis { grid-template-columns:1fr; }
+      .grid-2,.grid-3,.grid-4,.grid-5,.kpis { grid-template-columns:1fr; }
     }
     .btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
+      all: unset;
+      background: transparent;
+      color: #000;
+      border: 1.5px solid rgba(0, 0, 0, 0.2);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(2px);
+    }
+    .btn-id:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-id:hover {
+      background: rgba(0, 120, 255, 0.12);
+      border-color: rgba(0, 120, 255, 0.6);
+      color: #0078ff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+    }
+    .btn-id:active { transform: translateY(0px); box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1); }
+    .btn-id:focus {
+      outline: none;
+      border-color: rgba(0, 120, 255, 0.8);
+      box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+    }
+    .btn-id-c:hover { background: rgba(255, 0, 0, 0.10); border-color: rgba(255, 0, 0, 0.6); color: #e60000; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15); }
+    .btn-id-c:focus { border-color: rgba(255, 0, 0, 0.8); box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15); }
+    .btn-id-v:hover { background: rgba(0, 200, 80, 0.12); border-color: rgba(0, 200, 80, 0.6); color: #00b35a; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15); }
+    .btn-id-v:focus { border-color: rgba(0, 200, 80, 0.8); box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15); }
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #2196f3, #1565c0); border-radius: 10px; border: 2px solid #eef3ff; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #42a5f5, #1976d2); }
+    * { scrollbar-width: thin; scrollbar-color: #2196f3 #eef3ff; }
+  </style>
 </head>
 <body>
 <div class="container">
   <h1>🧾 Facturation RPO</h1>
+
+  <div id="connStatus" class="muted" style="text-align:center;margin-bottom:10px;">Connexion à Firestore…</div>
+
+  <div class="card">
+    <h2>Type de facture</h2>
+    <div class="grid grid-4">
+      <div>
+        <label>Type</label>
+        <select id="invoiceType">
+          <option value="urgences">Urgences</option>
+          <option value="hospitalisation">Hospitalisation</option>
+          <option value="consultation">Consultation</option>
+        </select>
+      </div>
+      <div>
+        <label>Service</label>
+        <input id="serviceLabel" placeholder="ex: Urgences, Chirurgie, Cardiologie..." />
+      </div>
+      <div>
+        <label>Date d'entrée</label>
+        <input id="dateEntree" type="date" />
+      </div>
+      <div>
+        <label>Date de sortie</label>
+        <input id="dateSortie" type="date" />
+      </div>
+    </div>
+    <div class="grid grid-4" style="margin-top:10px;">
+      <div>
+        <label>Chambre / Lit</label>
+        <input id="chambre" placeholder="ex: 204B" />
+      </div>
+      <div>
+        <label>Médecin référent</label>
+        <input id="medecin" placeholder="Dr ..." />
+      </div>
+      <div>
+        <label>Nombre de jours</label>
+        <input id="nbJours" disabled />
+      </div>
+      <div></div>
+    </div>
+  </div>
 
   <div class="card">
     <h2>Patient</h2>
     <div class="grid grid-4">
       <div>
         <label>ID patient</label>
-        <input id="patientId" disabled />
+        <input id="patientId" placeholder="ID Firestore (optionnel)" />
       </div>
       <div>
         <label>Nom</label>
@@ -179,6 +187,10 @@
         <label>Date de naissance</label>
         <input id="naissance" type="date" />
       </div>
+    </div>
+    <div class="line" style="margin-top:10px;">
+      <button id="loadPatientBtn" type="button" class="btn-id">👤 Charger le patient depuis son ID</button>
+      <span id="patientMsg" class="muted"></span>
     </div>
   </div>
 
@@ -217,6 +229,7 @@
         <thead>
           <tr>
             <th>ID</th>
+            <th>Type</th>
             <th>Date MAJ</th>
             <th>Patient</th>
             <th>Total (€)</th>
@@ -226,7 +239,7 @@
           </tr>
         </thead>
         <tbody id="historyBody">
-          <tr><td colspan="7" class="muted">Aucun résultat pour le moment.</td></tr>
+          <tr><td colspan="8" class="muted">Aucun résultat pour le moment.</td></tr>
         </tbody>
       </table>
     </div>
@@ -236,6 +249,7 @@
     <h2>Prestations (chargées depuis Firestore)</h2>
     <div class="line" style="margin-bottom:8px;">
       <button id="addLineBtn" type="button" class="btn-id">➕ Ajouter une ligne</button>
+      <button id="reloadFacturablesBtn" type="button" class="btn-id">🔄 Recharger le référentiel</button>
     </div>
     <table>
       <thead>
@@ -259,12 +273,13 @@
   </div>
 
   <div class="card">
-    <h2>Calcul Secu / Mutuelle / Patient</h2>
+    <h2>Calcul Sécu / Mutuelle / Patient</h2>
     <div class="grid grid-4">
       <div>
         <label>Régime sécu</label>
         <select id="regimeSecu">
           <option value="70">Régime général (70%)</option>
+          <option value="80">Hospitalisation (80%)</option>
           <option value="90">Alsace-Moselle (90%)</option>
           <option value="100">100% (ALD/CMU/AME)</option>
           <option value="0">Aucun remboursement</option>
@@ -304,15 +319,19 @@
 
   <div class="card">
     <div class="line">
-      <button id="saveBtn" type="button" class="btn-id btn-id-v">💾 Enregistrer la facture</button>
+      <button id="saveBtn" type="button" class="btn-id btn-id-v">💾 Valider / Enregistrer la facture</button>
       <button id="pdfBtn" type="button" class="btn-id">📄 Générer le PDF</button>
-      <button id="resetBtn" type="button" class="btn-id btn-id-c">♻️ Réinitialiser</button>
+      <button id="deleteBtn" type="button" class="btn-id btn-id-c">🗑 Supprimer cette facture</button>
+      <button id="resetBtn" type="button" class="btn-id btn-id-c">♻️ Nouvelle facture</button>
       <span id="saveMsg" class="muted"></span>
     </div>
   </div>
 </div>
 
 <script>
+  // ---------------------------------------------------------------------
+  // Firebase init
+  // ---------------------------------------------------------------------
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -323,30 +342,88 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const FACTURE_COLLECTION = 'facture';
 
   const state = {
     currentInvoiceId: null,
     facturables: {},
-    historyDocs: []
+    historyDocs: [],
+    saving: false
   };
 
-  const linesBody = document.getElementById('linesBody');
-  const paymentsBody = document.getElementById('paymentsBody');
+  const $ = (id) => document.getElementById(id);
+  const linesBody = $('linesBody');
+  const paymentsBody = $('paymentsBody');
 
-  const euro = (v) => Number(v || 0).toFixed(2);
+  const euro = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  };
+  const numFromEuroText = (txt) => {
+    const n = Number(String(txt || '').replace('€', '').trim());
+    return Number.isFinite(n) ? n : 0;
+  };
 
   function setInvoiceBadge() {
-    document.getElementById('invoiceBadge').textContent = state.currentInvoiceId || 'nouvelle';
+    $('invoiceBadge').textContent = state.currentInvoiceId || 'nouvelle';
   }
 
-  function createServiceSuggestions(input, box, onSelect) {
+  function setSaveMsg(text, kind) {
+    const el = $('saveMsg');
+    el.textContent = text;
+    el.className = kind === 'error' ? 'error-text' : (kind === 'ok' ? 'ok-text' : 'muted');
+  }
+
+  function setBusy(busy) {
+    state.saving = busy;
+    ['saveBtn', 'pdfBtn', 'deleteBtn', 'resetBtn', 'searchInvoicesBtn', 'loadInvoiceByIdBtn', 'loadPatientBtn']
+      .forEach(id => { const b = $(id); if (b) b.disabled = busy; });
+  }
+
+  // ---------------------------------------------------------------------
+  // Hospitalisation fields visibility + nombre de jours auto
+  // ---------------------------------------------------------------------
+  function updateTypeFieldsVisibility() {
+    const type = $('invoiceType').value;
+    const showDates = type === 'hospitalisation';
+    ['dateEntree', 'dateSortie', 'chambre', 'medecin', 'nbJours'].forEach(id => {
+      $(id).closest('div').style.display = showDates ? '' : (id === 'nbJours' ? '' : '');
+    });
+    // Champs de dates/chambre toujours visibles mais seulement utiles en hospitalisation ;
+    // on les laisse éditables dans tous les cas pour rester souple, on calcule juste nbJours.
+    computeNbJours();
+  }
+
+  function computeNbJours() {
+    const dIn = $('dateEntree').value;
+    const dOut = $('dateSortie').value;
+    if (!dIn || !dOut) { $('nbJours').value = ''; return; }
+    const a = new Date(dIn);
+    const b = new Date(dOut);
+    const diffDays = Math.round((b - a) / 86400000);
+    $('nbJours').value = diffDays >= 0 ? diffDays : '';
+  }
+
+  // ---------------------------------------------------------------------
+  // Autocomplete prestations (référentiel Facturables)
+  // ---------------------------------------------------------------------
+  // Un seul listener global "click" pour fermer les suggestions ouvertes,
+  // au lieu d'en empiler un par ligne (fuite mémoire corrigée).
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.serviceSuggestions').forEach(box => {
+      const input = box.parentElement.querySelector('.serviceInput');
+      if (box.style.display !== 'none' && e.target !== input && !box.contains(e.target)) {
+        box.style.display = 'none';
+      }
+    });
+  });
+
+  function bindServiceAutocomplete(input, box, onSelect) {
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
       box.innerHTML = '';
-      if (!q) {
-        box.style.display = 'none';
-        return;
-      }
+      if (!q) { box.style.display = 'none'; return; }
+
       const keys = Object.keys(state.facturables)
         .filter(k => k.toLowerCase().includes(q))
         .slice(0, 20);
@@ -364,23 +441,20 @@
 
       box.style.display = keys.length ? 'block' : 'none';
     });
-
-    document.addEventListener('click', (e) => {
-      if (!box.contains(e.target) && e.target !== input) {
-        box.style.display = 'none';
-      }
-    });
   }
 
+  // ---------------------------------------------------------------------
+  // Lignes de prestations
+  // ---------------------------------------------------------------------
   function addLine(line = { description:'', quantity:1, unitPrice:0 }) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="left service-cell">
-        <input class="serviceInput" placeholder="Rechercher une prestation..." value="${line.description || ''}" />
+        <input class="serviceInput" placeholder="Rechercher une prestation..." value="${escapeAttr(line.description || '')}" />
         <div class="serviceSuggestions"></div>
       </td>
-      <td><input class="qty" type="number" min="1" value="${line.quantity || 1}" /></td>
-      <td><input class="unitPrice" type="number" min="0" step="0.01" value="${line.unitPrice || 0}" /></td>
+      <td><input class="qty" type="number" min="1" step="1" value="${Number(line.quantity) > 0 ? Number(line.quantity) : 1}" /></td>
+      <td><input class="unitPrice" type="number" min="0" step="0.01" value="${Number(line.unitPrice) >= 0 ? Number(line.unitPrice) : 0}" /></td>
       <td class="lineTotal">0.00</td>
       <td><button type="button" class="btn btn-danger delLine">🗑</button></td>
     `;
@@ -391,19 +465,28 @@
     const box = tr.querySelector('.serviceSuggestions');
     const unitPriceInput = tr.querySelector('.unitPrice');
 
-    createServiceSuggestions(serviceInput, box, (name, pu) => {
+    bindServiceAutocomplete(serviceInput, box, (name, pu) => {
       serviceInput.value = name;
       unitPriceInput.value = pu;
       recompute();
     });
 
-    tr.querySelectorAll('input').forEach(i => i.addEventListener('input', recompute));
+    tr.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
+      // empêche les quantités/prix négatifs saisis manuellement
+      if (i.classList.contains('qty') && Number(i.value) < 1) i.value = 1;
+      if (i.classList.contains('unitPrice') && Number(i.value) < 0) i.value = 0;
+      recompute();
+    }));
     tr.querySelector('.delLine').addEventListener('click', () => {
       tr.remove();
       recompute();
     });
 
     recompute();
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function addPayment(payment = {}) {
@@ -420,13 +503,16 @@
           <option>Autre</option>
         </select>
       </td>
-      <td><input class="pAmount" type="number" min="0" step="0.01" value="${payment.amount || 0}" /></td>
+      <td><input class="pAmount" type="number" min="0" step="0.01" value="${Number(payment.amount) >= 0 ? Number(payment.amount) : 0}" /></td>
       <td><button type="button" class="btn btn-danger delPayment">🗑</button></td>
     `;
     paymentsBody.appendChild(tr);
     if (payment.mode) tr.querySelector('.pMode').value = payment.mode;
 
-    tr.querySelectorAll('input,select').forEach(i => i.addEventListener('input', recompute));
+    tr.querySelectorAll('input,select').forEach(i => i.addEventListener('input', () => {
+      if (i.classList.contains('pAmount') && Number(i.value) < 0) i.value = 0;
+      recompute();
+    }));
     tr.querySelector('.delPayment').addEventListener('click', () => {
       tr.remove();
       recompute();
@@ -437,22 +523,22 @@
   function readPrestations() {
     return [...linesBody.querySelectorAll('tr')].map(tr => {
       const description = tr.querySelector('.serviceInput').value.trim();
-      const quantity = Number(tr.querySelector('.qty').value || 0);
-      const unitPrice = Number(tr.querySelector('.unitPrice').value || 0);
+      const quantity = Math.max(0, Number(tr.querySelector('.qty').value || 0));
+      const unitPrice = Math.max(0, Number(tr.querySelector('.unitPrice').value || 0));
       return {
         description,
         quantity,
         unitPrice,
         lineTotal: Number((quantity * unitPrice).toFixed(2))
       };
-    }).filter(x => x.description);
+    }).filter(x => x.description && x.quantity > 0);
   }
 
   function readPayments() {
     return [...paymentsBody.querySelectorAll('tr')].map(tr => ({
       date: tr.querySelector('.pDate').value,
       mode: tr.querySelector('.pMode').value,
-      amount: Number(tr.querySelector('.pAmount').value || 0)
+      amount: Math.max(0, Number(tr.querySelector('.pAmount').value || 0))
     })).filter(x => x.amount > 0);
   }
 
@@ -460,17 +546,17 @@
     let total = 0;
 
     [...linesBody.querySelectorAll('tr')].forEach(tr => {
-      const qty = Number(tr.querySelector('.qty').value || 0);
-      const unitPrice = Number(tr.querySelector('.unitPrice').value || 0);
+      const qty = Math.max(0, Number(tr.querySelector('.qty').value || 0));
+      const unitPrice = Math.max(0, Number(tr.querySelector('.unitPrice').value || 0));
       const lt = qty * unitPrice;
       tr.querySelector('.lineTotal').textContent = euro(lt);
       total += lt;
     });
 
-    document.getElementById('totalGlobal').textContent = euro(total);
+    $('totalGlobal').textContent = euro(total);
 
-    const secuRate = Number(document.getElementById('regimeSecu').value || 0) / 100;
-    const mutuelleRate = Number(document.getElementById('mutuellePct').value || 0) / 100;
+    const secuRate = Math.min(1, Math.max(0, Number($('regimeSecu').value || 0) / 100));
+    const mutuelleRate = Math.min(1, Math.max(0, Number($('mutuellePct').value || 0) / 100));
 
     const partSecu = total * secuRate;
     const afterSecu = Math.max(total - partSecu, 0);
@@ -480,12 +566,12 @@
     const paid = readPayments().reduce((sum, p) => sum + p.amount, 0);
     const remaining = Math.max(partPatient - paid, 0);
 
-    document.getElementById('partSecu').value = euro(partSecu);
-    document.getElementById('partMutuelle').value = euro(partMutuelle);
-    document.getElementById('partPatient').textContent = `${euro(partPatient)} €`;
-    document.getElementById('dejaPaye').textContent = `${euro(paid)} €`;
-    document.getElementById('restePayer').textContent = `${euro(remaining)} €`;
-    document.getElementById('statusP').textContent = remaining <= 0.009 ? 'COMPLET' : 'INCOMPLET';
+    $('partSecu').value = euro(partSecu);
+    $('partMutuelle').value = euro(partMutuelle);
+    $('partPatient').textContent = `${euro(partPatient)} €`;
+    $('dejaPaye').textContent = `${euro(paid)} €`;
+    $('restePayer').textContent = `${euro(remaining)} €`;
+    $('statusP').textContent = remaining <= 0.009 ? 'COMPLET' : 'INCOMPLET';
   }
 
   function extractIsoDate(value) {
@@ -493,26 +579,40 @@
     return String(value).slice(0, 10);
   }
 
+  // ---------------------------------------------------------------------
+  // Sérialisation / désérialisation de la facture
+  // ---------------------------------------------------------------------
   function serializeInvoice() {
     recompute();
     const totals = {
-      total: Number(document.getElementById('totalGlobal').textContent || 0),
-      partSecu: Number(document.getElementById('partSecu').value || 0),
-      partMutuelle: Number(document.getElementById('partMutuelle').value || 0),
-      partPatient: Number(document.getElementById('partPatient').textContent.replace('€','') || 0),
-      dejaPaye: Number(document.getElementById('dejaPaye').textContent.replace('€','') || 0),
-      restePayer: Number(document.getElementById('restePayer').textContent.replace('€','') || 0)
+      total: Number($('totalGlobal').textContent || 0),
+      partSecu: Number($('partSecu').value || 0),
+      partMutuelle: Number($('partMutuelle').value || 0),
+      partPatient: numFromEuroText($('partPatient').textContent),
+      dejaPaye: numFromEuroText($('dejaPaye').textContent),
+      restePayer: numFromEuroText($('restePayer').textContent)
     };
 
+    const type = $('invoiceType').value;
+
     return {
-      patientId: document.getElementById('patientId').value || null,
+      type,
+      service: $('serviceLabel').value.trim(),
+      hospitalisation: type === 'hospitalisation' ? {
+        dateEntree: $('dateEntree').value || null,
+        dateSortie: $('dateSortie').value || null,
+        chambre: $('chambre').value.trim(),
+        medecin: $('medecin').value.trim(),
+        nbJours: $('nbJours').value ? Number($('nbJours').value) : null
+      } : null,
+      patientId: $('patientId').value.trim() || null,
       patient: {
-        nom: document.getElementById('nom').value.trim(),
-        prenom: document.getElementById('prenom').value.trim(),
-        naissance: document.getElementById('naissance').value
+        nom: $('nom').value.trim(),
+        prenom: $('prenom').value.trim(),
+        naissance: $('naissance').value
       },
-      regimeSecuPct: Number(document.getElementById('regimeSecu').value || 0),
-      mutuellePct: Number(document.getElementById('mutuellePct').value || 0),
+      regimeSecuPct: Number($('regimeSecu').value || 0),
+      mutuellePct: Number($('mutuellePct').value || 0),
       prestations: readPrestations(),
       payments: readPayments(),
       totals,
@@ -521,29 +621,80 @@
     };
   }
 
+  function applyInvoiceToForm(f) {
+    $('invoiceType').value = f.type || 'urgences';
+    $('serviceLabel').value = f.service || '';
+    const h = f.hospitalisation || {};
+    $('dateEntree').value = h.dateEntree || '';
+    $('dateSortie').value = h.dateSortie || '';
+    $('chambre').value = h.chambre || '';
+    $('medecin').value = h.medecin || '';
+
+    $('patientId').value = f.patientId || '';
+    $('nom').value = f.patient?.nom || '';
+    $('prenom').value = f.patient?.prenom || '';
+    $('naissance').value = f.patient?.naissance || '';
+    $('regimeSecu').value = String(f.regimeSecuPct ?? 70);
+    $('mutuellePct').value = String(f.mutuellePct ?? 100);
+
+    linesBody.innerHTML = '';
+    paymentsBody.innerHTML = '';
+    (f.prestations || []).forEach(addLine);
+    (f.payments || []).forEach(addPayment);
+    if (!(f.prestations || []).length) addLine();
+    if (!(f.payments || []).length) addPayment();
+
+    updateTypeFieldsVisibility();
+    recompute();
+  }
+
+  // ---------------------------------------------------------------------
+  // Patient
+  // ---------------------------------------------------------------------
+  async function loadPatientById(patientId, { silent } = {}) {
+    if (!patientId) return;
+    try {
+      const snap = await db.collection('patients').doc(patientId).get();
+      if (!snap.exists) {
+        if (!silent) $('patientMsg').textContent = "❌ Aucun patient trouvé pour cet ID.";
+        return;
+      }
+      const p = snap.data();
+      $('nom').value = p.nom || '';
+      $('prenom').value = p.prenom || '';
+      if (p.dateNaissance) {
+        const d = p.dateNaissance.toDate ? p.dateNaissance.toDate() : new Date(p.dateNaissance);
+        if (!Number.isNaN(d.getTime())) $('naissance').value = d.toISOString().slice(0,10);
+      }
+      if (!silent) $('patientMsg').textContent = `✅ Patient chargé (${p.prenom || ''} ${p.nom || ''}).`;
+    } catch (err) {
+      console.error(err);
+      if (!silent) $('patientMsg').textContent = "⚠️ Erreur lors du chargement du patient.";
+    }
+  }
+
   async function loadPatientFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const patientId = params.get('id');
     if (!patientId) return;
-
-    document.getElementById('patientId').value = patientId;
-    const snap = await db.collection('patients').doc(patientId).get();
-    if (!snap.exists) return;
-
-    const p = snap.data();
-    document.getElementById('nom').value = p.nom || '';
-    document.getElementById('prenom').value = p.prenom || '';
-    if (p.dateNaissance) {
-      const d = p.dateNaissance.toDate ? p.dateNaissance.toDate() : new Date(p.dateNaissance);
-      document.getElementById('naissance').value = d.toISOString().slice(0,10);
-    }
+    $('patientId').value = patientId;
+    await loadPatientById(patientId, { silent: true });
   }
 
   async function loadFacturables() {
-    const doc = await db.collection('referentiels').doc('Facturables').get();
-    state.facturables = doc.exists ? doc.data() : {};
+    try {
+      const doc = await db.collection('referentiels').doc('Facturables').get();
+      state.facturables = doc.exists ? (doc.data() || {}) : {};
+    } catch (err) {
+      console.error(err);
+      state.facturables = {};
+      setSaveMsg("⚠️ Impossible de charger le référentiel des prestations.", 'error');
+    }
   }
 
+  // ---------------------------------------------------------------------
+  // Historique / recherche
+  // ---------------------------------------------------------------------
   function formatDateDisplay(iso) {
     if (!iso) return '-';
     const d = new Date(iso);
@@ -551,30 +702,35 @@
     return d.toLocaleString('fr-FR');
   }
 
+  function typeLabel(type) {
+    return { urgences: 'Urgences', hospitalisation: 'Hospitalisation', consultation: 'Consultation' }[type] || (type || '-');
+  }
+
   function setHistoryRows(rows) {
-    const body = document.getElementById('historyBody');
+    const body = $('historyBody');
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="7" class="muted">Aucun résultat.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="muted">Aucun résultat.</td></tr>';
       return;
     }
 
     body.innerHTML = rows.map(({ id, data }) => `
       <tr>
         <td>${id}</td>
+        <td><span class="type-tag">${typeLabel(data.type)}</span></td>
         <td>${formatDateDisplay(data.updatedAt || data.createdAt)}</td>
-        <td class="left">${(data.patient?.prenom || '')} ${(data.patient?.nom || '')}</td>
+        <td class="left">${escapeAttr(data.patient?.prenom || '')} ${escapeAttr(data.patient?.nom || '')}</td>
         <td>${euro(data.totals?.total)}</td>
         <td>${euro(data.totals?.restePayer)}</td>
-        <td>${(data.statutPaiement || '').toUpperCase()}</td>
+        <td><span class="badge ${data.statutPaiement === 'complet' ? 'badge-complet' : 'badge-incomplet'}">${(data.statutPaiement || '').toUpperCase()}</span></td>
         <td><button class="btn-id" onclick="window.__loadInvoice('${id}')">Charger</button></td>
       </tr>
     `).join('');
   }
 
   function applyHistoryFilters(items) {
-    const filterNom = document.getElementById('historyNom').value.trim().toLowerCase();
-    const dateMin = document.getElementById('historyDateMin').value;
-    const dateMax = document.getElementById('historyDateMax').value;
+    const filterNom = $('historyNom').value.trim().toLowerCase();
+    const dateMin = $('historyDateMin').value;
+    const dateMax = $('historyDateMax').value;
 
     return items.filter(({ data }) => {
       const fullName = `${data.patient?.prenom || ''} ${data.patient?.nom || ''}`.toLowerCase();
@@ -589,93 +745,156 @@
   }
 
   async function searchInvoices() {
-    const historyInfo = document.getElementById('historyInfo');
+    const historyInfo = $('historyInfo');
     historyInfo.textContent = 'Recherche en cours...';
 
-    const patientId = document.getElementById('patientId').value.trim();
-    let query = db.collection('facture').orderBy('updatedAt', 'desc').limit(120);
-    if (patientId) {
-      query = db.collection('facture').where('patientId', '==', patientId).limit(120);
+    try {
+      const patientId = $('patientId').value.trim();
+      let snap;
+      if (patientId) {
+        // Un filtre where() sur patientId sans orderBy évite un index composite;
+        // le tri est ensuite fait côté client.
+        snap = await db.collection(FACTURE_COLLECTION).where('patientId', '==', patientId).limit(200).get();
+      } else {
+        snap = await db.collection(FACTURE_COLLECTION).orderBy('updatedAt', 'desc').limit(120).get();
+      }
+
+      state.historyDocs = snap.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+      state.historyDocs.sort((a, b) => {
+        const da = a.data.updatedAt || a.data.createdAt || '';
+        const db_ = b.data.updatedAt || b.data.createdAt || '';
+        return da < db_ ? 1 : (da > db_ ? -1 : 0);
+      });
+
+      const filtered = applyHistoryFilters(state.historyDocs);
+      setHistoryRows(filtered);
+      historyInfo.textContent = `${filtered.length} facture(s) affichée(s)${patientId ? ` (patient ${patientId})` : ''}.`;
+    } catch (err) {
+      console.error(err);
+      historyInfo.textContent = "⚠️ Erreur lors de la recherche des factures.";
     }
-
-    const snap = await query.get();
-    state.historyDocs = snap.docs.map(doc => ({ id: doc.id, data: doc.data() }));
-    const filtered = applyHistoryFilters(state.historyDocs);
-    setHistoryRows(filtered);
-
-    historyInfo.textContent = `${filtered.length} facture(s) affichée(s)${patientId ? ` (patient ${patientId})` : ''}.`;
   }
 
   async function loadInvoiceById(id) {
     if (!id) return;
-    const snap = await db.collection('facture').doc(id).get();
-    if (!snap.exists) {
-      alert('Facture introuvable.');
-      return;
+    try {
+      const snap = await db.collection(FACTURE_COLLECTION).doc(id).get();
+      if (!snap.exists) {
+        alert('Facture introuvable.');
+        return;
+      }
+      const f = snap.data();
+      state.currentInvoiceId = id;
+      setInvoiceBadge();
+      applyInvoiceToForm(f);
+      setSaveMsg(`📂 Facture chargée : ${id}`, 'ok');
+    } catch (err) {
+      console.error(err);
+      setSaveMsg("⚠️ Erreur lors du chargement de la facture.", 'error');
     }
+  }
 
-    const f = snap.data();
-    state.currentInvoiceId = id;
-    setInvoiceBadge();
-
-    document.getElementById('patientId').value = f.patientId || document.getElementById('patientId').value;
-    document.getElementById('nom').value = f.patient?.nom || '';
-    document.getElementById('prenom').value = f.patient?.prenom || '';
-    document.getElementById('naissance').value = f.patient?.naissance || '';
-    document.getElementById('regimeSecu').value = String(f.regimeSecuPct ?? 70);
-    document.getElementById('mutuellePct').value = String(f.mutuellePct ?? 100);
-
-    linesBody.innerHTML = '';
-    paymentsBody.innerHTML = '';
-
-    (f.prestations || []).forEach(addLine);
-    (f.payments || []).forEach(addPayment);
-    if (!(f.prestations || []).length) addLine();
-    if (!(f.payments || []).length) addPayment();
-
-    recompute();
-    document.getElementById('saveMsg').textContent = `📂 Facture chargée : ${id}`;
+  // ---------------------------------------------------------------------
+  // Enregistrement / suppression
+  // ---------------------------------------------------------------------
+  function validateBeforeSave(payload) {
+    if (!payload.patient.nom || !payload.patient.prenom || !payload.patient.naissance) {
+      return "Merci de compléter les informations patient (nom, prénom, date de naissance).";
+    }
+    if (!payload.prestations.length) {
+      return "Ajoute au moins une prestation valide (description + quantité > 0).";
+    }
+    if (payload.type === 'hospitalisation' && payload.hospitalisation) {
+      const { dateEntree, dateSortie } = payload.hospitalisation;
+      if (dateEntree && dateSortie && dateSortie < dateEntree) {
+        return "La date de sortie ne peut pas être avant la date d'entrée.";
+      }
+    }
+    return null;
   }
 
   async function saveInvoice() {
+    if (state.saving) return;
     const payload = serializeInvoice();
 
-    if (!payload.patient.nom || !payload.patient.prenom || !payload.patient.naissance) {
-      alert('Merci de compléter les informations patient.');
-      return;
-    }
-    if (!payload.prestations.length) {
-      alert('Ajoute au moins une prestation.');
+    const error = validateBeforeSave(payload);
+    if (error) {
+      alert(error);
       return;
     }
 
-    const col = db.collection('facture');
-    if (state.currentInvoiceId) {
-      await col.doc(state.currentInvoiceId).set(payload, { merge:true });
-    } else {
-      payload.createdAt = payload.updatedAt;
-      const ref = await col.add(payload);
-      state.currentInvoiceId = ref.id;
-    }
+    setBusy(true);
+    setSaveMsg('Enregistrement en cours...');
 
-    setInvoiceBadge();
-    document.getElementById('saveMsg').textContent = `✅ Facture enregistrée : ${state.currentInvoiceId}`;
-    await searchInvoices();
+    try {
+      const col = db.collection(FACTURE_COLLECTION);
+      if (state.currentInvoiceId) {
+        // La facture existe déjà (champ "facture" = ID connu) : on met à jour le même document.
+        await col.doc(state.currentInvoiceId).set(payload, { merge: true });
+      } else {
+        // Nouvelle facture : Firestore génère l'ID, qu'on conserve ensuite comme identifiant de la facture.
+        payload.createdAt = payload.updatedAt;
+        const ref = await col.add(payload);
+        state.currentInvoiceId = ref.id;
+      }
+
+      setInvoiceBadge();
+      setSaveMsg(`✅ Facture enregistrée : ${state.currentInvoiceId}`, 'ok');
+      await searchInvoices();
+    } catch (err) {
+      console.error(err);
+      setSaveMsg("❌ Erreur lors de l'enregistrement de la facture.", 'error');
+      alert("Erreur lors de l'enregistrement : " + (err.message || err));
+    } finally {
+      setBusy(false);
+    }
   }
 
+  async function deleteInvoice() {
+    if (!state.currentInvoiceId) {
+      alert("Aucune facture chargée à supprimer.");
+      return;
+    }
+    if (!confirm(`Supprimer définitivement la facture ${state.currentInvoiceId} ?`)) return;
+
+    setBusy(true);
+    try {
+      await db.collection(FACTURE_COLLECTION).doc(state.currentInvoiceId).delete();
+      setSaveMsg(`🗑 Facture ${state.currentInvoiceId} supprimée.`, 'ok');
+      resetForm();
+      await searchInvoices();
+    } catch (err) {
+      console.error(err);
+      setSaveMsg("❌ Erreur lors de la suppression.", 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // PDF
+  // ---------------------------------------------------------------------
   async function generatePdf() {
     const f = serializeInvoice();
     const factureId = state.currentInvoiceId || `temp-${Date.now()}`;
     const dateEdition = new Date().toLocaleString('fr-FR');
 
+    const hospitalisationBlock = (f.type === 'hospitalisation' && f.hospitalisation) ? `
+      <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff; margin-top:12px;">
+        <div style="font-size:12px; color:#64748b;">Séjour</div>
+        <div style="font-size:12px;">Service : <b>${f.service || '-'}</b></div>
+        <div style="font-size:12px;">Entrée : ${f.hospitalisation.dateEntree || '-'} — Sortie : ${f.hospitalisation.dateSortie || '-'} (${f.hospitalisation.nbJours ?? '-'} jour(s))</div>
+        <div style="font-size:12px;">Chambre : ${f.hospitalisation.chambre || '-'} — Médecin : ${f.hospitalisation.medecin || '-'}</div>
+      </div>
+    ` : '';
+
     const html = `
       <div style="font-family:Segoe UI,Arial,sans-serif; color:#0f172a; padding:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #0d6efd; padding-bottom:12px;">
           <div style="display:flex; gap:12px; align-items:center;">
-            <!--<img src="logo.png" style="height:58px; width:auto;" alt="logo">-->
             <div>
-              <div style="font-size:18px; font-weight:800; color:#0d6efd;">Facture RPO</div>
-              <div style="font-size:12px; color:#334155;">Service des urgences</div>
+              <div style="font-size:18px; font-weight:800; color:#0d6efd;">Facture RPO — ${typeLabelPdf(f.type)}</div>
+              <div style="font-size:12px; color:#334155;">${f.service || 'Service non renseigné'}</div>
             </div>
           </div>
           <div style="text-align:right; font-size:12px;">
@@ -684,14 +903,14 @@
           </div>
         </div>
 
-        <div style="display:flex; flex-wrap:wrap; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">
-          <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;">
+          <div style="flex:1; min-width:240px; border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
             <div style="font-size:12px; color:#64748b;">Patient</div>
             <div style="font-size:15px; font-weight:700;">${f.patient.prenom} ${f.patient.nom}</div>
             <div style="font-size:12px;">Né(e) le : ${f.patient.naissance || '-'}</div>
             <div style="font-size:12px;">ID patient : ${f.patientId || '-'}</div>
           </div>
-          <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
+          <div style="flex:1; min-width:240px; border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
             <div style="font-size:12px; color:#64748b;">Répartition</div>
             <div style="font-size:12px;">Sécu (${f.regimeSecuPct}%) : <b>${euro(f.totals.partSecu)} €</b></div>
             <div style="font-size:12px;">Mutuelle (${f.mutuellePct}%) : <b>${euro(f.totals.partMutuelle)} €</b></div>
@@ -699,6 +918,8 @@
             <div style="font-size:12px;">Reste patient : <b>${euro(f.totals.restePayer)} €</b> (${f.statutPaiement.toUpperCase()})</div>
           </div>
         </div>
+
+        ${hospitalisationBlock}
 
         <h3 style="margin:18px 0 8px; color:#0d6efd;">Prestations</h3>
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
@@ -749,91 +970,137 @@
         </table>
 
         <div style="margin-top:24px; font-size:11px; color:#64748b; text-align:center; border-top:1px dashed #cbd5e1; padding-top:8px;">
-          Document généré à partir des données Firestore de la facture (PDF non stocké).
+          Document généré à partir des données Firestore de la facture (facture n° ${factureId}).
         </div>
       </div>
     `;
- const container = document.createElement('div');
- container.id = 'pdf-container';
-  container.innerHTML = html;
 
-  container.style.width = '794px';
-  container.style.background = 'white';
-  container.style.padding = '20px';
+    const container = document.createElement('div');
+    container.id = 'pdf-container';
+    container.innerHTML = html;
+    container.style.width = '794px';
+    container.style.background = 'white';
+    container.style.padding = '20px';
+    container.style.opacity = '0';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    document.body.appendChild(container);
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `Facture_RPO_${factureId}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(container)
+        .save();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la génération du PDF.");
+    } finally {
+      container.remove();
+    }
+  }
 
-  container.style.opacity = '0';
-  container.style.position = 'absolute';
-  container.style.top = '0';
+  function typeLabelPdf(type) {
+    return { urgences: 'Urgences', hospitalisation: 'Hospitalisation', consultation: 'Consultation' }[type] || 'Facture';
+  }
 
-  document.body.appendChild(container);
-
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  await html2pdf()
-    .set({
-      margin: 10,
-      filename: `Facture_RPO_${factureId}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      }
-    })
-   .from(document.getElementById('pdf-container'))
-    .save();
-
-  container.remove();
-}
-
+  // ---------------------------------------------------------------------
+  // Reset
+  // ---------------------------------------------------------------------
   function resetForm() {
     state.currentInvoiceId = null;
     setInvoiceBadge();
+
+    $('invoiceType').value = 'urgences';
+    $('serviceLabel').value = '';
+    $('dateEntree').value = '';
+    $('dateSortie').value = '';
+    $('chambre').value = '';
+    $('medecin').value = '';
+    $('nbJours').value = '';
+
+    $('patientId').value = '';
+    $('nom').value = '';
+    $('prenom').value = '';
+    $('naissance').value = '';
+    $('patientMsg').textContent = '';
 
     linesBody.innerHTML = '';
     paymentsBody.innerHTML = '';
     addLine();
     addPayment();
 
-    document.getElementById('regimeSecu').value = '70';
-    document.getElementById('mutuellePct').value = '100';
-    document.getElementById('saveMsg').textContent = '';
+    $('regimeSecu').value = '70';
+    $('mutuellePct').value = '100';
+    setSaveMsg('');
+    updateTypeFieldsVisibility();
     recompute();
   }
 
   window.__loadInvoice = (id) => loadInvoiceById(id);
 
-  document.getElementById('addLineBtn').addEventListener('click', () => addLine());
-  document.getElementById('addPaymentBtn').addEventListener('click', () => addPayment());
-  document.getElementById('regimeSecu').addEventListener('change', recompute);
-  document.getElementById('mutuellePct').addEventListener('input', recompute);
+  // ---------------------------------------------------------------------
+  // Événements
+  // ---------------------------------------------------------------------
+  $('addLineBtn').addEventListener('click', () => addLine());
+  $('addPaymentBtn').addEventListener('click', () => addPayment());
+  $('reloadFacturablesBtn').addEventListener('click', async () => {
+    await loadFacturables();
+    setSaveMsg('🔄 Référentiel des prestations rechargé.', 'ok');
+  });
+  $('regimeSecu').addEventListener('change', recompute);
+  $('mutuellePct').addEventListener('input', recompute);
+  $('invoiceType').addEventListener('change', updateTypeFieldsVisibility);
+  $('dateEntree').addEventListener('input', computeNbJours);
+  $('dateSortie').addEventListener('input', computeNbJours);
 
-  document.getElementById('loadInvoiceByIdBtn').addEventListener('click', async () => {
-    const id = document.getElementById('historyInvoiceId').value.trim();
-    if (!id) {
-      alert('Renseigne un ID facture.');
-      return;
-    }
+  $('loadPatientBtn').addEventListener('click', async () => {
+    const id = $('patientId').value.trim();
+    if (!id) { alert("Renseigne un ID patient."); return; }
+    await loadPatientById(id);
+  });
+
+  $('loadInvoiceByIdBtn').addEventListener('click', async () => {
+    const id = $('historyInvoiceId').value.trim();
+    if (!id) { alert('Renseigne un ID facture.'); return; }
     await loadInvoiceById(id);
   });
 
-  document.getElementById('searchInvoicesBtn').addEventListener('click', searchInvoices);
-  document.getElementById('saveBtn').addEventListener('click', saveInvoice);
-  document.getElementById('pdfBtn').addEventListener('click', generatePdf);
-  document.getElementById('resetBtn').addEventListener('click', resetForm);
+  $('searchInvoicesBtn').addEventListener('click', searchInvoices);
+  $('saveBtn').addEventListener('click', saveInvoice);
+  $('pdfBtn').addEventListener('click', generatePdf);
+  $('deleteBtn').addEventListener('click', deleteInvoice);
+  $('resetBtn').addEventListener('click', () => {
+    if (confirm('Repartir sur une nouvelle facture vierge ?')) resetForm();
+  });
 
+  // ---------------------------------------------------------------------
+  // Initialisation
+  // ---------------------------------------------------------------------
   (async function init() {
-    await loadFacturables();
+    const connStatus = $('connStatus');
+    try {
+      await loadFacturables();
+      connStatus.textContent = '🟢 Connecté à Firestore.';
+      connStatus.style.color = 'var(--success)';
+    } catch (err) {
+      console.error(err);
+      connStatus.textContent = '🔴 Connexion Firestore impossible — vérifie ta configuration.';
+      connStatus.style.color = 'var(--danger)';
+    }
+
     await loadPatientFromUrl();
 
     addLine();
     addPayment();
     setInvoiceBadge();
+    updateTypeFieldsVisibility();
     recompute();
 
     const params = new URLSearchParams(window.location.search);

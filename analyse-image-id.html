@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b5ed7">
+  <title>Lecture identité</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    /*
+      ⚠️ REMPLACER uniquement cet objet par la configuration Firebase
+      de ton projet GestUrg2.
+    */
+    const firebaseConfig = {
+      apiKey: "A_REMPLACER",
+      authDomain: "urgences-a8ed4.firebaseapp.com",
+      projectId: "urgences-a8ed4",
+      storageBucket: "urgences-a8ed4.firebasestorage.app",
+      messagingSenderId: "A_REMPLACER",
+      appId: "A_REMPLACER"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.firebaseIdPhoto = { db, doc, setDoc, serverTimestamp };
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
+
+  <style>
+    :root {
+      --blue: #0b5ed7;
+      --blue-dark: #084298;
+      --blue-soft: #eaf2ff;
+      --green: #198754;
+      --red: #dc3545;
+      --text: #172033;
+      --muted: #6b7280;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --border: #dbe3ef;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100svh;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        16px
+        max(24px, env(safe-area-inset-bottom))
+        16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 12px;
+      border-radius: 17px;
+      background: linear-gradient(145deg, var(--blue), var(--blue-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 27px;
+      box-shadow: 0 10px 25px rgba(11, 94, 215, .22);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 750;
+      letter-spacing: -.3px;
+    }
+
+    .subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 8px 30px rgba(20, 40, 80, .07);
+    }
+
+    .id-badge {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--blue-soft);
+      color: var(--blue-dark);
+      border-radius: 12px;
+      padding: 11px 13px;
+      font-size: 13px;
+      margin-bottom: 17px;
+      word-break: break-all;
+    }
+
+    .id-badge strong {
+      font-weight: 750;
+    }
+
+    .type-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 9px;
+    }
+
+    .types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 17px;
+    }
+
+    .type-option {
+      position: relative;
+    }
+
+    .type-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .type-option label {
+      min-height: 50px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .type-option input:checked + label {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue-dark);
+    }
+
+    .camera-button {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-radius: 15px;
+      background: linear-gradient(135deg, var(--blue), #2675e8);
+      color: white;
+      font-size: 16px;
+      font-weight: 750;
+      cursor: pointer;
+      box-shadow: 0 9px 22px rgba(11, 94, 215, .22);
+    }
+
+    .camera-button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .camera-button:active {
+      transform: scale(.985);
+    }
+
+    #imageInput {
+      display: none;
+    }
+
+    .preview {
+      display: none;
+      margin-top: 14px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #eef2f7;
+      border: 1px solid var(--border);
+    }
+
+    .preview img {
+      display: block;
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+    }
+
+    .progress {
+      display: none;
+      margin-top: 17px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #e7edf6;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #0b5ed7, #63a0ff);
+      transition: width .2s ease;
+    }
+
+    .progress-text {
+      margin-top: 8px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      display: none;
+      margin-top: 15px;
+      padding: 13px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .status.info {
+      display: block;
+      background: var(--blue-soft);
+      color: var(--blue-dark);
+    }
+
+    .status.success {
+      display: block;
+      background: #eaf7ef;
+      color: #146c43;
+    }
+
+    .status.error {
+      display: block;
+      background: #fff0f1;
+      color: #b02a37;
+    }
+
+    .privacy {
+      margin-top: 13px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 380px) {
+      body {
+        padding-left: 11px;
+        padding-right: 11px;
+      }
+
+      .card {
+        padding: 15px;
+        border-radius: 17px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="logo">ID</div>
+      <h1>Lecture de pièce d'identité</h1>
+      <p class="subtitle">Numérisation sécurisée des informations</p>
+    </header>
+
+    <section class="card">
+      <div class="id-badge">
+        <span>●</span>
+        <span>Identifiant : <strong id="urlId">—</strong></span>
+      </div>
+
+      <div class="type-title">Type de document</div>
+
+      <div class="types">
+        <div class="type-option">
+          <input type="radio" id="cni" name="doctype" value="cni" checked>
+          <label for="cni">Carte d'identité</label>
+        </div>
+
+        <div class="type-option">
+          <input type="radio" id="vitale" name="doctype" value="vitale">
+          <label for="vitale">Carte Vitale</label>
+        </div>
+      </div>
+
+      <button class="camera-button" id="cameraBtn" type="button" disabled>
+        📷 Prendre / choisir une photo
+      </button>
+
+      <input
+        id="imageInput"
+        type="file"
+        accept="image/*"
+        capture="environment"
+      >
+
+      <div class="preview" id="previewWrap">
+        <img id="previewImg" alt="Document sélectionné">
+      </div>
+
+      <div class="progress" id="progressWrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Préparation…</div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="privacy">
+        Les informations détectées sont enregistrées directement dans
+        Firestore. Elles ne sont pas affichées à l'écran.
+      </div>
+    </section>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const recordId = (urlParams.get("id") || "").trim();
+
+  const urlId = document.getElementById("urlId");
+  const cameraBtn = document.getElementById("cameraBtn");
+  const imageInput = document.getElementById("imageInput");
+  const previewWrap = document.getElementById("previewWrap");
+  const previewImg = document.getElementById("previewImg");
+  const progressWrap = document.getElementById("progressWrap");
+  const progressFill = document.getElementById("progressFill");
+  const progressText = document.getElementById("progressText");
+  const status = document.getElementById("status");
+
+  let currentImageSource = null;
+  let firebaseReady = false;
+
+  if (recordId) {
+    urlId.textContent = recordId;
+  } else {
+    urlId.textContent = "ID manquant";
+    showStatus("Lien invalide : aucun identifiant n'est présent dans l'URL.", "error");
+  }
+
+  window.addEventListener("firebase-ready", function () {
+    firebaseReady = true;
+
+    if (recordId) {
+      cameraBtn.disabled = false;
+    }
+  });
+
+  cameraBtn.addEventListener("click", function () {
+    if (!recordId || !firebaseReady) return;
+    imageInput.click();
+  });
+
+  imageInput.addEventListener("change", function () {
+    const file = imageInput.files && imageInput.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showStatus("Le fichier sélectionné n'est pas une image.", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+      currentImageSource = event.target.result;
+      previewImg.src = currentImageSource;
+      previewWrap.style.display = "block";
+
+      analyzeAndSave();
+    };
+
+    reader.onerror = function () {
+      showStatus("Impossible de lire l'image.", "error");
+    };
+
+    reader.readAsDataURL(file);
+  });
+
+  async function analyzeAndSave() {
+    if (!currentImageSource || !recordId || !firebaseReady) return;
+
+    cameraBtn.disabled = true;
+    progressWrap.style.display = "block";
+    progressFill.style.width = "0%";
+    progressText.textContent = "Initialisation de la lecture…";
+    hideStatus();
+
+    try {
+      const result = await Tesseract.recognize(
+        currentImageSource,
+        "fra",
+        {
+          logger: function (message) {
+            if (message.status === "recognizing text") {
+              const pct = Math.round((message.progress || 0) * 100);
+              progressFill.style.width = pct + "%";
+              progressText.textContent = "Lecture du document… " + pct + "%";
+            } else if (message.status === "loading language traineddata") {
+              progressText.textContent = "Chargement de la reconnaissance…";
+            } else if (message.status === "initializing api") {
+              progressText.textContent = "Initialisation…";
+            }
+          }
+        }
+      );
+
+      const rawText = result.data.text || "";
+      const docType = document.querySelector('input[name="doctype"]:checked').value;
+
+      const fields =
+        docType === "vitale"
+          ? parseCarteVitale(rawText)
+          : parseCNI(rawText);
+
+      progressFill.style.width = "100%";
+      progressText.textContent = "Enregistrement dans Firestore…";
+
+      await saveToFirestore(fields, docType, rawText);
+
+      progressWrap.style.display = "none";
+      previewWrap.style.display = "none";
+
+      showStatus(
+        "✓ Les informations ont été enregistrées avec succès.",
+        "success"
+      );
+
+      /*
+        On vide la photo après traitement afin de ne pas conserver
+        inutilement l'image en mémoire dans la page.
+      */
+      currentImageSource = null;
+      imageInput.value = "";
+
+    } catch (error) {
+      console.error(error);
+
+      progressWrap.style.display = "none";
+
+      showStatus(
+        "Erreur pendant le traitement : " +
+        (error && error.message ? error.message : "erreur inconnue"),
+        "error"
+      );
+    } finally {
+      cameraBtn.disabled = !recordId || !firebaseReady;
+    }
+  }
+
+  async function saveToFirestore(fields, docType, rawText) {
+    const { db, doc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
+
+    const data = {};
+
+    Object.keys(fields).forEach(function (key) {
+      data[key] = fields[key].value || "";
+    });
+
+    /*
+      Document :
+      id-photo/{id présent dans l'URL}
+
+      Les champs sont enregistrés directement dans le document.
+    */
+    const ref = doc(db, "id-photo", recordId);
+
+    await setDoc(ref, {
+      ...data,
+      typeDocument: docType,
+      ocrBrut: rawText || "",
+      traiteLe: serverTimestamp()
+    }, {
+      merge: true
+    });
+  }
+
+  function showStatus(message, type) {
+    status.textContent = message;
+    status.className = "status " + type;
+  }
+
+  function hideStatus() {
+    status.textContent = "";
+    status.className = "status";
+  }
+
+  // =========================================================
+  // OCR / PARSING — logique reprise du lecteur d'origine
+  // =========================================================
+
+  function normalize(text) {
+    return text
+      .replace(/\r/g, "")
+      .split("\n")
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(Boolean);
+  }
+
+  function pickLongest(arr) {
+    return (arr || []).reduce(function (best, cur) {
+      return cur.length > best.length ? cur : best;
+    }, "");
+  }
+
+  function findLineIndex(lines, includeRe, excludeRe) {
+    for (let i = 0; i < lines.length; i++) {
+      if (
+        includeRe.test(lines[i]) &&
+        (!excludeRe || !excludeRe.test(lines[i]))
+      ) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function extractDateFromLine(line) {
+    if (!line) return "";
+
+    const match = line.match(
+      /\b(\d{2})[.\/\- ]?(\d{2})[.\/\- ]?(\d{4})\b/
+    );
+
+    if (!match) return "";
+
+    const jj = parseInt(match[1], 10);
+    const mm = parseInt(match[2], 10);
+
+    if (jj < 1 || jj > 31 || mm < 1 || mm > 12) {
+      return "";
+    }
+
+    return match[1] + "." + match[2] + "." + match[3];
+  }
+
+  function extractDate(text) {
+    return extractDateFromLine(text);
+  }
+
+  function extractPlace(line) {
+    if (!line) return "";
+
+    const tokens = line.split(/\s+/).filter(function (token) {
+      return /^[A-ZÀ-Ü0-9][A-Za-zÀ-ÿ0-9'\-]*$/.test(token)
+        && token.length > 1;
+    });
+
+    return tokens.join(" ");
+  }
+
+  function extractAlphaNumId(line) {
+    if (!line) return "";
+
+    const match = line.match(
+      /\b(?=[A-Z0-9]{8,12}\b)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*[0-9])[A-Z0-9]{8,12}\b/
+    );
+
+    return match ? match[0] : "";
+  }
+
+  function parseCNI(rawText) {
+    const lines = normalize(rawText);
+    const text = lines.join("\n");
+
+    let nom = "";
+    let prenoms = "";
+
+    const nomIdx = findLineIndex(
+      lines,
+      /\bNOM\b/i,
+      /PR[ÉE]?\.?\s*NOM/i
+    );
+
+    if (nomIdx !== -1) {
+      const ligneNom = lines[nomIdx + 1] || "";
+      const lignePrenoms = lines[nomIdx + 2] || "";
+
+      const capsTokens =
+        ligneNom.match(
+          /[A-ZÀ-Ü]{2,}(?:[-' ][A-ZÀ-Ü]{2,})*/g
+        ) || [];
+
+      nom = pickLongest(capsTokens);
+
+      const titleTokens =
+        lignePrenoms.match(
+          /[A-ZÀ-Ü][a-zà-ÿ]+(?:[\s,]+[A-ZÀ-Ü][a-zà-ÿ]+)*/g
+        ) || [];
+
+      prenoms = pickLongest(titleTokens)
+        .replace(/\s*,\s*/g, ", ");
+    }
+
+    let dateNaissance = "";
+    let sexe = "";
+    let nationalite = "";
+
+    const naissIdx = findLineIndex(lines, /NAISS|birth/i);
+
+    const ligneNaiss =
+      naissIdx !== -1
+        ? (lines[naissIdx + 1] || "")
+        : "";
+
+    dateNaissance =
+      extractDateFromLine(ligneNaiss) ||
+      extractDate(text);
+
+    const sexeMatch =
+      ligneNaiss.match(/\b([MF])\b/) ||
+      text.match(/sexe\s*[:\-]?\s*([MF])\b/i);
+
+    sexe = sexeMatch
+      ? sexeMatch[1].toUpperCase()
+      : "";
+
+    if (
+      /FRA\b/.test(ligneNaiss) ||
+      /fran[çc]aise/i.test(text)
+    ) {
+      nationalite = "Française";
+    }
+
+    const lieuIdx = findLineIndex(
+      lines,
+      /place of birth|lieu de naissance/i
+    );
+
+    const lieuNaissance =
+      lieuIdx !== -1
+        ? extractPlace(lines[lieuIdx + 1] || "")
+        : "";
+
+    const docIdx = findLineIndex(
+      lines,
+      /document no|n[°o]\s*du document/i
+    );
+
+    const ligneDoc =
+      docIdx !== -1
+        ? (lines[docIdx + 1] || "")
+        : "";
+
+    const numeroDocument =
+      extractAlphaNumId(ligneDoc) ||
+      extractAlphaNumId(text);
+
+    const dateExpiration =
+      extractDateFromLine(ligneDoc);
+
+    const tailleMatch =
+      text.match(/taille\s*[:\-]?\s*(\d[.,]\d{2})/i);
+
+    const taille = tailleMatch
+      ? tailleMatch[1].replace(",", ".") + " m"
+      : "";
+
+    return {
+      nom: {
+        value: nom
+      },
+      prenoms: {
+        value: prenoms
+      },
+      dateNaissance: {
+        value: dateNaissance
+      },
+      lieuNaissance: {
+        value: lieuNaissance
+      },
+      sexe: {
+        value: sexe
+      },
+      nationalite: {
+        value: nationalite
+      },
+      taille: {
+        value: taille
+      },
+      numeroDocument: {
+        value: numeroDocument
+      },
+      dateExpiration: {
+        value: dateExpiration
+      }
+    };
+  }
+
+  function parseCarteVitale(rawText) {
+    const lines = normalize(rawText);
+    const text = lines.join("\n");
+
+    let nom = "";
+    let prenom = "";
+
+    const nomIdx = findLineIndex(
+      lines,
+      /\bNOM\b/i,
+      /PR[ÉE]?\.?\s*NOM/i
+    );
+
+    if (nomIdx !== -1) {
+      const capsTokens =
+        (lines[nomIdx + 1] || "").match(
+          /[A-ZÀ-Ü]{2,}(?:[-' ][A-ZÀ-Ü]{2,})*/g
+        ) || [];
+
+      nom = pickLongest(capsTokens);
+
+      const titleTokens =
+        (lines[nomIdx + 2] || "").match(
+          /[A-ZÀ-Ü][a-zà-ÿ]+(?:[\s,]+[A-ZÀ-Ü][a-zà-ÿ]+)*/g
+        ) || [];
+
+      prenom = pickLongest(titleTokens)
+        .replace(/\s*,\s*/g, ", ");
+    }
+
+    const nirMatch =
+      text
+        .replace(/\s+/g, " ")
+        .match(
+          /\b([12])\s*(\d{2})\s*(\d{2})\s*(\d{2,3})\s*(\d{3})\s*(\d{3})\s*(\d{2})\b/
+        );
+
+    let numeroSecu = "";
+    let dateNaissanceDeduite = "";
+
+    if (nirMatch) {
+      numeroSecu = nirMatch.slice(1, 8).join(" ");
+
+      const anneeCourte = nirMatch[2];
+      const mois = nirMatch[3];
+
+      if (mois >= "01" && mois <= "12") {
+        const siecle =
+          parseInt(anneeCourte, 10) < 30
+            ? "20"
+            : "19";
+
+        dateNaissanceDeduite =
+          mois + "." + siecle + anneeCourte;
+      }
+    }
+
+    const dateNaissance =
+      extractDate(text) ||
+      dateNaissanceDeduite;
+
+    const caisseMatch =
+      text.match(/(caisse[^\n]{0,40})/i);
+
+    const caisse = caisseMatch
+      ? caisseMatch[1].trim()
+      : "";
+
+    return {
+      nom: {
+        value: nom
+      },
+      prenom: {
+        value: prenom
+      },
+      numeroSecu: {
+        value: numeroSecu
+      },
+      dateNaissance: {
+        value: dateNaissance
+      },
+      caisse: {
+        value: caisse
+      }
+    };
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -2491,16 +2491,33 @@ function openScanFrame(url){
   document.getElementById("scanFrameTitle").textContent = url.replace(/^https?:\/\//, "");
 
   const iframe = document.getElementById("scanFrameIframe");
-
-  // La page ouverte dans l'iframe initialise elle-même Firebase Auth.
-  // Comme elle est sur le même domaine que GestUrg2, Firebase peut
-  // restaurer la session déjà ouverte sur le téléphone.
   iframe.src = url;
   scanFrameOverlay.classList.add("open");
 
-  // On ne transmet PAS simplement le uid par postMessage :
-  // un uid seul n'est pas une authentification Firebase.
-  // La page enfant doit récupérer la vraie session Firebase Auth.
+  // L'iframe n'a pas besoin d'être authentifiée Firebase elle-même.
+  // Le parent mobile est déjà authentifié et effectuera les écritures
+  // Firestore à la place de la page de scan.
+  iframe.onload = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+      const childUrl = new URL(iframe.src, window.location.href);
+      const recordId = childUrl.searchParams.get("id");
+      if (!recordId) return;
+
+      const snap = await getDoc(doc(db, "id-photo", recordId));
+      const session = snap.exists() ? snap.data() : null;
+
+      iframe.contentWindow.postMessage({
+        source: "GestUrg2-Mobile",
+        type: "ID_PHOTO_SESSION",
+        session
+      }, window.location.origin);
+    } catch (e) {
+      console.error("Erreur transmission session id-photo :", e);
+    }
+  };
 }
 
 function closeScanFrame(){
@@ -2564,6 +2581,76 @@ window.addEventListener("message", (event) => {
   if (!data || data.source !== "messagerie") return;
   if (data.type === "non-lus"){
     updateMessagerieBadges(data.nonLus);
+  }
+});
+
+// ===== Pont Firestore pour les pages ouvertes depuis le scanner =====
+window.addEventListener("message", async (event) => {
+  if (event.origin !== window.location.origin) return;
+  const data = event.data;
+  if (!data || data.source !== "GestUrg2-IDPhoto") return;
+
+  const reply = (payload) => {
+    try {
+      event.source?.postMessage({
+        source: "GestUrg2-Mobile",
+        ...payload
+      }, event.origin);
+    } catch (e) {
+      console.error("Erreur réponse iframe ID photo :", e);
+    }
+  };
+
+  if (data.type === "REQUEST_ID_PHOTO_SESSION") {
+    const user = auth.currentUser;
+    if (!user) {
+      reply({ type: "ID_PHOTO_SESSION", session: null });
+      return;
+    }
+
+    try {
+      const recordId = String(data.recordId || "").trim();
+      if (!recordId) throw new Error("Identifiant de session manquant.");
+      const snap = await getDoc(doc(db, "id-photo", recordId));
+      reply({ type: "ID_PHOTO_SESSION", session: snap.exists() ? snap.data() : null });
+    } catch (e) {
+      console.error("Erreur lecture session id-photo :", e);
+      reply({ type: "ID_PHOTO_SESSION", session: null });
+    }
+    return;
+  }
+
+  if (data.type !== "SAVE_ID_PHOTO") return;
+
+  const user = auth.currentUser;
+  if (!user) {
+    reply({ type: "ID_PHOTO_SAVE_ERROR", error: "Utilisateur Firebase non connecté." });
+    return;
+  }
+
+  try {
+    const recordId = String(data.recordId || "").trim();
+    if (!recordId) throw new Error("Identifiant de session manquant.");
+
+    const fields = data.fields && typeof data.fields === "object" ? data.fields : {};
+    const payload = {
+      ...fields,
+      typeDocument: data.requestedType || data.docType || "",
+      ocrType: data.docType || "",
+      mode: data.effectiveMode || "admin",
+      ocrBrut: data.rawText || "",
+      statut: "termine",
+      traiteLe: serverTimestamp(),
+      traiteParUid: user.uid,
+      traiteParEmail: user.email || null
+    };
+
+    await setDoc(doc(db, "id-photo", recordId), payload, { merge: true });
+
+    reply({ type: "ID_PHOTO_SAVE_OK", uid: user.uid });
+  } catch (e) {
+    console.error("Erreur écriture id-photo depuis mobile :", e);
+    reply({ type: "ID_PHOTO_SAVE_ERROR", error: e?.message || "Erreur Firestore." });
   }
 });
 /* =========================================================

@@ -365,7 +365,7 @@
       </div>
 
       <button class="camera-button" id="cameraBtn" type="button" disabled>
-        📷 Prendre / choisir une photo
+        📷 Prendre une photo
       </button>
 
       <input
@@ -416,6 +416,8 @@
   let firebaseReady = false;
   let firebaseAuthReady = false;
   let firebaseCurrentUser = null;
+  let parentSessionReady = false;
+  let parentSession = null;
 
   if (recordId) {
     urlId.textContent = recordId;
@@ -425,42 +427,65 @@
   }
 
   window.addEventListener("firebase-ready", function () {
-    // Conservé pour la compatibilité, mais l'accès réel dépend aussi
-    // de la restauration de la session Firebase Auth.
     firebaseReady = true;
+    // Depuis mobile.html, l'écriture est effectuée par la page parente.
+    // Le bouton peut donc être utilisé sans attendre une session Auth dans l'iframe.
+    if (recordId) cameraBtn.disabled = false;
 
-    if (recordId && firebaseAuthReady && firebaseCurrentUser) {
-      cameraBtn.disabled = false;
-    }
+    requestParentSession();
   });
 
   window.addEventListener("firebase-auth-ready", function (event) {
     firebaseAuthReady = true;
     firebaseCurrentUser = event.detail?.user || null;
+  });
 
-    if (!firebaseCurrentUser) {
-      cameraBtn.disabled = true;
-      showStatus(
-        "Aucune session GestUrg2 active. Revenez dans l'application puis réessayez.",
-        "error"
-      );
-      return;
+  function requestParentSession() {
+    if (!window.parent || window.parent === window || !recordId) return;
+    window.parent.postMessage({
+      source: "GestUrg2-IDPhoto",
+      type: "REQUEST_ID_PHOTO_SESSION",
+      recordId
+    }, window.location.origin);
+  }
+
+  window.addEventListener("message", function (event) {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data;
+    if (!data || data.source !== "GestUrg2-Mobile") return;
+
+    if (data.type === "ID_PHOTO_SESSION") {
+      parentSession = data.session || null;
+      parentSessionReady = !!parentSession;
+      if (parentSessionReady) {
+        cameraBtn.disabled = false;
+        hideStatus();
+      }
     }
 
-    if (recordId && firebaseReady) {
+    if (data.type === "ID_PHOTO_SAVE_OK") {
+      progressWrap.style.display = "none";
+      previewWrap.style.display = "none";
+      showStatus(
+        (parentSession?.mode || mode) === "verification"
+          ? "✓ Vérification terminée. Vous pouvez revenir sur l'écran de contrôle."
+          : "✓ Les informations ont été enregistrées avec succès.",
+        "success"
+      );
+      currentImageSource = null;
+      imageInput.value = "";
+      cameraBtn.disabled = false;
+    }
+
+    if (data.type === "ID_PHOTO_SAVE_ERROR") {
+      progressWrap.style.display = "none";
+      showStatus("Erreur pendant l'enregistrement : " + (data.error || "erreur Firestore."), "error");
       cameraBtn.disabled = false;
     }
   });
 
   cameraBtn.addEventListener("click", function () {
-    if (!recordId || !firebaseReady || !firebaseAuthReady || !firebaseCurrentUser) {
-      showStatus(
-        "Connexion GestUrg2 requise pour enregistrer les résultats.",
-        "error"
-      );
-      return;
-    }
-
+    if (!recordId || !firebaseReady) return;
     imageInput.click();
   });
 
@@ -493,16 +518,6 @@
   async function analyzeAndSave() {
     if (!currentImageSource || !recordId || !firebaseReady) return;
 
-    // Une écriture Firestore soumise à des règles "request.auth != null"
-    // nécessite une vraie session Firebase Auth dans CETTE page.
-    if (!firebaseAuthReady || !firebaseCurrentUser) {
-      showStatus(
-        "Session Firebase introuvable. Ouvrez cette page depuis l'application GestUrg2.",
-        "error"
-      );
-      return;
-    }
-
     cameraBtn.disabled = true;
     progressWrap.style.display = "block";
     progressFill.style.width = "0%";
@@ -531,12 +546,10 @@
       const rawText = result.data.text || "";
 
       // Le document temporaire indique le mode et, en vérification, le type de pièce.
-      const { db, doc, getDoc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
-      const sessionSnap = await getDoc(doc(db, "id-photo", recordId));
-      if (!sessionSnap.exists()) {
-        throw new Error("Session de lecture introuvable ou expirée.");
+      const session = parentSession || null;
+      if (!session) {
+        throw new Error("Session de lecture introuvable. Réessayez depuis l'application GestUrg2.");
       }
-      const session = sessionSnap.data();
       const effectiveMode = session.mode || mode || "admin";
       const requestedType = session.typePiece || "";
       const docType = requestedType === "Carte Vitale avec photo"
@@ -551,22 +564,29 @@
       progressFill.style.width = "100%";
       progressText.textContent = "Enregistrement dans Firestore…";
 
+      // L'iframe demande au parent mobile, déjà authentifié Firebase,
+      // d'effectuer l'écriture. Ainsi request.auth est bien présent.
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          source: "GestUrg2-IDPhoto",
+          type: "SAVE_ID_PHOTO",
+          recordId,
+          fields: Object.fromEntries(Object.entries(fields).map(([key, item]) => [key, item.value || ""])),
+          docType,
+          rawText,
+          effectiveMode,
+          requestedType
+        }, window.location.origin);
+        progressText.textContent = "Enregistrement sécurisé dans GestUrg2…";
+        return;
+      }
+
+      // Fallback si la page est ouverte directement et qu'une vraie session Auth existe.
       await saveToFirestore(fields, docType, rawText, effectiveMode, requestedType);
 
       progressWrap.style.display = "none";
       previewWrap.style.display = "none";
-
-      showStatus(
-        effectiveMode === "verification"
-          ? "✓ Vérification terminée. Vous pouvez revenir sur l'écran de contrôle."
-          : "✓ Les informations ont été enregistrées avec succès.",
-        "success"
-      );
-
-      /*
-        On vide la photo après traitement afin de ne pas conserver
-        inutilement l'image en mémoire dans la page.
-      */
+      showStatus("✓ Les informations ont été enregistrées avec succès.", "success");
       currentImageSource = null;
       imageInput.value = "";
 
@@ -581,11 +601,9 @@
         "error"
       );
     } finally {
-      cameraBtn.disabled =
-        !recordId ||
-        !firebaseReady ||
-        !firebaseAuthReady ||
-        !firebaseCurrentUser;
+      // Le parent répondra avec ID_PHOTO_SAVE_OK / ERROR.
+      // On laisse le bouton actif tant qu'une nouvelle photo peut être choisie.
+      cameraBtn.disabled = !recordId || !firebaseReady;
     }
   }
 

@@ -428,7 +428,24 @@
 
     reader.readAsDataURL(file);
   });
+let utilisateurConnecte = null;
 
+window.addEventListener("message", (event) => {
+  if (!event.data) return;
+
+  if (
+    event.data.source === "GestUrg2-Mobile" &&
+    event.data.type === "AUTH_USER"
+  ) {
+    utilisateurConnecte = event.data.user;
+
+    console.log("👤 Utilisateur reçu :", utilisateurConnecte);
+
+    // Maintenant les sauvegardes peuvent utiliser :
+    // utilisateurConnecte.uid
+    // utilisateurConnecte.email
+  }
+});
   async function analyzeAndSave() {
     if (!currentImageSource || !recordId || !firebaseReady) return;
 

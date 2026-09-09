@@ -2491,6 +2491,23 @@ function openScanFrame(url){
   document.getElementById("scanFrameTitle").textContent = url.replace(/^https?:\/\//, "");
   document.getElementById("scanFrameIframe").src = url;
   scanFrameOverlay.classList.add("open");
+  iframe.onload = () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.warn("⚠️ Aucun utilisateur connecté à transmettre");
+      return;
+    }
+
+    iframe.contentWindow.postMessage({
+      source: "GestUrg2-Mobile",
+      type: "AUTH_USER",
+      user: {
+        uid: user.uid,
+        email: user.email || null
+      }
+    }, "*");
+  };
 }
 
 function closeScanFrame(){

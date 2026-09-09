@@ -1,1314 +1,741 @@
 <!DOCTYPE html>
-	<html lang="fr">
-	<head>
-	    <link rel="icon" type="image/jpeg" href="logog2.png">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="ordToPdf.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>💊 Ordonnancier</title>
-		<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
-		<style>
-		#new-prescription-btn {
-  background-color: #28a745; 
-  color: white;              
-  border: none;              
-  padding: 15px 20px;        
-  border-radius: 6px;       
-  cursor: pointer;           
-  font-size: 16px;           
-  transition: background-color 0.3s ease;
-}
-.modal {
-    display: none; /* affichée dynamiquement par JS */
-    position: fixed;
-    z-index: 999;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.45);
-    justify-content: center;
-    align-items: center;
-  }
-
-  /* Boîte centrale */
-  .modal-content {
-    background: #f8f9fa;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    padding: 30px;
-    width: 90%;
-    max-width: 500px;
-    text-align: center;
-    animation: zoomIn 0.25s ease;
-  }
-
-  @keyframes zoomIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-
-  .modal-content h2 {
-    margin-bottom: 10px;
-    color: #2c3e50;
-  }
-
-  .modal-content p {
-    color: #555;
-    font-size: 1rem;
-    margin-bottom: 20px;
-  }
-
-  .modal-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .btnModal {
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-
-  .btnModal.ouvrir {
-    background-color: #007bff;
-    color: white;
-  }
-
-  .btnModal.ouvrir:hover {
-    background-color: #0056b3;
-  }
-
-  .btnModal.ecraser {
-    background-color: #28a745;
-    color: white;
-  }
-
-  .btnModal.ecraser:hover {
-    background-color: #1e7e34;
-  }
-
-  .btnModal.fermer {
-    background-color: #6c757d;
-    color: white;
-    margin-top: 10px;
-  }
-
-  .btnModal.fermer:hover {
-    background-color: #5a6268;
-  }
-#new-prescription-btn:hover {
-  background-color: #218838; 
-}
-			.button {
-				display: inline-block;
-				margin: 20px;
-				padding: 12px 25px;
-				font-size: 16px;
-				color: white;
-				background-color: #28a745;
-				border: none;
-				border-radius: 6px;
-				text-decoration: none;
-				transition: background-color 0.3s;
-				cursor: pointer;
-			}
-			.button:hover {
-				background-color: #1e7e34;
-			}
-
-			body {
-				font-family: 'Poppins', sans-serif;
-				background-color: #ffffff;
-				margin: 0;
-				padding: 0;
-				color: #333;
-			}
-			.medicament-item {
-			cursor: pointer;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background-color: #f9f9f9;
-  cursor: pointer;
-  margin-bottom: 5px;
-  transition: background-color 0.2s;
-}
-.medicament-item:hover {
-  background-color: #e6f7ff;
-}
-			.container {
-				max-width: 800px;
-				margin: 30px auto;
-				padding: 20px;
-				background-color: #fff;
-				border-radius: 12px;
-				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-			}
-			h1 {
-				text-align: center;
-				color: #4CAF50;
-				font-size: 32px;
-				font-weight: 600;
-				margin-bottom: 30px;
-			}
-			.form-group {
-				margin-bottom: 20px;
-			}
-			.form-group label {
-				font-weight: 500;
-				color: #555;
-				margin-bottom: 5px;
-				display: block;
-			}
-			.form-group input, .form-group select {
-				width: 100%;
-				padding: 12px;
-				margin-top: 5px;
-				border: 2px solid #ddd;
-				border-radius: 8px;
-				font-size: 14px;
-				transition: border-color 0.3s;
-			}
-			.form-group input:focus, .form-group select:focus {
-				border-color: #4CAF50;
-				outline: none;
-			}
-			.btn {
-				background-color: #4CAF50;
-				color: white;
-				padding: 12px 20px;
-				border: none;
-				border-radius: 8px;
-				cursor: pointer;
-				font-size: 16px;
-				width: 100%;
-				transition: background-color 0.3s;
-			}
-			.btn:hover {
-				background-color: #45a049;
-			}
-			.search-bar {
-				margin-bottom: 15px;
-				padding: 10px;
-				width: 100%;
-				border: 2px solid #ddd;
-				border-radius: 8px;
-				font-size: 14px;
-				transition: border-color 0.3s;
-			}
-			.search-bar:focus {
-				border-color: #4CAF50;
-			}
-			.ordonnance {
-				margin-top: 30px;
-				padding: 20px;
-				background-color: #fafafa;
-				border-radius: 12px;
-				box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-			}
-			.ordonnance h2 {
-				font-size: 28px;
-				color: #333;
-				margin-bottom: 15px;
-				text-align: center;
-				font-weight: 600;
-			}
-			.doctor-info, .patient-info, .date-info {
-				margin-bottom: 10px;
-				font-size: 16px;
-				color: #555;
-			}
-			.prescription-list {
-				margin-top: 15px;
-			}
-			.prescription-item {
-				background-color: #fff;
-				border: 1px solid #ddd;
-				border-radius: 8px;
-				padding: 10px;
-				margin-bottom: 10px;
-				display: flex;
-				align-items: center;
-				gap: 10px;
-			}
-			.prescription-item input[type="text"] {
-				flex: 1 1 45%;
-				padding: 6px 8px;
-				border: 1px solid #ccc;
-				border-radius: 6px;
-				font-size: 14px;
-			}
-			.prescription-item span.med-name {
-				flex: 2 1 55%;
-				font-weight: 500;
-				color: #333;
-			}
-			.btn-delete {
-				background-color: #dc3545;
-				border: none;
-				color: white;
-				padding: 6px 10px;
-				border-radius: 6px;
-				cursor: pointer;
-				transition: background-color 0.3s;
-			}
-			.btn-delete:hover {
-				background-color: #b02a37;
-			}
-			.btn-email {
-				background-color: #dc3545;
-				border: none;
-				color: white;
-				padding: 6px 10px;
-				border-radius: 6px;
-				cursor: pointer;
-				transition: background-color 0.3s;
-			}
-			.btn-email:hover {
-				background-color: #b02a37;
-			}
-			.btn-print, .btn-download {
-				width: 48%;
-				height: 50px;
-				font-size: 16px;
-				margin-top: 20px;
-				border-radius: 8px;
-				cursor: pointer;
-				border: none;
-				color: white;
-				transition: background-color 0.3s;
-			}
-			.btn-print {
-				background-color: #007BFF;
-				float: left;
-			}
-			.btn-print:hover {
-				background-color: #0056b3;
-			}
-			.btn-download {
-				background-color: #FFC107;
-				float: right;
-			}
-			.btn-download:hover {
-				background-color: #d39e00;
-			}
-			/* Style pour l'impression */
-			@media print {
-				body * {
-					visibility: hidden;
-				}
-				.ordonnance, .ordonnance * {
-					visibility: visible;
-				}
-				.ordonnance {
-					position: absolute;
-					top: 0;
-					left: 0;
-					width: 100%;
-				}
-			}
-			/* Clear floats after buttons */
-			.buttons-wrapper::after {
-				content: "";
-				display: table;
-				clear: both;
-			}
-#bubble-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 9999;
-  align-items: flex-end;
-}
-	.bubble {
-  max-width: 300px;
-  padding: 10px 15px;
-  border-radius: 8px;
-  color: white;
-  font-family: sans-serif;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  animation: fadeout 0.5s ease-in-out 1.5s forwards;
-  word-wrap: break-word;
-  text-align: left;
-}
-
-.administratif {
-  background-color: #2196F3; /* bleu */
-}
-
-.alerte {
-  background-color: #f44336; /* rouge */
-}
-
-@keyframes fadeout {
-  to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-}
-  .vidal-search {
-    display: flex;
-   
-    align-items: center;
-    margin: 20px 0;
-    font-family: Arial, sans-serif;
-  }
-
-  /* Input de recherche */
-  .vidal-search input[type="text"] {
-    padding: 10px;
-    font-size: 16px;
-    border: 2px solid #d32f2f; /* rouge Vidal */
-    border-right: none; /* pour que le bouton soit collé */
-    border-radius: 4px 0 0 4px; /* coins arrondis côté gauche */
-    outline: none;
-    width: 300px;
-  }
-
-  /* Bouton de recherche */
-  .vidal-search button {
-    padding: 10px 20px;
-    background-color: #d32f2f; /* rouge Vidal */
-    color: white;
-    font-size: 16px;
-    border: 2px solid #d32f2f;
-    border-radius: 0 4px 4px 0; /* coins arrondis côté droit */
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-
-  /* Effet au survol */
-  .vidal-search button:hover {
-    background-color: #b71c1c; /* rouge plus foncé au survol */
-    border-color: #b71c1c;
-  }
-#emailSelectModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  justify-content: center;
-  align-items: center;
-  z-index: 200;
-  animation: fadeInModal 0.3s ease-out;
-}
-
-#emailSelectModal.show {
-  display: flex;
-}
-
-#emailSelectModal .modal-content {
-  width: 380px;
-  max-width: 90%;
-  background: linear-gradient(to bottom right, #ffffff, #f9fafc);
-  border-radius: 16px;
-  padding: 28px 26px 22px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  animation: slideUpModal 0.35s ease-out;
-  transform-origin: center;
-}
-
-#emailSelectModal h3 {
-  text-align: center;
-  margin-top: 0;
-  font-size: 1.25rem;
-  color: #1e293b;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-#emailSelectModal .email-options {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#emailSelectModal label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f8fafc;
-  transition: background 0.2s ease, transform 0.1s ease;
-  border: 1px solid transparent;
-}
-
-#emailSelectModal label:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  transform: scale(1.02);
-}
-
-#emailSelectModal input[type="checkbox"] {
-  accent-color: #2563eb;
-  transform: scale(1.15);
-}
-
-#emailSelectModal input[type="email"] {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  font-size: 0.9rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-#emailSelectModal input[type="email"]:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  outline: none;
-}
-
-#emailSelectModal .modal-actions {
-  margin-top: 22px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-#emailSelectModal button {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.1s ease;
-}
-
-#emailSelectModal .btn-cancel {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-#emailSelectModal .btn-cancel:hover {
-  background: #cbd5e1;
-}
-
-#emailSelectModal .btn-confirm {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
-}
-
-#emailSelectModal .btn-confirm:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
-
-/* --- ANIMATIONS --- */
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUpModal {
-  from {
-    transform: translateY(30px) scale(0.98);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-#loadingModal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      justify-content: center;
-      align-items: center;
-      z-index: 200;
+<html lang="fr">
+<head>
+  <link rel="icon" type="image/jpeg" href="logog2.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="ordToPdf.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ordonnancier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --c-bg:#f2f6fb;
+      --c-surface:#ffffff;
+      --c-border:#e2e8f0;
+      --c-border-strong:#cbd5e1;
+      --c-primary:#1657c4;
+      --c-primary-dark:#0f3f92;
+      --c-primary-light:#eaf1ff;
+      --c-text:#1e293b;
+      --c-text-soft:#64748b;
+      --c-text-faint:#94a3b8;
+      --c-danger:#dc2626;
+      --c-danger-light:#fdecec;
+      --c-success:#16a34a;
+      --c-success-light:#eafaf0;
+      --c-warning:#b45309;
+      --c-warning-light:#fff4e0;
+      --radius:10px;
+      --radius-lg:14px;
+      --shadow-sm:0 1px 2px rgba(15,40,90,0.06);
+      --shadow:0 6px 20px rgba(15,40,90,0.08);
     }
 
-   .modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  width: 400px;
-  max-width: 90%;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-  animation: fadeIn 0.3s ease-out;
-  text-align: center;         
-  display: flex;
-  flex-direction: column;
-  align-items: center;        
-  justify-content: center;   
-}
+    *{ box-sizing:border-box; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+    html, body{
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background:var(--c-bg);
+      color:var(--c-text);
+      font-family:'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
     }
-.loader-wrapper {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  margin: auto;
-}
 
-.loader-logo {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  height: 55px;
-  transform: translate(-50%, -50%);
-  z-index: 2;
-}
+    body{ display:flex; flex-direction:column; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{ background:#b9c8e6; border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover{ background:#93aada; }
+    *{ scrollbar-width:thin; scrollbar-color:#b9c8e6 transparent; }
+
+    .hidden-field{ display:none !important; }
+
+    /* ===== EN-TÊTE PRO ===== */
+    #pro-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 22px;
+      background:var(--c-surface);
+      border-bottom:1px solid var(--c-border);
+    }
+    #pro-header .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    #pro-header .brand .brand-icon{
+      width:34px; height:34px;
+      border-radius:9px;
+      background:var(--c-primary-light);
+      color:var(--c-primary);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Poppins',sans-serif; font-weight:700; font-size:16px;
+    }
+    #pro-header .brand-text h1{
+      margin:0;
+      font-family:'Poppins', sans-serif;
+      font-weight:600;
+      font-size:17px;
+      color:var(--c-text);
+      letter-spacing:0.2px;
+    }
+    #pro-header .brand-text span{
+      display:block;
+      font-size:12px;
+      color:var(--c-text-soft);
+    }
+    #pro-header .meta{
+      display:flex;
+      align-items:center;
+      gap:18px;
+    }
+    #pro-header .meta .meta-block{
+      text-align:right;
+      line-height:1.3;
+    }
+    #pro-header .meta .meta-block .medecin-nom{
+      font-weight:600;
+      font-size:13px;
+      color:var(--c-text);
+    }
+    #pro-header .meta .meta-block .medecin-sub{
+      font-size:12px;
+      color:var(--c-text-soft);
+    }
+    .icon-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      width:36px; height:36px;
+      border-radius:9px;
+      border:1px solid var(--c-border-strong);
+      background:var(--c-surface);
+      color:var(--c-text-soft);
+      cursor:pointer;
+      transition:all .15s ease;
+    }
+    .icon-btn:hover{
+      background:var(--c-danger-light);
+      border-color:var(--c-danger);
+      color:var(--c-danger);
+    }
+    .icon-btn svg{ width:16px; height:16px; }
+
+    /* ===== BOUTONS GÉNÉRIQUES ===== */
+    .btn-id{
+      all:unset;
+      box-sizing:border-box;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:9px 16px;
+      border-radius:9px;
+      font-size:13.5px;
+      font-weight:600;
+      cursor:pointer;
+      border:1px solid var(--c-border-strong);
+      background:var(--c-surface);
+      color:var(--c-text);
+      transition:all .15s ease;
+    }
+    .btn-id svg{ width:15px; height:15px; flex-shrink:0; }
+    .btn-id:hover{
+      border-color:var(--c-primary);
+      background:var(--c-primary-light);
+      color:var(--c-primary-dark);
+    }
+    .btn-id-v{ background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
+    .btn-id-v:hover{ background:var(--c-primary-dark); border-color:var(--c-primary-dark); color:#fff; }
+    .btn-id-c:hover{ background:var(--c-danger-light); border-color:var(--c-danger); color:var(--c-danger); }
+    .btn-id-ghost{ border-color:transparent; background:transparent; color:var(--c-text-soft); }
+    .btn-id-ghost:hover{ background:var(--c-primary-light); color:var(--c-primary-dark); border-color:transparent; }
+    .btn-id[disabled]{ opacity:.5; cursor:not-allowed; pointer-events:none; }
+
+    /* ===== LAYOUT PRINCIPAL ===== */
+    .ordonnance-wrapper{
+      display:flex;
+      gap:18px;
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+      padding:18px 22px;
+    }
+
+    .zone-prescription, .historique-ordos{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .zone-prescription{ flex:1.65; }
+    .historique-ordos{ flex:1; }
+
+    /* ===== ZONE DE PRESCRIPTION ===== */
+    .editor-container{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      border:1px solid var(--c-border);
+      border-radius:var(--radius-lg);
+      background:var(--c-surface);
+      box-shadow:var(--shadow-sm);
+      overflow:hidden;
+      min-height:0;
+    }
+    .editor-container > .rx-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+    }
+    .editor-container > .rx-header label{
+      font-weight:600;
+      font-size:14px;
+      color:var(--c-text);
+      display:flex; align-items:center; gap:8px;
+    }
+    #rx-status{
+      font-size:11.5px;
+      font-weight:600;
+      padding:3px 9px;
+      border-radius:20px;
+      background:var(--c-success-light);
+      color:var(--c-success);
+    }
+    #rx-status.locked{ background:var(--c-warning-light); color:var(--c-warning); }
+
+    .editor-toolbar{
+      flex-shrink:0;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      padding:10px 16px;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+    }
+
+    #rx-list{
+      flex:1;
+      overflow-y:auto;
+      padding:16px;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    #rx-empty{
+      margin:auto;
+      text-align:center;
+      color:var(--c-text-faint);
+      font-size:13.5px;
+      max-width:280px;
+      line-height:1.5;
+    }
+
+    /* ---- Carte item médicament / consigne ---- */
+    .rx-item{
+      display:flex;
+      gap:8px;
+      background:var(--c-surface);
+      border:1px solid var(--c-border);
+      border-radius:var(--radius);
+      padding:12px 12px 12px 6px;
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+    .rx-item:hover{ border-color:var(--c-border-strong); }
+    .rx-item.dragging{ opacity:.4; }
+    .rx-item.drag-over{ border-color:var(--c-primary); box-shadow:0 0 0 2px var(--c-primary-light); }
+
+    .rx-drag{
+      flex-shrink:0;
+      width:20px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-top:10px;
+      color:var(--c-text-faint);
+      cursor:grab;
+      user-select:none;
+    }
+    .rx-num{
+      flex-shrink:0;
+      width:24px; height:24px;
+      margin-top:6px;
+      border-radius:7px;
+      background:var(--c-primary-light);
+      color:var(--c-primary-dark);
+      font-size:12px;
+      font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .rx-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+
+    .rx-row-main{ display:flex; gap:8px; align-items:center; position:relative; }
+    .rx-nom{
+      flex:1;
+      font-weight:600;
+      font-size:14.5px;
+    }
+    .rx-row-sub{ display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; }
+
+    input.rx-input, textarea.rx-input{
+      width:100%;
+      padding:9px 11px;
+      border:1px solid var(--c-border);
+      border-radius:8px;
+      font-size:13.5px;
+      font-family:inherit;
+      color:var(--c-text);
+      background:#fbfdff;
+      transition:border-color .15s ease, background .15s ease;
+    }
+    input.rx-input:focus, textarea.rx-input:focus{
+      outline:none;
+      border-color:var(--c-primary);
+      background:#fff;
+    }
+    textarea.rx-input{ resize:vertical; min-height:38px; }
+
+    .rx-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+    .rx-chip{
+      border:1px dashed var(--c-border-strong);
+      background:#fff;
+      color:var(--c-text-soft);
+      font-size:11.5px;
+      padding:4px 9px;
+      border-radius:20px;
+      cursor:pointer;
+      transition:all .15s ease;
+    }
+    .rx-chip:hover{ border-color:var(--c-primary); color:var(--c-primary-dark); background:var(--c-primary-light); }
+
+    .rx-del{
+      flex-shrink:0;
+      width:28px; height:28px;
+      border-radius:7px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--c-text-faint);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .rx-del:hover{ background:var(--c-danger-light); color:var(--c-danger); }
+    .rx-del svg{ width:14px; height:14px; }
+
+    /* ---- Consigne (note) ---- */
+    .rx-item.rx-note .rx-nom{ font-weight:500; }
+
+    /* ---- Séparateur de section ---- */
+    .rx-item.rx-section{
+      background:transparent;
+      border:none;
+      padding:4px 0 0 0;
+      align-items:center;
+    }
+    .rx-item.rx-section .rx-drag{ padding-top:0; }
+    .rx-item.rx-section .rx-fields{
+      flex-direction:row;
+      align-items:center;
+      gap:10px;
+    }
+    .rx-section-line{ flex:1; height:1px; background:var(--c-border-strong); }
+    .rx-section input.rx-input{
+      max-width:260px;
+      font-weight:700;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      color:var(--c-primary-dark);
+      background:transparent;
+      border:none;
+      border-bottom:1px dashed var(--c-border-strong);
+      border-radius:0;
+      padding:4px 2px;
+    }
+    .rx-section input.rx-input:focus{ background:transparent; border-bottom-color:var(--c-primary); }
+
+    /* ===== AUTOCOMPLETE ===== */
+    #autocomplete-box{
+      position:fixed;
+      background:#fff;
+      border:1px solid var(--c-border);
+      border-radius:10px;
+      box-shadow:var(--shadow);
+      width:320px;
+      max-width:calc(100vw - 32px);
+      max-height:260px;
+      overflow-y:auto;
+      z-index:99999;
+      display:none;
+      padding:6px 0;
+    }
+    .autocomplete-item{
+      padding:8px 14px;
+      font-size:13.5px;
+      cursor:pointer;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active{ background:var(--c-primary-light); }
+
+    /* ===== BOUTONS D'ACTION BAS ===== */
+    .buttons-wrapper{
+      flex-shrink:0;
+      display:flex;
+      gap:10px;
+      padding:14px 16px;
+      border-top:1px solid var(--c-border);
+      background:#fafcff;
+    }
+    .buttons-wrapper .btn-id{ flex:1; justify-content:center; }
+    #validate-prescription-btn{
+      flex-shrink:0;
+      margin:14px 16px;
+      justify-content:center;
+    }
+
+    /* ===== HISTORIQUE ===== */
+    .historique-ordos{
+      border:1px solid var(--c-border);
+      border-radius:var(--radius-lg);
+      background:var(--c-surface);
+      box-shadow:var(--shadow-sm);
+      overflow:hidden;
+    }
+    .historique-ordos h3{
+      margin:0;
+      padding:14px 16px;
+      font-size:14px;
+      font-weight:600;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+      flex-shrink:0;
+    }
+    #historique-search{
+      flex-shrink:0;
+      margin:10px 14px 0;
+      padding:8px 11px;
+      border:1px solid var(--c-border);
+      border-radius:8px;
+      font-size:13px;
+      background:#fbfdff;
+    }
+    #historique-search:focus{ outline:none; border-color:var(--c-primary); background:#fff; }
+
+    #listeOrdonnances{
+      flex:1;
+      overflow-y:auto;
+      min-height:0;
+      padding:10px 8px;
+    }
+    .ordo-row{
+      padding:12px 12px;
+      border-radius:9px;
+      cursor:pointer;
+      transition:background .15s ease;
+      background:var(--c-surface);
+    }
+    .ordo-row:hover{ background:var(--c-primary-light); }
+    .ordo-date{
+      font-weight:700;
+      font-size:12.5px;
+      color:var(--c-primary-dark);
+      margin-bottom:4px;
+    }
+    .ordo-preview{
+      font-size:12.5px;
+      color:var(--c-text-soft);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* ===== APERÇU / MODALE DE CONFIRMATION ===== */
+    .preview-ordo{
+      background:#fbfdff;
+      padding:18px 20px;
+      border-radius:10px;
+      border:1px solid var(--c-border);
+      text-align:left;
+      max-height:50vh;
+      overflow-y:auto;
+      font-size:13.5px;
+      line-height:1.6;
+    }
+    .preview-ordo .pv-section{
+      margin:14px 0 8px;
+      padding-top:10px;
+      border-top:1px dashed var(--c-border-strong);
+      font-size:11.5px;
+      font-weight:700;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color:var(--c-primary-dark);
+    }
+    .preview-ordo .pv-section:first-child{ margin-top:0; padding-top:0; border-top:none; }
+    .preview-ordo .pv-item{ margin-bottom:10px; }
+    .preview-ordo .pv-item b{ color:var(--c-text); }
+    .preview-ordo .pv-sub{ color:var(--c-text-soft); font-size:12.5px; margin-top:2px; }
+
+    /* ===== MODALES ===== */
+    .modal{
+      position:fixed; inset:0;
+      background:rgba(15,23,42,0.45);
+      backdrop-filter:blur(4px);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+    }
+    .modal-content{
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 12px 40px rgba(15,23,42,0.25);
+      padding:26px 28px;
+      width:90%;
+      max-width:460px;
+      text-align:center;
+    }
+    #confirmPrescriptionModal .modal-content{ max-width:640px; max-height:90vh; overflow-y:auto; text-align:left; }
+    .modal-content h2{ margin:0 0 8px; color:var(--c-text); font-size:19px; }
+    .modal-content h3{ margin:0 0 4px; font-size:14.5px; }
+    .modal-content p{ color:var(--c-text-soft); font-size:14px; }
+    .modal-buttons{ display:flex; gap:10px; margin-top:18px; }
+    .modal-buttons .btn-id{ flex:1; justify-content:center; }
+    .confirm-banner{
+      background:var(--c-warning-light);
+      color:var(--c-warning);
+      padding:11px 14px;
+      border-radius:9px;
+      margin-bottom:16px;
+      font-weight:600;
+      font-size:13px;
+      text-align:center;
+    }
+
+    #emailSelectModal .email-options{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+    #emailSelectModal label{
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:8px; cursor:pointer;
+      background:#fbfdff; border:1px solid var(--c-border);
+    }
+    #emailSelectModal label:hover{ background:var(--c-primary-light); }
+    #emailSelectModal input[type="checkbox"]{ accent-color:var(--c-primary); }
+    #emailSelectModal input[type="email"]{
+      width:100%; margin-top:8px; padding:9px 10px; border-radius:8px;
+      border:1px solid var(--c-border); font-size:13.5px;
+    }
+    #emailSelectModal input[type="email"]:focus{ outline:none; border-color:var(--c-primary); }
+
+    #loadingModal .loader-wrapper, #loadingScreen .spinner{ margin:0 auto 14px; }
+    .loader-wrapper{ position:relative; width:80px; height:80px; }
+    .loader-logo{ position:absolute; top:50%; left:50%; height:44px; transform:translate(-50%,-50%); z-index:2; }
+    .loader-ring{
+      position:absolute; top:50%; left:50%; width:74px; height:74px;
+      border:4px solid #eef2fb; border-top:4px solid var(--c-primary);
+      border-radius:50%; transform:translate(-50%,-50%);
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+    #loadingScreen{
+      display:none; position:fixed; inset:0;
+      background:rgba(15,23,42,0.6);
+      justify-content:center; align-items:center;
+      z-index:9999; color:#fff; text-align:center;
+    }
+    .spinner{
+      border:5px solid rgba(255,255,255,0.3); border-top:5px solid #fff;
+      border-radius:50%; width:52px; height:52px;
+      animation:spin 1s linear infinite;
+    }
+
+    .modalna{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); z-index:9999;
+    }
+    .modalna .card{
+      background:#fff; padding:24px 30px; border-radius:14px;
+      text-align:center; max-width:400px; box-shadow:var(--shadow);
+    }
+    .modalna h2{ color:var(--c-danger); margin-bottom:10px; }
+
+    /* ===== BULLES DE NOTIFICATION ===== */
+    #bubble-container{
+      position:fixed; top:20px; right:20px;
+      display:flex; flex-direction:column; gap:10px;
+      z-index:9999; align-items:flex-end;
+    }
+    .bubble{
+      max-width:300px; padding:10px 15px; border-radius:9px; color:#fff;
+      font-family:'Inter',sans-serif; font-size:13.5px;
+      box-shadow:var(--shadow); animation:fadeout .5s ease-in-out 1.5s forwards;
+    }
+    .administratif{ background:var(--c-primary); }
+    .alerte{ background:var(--c-danger); }
+    @keyframes fadeout{ to{ opacity:0; transform:translateX(-20px); } }
+
+    /* zone technique conservée pour l'enregistrement (non affichée) */
+    #prescription-text{ display:none; }
+  </style>
+</head>
+<body>
 
-.loader-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 90px;
-  height: 90px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #2563eb;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: spin 1s linear infinite;
-  z-index: 1;
-}
-
-@keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-/* --- Modale validation prescription --- */
-#confirmPrescriptionModal .modal-content {
-  width: 90%;
-  max-width: 900px;       /* ⬅️ plus large */
-  max-height: 90vh;       /* ⬅️ limite verticale écran */
-  overflow-y: auto;       /* ⬅️ scroll interne si trop grand */
-  padding: 30px;
-  box-sizing: border-box;
-}
-
-.editor-toolbar button.active {
-  background: #2a7fff;
-  color: white;
-  border-color: #2a7fff;
-}
-		/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
-
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-
-/* --- Arrière-plan plein écran --- */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  display: none; /* masquée par défaut */
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-/* --- Boîte centrale --- */
-.modal-content {
-  background: #fff;
-  padding: 30px 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  text-align: center;
-  width: 320px;
-  animation: fadeIn 0.3s ease;
-}
-
-/* --- Logo --- */
-.modal-content .logo {
-  height: 70px;
-  margin-bottom: 20px;
-}
-
-/* --- Texte --- */
-.modal-content p {
-  color: #333;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* --- Loader --- */
-.loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #1a73e8;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  margin: 15px auto;
-  animation: spin 1s linear infinite;
-}
-
-/* --- Animations --- */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* --- États JS --- */
-#loadingModal.show {
-  display: flex;
-}
-.hidden-field {
-    display: none !important;
-}
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-#prescription-text {
-    width: 100%;                   
-    padding: 12px;            
-    border: 1px solid #ccc; 
-    border-radius: 10px;     
-    font-size: 14px;
-    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-    box-sizing: border-box;
-      height: 350px;     
-    overflow-y: auto; 
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-
-  #prescription-text:focus {
-    border-color: #1a73e8;    /* bord bleu lors du focus */
-    box-shadow: 0 0 5px rgba(26, 115, 232, 0.5);
-    outline: none;
-  }
-
-  .form-group label {
-    font-weight: 600;
-    margin-bottom: 6px;
-    display: block;
-  }
-
-/* =========================
-   Autocomplete box - fixed
-   ========================= */
-#autocomplete-box {
-  position: fixed;                    /* FIXED pour ne pas provoquer de scroll sur la page */
-  background: #ffffff;
-  max-width: calc(100vw - 32px);      /* jamais plus large que la fenêtre - marge 16px */
-  width: auto;
-  min-width: 200px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.08);
-  z-index: 99999;
-  display: none;                      /* afficher via JS */
-  overflow-y: auto;                   /* ASCENSEUR INTERNE */
-  overflow-x: hidden;                 /* pas de scroll horizontal */
-  box-sizing: border-box;
-  max-height: 60vh;                   /* sécurité : jamais plus que 60% de la fenêtre (surcharge par JS) */
-  -webkit-overflow-scrolling: touch;  /* scroll fluide sur mobile */
-  padding: 6px 0;
-  background-clip: padding-box;
-  overscroll-behavior: contain;       /* évite de propager le scroll vers le body */
-}
-
-/* items */
-.autocomplete-item {
-  padding: 8px 14px;
-  font-size: 15px;
-  cursor: pointer;
-  white-space: normal;
-  word-break: break-word;
-}
-
-/* scrollbars webkit (discret) */
-#autocomplete-box::-webkit-scrollbar { width: 10px; }
-#autocomplete-box::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
-#autocomplete-box::-webkit-scrollbar-track { background: transparent; }
-
-/* UTILE: empêche le corps de se créer un scroll horizontal quand l'autocomplete est montré */
-html, body {
-  overflow-x: hidden;
-}
-
-
-
-
-#loadingScreen {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  color: #fff;
-  text-align: center;
-}
-
-.loader-content {
-  text-align: center;
-}
-
-.spinner {
-  border: 6px solid rgba(255, 255, 255, 0.3);
-  border-top: 6px solid white;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.preview-ordo {
-  background: #f8f9fa;
-  padding: 18px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  text-align: left;
-  max-height: 50vh;   /* ⬅️ beaucoup plus confortable */
-  overflow-y: auto;   /* ⬅️ ascenseur interne propre */
-  white-space: pre-wrap; /* conserve les retours à la ligne */
-  font-size: 14px;
-  line-height: 1.5;
-}
-#prescription-editor {
-  min-height: 200px;
-  border: 1px solid #ccc;
-  padding: 10px;
-  font-family: Arial;
-  outline: none;
-}
-
-.separator {
-  border-top: 2px solid #2a7fff;
-  margin: 10px 0;
-  cursor: grab;
-}
-
-
-/* 🔝 BARRE SUPÉRIEURE */
-.editor-toolbar {
-  display: flex;
-  gap: 8px;
-  padding: 10px;
-  background: #f6f8fa;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.editor-toolbar button {
-  padding: 6px 12px;
-  border: 1px solid #d0d7de;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.15s ease;
-}
-
-.editor-toolbar button:hover {
-  background: #eaf2ff;
-  border-color: #7aa7ff;
-}
-
-/* ✍️ ZONE D'ÉCRITURE */
-#prescription-editor {
-  min-height: 300px;
-  padding: 15px;
-  font-size: 15px;
-  line-height: 1.6;
-  outline: none;
-  font-family: Arial, sans-serif;
-}
-
-/* ➖ séparateur bleu */
-.separator {
-  border-top: 2px solid #2a7fff;
-  margin: 12px 0;
-  cursor: grab;
-}
-
-/* 💬 AUTOCOMPLETE */
-#autocomplete-box {
-  position: absolute;
-  z-index: 9999;
-  background: white;
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  max-height: 200px;
-  overflow-y: auto;
-  width: 250px;
-  display: none;
-}
-
-.autocomplete-item {
-  padding: 8px 10px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.autocomplete-item:hover {
-  background: #eaf2ff;
-}
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-/* ===== PAGE ===== */
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-
-  overflow: hidden; /* PAS de scroll global */
-}
-
-/* ===== LAYOUT PRINCIPAL ===== */
-
-body {
-  display: flex;
-  flex-direction: column;
-}
-
-/* wrapper principal */
-.ordonnance-wrapper {
-  display: flex;
-  gap: 20px;
-
-  flex: 1;
-
-  min-height: 0; /* IMPORTANT */
-  overflow: hidden;
-
-  align-items: stretch;
-}
-
-/* ===== COLONNES ===== */
-
-.zone-prescription,
-.historique-ordos {
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
-
-  min-height: 0;
-}
-
-/* ===== PRESCRIPTION ===== */
-
-.editor-container {
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
-
-  border: 1px solid #d0d7de;
-  border-radius: 12px;
-
-  overflow: hidden;
-  background: white;
-
-  min-height: 0;
-}
-
-/* label fixe */
-.editor-container > label {
-  padding: 12px 15px;
-  margin: 0;
-
-  background: #fafafa;
-  border-bottom: 1px solid #e5e7eb;
-
-  flex-shrink: 0;
-}
-
-/* toolbar fixe */
-.editor-toolbar {
-  flex-shrink: 0;
-
-  padding: 10px;
-
-  background: #f6f8fa;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-/* zone écriture scrollable */
-#prescription-text {
-  flex: 1;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding: 15px;
-
-  min-height: 0;
-
-  box-sizing: border-box;
-}
-
-/* ===== BOUTONS ACTIONS ===== */
-
-.buttons-wrapper,
-#validate-prescription-btn {
-  flex-shrink: 0;
-  margin-top: 15px;
-}
-
-/* ===== HISTORIQUE ===== */
-
-.historique-ordos {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-
-  overflow: hidden;
-  background: white;
-}
-
-/* titre fixe */
-.historique-ordos h3 {
-  margin: 0;
-  padding: 14px 15px;
-
-  background: #fafafa;
-  border-bottom: 1px solid #e5e7eb;
-
-  flex-shrink: 0;
-}
-
-/* liste scrollable */
-#listeOrdonnances {
-  flex: 1;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  min-height: 0;
-}
-
-/* lignes */
-.ordo-row {
-  padding: 14px 15px;
-  border-bottom: 1px solid #e5e7eb;
-
-  cursor: pointer;
-  transition: background 0.15s ease;
-
-  background: white;
-}
-
-.ordo-row:hover {
-  background: #f5f9ff;
-}
-
-.ordo-row:last-child {
-  border-bottom: none;
-}
-
-.ordo-date {
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.ordo-preview {
-  font-size: 13px;
-  color: #666;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-</style>
-
-	</head>
-	<body>
-	
-
-  <!-- <div class="container">-->
 <img id="logo-img" src="logo.png" style="display:none" crossorigin="anonymous" alt="Logo médical">
 
 <div id="loadingModal">
   <div class="modal-content">
-
     <div class="loader-wrapper">
       <img src="https://junior2704.github.io/GestUrg2/logo.png" class="loader-logo" alt="Logo">
       <div class="loader-ring"></div>
     </div>
-
     <p>Envoi de l'ordonnance en cours...</p>
   </div>
-</div>  
+</div>
 
-<div id="autocomplete-box"></div>
-
-		<!-- Formulaire du patient -->
-         <div class="form-group hidden-field">
-          		<h1>💊 Ordonnancier Médical</h1>
-		<button id="new-prescription-btn" class ="btn-id btn-id-c" onclick="resetOrdonnance()">❌ Réinitialiser</button>
-
-		<div class="form-group">
-			<label for="patient-first-name">Prénom du Patient</label>
-			<input type="text" id="patient-first-name" placeholder="Entrez le prénom du patient" required />
-		</div>
-		<div class="form-group">
-			<label for="patient-last-name">Nom du Patient</label>
-			<input type="text" id="patient-last-name" placeholder="Entrez le nom du patient" required />
-		</div>
-		<div class="form-group">
-			<label for="patient-birthdate">Date de Naissance</label>
-			<input type="date" id="patient-birthdate" requ	ired />
-		</div>
-
-		<div class="form-group">
-			<label for="patient-age">Âge du Patient</label>
-			<input type="text" id="patient-age" placeholder="L'âge sera calculé automatiquement" readonly />
-		</div>
-		<div class="form-group">
-			<label for="sexe">Sexe</label>
-			<select id="sexe" name="sexe">
-				<option value="M">M</option>
-				<option value="Mme">Mme</option>
-				<option value="L'enfant">L'enfant</option>
-			</select>
-		</div>
+<!-- ===== EN-TÊTE PRO ===== -->
+<header id="pro-header">
+  <div class="brand">
+    <div class="brand-icon">Rx</div>
+    <div class="brand-text">
+      <h1>Ordonnancier</h1>
+      <span>Prescription médicale</span>
     </div>
-  
+  </div>
+  <div class="meta">
+    <div class="meta-block">
+      <div class="medecin-nom" id="header-medecin">—</div>
+      <div class="medecin-sub" id="header-date">—</div>
+    </div>
+    <button id="new-prescription-btn" class="icon-btn" title="Nouvelle prescription" onclick="resetOrdonnance()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    </button>
+  </div>
+</header>
 
-
-  <h2>Ordonnancier</h2>
-
-
+<!-- Formulaire patient : conservé, non affiché (donné par le dossier parent) -->
+<div class="form-group hidden-field">
+  <div class="form-group">
+    <label for="patient-first-name">Prénom du Patient</label>
+    <input type="text" id="patient-first-name" placeholder="Entrez le prénom du patient" required />
+  </div>
+  <div class="form-group">
+    <label for="patient-last-name">Nom du Patient</label>
+    <input type="text" id="patient-last-name" placeholder="Entrez le nom du patient" required />
+  </div>
+  <div class="form-group">
+    <label for="patient-birthdate">Date de Naissance</label>
+    <input type="date" id="patient-birthdate" required />
+  </div>
+  <div class="form-group">
+    <label for="patient-age">Âge du Patient</label>
+    <input type="text" id="patient-age" placeholder="L'âge sera calculé automatiquement" readonly />
+  </div>
+  <div class="form-group">
+    <label for="sexe">Sexe</label>
+    <select id="sexe" name="sexe">
+      <option value="M">M</option>
+      <option value="Mme">Mme</option>
+      <option value="L'enfant">L'enfant</option>
+    </select>
+  </div>
+</div>
 
 <div class="ordonnance-wrapper">
 
-  <!-- COLONNE GAUCHE -->
+  <!-- COLONNE GAUCHE : prescription structurée -->
   <div class="zone-prescription">
-    
     <div class="editor-container">
-  <label for="prescription-text">🖊️ Prescription :</label>
 
-  <div class="editor-toolbar">
-<button class="btn-id" id="btn-bold" onmousedown="handleBold(event)"><b>G</b></button>
-    <button class="btn-id" onclick="insertSeparator()">〰️</button>
+      <div class="rx-header">
+        <label>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6l1 4H8l1-4Z"/><path d="M7 6h10l1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L7 6Z"/></svg>
+          Prescription
+        </label>
+        <span id="rx-status">Brouillon</span>
+      </div>
+
+      <div class="editor-toolbar">
+        <button type="button" class="btn-id" id="btn-add-med" onclick="addItem('med')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Médicament
+        </button>
+        <button type="button" class="btn-id" id="btn-add-note" onclick="addItem('note')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          Consigne
+        </button>
+        <button type="button" class="btn-id btn-id-ghost" id="btn-add-section" onclick="addItem('section')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/></svg>
+          Section
+        </button>
+      </div>
+
+      <div id="rx-list">
+        <div id="rx-empty">Aucun élément pour l'instant.<br>Ajoutez un médicament ou une consigne pour commencer la prescription.</div>
+      </div>
+
+      <div id="autocomplete-box"></div>
+
+      <button id="validate-prescription-btn" class="btn-id btn-id-v" onclick="openConfirmModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Valider la prescription
+      </button>
+
+      <div class="buttons-wrapper" style="display:none;">
+        <button type="button" class="btn-id" onclick="imprimer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Imprimer
+        </button>
+        <button type="button" id="btnEnvoyerMail" class="btn-id">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/></svg>
+          Envoyer par e-mail
+        </button>
+      </div>
+
+      <!-- Zone technique conservée pour l'enregistrement / la génération PDF -->
+      <div id="prescription-text" contenteditable="true" spellcheck="true" lang="fr"></div>
+    </div>
   </div>
 
-  <div id="prescription-text" contenteditable="true"spellcheck="true"
-          lang="fr"></div>
-
-  <div id="autocomplete-box"></div>
-
-</div>
-
-<!--<div class="form-group">
-			<form class="vidal-search" action="https://www.vidal.fr/recherche.html" method="get" target="_blank">
-  <input type="text" name="query" placeholder="Rechercher sur le Vidal">
-  <button type="submit">Rechercher</button>
-</form>-->
-
-
-<button id="validate-prescription-btn" class ="btn-id btn-id-v" onclick="openConfirmModal()">✔️ Valider la prescription</button>
-
-  <div class="buttons-wrapper" style="display:none;">
-    <button type="button" class ="btn-id" onclick="imprimer()">
-                🖨️ Imprimer l'ordonnance
-            </button>
- <!--   <button class="btn-id" onclick="genererOrdo(true)">📥 Télécharger Ordonnance</button> !-->
-    <button type="button" id="btnEnvoyerMail" class ="btn-id">
-      📧 Envoyer l'ordonnance par e-mail
-    </button>
-  </div>
-</div>
-  
-
-  <!-- COLONNE DROITE -->
- <aside class="historique-ordos">
-  <h3>📜 Historique des prescriptions</h3>
-
-  <div id="listeOrdonnances">
-    <!-- généré en JS -->
-  </div>
-</aside>
+  <!-- COLONNE DROITE : historique (inchangé) -->
+  <aside class="historique-ordos">
+    <h3>Historique des prescriptions</h3>
+    <input type="text" id="historique-search" placeholder="Rechercher dans l'historique...">
+    <div id="listeOrdonnances"><!-- généré en JS --></div>
+  </aside>
 
 </div>
-
 
 <!-- Modale de sélection des e-mails -->
-<div id="emailSelectModal">
+<div id="emailSelectModal" class="modal">
   <div class="modal-content">
-    <h3>📧 Choisissez les destinataires</h3>
+    <h3>Choisir les destinataires</h3>
     <form id="emailSelectForm">
       <div id="emailCheckboxes" class="email-options"></div>
-
-      <hr>
-
+      <hr style="margin:16px 0;border:none;border-top:1px solid var(--c-border);">
       <label>
         <input type="checkbox" id="otherEmailCheck"> Autre destinataire :
       </label>
       <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled>
-
-      <div class="modal-actions">
-        <button type="button" class ="btn-id btn-id-c" onclick="closeEmailSelectModal()">❌ Annuler</button>
-        <button type="button" id="confirmEmails" class ="btn-id btn-id-v">📨 Envoyer</button>
+      <div class="modal-buttons">
+        <button type="button" class="btn-id btn-id-c" onclick="closeEmailSelectModal()">Annuler</button>
+        <button type="button" id="confirmEmails" class="btn-id btn-id-v">Envoyer</button>
       </div>
     </form>
   </div>
 </div>
+
 <!-- Écran de chargement -->
 <div id="loadingScreen">
   <div class="loader-content">
@@ -1317,99 +744,71 @@ body {
     <p>Merci de patienter quelques instants</p>
   </div>
 </div>
-	
+
 <div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
-    <p>Vous n’avez pas accès à cette page.</p>
+    <h2>Accès refusé</h2>
+    <p>Vous n'avez pas accès à cette page.</p>
   </div>
 </div>
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez re-essayer un peu plus tard</p>
-        <p>Si le problème persiste, contactez un administrateur</p>
-
+    <h2>Une erreur est survenue</h2>
+    <p>Veuillez réessayer un peu plus tard.</p>
+    <p>Si le problème persiste, contactez un administrateur.</p>
   </div>
 </div>
-<!-- 🔶 MODALE DE CONFIRMATION VALIDATION -->
-<div id="confirmPrescriptionModal" class="modal" style="display:none;">
-  <div class="modal-content" style="max-width:600px;">
 
+<!-- MODALE DE CONFIRMATION -->
+<div id="confirmPrescriptionModal" class="modal">
+  <div class="modal-content">
     <h2>Confirmation</h2>
-
-    <!-- Bandeau d'avertissement -->
-    <div style="
-      background:#ffb84d;
-      color:#5a3d00;
-      padding:12px;
-      border-radius:8px;
-      margin-bottom:15px;
-      font-weight:600;
-      text-align:center;
-      ">
-      🚨 Attention : valider la prescription va verrouiller la modification et l’enregistrer définitivement dans le dossier patient.
+    <div class="confirm-banner">
+      Valider la prescription verrouille la modification et l'enregistre définitivement dans le dossier patient.
     </div>
-
-    <!-- Prévisualisation -->
-    <h3 style="margin-top:10px; text-align:left;">Prescription :</h3>
+    <h3>Aperçu de la prescription</h3>
     <div id="preview-ordo" class="preview-ordo"></div>
-
-    <!-- Boutons -->
-    <div class="modal-buttons" style="margin-top:20px;">
-      <button class ="btn-id btn-id-v" onclick="confirmValidation()">✔️ Valider</button>
-      <button class ="btn-id btn-id-c" onclick="closeConfirmModal()">❌ Annuler</button>
+    <div class="modal-buttons">
+      <button class="btn-id btn-id-c" onclick="closeConfirmModal()">Annuler</button>
+      <button class="btn-id btn-id-v" onclick="confirmValidation()">Valider</button>
     </div>
-
   </div>
 </div>
 
-
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script type="module">
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4"
-  };
-  emailjs.init("CZapZCcxYfJ8-acLS");
-  firebase.initializeApp(firebaseConfig);
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  
- const id = getIdFromURL();
-  if (!id) {
-    console.error("❌ Aucun ID patient trouvé dans l’URL.");
-    afficherBulle("🚨 Aucun dossier patient trouvé", "alerte");
-    
-  }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4"
+};
+emailjs.init("CZapZCcxYfJ8-acLS");
+firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const id = getIdFromURL();
+if (!id) {
+  console.error("❌ Aucun ID patient trouvé dans l'URL.");
+  afficherBulle("🚨 Aucun dossier patient trouvé", "alerte");
+}
 
 const patientRef = doc(db, "patients", id);
-  console.log("📁 patientRef initialisé :", patientRef.path);
-let medecinNom = "";
-  let medecinSpecialite = "";
-  let medecinLieu = "";
+window.medecinNom = "";
+window.medecinSpecialite = "";
+window.medecinLieu = "";
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    
-    return;
-  }
-afficherLoader();
+  if (!user) return;
+  afficherLoader();
   try {
     const docRef = doc(db, "medecins", user.uid);
     const docSnap = await getDoc(docRef);
@@ -1420,559 +819,69 @@ afficherLoader();
     }
 
     const data = docSnap.data();
-    const medecinNom = data.nom || "";
-    const medecinSpecialite = data.specialite || "";
-    const medecinLieu = data.lieu || "";
-const medecinSignature = data.signature || "";
-    // variables globales
-    window.medecinNom = medecinNom;
-    window.medecinSpecialite = medecinSpecialite;
-    window.medecinLieu = medecinLieu;
-    window.medecinSignature = medecinSignature;
+    window.medecinNom = data.nom || "";
+    window.medecinSpecialite = data.specialite || "";
+    window.medecinLieu = data.lieu || "";
+    window.medecinSignature = data.signature || "";
 
-   
-const pages = data.pages || {};
+    const headerMedecin = document.getElementById("header-medecin");
+    if (headerMedecin) {
+      headerMedecin.textContent = window.medecinNom
+        ? `Dr ${window.medecinNom}${window.medecinSpecialite ? " — " + window.medecinSpecialite : ""}`
+        : "Médecin non renseigné";
+    }
+    displayCurrentDate();
+
+    const pages = data.pages || {};
     const currentPath = window.location.pathname;
-const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+    const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+    const pageMapping = { "Ordonnancierf": "Ordonnancier" };
+    window.ouvrirModal = function (blob, nom) {
+      const url = URL.createObjectURL(blob);
+      window.open(url, nom);
+    };
+    const pageKey = pageMapping[currentPage] || currentPage;
 
-// Mapping pour Firestore
-const pageMapping = {
-  "Ordonnancierf": "Ordonnancier" // Ordonnancierf.html utilise les droits de Ordonnancier
-};
-window.ouvrirModal = function(blob, nom) {
-    const url = URL.createObjectURL(blob);
-    window.open(url, nom);
-}
-const pageKey = pageMapping[currentPage] || currentPage;
-console.log("Page actuelle :", currentPage);
-console.log("Page Firestore :", pageKey);
-if (!pages[pageKey]) {
-  const modal = document.getElementById("modal-no-access");
-  if (modal) masquerLoader();
-   modal.style.display = "flex";
-  console.warn("Accès refusé à", currentPage);
-  return; // Stoppe l'exécution pour ceux qui n'ont pas accès
-} else {
-  console.log("Accès autorisé à", currentPage);
-  // Ici tu peux mettre tout le code spécifique à cette page
-}
- remplirInfosPatientDepuisFirestore();
+    if (!pages[pageKey]) {
+      const modal = document.getElementById("modal-no-access");
+      masquerLoader();
+      if (modal) modal.style.display = "flex";
+      console.warn("Accès refusé à", currentPage);
+      return;
+    }
+
+    remplirInfosPatientDepuisFirestore();
 
   } catch (error) {
     console.error("Erreur chargement médecin :", error);
     const modal = document.getElementById("modal-error");
-  if (modal) masquerLoader();
-   modal.style.display = "flex";
+    masquerLoader();
+    if (modal) modal.style.display = "flex";
   }
 });
 
-  // --- Récupération de l'ID patient ---
-  function getIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("id");
-  }
-
- 
-window.handleBold = function(e) {
-  e.preventDefault(); // 🔥 empêche perte du focus
-  insertBold();
-  document.getElementById("prescription-text").focus();
+function getIdFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
 }
 
-
-const envoyerMailBtn = document.getElementById("btnEnvoyerMail");
-  
-
-window.insertBold = function() {
-  document.execCommand("bold");
-}
-window.insertSeparator = function() {
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return;
-
-  const range = selection.getRangeAt(0);
-
-  const separator = document.createElement("div");
-  separator.className = "separator";
-  separator.contentEditable = "false";
-
-  // insérer au curseur
-  range.insertNode(separator);
-
-  // déplacer curseur après
-  range.setStartAfter(separator);
-  range.setEndAfter(separator);
-
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-document.addEventListener("dragover", (e) => {
-  e.preventDefault();
-});
-
-document.addEventListener("drop", (e) => {
-  e.preventDefault();
-
-  const target = e.target;
-  const editor = document.getElementById("prescription-text");
-
-  if (window.draggedSeparator && editor.contains(target)) {
-    editor.insertBefore(window.draggedSeparator, target);
-  }
-
-  window.draggedSeparator = null;
-});
-  function calculerAge(dateNaissance) {
-    const naissance = new Date(dateNaissance);
-    const aujourdHui = new Date();
-    let age = aujourdHui.getFullYear() - naissance.getFullYear();
-    const mois = aujourdHui.getMonth() - naissance.getMonth();
-    if (mois < 0 || (mois === 0 && aujourdHui.getDate() < naissance.getDate())) {
-      age--;
-    }
-    return age;
-  }
-
-function filterMedicaments() {
-  const search = document.getElementById("search-medicaments").value.toLowerCase();
-  const filtres = medicaments.filter(m => m.toLowerCase().includes(search));
-  afficherMedicaments(filtres);
-}
-async function imprimer() {
-afficherLoader();
-    // Vérifie que l'ID du document existe
-    if (!window.pdfIdExistante) {
-        afficherBulle(
-            "❌ Aucun document disponible pour impression",
-            "alerte"
-        );
-        masquerLoader();
-        return;
-    }
-
-    try {
-
-        // Récupération du document Firestore
-        const ref = doc(db, "documents", window.pdfIdExistante);
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) {
-            afficherBulle(
-                "❌ Document introuvable",
-                "alerte"
-            );
-            masquerLoader();
-            return;
-        }
-
-        const data = snap.data();
-
-        // Vérifie qu'il s'agit bien d'un document .ord
-        if (!data.ord) {
-            afficherBulle(
-                "❌ Ce document ne contient pas de fichier ORD",
-                "alerte"
-            );
-            masquerLoader();
-            return;
-        }
-
-        // Vérifie que le module de conversion est disponible
-        if (!window.ordToPDF) {
-            afficherBulle(
-                "❌ Module ordonnance non chargé",
-                "alerte"
-            );
-            console.error("ordToPDF n'est pas disponible");
-            masquerLoader();
-            return;
-        }
-
-        // Génère le HTML à partir du .ord
-        const html = generateHTML(data.ord);
-
-        // Conteneur temporaire
-        const container = document.createElement("div");
-        container.innerHTML = html;
-
-        // Génération du PDF
-        const pdfBlob = await html2pdf()
-            .set({
-                margin: 0,
-                html2canvas: {
-                    scale: 2
-                },
-                jsPDF: {
-                    unit: "mm",
-                    format: "a4",
-                    orientation: "portrait"
-                }
-            })
-            .from(container)
-            .outputPdf("blob");
-
-        // Crée une URL temporaire vers le PDF
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-masquerLoader();
-        // Ouvre DIRECTEMENT le PDF
-        const nouvelOnglet = window.open(
-            pdfUrl,
-            "_blank"
-        );
-
-        if (!nouvelOnglet) {
-
-            afficherBulle(
-                "❌ Le navigateur a bloqué l'ouverture du PDF",
-                "alerte"
-            );
-masquerLoader();
-            URL.revokeObjectURL(pdfUrl);
-            return;
-        }
-
-        // Titre de l'onglet
-        nouvelOnglet.document.title =
-            "Ordonnance médicale";
-
-        // Nettoyage de l'URL temporaire
-        setTimeout(() => {
-            URL.revokeObjectURL(pdfUrl);
-        }, 60000);
-
-    } catch (error) {
-
-        console.error(
-            "❌ Erreur génération/ouverture du PDF :",
-            error
-        );
-
-        afficherBulle(
-            "❌ Impossible de générer le PDF",
-            "alerte"
-        );
-        masquerLoader();
-    }
-}
-window.imprimer=imprimer;
-
-		// Supprime toutes les références à la liste de médicaments et prescriptionItems
-
-function updatePatientDisplay() {
-  const prenom = document.getElementById("patient-first-name").value.trim();
-  const nom = document.getElementById("patient-last-name").value.trim();
-  const age = document.getElementById("patient-age").value.trim();
-
-  
+function calculerAge(dateNaissance) {
+  const naissance = new Date(dateNaissance);
+  const aujourdHui = new Date();
+  let age = aujourdHui.getFullYear() - naissance.getFullYear();
+  const mois = aujourdHui.getMonth() - naissance.getMonth();
+  if (mois < 0 || (mois === 0 && aujourdHui.getDate() < naissance.getDate())) age--;
+  return age;
 }
 
 function displayCurrentDate() {
   const now = new Date();
-  const formattedDate = now.toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = now.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+  const headerDate = document.getElementById("header-date");
+  if (headerDate) headerDate.textContent = formattedDate;
 }
-function getPrescriptionRawText() {
-  const el = document.getElementById("prescription-text");
-
-  if (!el) return "";
-
-  return (el.value ?? el.innerText ?? el.textContent ?? "").trim();
-}
-
 displayCurrentDate();
- async function validatePrescription() {
 
-const editor = document.getElementById("prescription-text");
-const prescriptionHTML = document.getElementById("prescription-text").innerHTML;
-const prescriptionText = editor.innerText.trim();
-  if (!prescriptionText) {
-    afficherBulle("⛔ La prescription est vide !", "alerte");
-    return;
-  }
-
-
-
-// verrouillage édition
-editor.setAttribute("contenteditable", "false");
-editor.style.background = "#f3f4f6";
-editor.style.cursor = "not-allowed";
-  document.getElementById("validate-prescription-btn").style.display = "none";
-  document.querySelector(".buttons-wrapper").style.display = "block";
-
-  // 🔹 Création du .ord
-  const ord = await construireORD();
-if (!ord.patient) {
-  ord.patient = {
-    nom: "",
-    prenom: "",
-    date_Naissance: "",
-    sexe: ""
-  };
-}
-  const patientId = getIdFromURL();
-
-  // 🔒 Filet de sécurité : si les champs patient sont vides côté formulaire
-  // (ex: non encore synchronisés), on va rechercher les infos directement
-  // dans Firestore avant de sauvegarder.
-  if (patientId && (!ord.patient.nom || !ord.patient.prenom)) {
-    try {
-      const patientSnapVal = await getDoc(doc(db, "patients", patientId));
-      if (patientSnapVal.exists()) {
-        const pdata = patientSnapVal.data();
-        ord.patient = {
-          nom: ord.patient.nom || pdata.nom || "",
-          prenom: ord.patient.prenom || pdata.prenom || "",
-          date_Naissance: ord.patient.date_Naissance || pdata.dateNaissance || "",
-          sexe: ord.patient.sexe || pdata.sexe || ""
-        };
-        console.log("🔎 [debug] Patient complété via filet de sécurité Firestore :", ord.patient);
-      } else {
-        console.warn("⚠️ [debug] Filet de sécurité : aucun patient trouvé pour", patientId);
-      }
-    } catch (e) {
-      console.error("Erreur filet de sécurité patient :", e);
-    }
-  }
-
-  // 🔹 Génération PDF (optionnel)
-
-  if (patientId) {
-
-  try {
-
-    // Création d'une référence avec un ID unique
-    const documentRef = doc(collection(db, "documents"));
-    const dateFormatted = formatDate(new Date());
-
-    // On conserve l'ID si nécessaire pour la suite
-    window.pdfIdExistante = documentRef.id;
-
-    // Enregistrement directement avec la référence créée
-    await setDoc(documentRef, {
-      patientId: patientId,
-      dateCreation: dateFormatted,
-      type: "Ordonnance médicale",
-      contenu: prescriptionText,
-
-      // Stockage structuré
-      ord: ord
-    });
-
-    console.log(
-      "✅ Ordonnance enregistrée avec ID unique :",
-      documentRef.id
-    );
-
-    await chargerAnciennesOrdonnances();
-
-    afficherBulle("✅ Ordonnance enregistrée !", "success");
-
-  } catch (err) {
-    console.error("❌ Erreur enregistrement ordonnance :", err);
-  }
-
-}
-
-}
-
-
-function formatDate(date) {
-  const pad = (n) => n.toString().padStart(2, '0');
-  const jour = pad(date.getDate());
-  const mois = pad(date.getMonth() + 1); // Les mois vont de 0 à 11
-  const annee = date.getFullYear();
-  const heures = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const secondes = pad(date.getSeconds());
-  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
-}
-
-function parsePrescriptionFromEditor() {
-
-  const editor = document.getElementById("prescription-text");
-
-  const contenu = [];
-
-  function walk(node) {
-
-    // séparateur
-    if (
-      node.nodeType === 1 &&
-      node.classList.contains("separator")
-    ) {
-      contenu.push({ type: "separator" });
-      return;
-    }
-
-    // gras
-    if (
-      node.nodeType === 1 &&
-      (node.tagName === "B" || node.tagName === "STRONG")
-    ) {
-      contenu.push({
-        type: "bold",
-        value: node.innerText
-      });
-      return;
-    }
-
-    // BR = retour ligne
-    if (
-      node.nodeType === 1 &&
-      node.tagName === "BR"
-    ) {
-      contenu.push({ type: "newline" });
-      return;
-    }
-
-    // texte simple
-    if (
-      node.nodeType === 3 &&
-      node.textContent.trim()
-    ) {
-      contenu.push({
-        type: "text",
-        value: node.textContent
-      });
-    }
-
-    // parcours enfants
-    node.childNodes.forEach(walk);
-
-    // DIV/P = saut de ligne
-    if (
-      node.nodeType === 1 &&
-      (node.tagName === "DIV" || node.tagName === "P")
-    ) {
-      contenu.push({ type: "newline" });
-    }
-  }
-
-  editor.childNodes.forEach(walk);
-
-  return contenu;
-}
-
-async function construireORD() {
-  const id= getIdFromURL();
- const docRef = doc(db, "patients", id);
-const docSnap = await getDoc(docRef);
-
-      const patient = docSnap.data();
-  const editor = document.getElementById("prescription-text");
-  const hospitalisationId =
-    patient.hospitalisationActiveId ||
-    "";
-  const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
-  const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
-  const naissance = document.getElementById("patient-birthdate")?.value.trim() || "";
-  const sexe = document.getElementById("sexe")?.value || "";
-
-  return {
-    version: "1.0",
-    type: "ordonnance",
-    titre: "Ordonnance médicale",
-    date: new Date().toLocaleDateString("fr-FR"),
-    lieu: window.medecinLieu || "",
-
-    patient: { nom: lastName, prenom: firstName, date_Naissance: naissance, sexe },
-hospitalisationId:hospitalisationId,
-    medecin: {
-      nom: window.medecinNom || "Dr Non renseigné",
-      specialite: window.medecinSpecialite || "",
-      signature: window.medecinSignature || ""
-    },
-
-    contenu: parsePrescriptionFromEditor(),
-    signature: true
-  };
-}
-async function genererOrdo(telecharger = false) {
-
-  try {
-
-    const contenu = parsePrescriptionFromEditor();
-
-    const ord = {
-      version: "1.0",
-      type: "ordonnance",
-      titre: "Ordonnance médicale",
-      date: new Date().toLocaleDateString("fr-FR"),
-      lieu: window.medecinLieu || "",
-
-      patient: {
-        nom: document.getElementById("patient-last-name")?.value.trim() || "",
-        prenom: document.getElementById("patient-first-name")?.value.trim() || "",
-        date_Naissance: document.getElementById("patient-birthdate")?.value || "",
-        sexe: document.getElementById("sexe")?.value || ""
-      },
-
-      medecin: {
-        nom: window.medecinNom || "Dr Non renseigné",
-        specialite: window.medecinSpecialite || ""
-      },
-
-      contenu,
-      signature: true,
-      logo: "logo.png"
-    };
-
-    if (telecharger) {
-      await ordToPDF(ord);
-      return "";
-    }
-
-    const html = generateHTML(ord);
-
-    const container = document.createElement("div");
-    container.innerHTML = html;
-
-    const pdfBlob = await html2pdf()
-      .set({
-        margin: 0,
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      })
-      .from(container)
-      .outputPdf('blob');
-
-    const base64 = await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.readAsDataURL(pdfBlob);
-      reader.onloadend = () => resolve(reader.result.split(",")[1]);
-    });
-
-    window.pdfBase64 = base64;
-    return base64;
-
-  } catch (error) {
-    console.error("❌ Erreur génération PDF :", error);
-    return "";
-  }
-}
-
-window.genererOrdo = genererOrdo;
-
-document.getElementById("new-prescription-btn").addEventListener("click", function () {
-	// Réinitialise tous les champs de l'ordonnance
-	document.getElementById("prescription-title").value = "";
-	document.getElementById("prescription-body").value = "";
-	document.getElementById("prescription-date").value = "";
-	document.getElementById("prescription-type").value = "ordonnance"; // ou vide "" selon ta logique
-	document.getElementById("prescription-language").value = "fr";     // ou vide ""
-	document.getElementById("prescription-footer").value = "";
-	
-	// Si tu veux aussi vider l'aperçu
-	document.getElementById("prescription-preview").innerHTML = "";
-
-	// Affiche le formulaire si nécessaire
-	document.getElementById("prescription-form").style.display = "block";
-});
-
-	
 function savePatientInfo() {
   const patientInfo = {
     firstName: document.getElementById("patient-first-name").value.trim(),
@@ -1984,314 +893,867 @@ function savePatientInfo() {
   localStorage.setItem("patientInfo", JSON.stringify(patientInfo));
 }
 ["patient-first-name", "patient-last-name", "patient-birthdate", "patient-age", "sexe"]
-  .forEach(id => {
-    const el = document.getElementById(id);
+  .forEach(idAttr => {
+    const el = document.getElementById(idAttr);
     if (el) el.addEventListener("change", savePatientInfo);
   });
-  
-		
-window.onload = function() {
+
+window.onload = function () {
   const patientInfo = JSON.parse(localStorage.getItem("patientInfo") || "{}");
   if (patientInfo) {
-    if (document.getElementById("patient-first-name")) {
-      document.getElementById("patient-first-name").value = patientInfo.firstName || "";
-    }
-    if (document.getElementById("patient-last-name")) {
-      document.getElementById("patient-last-name").value = patientInfo.lastName || "";
-    }
-    if (document.getElementById("patient-birthdate")) {
-      document.getElementById("patient-birthdate").value = patientInfo.birthdate || "";
-    }
-    if (document.getElementById("sexe")) {
-      document.getElementById("sexe").value = patientInfo.sexe || "M";
-    }
-    updatePatientDisplay();
-localStorage.removeItem('patientInfo');	
+    if (document.getElementById("patient-first-name")) document.getElementById("patient-first-name").value = patientInfo.firstName || "";
+    if (document.getElementById("patient-last-name")) document.getElementById("patient-last-name").value = patientInfo.lastName || "";
+    if (document.getElementById("patient-birthdate")) document.getElementById("patient-birthdate").value = patientInfo.birthdate || "";
+    if (document.getElementById("sexe")) document.getElementById("sexe").value = patientInfo.sexe || "M";
+    localStorage.removeItem('patientInfo');
   }
 };
 
-document.getElementById("patient-birthdate").addEventListener("change", function() {
-  const birthdate = new Date(this.value);
-  const today = new Date();
-  let age = today.getFullYear() - birthdate.getFullYear();
-  const m = today.getMonth() - birthdate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
-    age--;
-  }
-  document.getElementById("patient-age").value = age;
-  savePatientInfo(); 
-  updatePatientDisplay();
-});
-
-function resetOrdonnance() {
-    prescriptionItems = [];
-    updatePrescriptionDisplay();
-
-    document.getElementById("patient-first-name").value = "";
-    document.getElementById("patient-last-name").value = "";
-    document.getElementById("patient-birthdate").value = "";
-    document.getElementById("patient-age").value = "";
-    document.getElementById("sexe").selectedIndex = 0;
-
-    document.getElementById("patient-name-display").textContent = "";
-    document.getElementById("patient-age-display").textContent = "";
-
-    document.getElementById("prescription").style.display = "none";
-    document.querySelector(".buttons-wrapper").style.display = "none";
-    document.getElementById("validate-prescription-btn").disabled = false;
-}
-window.resetOrdonnance=resetOrdonnance;
 document.getElementById("patient-birthdate").addEventListener("change", function () {
-	const dateNaissance = this.value;
-	if (dateNaissance) {
-		const age = calculerAge(dateNaissance);
-		document.getElementById("patient-age").value = age;
-	}
+  const dateNaissance = this.value;
+  if (dateNaissance) document.getElementById("patient-age").value = calculerAge(dateNaissance);
+  savePatientInfo();
 });
-
-
-document.getElementById("patient-birthdate").addEventListener("input", function () {
-    const birthdate = new Date(this.value);
-    const ageInput = document.getElementById("patient-age");
-
-    if (!isNaN(birthdate)) {
-        const today = new Date();
-        let age = today.getFullYear() - birthdate.getFullYear();
-        const m = today.getMonth() - birthdate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
-            age--;
-        }
-        ageInput.value = age;
-    } else {
-        ageInput.value = "";
-    }
-});
-
-function updateBoldButton() {
-  const btn = document.getElementById("btn-bold");
-  if (!btn) return;
-
-  const isBold = document.queryCommandState("bold");
-
-  if (isBold) {
-    btn.classList.add("active");
-  } else {
-    btn.classList.remove("active");
-  }
-}
-
-const editor = document.getElementById("prescription-text");
-
-editor.addEventListener("keyup", updateBoldButton);
-editor.addEventListener("mouseup", updateBoldButton);
-editor.addEventListener("input", updateBoldButton);
 
 async function remplirInfosPatientDepuisFirestore() {
-  const id = getIdFromURL();
-  console.log("🔎 [debug] ID patient récupéré depuis l'URL :", id);
-  if (!id) {
-    console.warn("⚠️ [debug] Aucun ID dans l'URL — impossible de charger le patient.");
-    return;
-  }
-
+  const idP = getIdFromURL();
+  if (!idP) return;
   try {
-    const docRef = doc(db, "patients", id);
-const docSnap = await getDoc(docRef);
-
+    const docRef = doc(db, "patients", idP);
+    const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      console.log("🔎 [debug] Données patient reçues de Firestore :", data);
       document.getElementById("patient-first-name").value = data.prenom || "";
       document.getElementById("patient-last-name").value = data.nom || "";
       document.getElementById("patient-birthdate").value = data.dateNaissance || "";
       document.getElementById("sexe").value = data.sexe || "M";
-
-      calculerAge(); 
-      updatePatientDisplay();
+      if (data.dateNaissance) document.getElementById("patient-age").value = calculerAge(data.dateNaissance);
       masquerLoader();
       await chargerAnciennesOrdonnances();
     } else {
-      console.warn("⚠️ [debug] Aucun document patient trouvé dans Firestore pour l'ID :", id);
+      console.warn("⚠️ Aucun document patient trouvé pour l'ID :", idP);
+      masquerLoader();
     }
-
   } catch (error) {
     console.error("Erreur de récupération du patient :", error);
+    masquerLoader();
   }
 }
 
- // Conteneur global pour les bulles
+/* =========================================================
+   MOTEUR DE PRESCRIPTION STRUCTURÉE
+   ========================================================= */
+
+let prescriptionItems = [];
+let rxLocked = false;
+let uidCounter = 0;
+function newId() { uidCounter++; return "rx" + Date.now() + "_" + uidCounter; }
+
+const POSOLOGIE_SUGGESTIONS = [
+  "1 cp le matin", "1 cp matin et soir", "1 cp matin, midi et soir",
+  "1 cp x3/j si besoin", "2 cp x3/j", "1 sachet x2/j",
+  "1 application x2/j", "1 mesure x3/j", "1 suppositoire si besoin"
+];
+const DUREE_SUGGESTIONS = ["3 jours", "5 jours", "7 jours", "10 jours", "1 mois", "jusqu'à amélioration"];
+const SECTION_SUGGESTIONS = ["Traitement", "Examens complémentaires", "Conseils / recommandations", "Soins infirmiers"];
+
+function addItem(kind) {
+  if (rxLocked) return;
+  const item = { id: newId(), kind };
+  if (kind === "med") Object.assign(item, { nom: "", posologie: "", duree: "", quantite: "", remarque: "" });
+  if (kind === "note") Object.assign(item, { texte: "" });
+  if (kind === "section") Object.assign(item, { titre: "" });
+  prescriptionItems.push(item);
+  renderItems();
+  syncHiddenEditor();
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-id="${item.id}"] .rx-focus-first`);
+    if (el) el.focus();
+  });
+}
+window.addItem = addItem;
+
+function removeItem(id) {
+  prescriptionItems = prescriptionItems.filter(i => i.id !== id);
+  renderItems();
+  syncHiddenEditor();
+}
+window.removeItem = removeItem;
+
+function updateItemField(id, field, value) {
+  const item = prescriptionItems.find(i => i.id === id);
+  if (!item) return;
+  item[field] = value;
+  syncHiddenEditor();
+  renderNumbersOnly();
+}
+
+function iconSvg(path) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+}
+const ICON_TRASH = iconSvg('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>');
+const ICON_DRAG = iconSvg('<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>');
+
+function chipsHtml(list, field, id) {
+  return list.map(v => `<button type="button" class="rx-chip" data-field="${field}" data-value="${escapeAttr(v)}" data-id="${id}">${v}</button>`).join("");
+}
+
+function escapeAttr(s) { return String(s).replace(/"/g, "&quot;"); }
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function renderItems() {
+  const list = document.getElementById("rx-list");
+  const empty = document.getElementById("rx-empty");
+  list.querySelectorAll(".rx-item").forEach(n => n.remove());
+
+  if (prescriptionItems.length === 0) {
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+  }
+
+  let num = 0;
+  prescriptionItems.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "rx-item rx-" + item.kind;
+    row.setAttribute("data-id", item.id);
+    row.setAttribute("draggable", "true");
+
+    if (item.kind === "med") {
+      num++;
+      row.innerHTML = `
+        <div class="rx-drag" title="Déplacer">${ICON_DRAG}</div>
+        <div class="rx-num">${num}</div>
+        <div class="rx-fields">
+          <div class="rx-row-main">
+            <input class="rx-input rx-nom rx-focus-first" type="text" autocomplete="off" placeholder="Nom du médicament (DCI ou spécialité)" value="${escapeAttr(item.nom)}">
+            <button type="button" class="rx-del" title="Supprimer">${ICON_TRASH}</button>
+          </div>
+          <div class="rx-row-sub">
+            <input class="rx-input rx-posologie" type="text" placeholder="Posologie (ex : 1 cp matin, midi et soir)" value="${escapeAttr(item.posologie)}">
+            <input class="rx-input rx-duree" type="text" placeholder="Durée" value="${escapeAttr(item.duree)}">
+            <input class="rx-input rx-qte" type="text" placeholder="Quantité" value="${escapeAttr(item.quantite)}">
+          </div>
+          <div class="rx-chips">${chipsHtml(POSOLOGIE_SUGGESTIONS, "posologie", item.id)}</div>
+          <div class="rx-chips">${chipsHtml(DUREE_SUGGESTIONS, "duree", item.id)}</div>
+          <input class="rx-input rx-remarque" type="text" placeholder="Remarque (facultatif — ex : à jeun, si besoin...)" value="${escapeAttr(item.remarque)}">
+        </div>`;
+    } else if (item.kind === "note") {
+      num++;
+      row.innerHTML = `
+        <div class="rx-drag" title="Déplacer">${ICON_DRAG}</div>
+        <div class="rx-num">${num}</div>
+        <div class="rx-fields">
+          <div class="rx-row-main">
+            <input class="rx-input rx-nom rx-focus-first" type="text" placeholder="Consigne / recommandation (ex : repos, arrêt de travail 3 jours...)" value="${escapeAttr(item.texte)}">
+            <button type="button" class="rx-del" title="Supprimer">${ICON_TRASH}</button>
+          </div>
+        </div>`;
+    } else if (item.kind === "section") {
+      row.innerHTML = `
+        <div class="rx-drag" title="Déplacer">${ICON_DRAG}</div>
+        <div class="rx-fields">
+          <div class="rx-section-line"></div>
+          <input class="rx-input rx-focus-first" type="text" list="rx-section-suggestions" placeholder="Titre de section" value="${escapeAttr(item.titre)}">
+          <div class="rx-section-line"></div>
+          <button type="button" class="rx-del" title="Supprimer">${ICON_TRASH}</button>
+        </div>`;
+    }
+
+    wireItemEvents(row, item);
+    list.appendChild(row);
+  });
+
+  if (!document.getElementById("rx-section-suggestions")) {
+    const dl = document.createElement("datalist");
+    dl.id = "rx-section-suggestions";
+    dl.innerHTML = SECTION_SUGGESTIONS.map(s => `<option value="${escapeAttr(s)}">`).join("");
+    document.body.appendChild(dl);
+  }
+}
+
+function renderNumbersOnly() {
+  let num = 0;
+  document.querySelectorAll("#rx-list .rx-item").forEach(row => {
+    const id = row.getAttribute("data-id");
+    const item = prescriptionItems.find(i => i.id === id);
+    if (!item) return;
+    if (item.kind === "med" || item.kind === "note") {
+      num++;
+      const badge = row.querySelector(".rx-num");
+      if (badge) badge.textContent = num;
+    }
+  });
+}
+
+function wireItemEvents(row, item) {
+  row.querySelector(".rx-del").addEventListener("click", () => removeItem(item.id));
+
+  if (item.kind === "med") {
+    const nomInput = row.querySelector(".rx-nom");
+    nomInput.addEventListener("input", e => { updateItemField(item.id, "nom", e.target.value); handleMedAutocomplete(nomInput, item.id); });
+    nomInput.addEventListener("blur", () => setTimeout(() => hideAutocomplete(), 150));
+
+    row.querySelector(".rx-posologie").addEventListener("input", e => updateItemField(item.id, "posologie", e.target.value));
+    row.querySelector(".rx-duree").addEventListener("input", e => updateItemField(item.id, "duree", e.target.value));
+    row.querySelector(".rx-qte").addEventListener("input", e => updateItemField(item.id, "quantite", e.target.value));
+    row.querySelector(".rx-remarque").addEventListener("input", e => updateItemField(item.id, "remarque", e.target.value));
+
+    row.querySelectorAll(".rx-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const field = chip.getAttribute("data-field");
+        const value = chip.getAttribute("data-value");
+        item[field] = value;
+        const inputSel = field === "posologie" ? ".rx-posologie" : ".rx-duree";
+        row.querySelector(inputSel).value = value;
+        syncHiddenEditor();
+      });
+    });
+  } else if (item.kind === "note") {
+    row.querySelector(".rx-nom").addEventListener("input", e => updateItemField(item.id, "texte", e.target.value));
+  } else if (item.kind === "section") {
+    row.querySelector("input.rx-input").addEventListener("input", e => updateItemField(item.id, "titre", e.target.value));
+  }
+
+  /* réordonnancement par glisser-déposer */
+  row.addEventListener("dragstart", () => row.classList.add("dragging"));
+  row.addEventListener("dragend", () => {
+    row.classList.remove("dragging");
+    document.querySelectorAll(".rx-item").forEach(r => r.classList.remove("drag-over"));
+    reorderFromDOM();
+  });
+  row.addEventListener("dragover", e => {
+    e.preventDefault();
+    const dragging = document.querySelector(".rx-item.dragging");
+    if (!dragging || dragging === row) return;
+    const list = document.getElementById("rx-list");
+    const rect = row.getBoundingClientRect();
+    const after = (e.clientY - rect.top) > rect.height / 2;
+    list.insertBefore(dragging, after ? row.nextSibling : row);
+  });
+}
+
+function reorderFromDOM() {
+  const ids = Array.from(document.querySelectorAll("#rx-list .rx-item")).map(r => r.getAttribute("data-id"));
+  prescriptionItems.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  renderNumbersOnly();
+  syncHiddenEditor();
+}
+
+/* ---- Autocomplétion médicaments (réutilise la liste `medicaments`) ---- */
+const autoBox = document.getElementById("autocomplete-box");
+
+function handleMedAutocomplete(inputEl, itemId) {
+  const val = inputEl.value.trim();
+  if (val.length < 2 || !medicaments.length) { hideAutocomplete(); return; }
+  const matches = medicaments.filter(m => m.toLowerCase().includes(val.toLowerCase())).slice(0, 8);
+  if (matches.length === 0) { hideAutocomplete(); return; }
+
+  autoBox.innerHTML = "";
+  matches.forEach(med => {
+    const div = document.createElement("div");
+    div.className = "autocomplete-item";
+    div.textContent = med;
+    div.onmousedown = (e) => {
+      e.preventDefault();
+      inputEl.value = med;
+      updateItemField(itemId, "nom", med);
+      hideAutocomplete();
+      const row = inputEl.closest(".rx-item");
+      const next = row && row.querySelector(".rx-posologie");
+      if (next) next.focus();
+    };
+    autoBox.appendChild(div);
+  });
+
+  const rect = inputEl.getBoundingClientRect();
+  autoBox.style.left = rect.left + "px";
+  autoBox.style.top = (rect.bottom + 4) + "px";
+  autoBox.style.width = Math.max(rect.width, 260) + "px";
+  autoBox.style.display = "block";
+}
+function hideAutocomplete() { autoBox.style.display = "none"; }
+document.addEventListener("click", e => {
+  if (!autoBox.contains(e.target) && !e.target.classList.contains("rx-nom")) hideAutocomplete();
+});
+
+/* ---- Synchronisation vers la zone technique #prescription-text
+        (conserve exactement le format attendu par parsePrescriptionFromEditor /
+        construireORD / genererOrdo / le modèle d'ordonnance PDF existant) ---- */
+function syncHiddenEditor() {
+  const editor = document.getElementById("prescription-text");
+  editor.innerHTML = "";
+  let num = 0;
+
+  prescriptionItems.forEach(item => {
+    if (item.kind === "section") {
+      const sep = document.createElement("div");
+      sep.className = "separator";
+      sep.contentEditable = "false";
+      editor.appendChild(sep);
+      if (item.titre && item.titre.trim()) {
+        const line = document.createElement("div");
+        const b = document.createElement("b");
+        b.textContent = item.titre.trim().toUpperCase();
+        line.appendChild(b);
+        editor.appendChild(line);
+      }
+      return;
+    }
+
+    num++;
+
+    if (item.kind === "med") {
+      const line1 = document.createElement("div");
+      const b = document.createElement("b");
+      b.textContent = `${num}. ${(item.nom || "").trim()}`.trim();
+      line1.appendChild(b);
+      editor.appendChild(line1);
+
+      const details = [
+        item.posologie ? item.posologie.trim() : "",
+        item.duree ? `pendant ${item.duree.trim()}` : "",
+        item.quantite ? `— Qté : ${item.quantite.trim()}` : ""
+      ].filter(Boolean);
+
+      if (details.length) {
+        const line2 = document.createElement("div");
+        line2.textContent = details.join(" — ");
+        editor.appendChild(line2);
+      }
+      if (item.remarque && item.remarque.trim()) {
+        const line3 = document.createElement("div");
+        line3.textContent = item.remarque.trim();
+        editor.appendChild(line3);
+      }
+    } else if (item.kind === "note") {
+      const line = document.createElement("div");
+      line.textContent = `${num}. ${(item.texte || "").trim()}`.trim();
+      editor.appendChild(line);
+    }
+  });
+}
+
+/* ---- Aperçu formaté pour la modale de confirmation ---- */
+function buildPreviewHTML() {
+  let html = "";
+  let num = 0;
+  prescriptionItems.forEach(item => {
+    if (item.kind === "section") {
+      html += `<div class="pv-section">${escapeHtml(item.titre || "Section")}</div>`;
+      return;
+    }
+    num++;
+    if (item.kind === "med") {
+      const details = [
+        item.posologie, item.duree ? `pendant ${item.duree}` : "", item.quantite ? `— Qté : ${item.quantite}` : ""
+      ].filter(Boolean).join(" — ");
+      html += `<div class="pv-item"><b>${num}. ${escapeHtml(item.nom || "(sans nom)")}</b>`;
+      if (details) html += `<div class="pv-sub">${escapeHtml(details)}</div>`;
+      if (item.remarque) html += `<div class="pv-sub">${escapeHtml(item.remarque)}</div>`;
+      html += `</div>`;
+    } else if (item.kind === "note") {
+      html += `<div class="pv-item">${num}. ${escapeHtml(item.texte || "")}</div>`;
+    }
+  });
+  return html || "<p style='color:var(--c-text-faint)'>Prescription vide.</p>";
+}
+
+function lockRxBuilder() {
+  rxLocked = true;
+  document.getElementById("btn-add-med").setAttribute("disabled", "true");
+  document.getElementById("btn-add-note").setAttribute("disabled", "true");
+  document.getElementById("btn-add-section").setAttribute("disabled", "true");
+  document.querySelectorAll("#rx-list input, #rx-list textarea, #rx-list .rx-del, #rx-list .rx-chip").forEach(el => el.setAttribute("disabled", "true"));
+  document.querySelectorAll("#rx-list .rx-item").forEach(el => el.setAttribute("draggable", "false"));
+  const status = document.getElementById("rx-status");
+  status.textContent = "Validée";
+  status.classList.add("locked");
+}
+
+function unlockRxBuilder() {
+  rxLocked = false;
+  document.getElementById("btn-add-med").removeAttribute("disabled");
+  document.getElementById("btn-add-note").removeAttribute("disabled");
+  document.getElementById("btn-add-section").removeAttribute("disabled");
+  const status = document.getElementById("rx-status");
+  status.textContent = "Brouillon";
+  status.classList.remove("locked");
+}
+
+function resetOrdonnance() {
+  prescriptionItems = [];
+  renderItems();
+  syncHiddenEditor();
+
+  const editor = document.getElementById("prescription-text");
+  editor.setAttribute("contenteditable", "true");
+  editor.style.background = "";
+  editor.style.cursor = "";
+
+  unlockRxBuilder();
+  document.getElementById("validate-prescription-btn").style.display = "";
+  document.getElementById("validate-prescription-btn").disabled = false;
+  document.querySelector(".buttons-wrapper").style.display = "none";
+  window.pdfIdExistante = null;
+}
+window.resetOrdonnance = resetOrdonnance;
+
+renderItems();
+
+/* =========================================================
+   IMPRESSION / GÉNÉRATION PDF (inchangé)
+   ========================================================= */
+
+async function imprimer() {
+  afficherLoader();
+  if (!window.pdfIdExistante) {
+    afficherBulle("❌ Aucun document disponible pour impression", "alerte");
+    masquerLoader();
+    return;
+  }
+  try {
+    const ref = doc(db, "documents", window.pdfIdExistante);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      afficherBulle("❌ Document introuvable", "alerte");
+      masquerLoader();
+      return;
+    }
+    const data = snap.data();
+    if (!data.ord) {
+      afficherBulle("❌ Ce document ne contient pas de fichier ORD", "alerte");
+      masquerLoader();
+      return;
+    }
+    if (!window.ordToPDF) {
+      afficherBulle("❌ Module ordonnance non chargé", "alerte");
+      masquerLoader();
+      return;
+    }
+
+    const html = generateHTML(data.ord);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const pdfBlob = await html2pdf()
+      .set({ margin: 0, html2canvas: { scale: 2 }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } })
+      .from(container)
+      .outputPdf("blob");
+
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    masquerLoader();
+    const nouvelOnglet = window.open(pdfUrl, "_blank");
+    if (!nouvelOnglet) {
+      afficherBulle("❌ Le navigateur a bloqué l'ouverture du PDF", "alerte");
+      masquerLoader();
+      URL.revokeObjectURL(pdfUrl);
+      return;
+    }
+    nouvelOnglet.document.title = "Ordonnance médicale";
+    setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+  } catch (error) {
+    console.error("❌ Erreur génération/ouverture du PDF :", error);
+    afficherBulle("❌ Impossible de générer le PDF", "alerte");
+    masquerLoader();
+  }
+}
+window.imprimer = imprimer;
+
+function getPrescriptionRawText() {
+  const el = document.getElementById("prescription-text");
+  if (!el) return "";
+  return (el.value ?? el.innerText ?? el.textContent ?? "").trim();
+}
+
+function openConfirmModal() {
+  if (prescriptionItems.length === 0) {
+    afficherBulle("⛔ La prescription est vide !", "alerte");
+    return;
+  }
+  syncHiddenEditor();
+  document.getElementById("preview-ordo").innerHTML = buildPreviewHTML();
+  document.getElementById("confirmPrescriptionModal").style.display = "flex";
+}
+window.openConfirmModal = openConfirmModal;
+
+function closeConfirmModal() {
+  document.getElementById("confirmPrescriptionModal").style.display = "none";
+}
+window.closeConfirmModal = closeConfirmModal;
+
+function confirmValidation() {
+  closeConfirmModal();
+  validatePrescription();
+}
+window.confirmValidation = confirmValidation;
+
+async function validatePrescription() {
+  const editor = document.getElementById("prescription-text");
+  const prescriptionText = editor.innerText.trim();
+  if (!prescriptionText) {
+    afficherBulle("⛔ La prescription est vide !", "alerte");
+    return;
+  }
+
+  editor.setAttribute("contenteditable", "false");
+  editor.style.background = "#f3f4f6";
+  editor.style.cursor = "not-allowed";
+  document.getElementById("validate-prescription-btn").style.display = "none";
+  document.querySelector(".buttons-wrapper").style.display = "flex";
+  lockRxBuilder();
+
+  const ord = await construireORD();
+  if (!ord.patient) ord.patient = { nom: "", prenom: "", date_Naissance: "", sexe: "" };
+  const patientId = getIdFromURL();
+
+  if (patientId && (!ord.patient.nom || !ord.patient.prenom)) {
+    try {
+      const patientSnapVal = await getDoc(doc(db, "patients", patientId));
+      if (patientSnapVal.exists()) {
+        const pdata = patientSnapVal.data();
+        ord.patient = {
+          nom: ord.patient.nom || pdata.nom || "",
+          prenom: ord.patient.prenom || pdata.prenom || "",
+          date_Naissance: ord.patient.date_Naissance || pdata.dateNaissance || "",
+          sexe: ord.patient.sexe || pdata.sexe || ""
+        };
+      }
+    } catch (e) {
+      console.error("Erreur filet de sécurité patient :", e);
+    }
+  }
+
+  if (patientId) {
+    try {
+      const documentRef = doc(collection(db, "documents"));
+      const dateFormatted = formatDate(new Date());
+      window.pdfIdExistante = documentRef.id;
+
+      await setDoc(documentRef, {
+        patientId: patientId,
+        dateCreation: dateFormatted,
+        type: "Ordonnance médicale",
+        contenu: prescriptionText,
+        ord: ord
+      });
+
+      await chargerAnciennesOrdonnances();
+      afficherBulle("✅ Ordonnance enregistrée !", "success");
+    } catch (err) {
+      console.error("❌ Erreur enregistrement ordonnance :", err);
+    }
+  }
+}
+
+function formatDate(date) {
+  const pad = (n) => n.toString().padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function parsePrescriptionFromEditor() {
+  const editor = document.getElementById("prescription-text");
+  const contenu = [];
+
+  function walk(node) {
+    if (node.nodeType === 1 && node.classList.contains("separator")) {
+      contenu.push({ type: "separator" });
+      return;
+    }
+    if (node.nodeType === 1 && (node.tagName === "B" || node.tagName === "STRONG")) {
+      contenu.push({ type: "bold", value: node.innerText });
+      return;
+    }
+    if (node.nodeType === 1 && node.tagName === "BR") {
+      contenu.push({ type: "newline" });
+      return;
+    }
+    if (node.nodeType === 3 && node.textContent.trim()) {
+      contenu.push({ type: "text", value: node.textContent });
+    }
+    node.childNodes.forEach(walk);
+    if (node.nodeType === 1 && (node.tagName === "DIV" || node.tagName === "P")) {
+      contenu.push({ type: "newline" });
+    }
+  }
+
+  editor.childNodes.forEach(walk);
+  return contenu;
+}
+
+async function construireORD() {
+  const idP = getIdFromURL();
+  const docRef = doc(db, "patients", idP);
+  const docSnap = await getDoc(docRef);
+  const patient = docSnap.data();
+  const hospitalisationId = patient.hospitalisationActiveId || "";
+  const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
+  const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
+  const naissance = document.getElementById("patient-birthdate")?.value.trim() || "";
+  const sexe = document.getElementById("sexe")?.value || "";
+
+  return {
+    version: "1.0",
+    type: "ordonnance",
+    titre: "Ordonnance médicale",
+    date: new Date().toLocaleDateString("fr-FR"),
+    lieu: window.medecinLieu || "",
+    patient: { nom: lastName, prenom: firstName, date_Naissance: naissance, sexe },
+    hospitalisationId: hospitalisationId,
+    medecin: {
+      nom: window.medecinNom || "Dr Non renseigné",
+      specialite: window.medecinSpecialite || "",
+      signature: window.medecinSignature || ""
+    },
+    contenu: parsePrescriptionFromEditor(),
+    signature: true
+  };
+}
+
+async function genererOrdo(telecharger = false) {
+  try {
+    const contenu = parsePrescriptionFromEditor();
+    const ord = {
+      version: "1.0",
+      type: "ordonnance",
+      titre: "Ordonnance médicale",
+      date: new Date().toLocaleDateString("fr-FR"),
+      lieu: window.medecinLieu || "",
+      patient: {
+        nom: document.getElementById("patient-last-name")?.value.trim() || "",
+        prenom: document.getElementById("patient-first-name")?.value.trim() || "",
+        date_Naissance: document.getElementById("patient-birthdate")?.value || "",
+        sexe: document.getElementById("sexe")?.value || ""
+      },
+      medecin: { nom: window.medecinNom || "Dr Non renseigné", specialite: window.medecinSpecialite || "" },
+      contenu,
+      signature: true,
+      logo: "logo.png"
+    };
+
+    if (telecharger) { await ordToPDF(ord); return ""; }
+
+    const html = generateHTML(ord);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const pdfBlob = await html2pdf()
+      .set({ margin: 0, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } })
+      .from(container)
+      .outputPdf('blob');
+
+    const base64 = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.readAsDataURL(pdfBlob);
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    });
+
+    window.pdfBase64 = base64;
+    return base64;
+  } catch (error) {
+    console.error("❌ Erreur génération PDF :", error);
+    return "";
+  }
+}
+window.genererOrdo = genererOrdo;
+
+/* =========================================================
+   HISTORIQUE (inchangé, + recherche client)
+   ========================================================= */
+
+function parseDateFR(dateStr) {
+  if (!dateStr) return new Date(0);
+  const cleaned = dateStr.trim();
+  const match = cleaned.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!match) return new Date(cleaned);
+  const [, d, m, y, hh = "0", mm = "0", ss = "0"] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss));
+}
+
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+  const byteCharacters = atob(b64Data);
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+    byteArrays.push(new Uint8Array(byteNumbers));
+  }
+  return new Blob(byteArrays, { type: contentType });
+}
+
+let ultimesOrdonnances = [];
+
+async function chargerAnciennesOrdonnances() {
+  const patientId = getIdFromURL();
+  if (!patientId) return;
+
+  const container = document.getElementById("listeOrdonnances");
+  container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--c-text-faint)">Chargement...</div>`;
+
+  try {
+    const q = query(collection(db, "documents"), where("patientId", "==", patientId));
+    const snapshot = await getDocs(q);
+    const ordonnances = [];
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.type !== "Ordonnance médicale") return;
+      ordonnances.push({ id: docSnap.id, ...data });
+    });
+
+    ordonnances.sort((a, b) => parseDateFR(b.dateCreation) - parseDateFR(a.dateCreation));
+    ultimesOrdonnances = ordonnances;
+    renderHistorique(ordonnances);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<div style='padding:15px;color:var(--c-danger)'>Erreur de chargement</div>";
+  }
+}
+
+function renderHistorique(ordonnances) {
+  const container = document.getElementById("listeOrdonnances");
+  container.innerHTML = "";
+
+  if (ordonnances.length === 0) {
+    container.innerHTML = `<div style="padding:15px;color:var(--c-text-faint)">Aucune ordonnance</div>`;
+    return;
+  }
+
+  ordonnances.forEach(data => {
+    const contenu = (data.contenu || "").replace(/\n/g, " ").substring(0, 100);
+    const row = document.createElement("div");
+    row.className = "ordo-row";
+    row.innerHTML = `
+      <div class="ordo-date">${data.dateCreation || ""}</div>
+      <div class="ordo-preview">${escapeHtml(contenu)}...</div>`;
+    row.title = "Double-cliquez pour ouvrir l'ordonnance";
+
+    row.addEventListener("dblclick", async () => {
+      if (data.ord) {
+        const patient = data.patient || {};
+        const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
+        window.parent.postMessage({ type: "OPEN_TAB", title: nom, url: `viewer.html?id=${data.id}` }, "*");
+        return;
+      }
+      if (data.pdfBase64) {
+        const patient = data.patient || {};
+        const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
+        const blob = b64toBlob(data.pdfBase64, "application/pdf");
+        ouvrirModal(blob, nom);
+        return;
+      }
+    });
+
+    container.appendChild(row);
+  });
+}
+
+document.getElementById("historique-search").addEventListener("input", function () {
+  const term = this.value.toLowerCase().trim();
+  if (!term) { renderHistorique(ultimesOrdonnances); return; }
+  const filtered = ultimesOrdonnances.filter(o => (o.contenu || "").toLowerCase().includes(term) || (o.dateCreation || "").toLowerCase().includes(term));
+  renderHistorique(filtered);
+});
+
+/* =========================================================
+   NOTIFICATIONS / LOADERS (inchangé)
+   ========================================================= */
+
 let notificationContainer = document.getElementById('notification-container');
 if (!notificationContainer) {
   notificationContainer = document.createElement('div');
   notificationContainer.id = 'notification-container';
   notificationContainer.style.position = 'fixed';
   notificationContainer.style.top = '12px';
-  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
+  notificationContainer.style.right = '12px';
   notificationContainer.style.display = 'flex';
   notificationContainer.style.flexDirection = 'column';
-  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
+  notificationContainer.style.gap = '8px';
   notificationContainer.style.zIndex = 9999;
   document.body.appendChild(notificationContainer);
 }
 
-// Fonction pour afficher une bulle
 const ORIGINE_PARENT_BULLE = "*";
-
-
-function afficherBulle(message, typeBulle){
-
-  if(window.parent === window){
-
+function afficherBulle(message, typeBulle) {
+  if (window.parent === window) {
     console.warn("afficherBulle appelée sans parent, message perdu :", message);
-
     return;
-
   }
-
-  window.parent.postMessage(
-
-    {
-      source:"notification-bulle",
-      message,
-      typeBulle
-    },
-
-    ORIGINE_PARENT_BULLE
-
-  );
-
+  window.parent.postMessage({ source: "notification-bulle", message, typeBulle }, ORIGINE_PARENT_BULLE);
 }
-
-
-/* relais : si ce code lui-même iframe d'autres codes qui
-   demandent une bulle, on transmet plus haut à notre tour */
 
 if (!window.__bulleRelaisInit) {
   window.__bulleRelaisInit = true;
-
   window.addEventListener("message", (event) => {
-
-    if (event.origin !== "*") {
-        return;
-    }
-    if (
-      event.data &&
-      event.data.source === "notification-bulle" &&
-      window.parent !== window
-    ) {
+    if (event.origin !== "*") return;
+    if (event.data && event.data.source === "notification-bulle" && window.parent !== window) {
       window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
     }
   });
 }
 
+window.addEventListener("DOMContentLoaded", () => {
+  remplirInfosPatientDepuisFirestore();
+});
 
-  window.addEventListener("DOMContentLoaded", () => {
-    remplirInfosPatientDepuisFirestore();
-    document.getElementById("patient-birthdate").addEventListener("change", calculerAge);
-  });
-  function base64ToBlob(base64, type = "application/pdf") {
-  const binary = atob(base64);
-  const len = binary.length;
-  const buffer = new ArrayBuffer(len);
-  const view = new Uint8Array(buffer);
-  for (let i = 0; i < len; i++) {
-    view[i] = binary.charCodeAt(i);
-  }
-  return new Blob([view], { type });
-}
-
-
-window.afficherLoader = function() {
+window.afficherLoader = function () {
   let loader = document.getElementById("loadingScreen");
-  
-  if (!loader) {
-    loader = document.createElement("iframe");
-    loader.id = "loadingScreen";
-    loader.src = "loader.html?modal=true"; 
-    loader.style.position = "fixed";
-    loader.style.top = "0";
-    loader.style.left = "0";
-    loader.style.width = "100%";
-    loader.style.height = "100%";
-    loader.style.border = "none";
-    loader.style.zIndex = "9999";
-    loader.style.background = "transparent";
-    loader.style.pointerEvents = "none"; 
-    document.body.appendChild(loader);
-  }
-
-  loader.style.display = "block";
+  loader.style.display = "flex";
   loader.style.opacity = "1";
 };
-
-// --- Masque l’écran de chargement ---
-window.masquerLoader = function() {
+window.masquerLoader = function () {
   const loader = document.getElementById("loadingScreen");
   if (loader) {
     loader.style.transition = "opacity 0.3s ease";
     loader.style.opacity = "0";
-    setTimeout(() => {
-      loader.style.display = "none";
-    }, 300); // délai pour l’animation
+    setTimeout(() => { loader.style.display = "none"; }, 300);
   }
 };
+function afficherLoader() { window.afficherLoader(); }
+function masquerLoader() { window.masquerLoader(); }
 
-function openEmailSelectModal(emailsString) {
-  const modal = document.getElementById("emailSelectModal");
-  const container = document.getElementById("emailCheckboxes");
-  container.innerHTML = "";
-
-  const emails = (emailsString || "").split("//").filter(e => e.includes("@"));
-  if (emails.length === 0) {
-    container.innerHTML = "<p style='color:#777;'>Aucune adresse trouvée pour ce patient.</p>";
-  } else {
-    emails.forEach((email, i) => {
-      const id = "emailCheck_" + i;
-      container.innerHTML += `
-        <label style="display:flex; align-items:center; gap:6px; margin:6px 0;">
-          <input type="checkbox" id="${id}" value="${email}" checked>
-          ${email}
-        </label>`;
-    });
-  }
-
-  modal.style.display = "flex";
+function openEmailSelectModal(emailsStr) {
+  const checkboxContainer = document.getElementById("emailCheckboxes");
+  checkboxContainer.innerHTML = "";
+  const emails = (emailsStr || "").split("//").map(e => e.trim()).filter(Boolean);
+  emails.forEach(email => {
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" value="${escapeAttr(email)}" checked> ${escapeHtml(email)}`;
+    checkboxContainer.appendChild(label);
+  });
+  document.getElementById("otherEmailCheck").checked = false;
+  document.getElementById("otherEmailInput").value = "";
+  document.getElementById("otherEmailInput").disabled = true;
+  document.getElementById("emailSelectModal").style.display = "flex";
 }
-function closeEmailSelectModal() {
+window.closeEmailSelectModal = function () {
   document.getElementById("emailSelectModal").style.display = "none";
-}
-window.closeEmailSelectModal=closeEmailSelectModal;
-document.getElementById("otherEmailCheck").addEventListener("change", (e) => {
-  document.getElementById("otherEmailInput").disabled = !e.target.checked;
+};
+
+document.getElementById("otherEmailCheck").addEventListener("change", function () {
+  document.getElementById("otherEmailInput").disabled = !this.checked;
 });
+
 document.getElementById("btnEnvoyerMail").addEventListener("click", async () => {
-
-  // pas de pdfBase64 préexistant dans cette page — on générera le PDF au moment de l'envoi
   const docSnap = await getDoc(patientRef);
-
   if (!docSnap.exists()) {
     afficherBulle("❌ Patient introuvable", "alerte");
     return;
   }
-
   const data = docSnap.data();
-  const emails = data.email || ""; // chaîne formatée "a@x.com//b@y.fr"
-
-  console.log("📧 Emails trouvés (dossier) :", emails);
-
-  openEmailSelectModal(emails);
-
+  openEmailSelectModal(data.email || "");
 });
+
 document.getElementById("confirmEmails").addEventListener("click", async function () {
   try {
-
-    // 📩 emails
     const checkedBoxes = document.querySelectorAll("#emailCheckboxes input[type='checkbox']:checked");
     let destinataires = Array.from(checkedBoxes).map(cb => cb.value.trim());
 
     const otherChecked = document.getElementById("otherEmailCheck").checked;
     const otherEmail = document.getElementById("otherEmailInput").value.trim();
-
     if (otherChecked && otherEmail) destinataires.push(otherEmail);
 
     if (destinataires.length === 0) {
@@ -2302,41 +1764,27 @@ document.getElementById("confirmEmails").addEventListener("click", async functio
     closeEmailSelectModal();
     afficherLoader();
 
-    // 📄 PDF
-    console.log("📄 Génération du PDF...");
     const pdfBase64 = await genererOrdo(false);
-    console.log("✅ PDF généré, taille base64:", pdfBase64.length);
 
-    // 🔑 ID unique Firestore
-    let idUnique, docSnap;
-
+    let idUnique, docSnapLoop;
     do {
       idUnique = Math.random().toString(36).substring(2, 10);
       const ref = doc(db, "liens_pdf", idUnique);
-      docSnap = await getDoc(ref);
-    } while (docSnap.exists());
+      docSnapLoop = await getDoc(ref);
+    } while (docSnapLoop.exists());
 
-    // 👤 patient
-const patientSnap = await getDoc(patientRef);
-
+    const patientSnap = await getDoc(patientRef);
     if (!patientSnap.exists()) {
       masquerLoader();
       afficherBulle("❌ Patient non trouvé", "alerte");
       return;
     }
-
     const data = patientSnap.data();
-
     const firstName = data.prenom || "";
     const lastName = data.nom || "";
-
     const fileName = `Ordonnance - ${firstName} ${lastName}.pdf`;
 
-    const ord = construireORD();
-
-    // 🔒 Sécurise les infos patient avec les données Firestore fraîchement
-    // récupérées (data), au cas où les champs du formulaire ne seraient pas
-    // synchronisés à ce moment précis.
+    const ord = await construireORD();
     ord.patient = {
       nom: lastName || ord.patient.nom || "",
       prenom: firstName || ord.patient.prenom || "",
@@ -2344,111 +1792,68 @@ const patientSnap = await getDoc(patientRef);
       sexe: data.sexe || ord.patient.sexe || ""
     };
 
-    console.log("🔎 [debug] ord.patient juste avant sauvegarde :", ord.patient);
-    console.log("🔎 [debug] valeurs brutes des champs DOM :", {
-      prenom: document.getElementById("patient-first-name")?.value,
-      nom: document.getElementById("patient-last-name")?.value,
-      naissance: document.getElementById("patient-birthdate")?.value,
-      sexe: document.getElementById("sexe")?.value
-    });
-
-    // 💾 Firestore save
-    await setDoc(
-      doc(db, "liens_pdf", idUnique),
-      {
-        ord: ord,
-        nomFichier: fileName,
-        dateCreation: serverTimestamp()
-      }
-    );
+    await setDoc(doc(db, "liens_pdf", idUnique), { ord: ord, nomFichier: fileName, dateCreation: serverTimestamp() });
 
     const lienPdf = `https://junior2704.github.io/GestUrg2/monpdf.html?id=${idUnique}`;
-    console.log("✅ Lien Firestore :", lienPdf);
 
-    // --- 5) Prépare le corps du mail (template HTML comme avant)
     const htmlMessage = `
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Ordonnance médicale</title>
-</head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.08); overflow:hidden;">
+<head><meta charset="UTF-8"><title>Ordonnance médicale</title></head>
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#333;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:auto;background:white;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.08);overflow:hidden;">
     <tr>
-      <td style="background-color:#1a73e8; padding:24px; text-align:center;">
-        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo Hôpital" style="height:60px; display:block; margin:0 auto 10px auto;">
-        <h1 style="color:white; font-size:22px; margin:0;">Centre Hospitalier</h1>
-        <p style="color:#dce6f3; margin:6px 0 0; font-size:14px;">Service des Urgences</p>
+      <td style="background-color:#1657c4;padding:24px;text-align:center;">
+        <img src="https://junior2704.github.io/GestUrg2/logo.png" alt="Logo" style="height:60px;display:block;margin:0 auto 10px auto;">
+        <h1 style="color:white;font-size:22px;margin:0;">Centre Hospitalier</h1>
+        <p style="color:#dce6f3;margin:6px 0 0;font-size:14px;">Service des Urgences</p>
       </td>
     </tr>
-
     <tr>
       <td style="padding:30px;">
-        <h2 style="color:#1a73e8; font-weight:600; margin-top:0;">Votre ordonnance médicale</h2>
-
-        <p style="font-size:16px; line-height:1.6;">
-          Bonjour <strong>{{patient_prenom}} {{patient_nom}}</strong>,
+        <h2 style="color:#1657c4;font-weight:600;margin-top:0;">Votre ordonnance médicale</h2>
+        <p style="font-size:16px;line-height:1.6;">Bonjour <strong>{{patient_prenom}} {{patient_nom}}</strong>,</p>
+        <p style="font-size:15px;line-height:1.6;color:#555;">
+          Votre ordonnance vient d'être validée par le médecin responsable et est désormais disponible.
+          Elle vous permettra d'obtenir les médicaments prescrits en pharmacie ou en établissement agréé.
         </p>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          Votre ordonnance vient d’être validée par le médecin responsable et est désormais disponible.
-          Elle vous permettra d’obtenir les médicaments prescrits en pharmacie ou en établissement agréé.
-        </p>
-
-        <div style="text-align:center; margin:30px 0;">
-          <a href="{{lien_compte_rendu}}" 
-             style="background-color:#1a73e8; color:white; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; display:inline-block;">
-            🩺 Voir l'ordonnance
-          </a>
+        <div style="text-align:center;margin:30px 0;">
+          <a href="{{lien_compte_rendu}}" style="background-color:#1657c4;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:500;display:inline-block;">Voir l'ordonnance</a>
         </div>
-
-        <p style="font-size:15px; line-height:1.6; color:#555;">
-          🚨 Ce lien reste actif 7 jours pour garantir la confidentialité de vos données.
-          Au-delà, le document sera automatiquement supprimé.
+        <p style="font-size:15px;line-height:1.6;color:#555;">
+          Ce lien reste actif 7 jours pour garantir la confidentialité de vos données. Au-delà, le document sera automatiquement supprimé.
         </p>
-
-        <p style="font-size:14px; color:#777;">
-          Pour toute question, merci de contacter le service des Urgences :
-          <a href="mailto:urgences.hopj@gmail.com" style="color:#1a73e8;">urgences.hopj@gmail.com</a>
+        <p style="font-size:14px;color:#777;">
+          Pour toute question, merci de contacter le service des Urgences : <a href="mailto:urgences.hopj@gmail.com" style="color:#1657c4;">urgences.hopj@gmail.com</a>
         </p>
-
-        <hr style="border:none; border-top:1px solid #e0e0e0; margin:30px 0;">
-        <p style="font-size:13px; color:#999; text-align:center;">
-          Service des Urgences<br>
-          <em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em>
-        </p>
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:30px 0;">
+        <p style="font-size:13px;color:#999;text-align:center;">Service des Urgences<br><em>Cet e-mail a été généré automatiquement, merci de ne pas y répondre.</em></p>
       </td>
     </tr>
   </table>
 </body>
 </html>`;
 
-    // --- 6) Multi-compte EmailJS (fallback)
     const comptesEmailJS = [
       { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
       { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
       { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
     ];
 
-    // --- 7) Envoi pour chaque destinataire (une requête EmailJS par adresse)
     for (const email of destinataires) {
       const emailTrim = email.trim();
       if (!emailTrim || !emailTrim.includes("@")) {
         afficherBulle(`Adresse invalide : ${emailTrim}`, "alerte");
         continue;
       }
-
       let envoye = false;
       let derniereErreur = "";
       for (const compte of comptesEmailJS) {
         try {
-          console.log(`📨 Envoi à ${emailTrim} via ${compte.serviceID}...`);
-		  // Remplacement manuel des balises {{…}}
-const htmlFinal = htmlMessage
-  .replace(/{{patient_prenom}}/g, firstName)
-  .replace(/{{patient_nom}}/g, lastName)
-  .replace(/{{lien_compte_rendu}}/g, lienPdf);
+          const htmlFinal = htmlMessage
+            .replace(/{{patient_prenom}}/g, firstName)
+            .replace(/{{patient_nom}}/g, lastName)
+            .replace(/{{lien_compte_rendu}}/g, lienPdf);
 
           await emailjs.send(compte.serviceID, compte.templateID, {
             to_email: emailTrim,
@@ -2460,22 +1865,16 @@ const htmlFinal = htmlMessage
           envoye = true;
           break;
         } catch (err) {
-          console.warn(`🚨 Échec ${compte.serviceID} -> ${err && err.text ? err.text : err}`);
           derniereErreur = err && err.text ? err.text : String(err);
-          // si erreur de quota, on essaye le compte suivant, sinon on sort de la boucle comptes
           if (derniereErreur.toLowerCase().includes("quota")) continue;
           else break;
         }
       }
-
       if (!envoye) afficherBulle(`❌ Échec d'envoi à ${emailTrim}`, "alerte");
     }
 
     masquerLoader();
     afficherBulle("📨 Envois terminés !", "administratif");
-    // recharge la page pour réinitialiser l'UI (optionnel)
-    
-
   } catch (err) {
     masquerLoader();
     console.error("Erreur confirmEmails :", err);
@@ -2483,456 +1882,17 @@ const htmlFinal = htmlMessage
   }
 });
 
-
-
-
+/* =========================================================
+   LISTE DES MÉDICAMENTS (inchangé)
+   ========================================================= */
 
 let medicaments = [];
-
 fetch('https://junior2704.github.io/GestUrg2/medicaments.json')
   .then(res => res.json())
-  .then(data => {
-    medicaments = data;
-    console.log("✅ Médicaments chargés :", medicaments.length);
-  })
+  .then(data => { medicaments = data; console.log("✅ Médicaments chargés :", medicaments.length); })
   .catch(err => console.error("❌ Erreur chargement JSON :", err));
 
-
-// ✅ UNE SEULE version propre
-function getCaretWord(editor) {
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return "";
-
-  const range = selection.getRangeAt(0);
-  const preCaretRange = range.cloneRange();
-
-  preCaretRange.selectNodeContents(editor);
-  preCaretRange.setEnd(range.endContainer, range.endOffset);
-
-  const text = preCaretRange.toString();
-
-  const words = text.split(/\s+/);
-  return words.pop() || "";
-}
-
-
-function getCaretCoordinates() {
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return { left: 0, top: 0 };
-
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-
-  return {
-    left: rect.left,
-    top: rect.top
-  };
-}
-
-
-const autoBox = document.getElementById("autocomplete-box");
-
-
-editor.addEventListener("input", function () {
-
-  const lastWord = getCaretWord(editor);
-
-  if (!lastWord || lastWord.length < 3) {
-    autoBox.style.display = "none";
-    return;
-  }
-
-  const matches = medicaments.filter(med =>
-    med.toLowerCase().includes(lastWord.toLowerCase())
-  );
-
-  if (matches.length === 0) {
-    autoBox.style.display = "none";
-    return;
-  }
-
-  autoBox.innerHTML = "";
-
-  matches.forEach(med => {
-    const div = document.createElement("div");
-    div.className = "autocomplete-item";
-    div.textContent = med;
-
-   div.onmousedown = (e) => {
-  e.preventDefault(); // 🔥 empêche perte du focus
-  insertMedication(med, lastWord);
-};
-    autoBox.appendChild(div);
-  });
-
-  updateAutocompletePosition();
-  autoBox.style.display = "block";
-});
-
-
-// ✅ correction ici (editor pas textarea)
-document.addEventListener("click", e => {
-  if (!autoBox.contains(e.target) && e.target !== editor) {
-    autoBox.style.display = "none";
-  }
-});
-
-function insertMedication(med, word) {
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return;
-
-  let range = selection.getRangeAt(0);
-
-  // 🔹 on récupère le texte avant curseur
-  const preRange = range.cloneRange();
-  preRange.selectNodeContents(document.getElementById("prescription-text"));
-  preRange.setEnd(range.endContainer, range.endOffset);
-
-  const text = preRange.toString();
-
-  // 🔹 position du début du mot
-  const startIndex = text.lastIndexOf(word);
-  if (startIndex === -1) return;
-
-  // 🔹 on recrée une range propre
-  let charCount = 0;
-  let foundStart = false;
-
-  const walker = document.createTreeWalker(
-    document.getElementById("prescription-text"),
-    NodeFilter.SHOW_TEXT,
-    null
-  );
-
-  let startNode, startOffset;
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    const nextCount = charCount + node.length;
-
-    if (!foundStart && startIndex >= charCount && startIndex <= nextCount) {
-      startNode = node;
-      startOffset = startIndex - charCount;
-      foundStart = true;
-    }
-
-    if (foundStart && nextCount >= text.length) {
-      range = document.createRange();
-      range.setStart(startNode, startOffset);
-      range.setEnd(node, text.length - charCount);
-      break;
-    }
-
-    charCount = nextCount;
-  }
-
-  // 🔹 suppression propre
-  range.deleteContents();
-
-  // 🔹 insertion médicament
-  const textNode = document.createTextNode(med + " ");
-  range.insertNode(textNode);
-
-  // 🔹 reposition curseur
-  range.setStartAfter(textNode);
-  range.setEndAfter(textNode);
-
-  selection.removeAllRanges();
-  selection.addRange(range);
-
-  autoBox.style.display = "none";
-}
-
-
-function updateAutocompletePosition() {
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return;
-
-  const rect = selection.getRangeAt(0).getBoundingClientRect();
-
-  autoBox.style.left = (rect.left + window.scrollX + 5) + "px";
-  autoBox.style.top = (rect.top + window.scrollY + 20) + "px";
-}
-
-window.afficherLoader = function() {
-  let loader = document.getElementById("loadingScreen");
-  
-  if (!loader) {
-    loader = document.createElement("iframe");
-    loader.id = "loadingScreen";
-    loader.src = "loader.html?modal=true"; 
-    loader.style.position = "fixed";
-    loader.style.top = "0";
-    loader.style.left = "0";
-    loader.style.width = "100%";
-    loader.style.height = "100%";
-    loader.style.border = "none";
-    loader.style.zIndex = "9999";
-    loader.style.background = "transparent";
-    loader.style.pointerEvents = "none"; 
-    document.body.appendChild(loader);
-  }
-
-  loader.style.display = "flex";
-  loader.style.opacity = "1";
-};
-
-// --- Masque l’écran de chargement ---
-window.masquerLoader = function() {
-  const loader = document.getElementById("loadingScreen");
-  if (loader) {
-    loader.style.transition = "opacity 0.3s ease";
-    loader.style.opacity = "0";
-    setTimeout(() => {
-      loader.style.display = "none";
-    }, 300); // délai pour l’animation
-  }
-};
-
-function openConfirmModal() {
-
- const text = getPrescriptionRawText();
-
-if (!text) {
-  afficherBulle("⛔ La prescription est vide !", "alerte");
-  return;
-}
-
-  document.getElementById("preview-ordo").textContent = text;
-  document.getElementById("confirmPrescriptionModal").style.display = "flex";
-}
-window.openConfirmModal=openConfirmModal;
-
-function closeConfirmModal() {
-  document.getElementById("confirmPrescriptionModal").style.display = "none";
-}
-window.closeConfirmModal=closeConfirmModal;
-
-function confirmValidation() {
-  closeConfirmModal();
-  validatePrescription(); // 🔥 Appelle TA vraie fonction déjà en place
-}
-window.confirmValidation=confirmValidation;
-
-function parseDateFR(dateStr) {
-    if (!dateStr) return new Date(0);
-
-    // Nettoyage
-    const cleaned = dateStr.trim();
-
-    // Format attendu : JJ/MM/AAAA ou JJ-MM-AAAA (+ heure optionnelle)
-    const match = cleaned.match(
-        /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
-    );
-
-    if (!match) {
-        // fallback si format inconnu
-        return new Date(cleaned);
-    }
-
-    const [, d, m, y, hh = "0", mm = "0", ss = "0"] = match;
-
-    return new Date(
-        Number(y),
-        Number(m) - 1,
-        Number(d),
-        Number(hh),
-        Number(mm),
-        Number(ss)
-    );
-}
-function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
-    const byteCharacters = atob(b64Data);
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        const slice = byteCharacters.slice(offset, offset + sliceSize);
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-        }
-        byteArrays.push(new Uint8Array(byteNumbers));
-    }
-    return new Blob(byteArrays, { type: contentType });
-}
-async function chargerAnciennesOrdonnances() {
-
-    const patientId = getIdFromURL();
-    if (!patientId) return;
-
-    const container = document.getElementById("listeOrdonnances");
-
-    container.innerHTML = `
-        <div style="text-align:center;padding:20px">
-            Chargement...
-        </div>
-    `;
-
-    try {
-
-        const q = query(
-            collection(db, "documents"),
-            where("patientId", "==", patientId)
-        );
-
-        const snapshot = await getDocs(q);
-
-        const ordonnances = [];
-
-        snapshot.forEach(docSnap => {
-
-            const data = docSnap.data();
-
-            if (data.type !== "Ordonnance médicale") return;
-
-            ordonnances.push({
-                id: docSnap.id,
-                ...data
-            });
-
-        });
-
-        ordonnances.sort((a,b)=>{
-
-            const da = parseDateFR(a.dateCreation);
-            const dbb = parseDateFR(b.dateCreation);
-
-            return dbb - da;
-
-        });
-
-        container.innerHTML = "";
-
-        if (ordonnances.length === 0) {
-
-            container.innerHTML = `
-                <div style="padding:15px;color:#777">
-                    Aucune ordonnance
-                </div>
-            `;
-
-            return;
-        }
-
-     ordonnances.forEach(data => {
-
-    const contenu = (data.contenu || "")
-        .replace(/\n/g, " ")
-        .substring(0, 100);
-
-    const row = document.createElement("div");
-
-    row.className = "ordo-row";
-
-    row.innerHTML = `
-        <div class="ordo-date">
-            📅 ${data.dateCreation || ""}
-        </div>
-
-        <div class="ordo-preview">
-            ${contenu}...
-        </div>
-    `;
-
-    row.title = "Double-cliquez pour ouvrir l'ordonnance";
-
-    row.addEventListener("dblclick", async () => {
-
-
-                if (data.ord) {
-
-                    const ord = data.ord;
-
-       
-
-        const html = generateHTML(ord);
-
-     
-const patient = data.patient || {};
-
-const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
-window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: nom,
-      url: `viewer.html?id=${data.id}`
-    },
-    "*"
-  );
-    return;
-}
-
-   
-                    if (data.pdfBase64) {
-const patient = data.patient || {};
-const nom = `${data.type || "Document"} ${patient.nom || ""} ${patient.prenom || ""}`;
-        const blob = b64toBlob(data.pdfBase64, "application/pdf");
-
-        ouvrirModal(blob, nom);
-     return;
-    }
-
-            });
-
-    container.appendChild(row);
-
-});
-
-    } catch(err){
-
-        console.error(err);
-
-        container.innerHTML =
-            "<div>Erreur de chargement</div>";
-    }
-}
-
-(function(){ 
-    var properties = [
-        'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
-        'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
-        'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-        'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize',
-        'fontSizeAdjust', 'lineHeight', 'fontFamily', 'textAlign',
-        'textTransform', 'textIndent', 'textDecoration', 'letterSpacing',
-        'wordSpacing', 'tabSize', 'MozTabSize'
-    ];
-
-    function getCaretCoordinates(element, position) {
-        var div = document.createElement('div');
-        document.body.appendChild(div);
-
-        var style = div.style;
-        var computed = window.getComputedStyle(element);
-
-        style.whiteSpace = 'pre-wrap';
-        style.position = 'absolute';
-        style.visibility = 'hidden';
-
-        properties.forEach(function (prop) {
-            style[prop] = computed[prop];
-        });
-
-        var text = element.value.substring(0, position);
-        div.textContent = text;
-
-        var span = document.createElement('span');
-        span.textContent = element.value.substring(position) || '.';
-        div.appendChild(span);
-
-        var coordinates = {
-            left: span.offsetLeft,
-            top: span.offsetTop,
-            height: span.offsetHeight
-        };
-
-        document.body.removeChild(div);
-        return coordinates;
-    }
-
-    window.getCaretCoordinates = getCaretCoordinates;
-})();
 </script>
 
-
-	</body>
-	</html>
+</body>
+</html>

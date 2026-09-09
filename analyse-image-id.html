@@ -413,7 +413,7 @@
   const status = document.getElementById("status");
 
   let currentImageSource = null;
-  let firebaseReady = false;
+  let firebaseReady = true;
   let firebaseAuthReady = false;
   let firebaseCurrentUser = null;
   let parentSessionReady = false;
@@ -522,7 +522,7 @@
   });
 
   async function analyzeAndSave() {
-    if (!currentImageSource || !recordId || !firebaseReady) return;
+    if (!currentImageSource || !recordId) return;
 
     cameraBtn.disabled = true;
     progressWrap.style.display = "block";
@@ -552,7 +552,17 @@
       const rawText = result.data.text || "";
 
       // Le document temporaire indique le mode et, en vérification, le type de pièce.
-      const session = parentSession || null;
+      let session = parentSession || null;
+      if (!session && window.parent && window.parent !== window) {
+        requestParentSession();
+        // Le parent peut répondre juste après le chargement de l'iframe.
+        // On attend brièvement sa réponse avant d'abandonner.
+        const deadline = Date.now() + 3000;
+        while (!session && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          session = parentSession || null;
+        }
+      }
       if (!session) {
         throw new Error("Session de lecture introuvable. Réessayez depuis l'application GestUrg2.");
       }
@@ -609,7 +619,7 @@
     } finally {
       // Le parent répondra avec ID_PHOTO_SAVE_OK / ERROR.
       // On laisse le bouton actif tant qu'une nouvelle photo peut être choisie.
-      cameraBtn.disabled = !recordId || !firebaseReady;
+      cameraBtn.disabled = !recordId;
     }
   }
 

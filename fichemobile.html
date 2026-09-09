@@ -1050,81 +1050,87 @@ function textBlock(val, emptyLabel="Non renseigné."){
 const NOTIF_VAPID_KEY = "BMV16pf02s67xMzPvbAYMdOpd5bt5dAYwNbXIvcl6j-d6LNs0YIShG5sCeouWfXMpsht8wuq4d3-6Eo9FnsgjvI";
 const LS_NOTIF_ACTIVE = "gu2_notifs_active";
 const LS_NOTIF_TOKEN = "gu2_notifs_token";
-
-async function activerNotifications() {
+async function synchroniserTokenFCM() {
 
     try {
 
-        // 🔔 Demande d'autorisation
-        const permission =
-            await Notification.requestPermission();
+        const user = auth.currentUser;
 
-        console.log("Permission :", permission);
-
-        if (permission !== "granted") {
-            console.log("❌ Notifications refusées");
-            toast("Notifications refusées", "error");
-            return;
+        if (!user) {
+            console.warn("⚠️ Aucun utilisateur Firebase connecté");
+            return null;
         }
 
-        // 📡 Enregistrement du Service Worker
+        if (!("Notification" in window)) {
+            console.warn("⚠️ Notifications non supportées");
+            return null;
+        }
+
+        if (Notification.permission !== "granted") {
+            console.log(
+                "ℹ️ Permission notifications :",
+                Notification.permission
+            );
+            return null;
+        }
+
+        // Service Worker
         const registration =
             await navigator.serviceWorker.register(
                 "/GestUrg2/firebase-messaging-sw.js"
             );
 
+        await navigator.serviceWorker.ready;
+
         console.log(
-            "✅ Service Worker enregistré"
+            "✅ Service Worker prêt :",
+            registration.scope
         );
 
-        // 🔥 Initialisation FCM
+        // FCM
         const messaging = getMessaging(app);
 
-        // 🔑 Récupération du token
         const token = await getToken(messaging, {
-            vapidKey: NOTIF_VAPID_KEY
-            ,
+            vapidKey: NOTIF_VAPID_KEY,
             serviceWorkerRegistration: registration
         });
 
         if (!token) {
-            console.error("❌ Aucun token FCM obtenu");
-            return;
+            console.error("❌ Aucun token FCM");
+            return null;
         }
 
         console.log(
-            "🔥 TOKEN FCM :",
+            "🔥 Token FCM actuel :",
             token
         );
 
+        // Vérifie l'ancien token
+        const ancienToken =
+            localStorage.getItem(LS_NOTIF_TOKEN);
 
-        // 👤 Utilisateur actuellement connecté
-        const user = auth.currentUser;
+        if (ancienToken !== token) {
 
-        if (!user) {
-            console.error(
-                "❌ Aucun utilisateur Firebase connecté"
+            console.log(
+                "🔄 Token FCM changé !"
             );
-            return;
+
+            console.log(
+                "Ancien :",
+                ancienToken
+            );
+
+            console.log(
+                "Nouveau :",
+                token
+            );
         }
 
-        console.log(
-            "👤 Utilisateur :",
-            user.uid
-        );
-
-
-        // 💾 Document Firestore
-        const tokenRef = doc(
-            db,
-            "fcmTokens",
-            token
-        );
-
+        // Enregistrement Firestore
         await setDoc(
-            tokenRef,
+            doc(db, "fcmTokens", token),
             {
-                token: token,
+                token,
                 userId: user.uid,
                 email: user.email || null,
                 plateforme: "web",
@@ -1135,26 +1141,115 @@ async function activerNotifications() {
             }
         );
 
-        console.log(
-            "✅ Token FCM enregistré dans Firestore"
+        // Si le token a changé, supprimer l'ancien
+        if (ancienToken && ancienToken !== token) {
+
+            try {
+
+                await deleteDoc(
+                    doc(db, "fcmTokens", ancienToken)
+                );
+
+                console.log(
+                    "🗑️ Ancien token supprimé de Firestore"
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "⚠️ Impossible de supprimer l'ancien token :",
+                    error
+                );
+            }
+        }
+
+        localStorage.setItem(
+            LS_NOTIF_ACTIVE,
+            "1"
         );
 
-        localStorage.setItem(LS_NOTIF_ACTIVE, "1");
-        localStorage.setItem(LS_NOTIF_TOKEN, token);
-        toast("Notifications activées", "success");
+        localStorage.setItem(
+            LS_NOTIF_TOKEN,
+            token
+        );
+
+        console.log(
+            "✅ Token FCM synchronisé"
+        );
+
+        return token;
 
     } catch (error) {
 
         console.error(
-            "❌ Erreur notifications :",
+            "❌ Erreur synchronisation FCM :",
             error
         );
-        toast("Impossible d'activer les notifications", "error");
+
+        return null;
+    }
+}
+async function activerNotifications() {
+
+    try {
+
+        const permission =
+            await Notification.requestPermission();
+
+        console.log(
+            "🔔 Permission :",
+            permission
+        );
+
+        if (permission !== "granted") {
+
+            console.log(
+                "❌ Notifications refusées"
+            );
+
+            toast(
+                "Notifications refusées",
+                "error"
+            );
+
+            return;
+        }
+
+        const token =
+            await synchroniserTokenFCM();
+
+        if (!token) {
+
+            toast(
+                "Impossible d'obtenir le token de notification",
+                "error"
+            );
+
+            return;
+        }
+
+        toast(
+            "Notifications activées",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Erreur activation notifications :",
+            error
+        );
+
+        toast(
+            "Impossible d'activer les notifications",
+            "error"
+        );
 
     } finally {
-        updateNotifButtonUI();
-    }
 
+        updateNotifButtonUI();
+
+    }
 }
 
 async function desactiverNotifications() {
@@ -1482,7 +1577,18 @@ onAuthStateChanged(auth, async (user) => {
   updateProfilePanel();
   updateNotifButtonUI();
   ensureMessagerieBadgeFrame();
+if (
+        Notification.permission === "granted" &&
+        localStorage.getItem(LS_NOTIF_ACTIVE) === "1"
+    ) {
 
+        console.log(
+            "🔄 Synchronisation automatique des notifications..."
+        );
+
+        await synchroniserTokenFCM();
+
+    }
   await initApp();
   if (state.pages.bureau === true){
     await initAppels();

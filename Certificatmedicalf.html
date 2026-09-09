@@ -1,378 +1,1354 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>🩺 Générateur de Certificat Médical</title>
-    <link rel="icon" type="image/jpeg" href="logog2.png">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="ordToPdf.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="icon" type="image/jpeg" href="logog2.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="ordToPdf.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ordonnancier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --c-bg:#f2f6fb;
+      --c-surface:#ffffff;
+      --c-border:#e2e8f0;
+      --c-border-strong:#cbd5e1;
+      --c-primary:#1657c4;
+      --c-primary-dark:#0f3f92;
+      --c-primary-light:#eaf1ff;
+      --c-text:#1e293b;
+      --c-text-soft:#64748b;
+      --c-text-faint:#94a3b8;
+      --c-danger:#dc2626;
+      --c-danger-light:#fdecec;
+      --c-success:#16a34a;
+      --c-success-light:#eafaf0;
+      --c-warning:#b45309;
+      --c-warning-light:#fff4e0;
+      --radius:10px;
+      --radius-lg:14px;
+      --shadow-sm:0 1px 2px rgba(15,40,90,0.06);
+      --shadow:0 6px 20px rgba(15,40,90,0.08);
+    }
 
-<style>
-/* --- styles (conservés/améliorés) --- */
-html, body {
-  background: #ffffff !important;
-  margin: 0;
-  padding: 0;
-}
-#bubble-container { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; align-items: flex-end; }
-.bubble { max-width: 300px; padding: 10px 15px; border-radius: 8px; color: white; font-family: sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.2); animation: fadeout 0.5s ease-in-out 1.5s forwards; word-wrap: break-word; text-align: left; }
-.administratif { background-color: #2196F3; }
-.alerte { background-color: #f44336; }
-@keyframes fadeout { to { opacity: 0; transform: translateX(-20px); } }
-.modalna { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(5px); z-index: 9999; }
-.modalna .card { background: #fff; padding: 24px 32px; border-radius: 12px; text-align: center; max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-.hidden-field { display: none !important; }
+    *{ box-sizing:border-box; }
 
-/* --- modal selection emails (ordonnancier style) --- */
-#emailSelectModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); justify-content: center; align-items: center; z-index: 200; }
-#emailSelectModal .modal-content { width: 380px; max-width: 90%; background: linear-gradient(to bottom right, #ffffff, #f9fafc); border-radius: 16px; padding: 20px 18px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.06); }
-#emailSelectModal h3 { text-align:center; margin-top:0; font-size:1.1rem; }
-#emailSelectModal .email-options { margin-top: 12px; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow:auto; padding-right:6px; }
-#emailSelectModal label { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; cursor:pointer; background:#f8fafc; border:1px solid transparent; }
-#emailSelectModal label:hover { background:#eff6ff; border-color:#bfdbfe; transform:scale(1.01); }
-#emailSelectModal input[type="checkbox"] { transform:scale(1.15); accent-color:#2563eb; }
-#emailSelectModal input[type="email"] { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem; }
-#emailSelectModal .modal-actions { margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
-#emailSelectModal .btn-cancel { background:#e2e8f0; color:#1e293b; border:none; padding:8px 12px; border-radius:8px; }
-#emailSelectModal .btn-confirm { background:#2563eb; color:#fff; border:none; padding:8px 12px; border-radius:8px; }
-#confirmPrescriptionModal {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(6px);
-  z-index: 10000;
-}
+    html, body{
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background:var(--c-bg);
+      color:var(--c-text);
+      font-family:'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+    }
 
-#confirmPrescriptionModal .modal-content {
-  background: #ffffff;
-  max-width: 520px;
-  width: 90%;
-  border-radius: 16px;
-  padding: 24px 28px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-}
-#confirmPrescriptionModal {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
-  z-index: 9999;
-}
-.modal-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
+    body{ display:flex; flex-direction:column; }
 
-/* ✅ Valider — vert */
-.btn-confirm {
-  background: #16a34a;           /* vert médical */
-  color: #ffffff;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 14.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s, box-shadow 0.1s;
-}
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{ background:#b9c8e6; border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover{ background:#93aada; }
+    *{ scrollbar-width:thin; scrollbar-color:#b9c8e6 transparent; }
 
-.btn-confirm:hover {
-  background: #15803d;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
-}
+    .hidden-field{ display:none !important; }
 
-/* ⬜ Annuler — gris */
-/* ⬛ Annuler — gris foncé */
-.btn-cancel {
-  background: #9ca3af;        /* gris foncé */
-  color: #ffffff;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 14.5px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
+    /* ===== EN-TÊTE PRO ===== */
+    #pro-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 22px;
+      background:var(--c-surface);
+      border-bottom:1px solid var(--c-border);
+    }
+    #pro-header .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    #pro-header .brand .brand-icon{
+      width:34px; height:34px;
+      border-radius:9px;
+      background:var(--c-primary-light);
+      color:var(--c-primary);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Poppins',sans-serif; font-weight:700; font-size:16px;
+    }
+    #pro-header .brand-text h1{
+      margin:0;
+      font-family:'Poppins', sans-serif;
+      font-weight:600;
+      font-size:17px;
+      color:var(--c-text);
+      letter-spacing:0.2px;
+    }
+    #pro-header .brand-text span{
+      display:block;
+      font-size:12px;
+      color:var(--c-text-soft);
+    }
+    #pro-header .meta{
+      display:flex;
+      align-items:center;
+      gap:18px;
+    }
+    #pro-header .meta .meta-block{
+      text-align:right;
+      line-height:1.3;
+    }
+    #pro-header .meta .meta-block .medecin-nom{
+      font-weight:600;
+      font-size:13px;
+      color:var(--c-text);
+    }
+    #pro-header .meta .meta-block .medecin-sub{
+      font-size:12px;
+      color:var(--c-text-soft);
+    }
+    .icon-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      width:36px; height:36px;
+      border-radius:9px;
+      border:1px solid var(--c-border-strong);
+      background:var(--c-surface);
+      color:var(--c-text-soft);
+      cursor:pointer;
+      transition:all .15s ease;
+    }
+    .icon-btn:hover{
+      background:var(--c-danger-light);
+      border-color:var(--c-danger);
+      color:var(--c-danger);
+    }
+    .icon-btn svg{ width:16px; height:16px; }
 
-.btn-cancel:hover {
-  background: #6b7280;
-  transform: translateY(-1px);
-}
+    /* ===== BOUTONS GÉNÉRIQUES ===== */
+    .btn-id{
+      all:unset;
+      box-sizing:border-box;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:9px 16px;
+      border-radius:9px;
+      font-size:13.5px;
+      font-weight:600;
+      cursor:pointer;
+      border:1px solid var(--c-border-strong);
+      background:var(--c-surface);
+      color:var(--c-text);
+      transition:all .15s ease;
+    }
+    .btn-id svg{ width:15px; height:15px; flex-shrink:0; }
+    .btn-id:hover{
+      border-color:var(--c-primary);
+      background:var(--c-primary-light);
+      color:var(--c-primary-dark);
+    }
+    .btn-id-v{ background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
+    .btn-id-v:hover{ background:var(--c-primary-dark); border-color:var(--c-primary-dark); color:#fff; }
+    .btn-id-c:hover{ background:var(--c-danger-light); border-color:var(--c-danger); color:var(--c-danger); }
+    .btn-id-ghost{ border-color:transparent; background:transparent; color:var(--c-text-soft); }
+    .btn-id-ghost:hover{ background:var(--c-primary-light); color:var(--c-primary-dark); border-color:transparent; }
+    .btn-id[disabled]{ opacity:.5; cursor:not-allowed; pointer-events:none; }
 
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
+    /* ===== LAYOUT PRINCIPAL ===== */
+    .ordonnance-wrapper{
+      display:flex;
+      gap:18px;
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+      padding:18px 22px;
+    }
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
+    .zone-prescription, .historique-ordos{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .zone-prescription{ flex:1.65; }
+    .historique-ordos{ flex:1; }
 
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
+    /* ===== ZONE DE PRESCRIPTION ===== */
+    .editor-container{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      border:1px solid var(--c-border);
+      border-radius:var(--radius-lg);
+      background:var(--c-surface);
+      box-shadow:var(--shadow-sm);
+      overflow:hidden;
+      min-height:0;
+    }
+    .editor-container > .rx-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+    }
+    .editor-container > .rx-header label{
+      font-weight:600;
+      font-size:14px;
+      color:var(--c-text);
+      display:flex; align-items:center; gap:8px;
+    }
+    #rx-status{
+      font-size:11.5px;
+      font-weight:600;
+      padding:3px 9px;
+      border-radius:20px;
+      background:var(--c-success-light);
+      color:var(--c-success);
+    }
+    #rx-status.locked{ background:var(--c-warning-light); color:var(--c-warning); }
 
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
+    .editor-toolbar{
+      flex-shrink:0;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      padding:10px 16px;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+    }
 
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
+    #rx-list{
+      flex:1;
+      overflow-y:auto;
+      padding:16px;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    #rx-empty{
+      margin:auto;
+      text-align:center;
+      color:var(--c-text-faint);
+      font-size:13.5px;
+      max-width:280px;
+      line-height:1.5;
+    }
 
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
+    /* ---- Carte item médicament / consigne ---- */
+    .rx-item{
+      display:flex;
+      gap:8px;
+      background:var(--c-surface);
+      border:1px solid var(--c-border);
+      border-radius:var(--radius);
+      padding:12px 12px 12px 6px;
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+    .rx-item:hover{ border-color:var(--c-border-strong); }
+    .rx-item.dragging{ opacity:.4; }
+    .rx-item.drag-over{ border-color:var(--c-primary); box-shadow:0 0 0 2px var(--c-primary-light); }
 
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
+    .rx-drag{
+      flex-shrink:0;
+      width:20px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-top:10px;
+      color:var(--c-text-faint);
+      cursor:grab;
+      user-select:none;
+    }
+    .rx-num{
+      flex-shrink:0;
+      width:24px; height:24px;
+      margin-top:6px;
+      border-radius:7px;
+      background:var(--c-primary-light);
+      color:var(--c-primary-dark);
+      font-size:12px;
+      font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .rx-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
 
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
+    .rx-row-main{ display:flex; gap:8px; align-items:center; position:relative; }
+    .rx-nom{
+      flex:1;
+      font-weight:600;
+      font-size:14.5px;
+    }
+    .rx-row-sub{ display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; }
 
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
+    input.rx-input, textarea.rx-input{
+      width:100%;
+      padding:9px 11px;
+      border:1px solid var(--c-border);
+      border-radius:8px;
+      font-size:13.5px;
+      font-family:inherit;
+      color:var(--c-text);
+      background:#fbfdff;
+      transition:border-color .15s ease, background .15s ease;
+    }
+    input.rx-input:focus, textarea.rx-input:focus{
+      outline:none;
+      border-color:var(--c-primary);
+      background:#fff;
+    }
+    textarea.rx-input{ resize:vertical; min-height:38px; }
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}</style>
+    .rx-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+    .rx-chip{
+      border:1px dashed var(--c-border-strong);
+      background:#fff;
+      color:var(--c-text-soft);
+      font-size:11.5px;
+      padding:4px 9px;
+      border-radius:20px;
+      cursor:pointer;
+      transition:all .15s ease;
+    }
+    .rx-chip:hover{ border-color:var(--c-primary); color:var(--c-primary-dark); background:var(--c-primary-light); }
+
+    .rx-del{
+      flex-shrink:0;
+      width:28px; height:28px;
+      border-radius:7px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--c-text-faint);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .rx-del:hover{ background:var(--c-danger-light); color:var(--c-danger); }
+    .rx-del svg{ width:14px; height:14px; }
+
+    /* ---- Consigne (note) ---- */
+    .rx-item.rx-note .rx-nom{ font-weight:500; }
+
+    /* ---- Séparateur de section ---- */
+    .rx-item.rx-section{
+      background:transparent;
+      border:none;
+      padding:4px 0 0 0;
+      align-items:center;
+    }
+    .rx-item.rx-section .rx-drag{ padding-top:0; }
+    .rx-item.rx-section .rx-fields{
+      flex-direction:row;
+      align-items:center;
+      gap:10px;
+    }
+    .rx-section-line{ flex:1; height:1px; background:var(--c-border-strong); }
+    .rx-section input.rx-input{
+      max-width:260px;
+      font-weight:700;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      color:var(--c-primary-dark);
+      background:transparent;
+      border:none;
+      border-bottom:1px dashed var(--c-border-strong);
+      border-radius:0;
+      padding:4px 2px;
+    }
+    .rx-section input.rx-input:focus{ background:transparent; border-bottom-color:var(--c-primary); }
+
+    /* ===== AUTOCOMPLETE ===== */
+    #autocomplete-box{
+      position:fixed;
+      background:#fff;
+      border:1px solid var(--c-border);
+      border-radius:10px;
+      box-shadow:var(--shadow);
+      width:320px;
+      max-width:calc(100vw - 32px);
+      max-height:260px;
+      overflow-y:auto;
+      z-index:99999;
+      display:none;
+      padding:6px 0;
+    }
+    .autocomplete-item{
+      padding:8px 14px;
+      font-size:13.5px;
+      cursor:pointer;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active{ background:var(--c-primary-light); }
+
+    /* ===== BOUTONS D'ACTION BAS ===== */
+    .buttons-wrapper{
+      flex-shrink:0;
+      display:flex;
+      gap:10px;
+      padding:14px 16px;
+      border-top:1px solid var(--c-border);
+      background:#fafcff;
+    }
+    .buttons-wrapper .btn-id{ flex:1; justify-content:center; }
+    #validate-prescription-btn{
+      flex-shrink:0;
+      margin:14px 16px;
+      justify-content:center;
+    }
+
+    /* ===== HISTORIQUE ===== */
+    .historique-ordos{
+      border:1px solid var(--c-border);
+      border-radius:var(--radius-lg);
+      background:var(--c-surface);
+      box-shadow:var(--shadow-sm);
+      overflow:hidden;
+    }
+    .historique-ordos h3{
+      margin:0;
+      padding:14px 16px;
+      font-size:14px;
+      font-weight:600;
+      background:#fafcff;
+      border-bottom:1px solid var(--c-border);
+      flex-shrink:0;
+    }
+    #historique-search{
+      flex-shrink:0;
+      margin:10px 14px 0;
+      padding:8px 11px;
+      border:1px solid var(--c-border);
+      border-radius:8px;
+      font-size:13px;
+      background:#fbfdff;
+    }
+    #historique-search:focus{ outline:none; border-color:var(--c-primary); background:#fff; }
+
+    #listeOrdonnances{
+      flex:1;
+      overflow-y:auto;
+      min-height:0;
+      padding:10px 8px;
+    }
+    .ordo-row{
+      padding:12px 12px;
+      border-radius:9px;
+      cursor:pointer;
+      transition:background .15s ease;
+      background:var(--c-surface);
+    }
+    .ordo-row:hover{ background:var(--c-primary-light); }
+    .ordo-date{
+      font-weight:700;
+      font-size:12.5px;
+      color:var(--c-primary-dark);
+      margin-bottom:4px;
+    }
+    .ordo-preview{
+      font-size:12.5px;
+      color:var(--c-text-soft);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* ===== APERÇU / MODALE DE CONFIRMATION ===== */
+    .preview-ordo{
+      background:#fbfdff;
+      padding:18px 20px;
+      border-radius:10px;
+      border:1px solid var(--c-border);
+      text-align:left;
+      max-height:50vh;
+      overflow-y:auto;
+      font-size:13.5px;
+      line-height:1.6;
+    }
+    .preview-ordo .pv-section{
+      margin:14px 0 8px;
+      padding-top:10px;
+      border-top:1px dashed var(--c-border-strong);
+      font-size:11.5px;
+      font-weight:700;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color:var(--c-primary-dark);
+    }
+    .preview-ordo .pv-section:first-child{ margin-top:0; padding-top:0; border-top:none; }
+    .preview-ordo .pv-item{ margin-bottom:10px; }
+    .preview-ordo .pv-item b{ color:var(--c-text); }
+    .preview-ordo .pv-sub{ color:var(--c-text-soft); font-size:12.5px; margin-top:2px; }
+
+    /* ===== MODALES ===== */
+    .modal{
+      position:fixed; inset:0;
+      background:rgba(15,23,42,0.45);
+      backdrop-filter:blur(4px);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+    }
+    .modal-content{
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 12px 40px rgba(15,23,42,0.25);
+      padding:26px 28px;
+      width:90%;
+      max-width:460px;
+      text-align:center;
+    }
+    #confirmPrescriptionModal .modal-content{ max-width:640px; max-height:90vh; overflow-y:auto; text-align:left; }
+    .modal-content h2{ margin:0 0 8px; color:var(--c-text); font-size:19px; }
+    .modal-content h3{ margin:0 0 4px; font-size:14.5px; }
+    .modal-content p{ color:var(--c-text-soft); font-size:14px; }
+    .modal-buttons{ display:flex; gap:10px; margin-top:18px; }
+    .modal-buttons .btn-id{ flex:1; justify-content:center; }
+    .confirm-banner{
+      background:var(--c-warning-light);
+      color:var(--c-warning);
+      padding:11px 14px;
+      border-radius:9px;
+      margin-bottom:16px;
+      font-weight:600;
+      font-size:13px;
+      text-align:center;
+    }
+
+    #emailSelectModal .email-options{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+    #emailSelectModal label{
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:8px; cursor:pointer;
+      background:#fbfdff; border:1px solid var(--c-border);
+    }
+    #emailSelectModal label:hover{ background:var(--c-primary-light); }
+    #emailSelectModal input[type="checkbox"]{ accent-color:var(--c-primary); }
+    #emailSelectModal input[type="email"]{
+      width:100%; margin-top:8px; padding:9px 10px; border-radius:8px;
+      border:1px solid var(--c-border); font-size:13.5px;
+    }
+    #emailSelectModal input[type="email"]:focus{ outline:none; border-color:var(--c-primary); }
+
+    #loadingModal .loader-wrapper, #loadingScreen .spinner{ margin:0 auto 14px; }
+    .loader-wrapper{ position:relative; width:80px; height:80px; }
+    .loader-logo{ position:absolute; top:50%; left:50%; height:44px; transform:translate(-50%,-50%); z-index:2; }
+    .loader-ring{
+      position:absolute; top:50%; left:50%; width:74px; height:74px;
+      border:4px solid #eef2fb; border-top:4px solid var(--c-primary);
+      border-radius:50%; transform:translate(-50%,-50%);
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+    #loadingScreen{
+      display:none; position:fixed; inset:0;
+      background:rgba(15,23,42,0.6);
+      justify-content:center; align-items:center;
+      z-index:9999; color:#fff; text-align:center;
+    }
+    .spinner{
+      border:5px solid rgba(255,255,255,0.3); border-top:5px solid #fff;
+      border-radius:50%; width:52px; height:52px;
+      animation:spin 1s linear infinite;
+    }
+
+    .modalna{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); z-index:9999;
+    }
+    .modalna .card{
+      background:#fff; padding:24px 30px; border-radius:14px;
+      text-align:center; max-width:400px; box-shadow:var(--shadow);
+    }
+    .modalna h2{ color:var(--c-danger); margin-bottom:10px; }
+
+    /* ===== BULLES DE NOTIFICATION ===== */
+    #bubble-container{
+      position:fixed; top:20px; right:20px;
+      display:flex; flex-direction:column; gap:10px;
+      z-index:9999; align-items:flex-end;
+    }
+    .bubble{
+      max-width:300px; padding:10px 15px; border-radius:9px; color:#fff;
+      font-family:'Inter',sans-serif; font-size:13.5px;
+      box-shadow:var(--shadow); animation:fadeout .5s ease-in-out 1.5s forwards;
+    }
+    .administratif{ background:var(--c-primary); }
+    .alerte{ background:var(--c-danger); }
+    @keyframes fadeout{ to{ opacity:0; transform:translateX(-20px); } }
+
+    /* zone technique conservée pour l'enregistrement (non affichée) */
+    #prescription-text{ display:none; }
+  
+    /* =========================================================
+       CERTIFICAT MÉDICAL — adaptation du style Ordonnancier
+       ========================================================= */
+
+    .cert-intro{
+      padding:14px 4px 6px;
+    }
+    .cert-intro-title{
+      font-family:'Poppins',sans-serif;
+      font-size:14px;
+      font-weight:600;
+      color:var(--c-text);
+    }
+    .cert-intro-sub{
+      margin-top:4px;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--c-text-soft);
+    }
+
+    .cert-option{
+      border:1px solid var(--c-border);
+      border-radius:var(--radius);
+      background:#fff;
+      padding:12px 14px;
+      transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .cert-option:hover{
+      border-color:var(--c-border-strong);
+      box-shadow:var(--shadow-sm);
+    }
+    .cert-option:has(.cert-check:checked){
+      border-color:#b9cdf5;
+      background:#fbfdff;
+      box-shadow:0 0 0 2px var(--c-primary-light);
+    }
+    .cert-option-main{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .cert-check{
+      flex-shrink:0;
+      width:17px;
+      height:17px;
+      margin-top:3px;
+      accent-color:var(--c-primary);
+      cursor:pointer;
+    }
+    .cert-option label{
+      display:flex;
+      align-items:flex-start;
+      gap:9px;
+      cursor:pointer;
+      flex:1;
+      min-width:0;
+      font-size:13.5px;
+      line-height:1.45;
+      color:var(--c-text);
+    }
+    .cert-num{
+      flex-shrink:0;
+      width:23px;
+      height:23px;
+      border-radius:7px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--c-primary-light);
+      color:var(--c-primary-dark);
+      font-size:11px;
+      font-weight:700;
+      margin-top:-2px;
+    }
+    .cert-input{
+      margin:10px 0 0 40px;
+      width:calc(100% - 40px) !important;
+      background:#fbfdff !important;
+    }
+    .cert-value-line{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-left:40px;
+    }
+    .cert-value-line .cert-input{
+      margin-left:0;
+      width:min(220px,100%) !important;
+    }
+    .cert-unit{
+      font-size:12.5px;
+      color:var(--c-text-soft);
+      white-space:nowrap;
+    }
+    .cert-empty{
+      padding:14px 8px 6px;
+      margin:0;
+      text-align:center;
+      color:var(--c-text-faint);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .cert-preview-panel{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+    .cert-preview-panel h3{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .cert-preview-wrap{
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding:16px;
+      background:#f7f9fc;
+    }
+    .cert-paper{
+      width:100%;
+      min-height:100%;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      box-shadow:0 4px 16px rgba(15,40,90,.07);
+      overflow:hidden;
+    }
+    .cert-paper-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:15px;
+      padding:18px 18px 15px;
+      border-bottom:2px solid var(--c-primary);
+      background:#fff;
+    }
+    .cert-paper-title{
+      font-family:'Poppins',sans-serif;
+      font-size:14px;
+      font-weight:700;
+      letter-spacing:.4px;
+      color:var(--c-text);
+    }
+    .cert-paper-sub{
+      margin-top:3px;
+      font-size:10.5px;
+      color:var(--c-text-soft);
+    }
+    .cert-paper-icon{
+      width:34px;
+      height:34px;
+      border-radius:9px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--c-primary-light);
+      font-size:17px;
+    }
+    .cert-paper-body{
+      padding:20px 18px;
+      font-family:'Georgia','Times New Roman',serif;
+      color:#20242a;
+      font-size:12.5px;
+      line-height:1.65;
+    }
+    #preview-intro{
+      margin:0 0 18px;
+    }
+    .preview-mentions{
+      min-height:110px;
+    }
+    .preview-mention{
+      padding:8px 10px;
+      margin-bottom:8px;
+      border-left:3px solid var(--c-primary);
+      background:#f8fafc;
+      font-size:12px;
+      line-height:1.5;
+    }
+    .preview-placeholder{
+      padding:18px 10px;
+      text-align:center;
+      color:var(--c-text-faint);
+      font-family:'Inter',sans-serif;
+      font-size:12px;
+      border:1px dashed var(--c-border-strong);
+      border-radius:8px;
+    }
+    .cert-paper-signature{
+      margin-top:30px;
+      text-align:right;
+      font-size:11px;
+      color:#555;
+    }
+    .signature-line{
+      width:130px;
+      border-top:1px solid #aaa;
+      margin:22px 0 5px auto;
+    }
+    #preview-medecin{
+      font-weight:600;
+      color:#222;
+    }
+    .cert-preview-footer{
+      flex-shrink:0;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 14px;
+      border-top:1px solid var(--c-border);
+      background:#fafcff;
+      color:var(--c-text-soft);
+      font-size:11.5px;
+    }
+    #rx-status-side{
+      font-weight:600;
+      color:var(--c-success);
+    }
+
+    #emailSelectModal .modal-content{
+      max-width:460px;
+      text-align:left;
+    }
+    #emailSelectModal .email-options{
+      max-height:220px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:14px;
+    }
+    #emailSelectModal label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      background:#fbfdff;
+      border:1px solid var(--c-border);
+      font-size:13px;
+    }
+    #emailSelectModal label:hover{
+      background:var(--c-primary-light);
+    }
+    #emailSelectModal input[type="checkbox"]{
+      accent-color:var(--c-primary);
+    }
+    #emailSelectModal input[type="email"]{
+      width:100%;
+      margin-top:8px;
+      padding:9px 10px;
+      border-radius:8px;
+      border:1px solid var(--c-border);
+      font-size:13.5px;
+      font-family:inherit;
+    }
+    #emailSelectModal input[type="email"]:focus{
+      outline:none;
+      border-color:var(--c-primary);
+    }
+
+    @media (max-width: 900px){
+      html, body{ overflow:auto; }
+      .ordonnance-wrapper{
+        overflow:visible;
+        flex-direction:column;
+      }
+      .zone-prescription,
+      .historique-ordos{
+        min-height:500px;
+      }
+      .cert-preview-panel{
+        min-height:600px;
+      }
+    }
+
+    @media (max-width: 600px){
+      #pro-header{
+        padding:10px 14px;
+      }
+      #pro-header .brand-text span{
+        display:none;
+      }
+      #pro-header .meta-block{
+        display:none;
+      }
+      .ordonnance-wrapper{
+        padding:10px;
+        gap:10px;
+      }
+      .cert-option label{
+        font-size:13px;
+      }
+      .cert-input{
+        margin-left:31px;
+        width:calc(100% - 31px) !important;
+      }
+      .cert-value-line{
+        margin-left:31px;
+      }
+      .cert-preview-wrap{
+        padding:10px;
+      }
+    }
+
+  </style>
 </head>
 
-<body class="bg-light">
-  <div id="modal-no-access" class="modalna">
-    <div class="card">
-      <h2>⛔️ Accès refusé</h2>
-      <p>Vous n’avez pas accès à cette page.</p>
-    </div>
-  </div>
-  
- 
-  <div class="container py-5">
-    <div class="card shadow-lg">
-      <div class="card-body">
-        <h2 class="card-title text-center mb-4">🩺 Formulaire de Certificat Médical</h2>
-        <form id="patientForm" onsubmit="return false;">
+<body>
 
-         <div class="form-group hidden-field">
-            <div class="d-flex justify-content-between mb-4">
-              <button type="button" class="btn-id btn-id-c" onclick="reinitialiserForm()">❌ Réinitialiser</button>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="nom" class="form-label">Nom du Patient</label>
-                <input type="text" class="form-control" id="nom" required>
-              </div>
-              <div class="col-md-6">
-                <label for="prenom" class="form-label">Prénom du Patient</label>
-                <input type="text" class="form-control" id="prenom" required>
-              </div>
-              <div class="col-md-6">
-                <label for="dateNaissance" class="form-label">Date de naissance</label>
-                <input type="date" class="form-control" id="dateNaissance" required>
-              </div>
-              <div class="col-md-6">
-                <label for="sexe" class="form-label">Sexe</label>
-                <select class="form-select" id="sexe">
-                  <option value="M">M</option>
-                  <option value="Mme">Mme</option>
-                  <option value="L’enfant">L'enfant</option>
-                </select>
-              </div>
-            </div>
-            <hr class="my-4">
-          </div>
+  <img id="logo-img" src="logo.png" style="display:none" crossorigin="anonymous" alt="Logo médical">
 
-          <fieldset class="mb-4" style="padding: 20px;">
-            <legend class="h5 mb-3">Mentions à inclure dans le certificat :</legend>
-
-            <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition1" onchange="toggleInput('input1')">
-              <label class="form-check-label" for="condition1">Le patient est apte à entrer en classe de</label>
-              <input type="text" id="input1" class="form-control mt-2" style="display:none;" placeholder="ex: CE2">
-            </div>
-
-            <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition2" onchange="toggleInput('input2')">
-              <label class="form-check-label" for="condition2">Le patient ne présente aucune contre-indication à la pratique du</label>
-              <input type="text" id="input2" class="form-control mt-2" style="display:none;" placeholder="ex: football">
-            </div>
-
-            <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition3" onchange="toggleInput('input3')">
-              <label class="form-check-label" for="condition3">Dispense de sport pour une durée de</label>
-              <input type="text" id="input3" class="form-control mt-2" style="display:none;" placeholder="ex: 7">
-            </div>
-
-            <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition4" onchange="toggleInput('input4')">
-              <label class="form-check-label" for="condition4">Dispense de piscine pour une durée de</label>
-              <input type="text" id="input4" class="form-control mt-2" style="display:none;" placeholder="ex: 5">
-            </div>
-
-            <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition5" onchange="toggleInput('input5')">
-              <label class="form-check-label" for="condition5">Absence de l'école / lycée / travail pour une durée de</label>
-              <input type="text" id="input5" class="form-control mt-2" style="display:none;" placeholder="ex: 5">
-            </div>
-
-              <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition6" onchange="toggleInput('input6')">
-              <label class="form-check-label" for="condition6">Présence de son/ses parent(s)/tuteur(s) auprès de lui en permanence pour une durée de </label>
-              <input type="text" id="input6" class="form-control mt-2" style="display:none;" placeholder="ex: 5">
-            </div>
-            
-              <div class="form-check mb-3">
-              <input type="checkbox" class="form-check-input" id="condition7" onchange="toggleInput('input7')">
-              <label class="form-check-label" for="condition7">Présence ce jour à l'hôpital</label>
-            </div>
-
-
-          
-
-          <div class="mb-3">
-            <button id="btnGenererInitial" type="button" class="btn-id btn-id-v"
-                    onclick="openConfirmModal()">
-              📝 Valider & enregistrer le certificat
-            </button>
-          </div>
-</fieldset>
-          <!-- Zone affichée après validation du certificat -->
-          <div id="postValidationActions" style="display:none; margin-top:20px; text-align:center;">
-            <h3>✔ Certificat validé</h3>
-<button type="button" class="btn-id" onclick="imprimer()">
-                Ouvrir le certificat
-            </button>
-           
-            <button type="button" class="btn-id" id="btnOpenEmailModal" style="display:none">
-              ✉ Envoyer par e-mail
-            </button>
-          </div>
-
-        </form>
-      </div>
+  <!-- ===== EN-TÊTE PRO ===== -->
+  <header id="pro-header">
+    <div class="brand">
+      <div class="brand-icon">🩺</div>
+      <div class="brand-text">
+        <h1>Certificat médical</h1>
+        <span>Document médical</span>
       </div>
     </div>
+
+    <div class="meta">
+      <div class="meta-block">
+        <div class="medecin-nom" id="header-medecin">—</div>
+        <div class="medecin-sub" id="header-date">—</div>
+      </div>
+
+      <button id="new-prescription-btn" class="icon-btn"
+              title="Nouveau certificat"
+              onclick="reinitialiserForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7"/>
+          <path d="M3 4v5h5"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== FORMULAIRE PATIENT : conservé mais alimenté depuis le dossier ===== -->
+  <div class="form-group hidden-field">
+    <input type="text" id="nom" required>
+    <input type="text" id="prenom" required>
+    <input type="date" id="dateNaissance" required>
+    <select id="sexe">
+      <option value="M">M</option>
+      <option value="Mme">Mme</option>
+      <option value="L’enfant">L'enfant</option>
+    </select>
   </div>
 
-  <!-- ===== Modal de sélection des emails (copié/adapté de l'Ordonnancier) ===== -->
-  <div id="emailSelectModal">
+  <div class="ordonnance-wrapper">
+
+    <!-- ===== COLONNE GAUCHE : certificat ===== -->
+    <div class="zone-prescription">
+      <div class="editor-container">
+
+        <div class="rx-header">
+          <label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h12v18H6z"/>
+              <path d="M9 7h6M9 11h6M9 15h4"/>
+            </svg>
+            Certificat médical
+          </label>
+          <span id="rx-status">Brouillon</span>
+        </div>
+
+        <div class="editor-toolbar">
+          <button type="button" class="btn-id" onclick="reinitialiserForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/>
+              <path d="M3 4v5h5"/>
+            </svg>
+            Réinitialiser
+          </button>
+
+          <button type="button" class="btn-id btn-id-ghost"
+                  onclick="updateCertPreview()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/>
+              <circle cx="12" cy="12" r="2.5"/>
+            </svg>
+            Actualiser l’aperçu
+          </button>
+        </div>
+
+        <div id="rx-list">
+
+          <div class="cert-intro">
+            <div class="cert-intro-title">Mentions à inclure dans le certificat</div>
+            <div class="cert-intro-sub">
+              Cochez uniquement les mentions nécessaires. Les champs associés apparaissent automatiquement.
+            </div>
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition1"
+                     onchange="toggleInput('input1'); updateCertPreview()">
+              <label for="condition1">
+                <span class="cert-num">1</span>
+                <span>Le patient est apte à entrer en classe de</span>
+              </label>
+            </div>
+            <input type="text" id="input1" class="rx-input cert-input"
+                   style="display:none;" placeholder="ex : CE2"
+                   oninput="updateCertPreview()">
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition2"
+                     onchange="toggleInput('input2'); updateCertPreview()">
+              <label for="condition2">
+                <span class="cert-num">2</span>
+                <span>Le patient ne présente aucune contre-indication à la pratique du</span>
+              </label>
+            </div>
+            <input type="text" id="input2" class="rx-input cert-input"
+                   style="display:none;" placeholder="ex : football"
+                   oninput="updateCertPreview()">
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition3"
+                     onchange="toggleInput('input3'); updateCertPreview()">
+              <label for="condition3">
+                <span class="cert-num">3</span>
+                <span>Dispense de sport pour une durée de</span>
+              </label>
+            </div>
+            <div class="cert-value-line">
+              <input type="text" id="input3" class="rx-input cert-input"
+                     style="display:none;" placeholder="ex : 7"
+                     oninput="updateCertPreview()">
+              <span class="cert-unit" id="unit3" style="display:none;">jour(s)</span>
+            </div>
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition4"
+                     onchange="toggleInput('input4'); updateCertPreview()">
+              <label for="condition4">
+                <span class="cert-num">4</span>
+                <span>Dispense de piscine pour une durée de</span>
+              </label>
+            </div>
+            <div class="cert-value-line">
+              <input type="text" id="input4" class="rx-input cert-input"
+                     style="display:none;" placeholder="ex : 5"
+                     oninput="updateCertPreview()">
+              <span class="cert-unit" id="unit4" style="display:none;">jour(s)</span>
+            </div>
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition5"
+                     onchange="toggleInput('input5'); updateCertPreview()">
+              <label for="condition5">
+                <span class="cert-num">5</span>
+                <span>Absence de l'école / lycée / travail pour une durée de</span>
+              </label>
+            </div>
+            <div class="cert-value-line">
+              <input type="text" id="input5" class="rx-input cert-input"
+                     style="display:none;" placeholder="ex : 5"
+                     oninput="updateCertPreview()">
+              <span class="cert-unit" id="unit5" style="display:none;">jour(s)</span>
+            </div>
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition6"
+                     onchange="toggleInput('input6'); updateCertPreview()">
+              <label for="condition6">
+                <span class="cert-num">6</span>
+                <span>Présence de son/ses parent(s)/tuteur(s) auprès de lui en permanence pour une durée de</span>
+              </label>
+            </div>
+            <div class="cert-value-line">
+              <input type="text" id="input6" class="rx-input cert-input"
+                     style="display:none;" placeholder="ex : 5"
+                     oninput="updateCertPreview()">
+              <span class="cert-unit" id="unit6" style="display:none;">jour(s)</span>
+            </div>
+          </div>
+
+          <div class="cert-option">
+            <div class="cert-option-main">
+              <input type="checkbox" class="cert-check" id="condition7"
+                     onchange="updateCertPreview()">
+              <label for="condition7">
+                <span class="cert-num">7</span>
+                <span>Présence ce jour à l'hôpital</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="rx-empty" class="cert-empty">
+            Aucune mention sélectionnée.<br>
+            Cochez une ou plusieurs options ci-dessus.
+          </div>
+        </div>
+
+        <button id="validate-prescription-btn" class="btn-id btn-id-v"
+                onclick="openConfirmModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12"/>
+            <path d="m7 10 5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>
+          Valider & enregistrer le certificat
+        </button>
+
+        <div id="postValidationActions" class="buttons-wrapper" style="display:none;">
+          <button type="button" class="btn-id" onclick="imprimer()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2h12v5H6z"/>
+              <path d="M6 17H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/>
+              <path d="M6 14h12v8H6z"/>
+            </svg>
+            Ouvrir le certificat
+          </button>
+
+          <button type="button" class="btn-id btn-id-v" id="btnOpenEmailModal">
+            ✉ Envoyer par e-mail
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== COLONNE DROITE : aperçu ===== -->
+    <div class="historique-ordos cert-preview-panel">
+
+      <h3>
+        <span>👁</span>
+        Aperçu du certificat
+      </h3>
+
+      <div class="cert-preview-wrap">
+        <div class="cert-paper">
+
+          <div class="cert-paper-header">
+            <div>
+              <div class="cert-paper-title">CERTIFICAT MÉDICAL</div>
+              <div class="cert-paper-sub">Document médical</div>
+            </div>
+            <div class="cert-paper-icon">🩺</div>
+          </div>
+
+          <div class="cert-paper-body">
+            <p id="preview-intro">
+              Je soussigné <strong>—</strong>, certifie sur l'honneur avoir ausculté ce jour
+              <strong>—</strong>, né(e) le <strong>—</strong> et certifie sur l'honneur que :
+            </p>
+
+            <div id="preview-mentions" class="preview-mentions">
+              <div class="preview-placeholder">
+                Les mentions sélectionnées apparaîtront ici.
+              </div>
+            </div>
+
+            <div class="cert-paper-signature">
+              <div>Fait le <span id="preview-date">—</span></div>
+              <div class="signature-line"></div>
+              <div id="preview-medecin">Dr —</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="cert-preview-footer">
+        <span id="preview-count">0 mention</span>
+        <span id="rx-status-side">Brouillon</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ===== Modal de sélection des emails ===== -->
+  <div id="emailSelectModal" class="modal">
     <div class="modal-content">
-      <h3>📧 Choisissez les destinataires</h3>
+      <h2>📧 Choisissez les destinataires</h2>
+      <p>Sélectionnez les adresses auxquelles le certificat doit être envoyé.</p>
 
       <div id="emailCheckboxes" class="email-options"></div>
 
       <hr>
 
       <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-        <input type="checkbox" id="otherEmailCheck"> Autre destinataire :
+        <input type="checkbox" id="otherEmailCheck">
+        Autre destinataire :
       </label>
-      <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled style="margin-top:8px;">
+      <input type="email" id="otherEmailInput" placeholder="exemple@mail.com" disabled>
 
-      <div class="modal-actions">
+      <div class="modal-buttons">
         <button type="button" class="btn-id btn-id-c" onclick="closeEmailSelectModal()">❌ Annuler</button>
         <button type="button" id="confirmEmails" class="btn-id btn-id-v">📨 Envoyer</button>
       </div>
     </div>
   </div>
 
-  <!-- petit conteneur pour notifications si besoin -->
-  <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
-<!-- 🔶 MODALE DE CONFIRMATION VALIDATION -->
-<div id="confirmPrescriptionModal" class="modal" style="display:none;">
-  <div class="modal-content" style="max-width:600px;">
+  <div id="notification-container"></div>
 
-    <h2>Confirmation</h2>
+  <!-- ===== MODALE DE CONFIRMATION ===== -->
+  <div id="confirmPrescriptionModal" class="modal">
+    <div class="modal-content" style="max-width:640px;">
 
-    <!-- Bandeau d'avertissement -->
-    <div style="
-      background:#ffb84d;
-      color:#5a3d00;
-      padding:12px;
-      border-radius:8px;
-      margin-bottom:15px;
-      font-weight:600;
-      text-align:center;
-      ">
-      🚨 Attention : valider la prescription va verrouiller la modification et l’enregistrer définitivement dans le dossier patient.
+      <h2>Confirmation du certificat</h2>
+
+      <div class="confirm-banner">
+        🚨 Attention : valider le certificat va verrouiller la modification et
+        l’enregistrer définitivement dans le dossier patient.
+      </div>
+
+      <h3 style="margin-top:10px;">Certificat :</h3>
+
+      <div id="preview-ordo" class="preview-ordo"></div>
+
+      <div class="modal-buttons">
+        <button class="btn-id btn-id-v" onclick="confirmValidation()">✔️ Valider</button>
+        <button class="btn-id btn-id-c" onclick="closeConfirmModal()">❌ Annuler</button>
+      </div>
+
     </div>
-
-    <!-- Prévisualisation -->
-    <h3 style="margin-top:10px; text-align:left;">Prescription :</h3>
-    <div id="preview-ordo" 
-        style="background:#f8f9fa; padding:15px; border-radius:8px;
-               border:1px solid #ddd; text-align:left; max-height:250px;
-               overflow-y:auto;white-space: pre-line;">
-    </div>
-
-    <div class="modal-buttons">
-  <button class="btn-id btn-id-v" onclick="confirmValidation()">✔️ Valider</button>
-  <button class="btn-id btn-id-c" onclick="closeConfirmModal()">❌ Annuler</button>
-</div>
-
-
   </div>
-</div>
+
+  <div id="modal-no-access" class="modalna">
+    <div class="card">
+      <h2>⛔️ Accès refusé</h2>
+      <p>Vous n’avez pas accès à cette page.</p>
+    </div>
+  </div>
+
+
+<script>
+(function(){
+  const labels = [
+    {id:'condition1', input:'input1', text:'Le patient est apte à entrer en classe de'},
+    {id:'condition2', input:'input2', text:'Le patient ne présente aucune contre-indication à la pratique du'},
+    {id:'condition3', input:'input3', text:"Dispense de sport pour une durée de", unit:' jour(s)'},
+    {id:'condition4', input:'input4', text:"Dispense de piscine pour une durée de", unit:' jour(s)'},
+    {id:'condition5', input:'input5', text:"Absence de l'école / lycée / travail pour une durée de", unit:' jour(s)'},
+    {id:'condition6', input:'input6', text:"Présence de son/ses parent(s)/tuteur(s) auprès de lui en permanence pour une durée de", unit:' jour(s)'},
+    {id:'condition7', input:'', text:"Présence ce jour à l'hôpital"}
+  ];
+
+  window.updateCertPreview = function(){
+    const mentions = document.getElementById('preview-mentions');
+    const empty = document.getElementById('rx-empty');
+    if(!mentions) return;
+
+    mentions.innerHTML = '';
+    let count = 0;
+
+    labels.forEach(c => {
+      const cb = document.getElementById(c.id);
+      if(!cb || !cb.checked) return;
+
+      count++;
+      const value = c.input ? (document.getElementById(c.input)?.value || '').trim() : '';
+      const div = document.createElement('div');
+      div.className = 'preview-mention';
+
+      const strong = document.createElement('strong');
+      strong.textContent = c.text;
+      div.appendChild(strong);
+
+      if(value){
+        div.appendChild(document.createTextNode(' ' + value));
+      }
+      if(c.unit){
+        div.appendChild(document.createTextNode(c.unit));
+      }
+      if(c.id !== 'condition7' && c.id !== 'condition1' && c.id !== 'condition2'){
+        div.appendChild(document.createTextNode(' à compter de ce jour.'));
+      } else if(c.id === 'condition1' || c.id === 'condition2'){
+        div.appendChild(document.createTextNode('.'));
+      } else {
+        div.appendChild(document.createTextNode('.'));
+      }
+      mentions.appendChild(div);
+    });
+
+    if(!count){
+      mentions.innerHTML = '<div class="preview-placeholder">Les mentions sélectionnées apparaîtront ici.</div>';
+    }
+
+    const countEl = document.getElementById('preview-count');
+    if(countEl) countEl.textContent = `${count} mention${count > 1 ? 's' : ''}`;
+
+    const status = document.getElementById('rx-status');
+    const side = document.getElementById('rx-status-side');
+    if(status) status.textContent = count ? 'Prêt à valider' : 'Brouillon';
+    if(side) side.textContent = count ? 'Prêt à valider' : 'Brouillon';
+
+    const prenom = document.getElementById('prenom')?.value?.trim() || '—';
+    const nom = document.getElementById('nom')?.value?.trim() || '—';
+    const naissance = document.getElementById('dateNaissance')?.value || '—';
+    let naissanceFr = naissance;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(naissance)){
+      naissanceFr = naissance.split('-').reverse().join('/');
+    }
+
+    const medecin = window.medecinNom || '—';
+    const intro = document.getElementById('preview-intro');
+    if(intro){
+      intro.innerHTML =
+        `Je soussigné <strong>${escapeHtml(medecin)}</strong>, certifie sur l'honneur avoir ausculté ce jour ` +
+        `<strong>${escapeHtml(prenom)} ${escapeHtml(nom)}</strong>, né(e) le <strong>${escapeHtml(naissanceFr)}</strong> ` +
+        `et certifie sur l'honneur que :`;
+    }
+
+    const med = document.getElementById('preview-medecin');
+    if(med) med.textContent = 'Dr ' + medecin;
+
+    const dateEl = document.getElementById('preview-date');
+    if(dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR');
+
+    const headerMed = document.getElementById('header-medecin');
+    if(headerMed) headerMed.textContent = medecin;
+    const headerDate = document.getElementById('header-date');
+    if(headerDate) headerDate.textContent = new Date().toLocaleDateString('fr-FR');
+  };
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[ch]));
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    updateCertPreview();
+    ['nom','prenom','dateNaissance','sexe'].forEach(id => {
+      const el=document.getElementById(id);
+      if(el) el.addEventListener('input', updateCertPreview);
+      if(el) el.addEventListener('change', updateCertPreview);
+    });
+  });
+})();
+</script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1023,7 +1999,7 @@ const id = new URLSearchParams(window.location.search).get('id');
     document.getElementById('prenom').value = "";
     document.getElementById('dateNaissance').value = "";
     document.getElementById('sexe').value = "";
-    ['condition1', 'condition2', 'condition3', 'condition4'].forEach((id, index) => {
+    ['condition1', 'condition2', 'condition3', 'condition4', 'condition5', 'condition6', 'condition7'].forEach((id, index) => {
       const checkbox = document.getElementById(id);
       const input = document.getElementById('input' + (index + 1));
       if (checkbox) checkbox.checked = false;

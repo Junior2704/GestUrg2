@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="ordToPdf.js"></script>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Prescription d'examens</title>
-<link href="logog2.png" rel="icon" type="image/jpeg"/>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&amp;display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🧪 Prescripteur d'Examens</title>
+      <link rel="icon" type="image/jpeg" href="logog2.png">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <!-- EmailJS (fallback d'envoi d'e-mails multi-comptes) -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-<style>
+
+  <style>
+
     :root{
       --c-bg:#f2f6fb;
       --c-surface:#ffffff;
@@ -39,926 +41,334 @@
       --shadow:0 6px 20px rgba(15,40,90,0.08);
     }
 
-    *{ box-sizing:border-box; }
-
-    html, body{
-      height:100%;
-      margin:0;
-      overflow:hidden;
-      background:var(--c-bg);
-      color:var(--c-text);
-      font-family:'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+    *{box-sizing:border-box}
+    html,body{
+      height:100%; margin:0; overflow:hidden;
+      background:var(--c-bg); color:var(--c-text);
+      font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;
     }
+    body{display:flex;flex-direction:column}
+    button,input,select,textarea{font:inherit}
+    .hidden-field{display:none!important}
 
-    body{ display:flex; flex-direction:column; }
-
-    /* ===== Scrollbars ===== */
-    ::-webkit-scrollbar{ width:10px; height:10px; }
-    ::-webkit-scrollbar-track{ background:transparent; }
-    ::-webkit-scrollbar-thumb{ background:#b9c8e6; border-radius:10px; }
-    ::-webkit-scrollbar-thumb:hover{ background:#93aada; }
-    *{ scrollbar-width:thin; scrollbar-color:#b9c8e6 transparent; }
-
-    .hidden-field{ display:none !important; }
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#b9c8e6;border-radius:10px}
+    ::-webkit-scrollbar-thumb:hover{background:#93aada}
+    *{scrollbar-width:thin;scrollbar-color:#b9c8e6 transparent}
 
     /* ===== EN-TÊTE PRO ===== */
     #pro-header{
-      flex-shrink:0;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:12px 22px;
-      background:var(--c-surface);
+      flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+      padding:12px 22px;background:var(--c-surface);
       border-bottom:1px solid var(--c-border);
     }
-    #pro-header .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    #pro-header .brand .brand-icon{
-      width:34px; height:34px;
-      border-radius:9px;
-      background:var(--c-primary-light);
-      color:var(--c-primary);
-      display:flex; align-items:center; justify-content:center;
-      font-family:'Poppins',sans-serif; font-weight:700; font-size:16px;
+    #pro-header .brand{display:flex;align-items:center;gap:10px}
+    #pro-header .brand-icon{
+      width:34px;height:34px;border-radius:9px;background:var(--c-primary-light);
+      color:var(--c-primary);display:flex;align-items:center;justify-content:center;
+      font-family:'Poppins',sans-serif;font-weight:700;font-size:16px
     }
     #pro-header .brand-text h1{
-      margin:0;
-      font-family:'Poppins', sans-serif;
-      font-weight:600;
-      font-size:17px;
-      color:var(--c-text);
-      letter-spacing:0.2px;
+      margin:0;font-family:'Poppins',sans-serif;font-weight:600;font-size:17px;
+      color:var(--c-text);letter-spacing:.2px
     }
-    #pro-header .brand-text span{
-      display:block;
-      font-size:12px;
-      color:var(--c-text-soft);
-    }
-    #pro-header .meta{
-      display:flex;
-      align-items:center;
-      gap:18px;
-    }
-    #pro-header .meta .meta-block{
-      text-align:right;
-      line-height:1.3;
-    }
-    #pro-header .meta .meta-block .medecin-nom{
-      font-weight:600;
-      font-size:13px;
-      color:var(--c-text);
-    }
-    #pro-header .meta .meta-block .medecin-sub{
-      font-size:12px;
-      color:var(--c-text-soft);
-    }
+    #pro-header .brand-text span{display:block;font-size:12px;color:var(--c-text-soft)}
+    #pro-header .meta{display:flex;align-items:center;gap:18px}
+    #pro-header .meta-block{text-align:right;line-height:1.3}
+    #pro-header .meta-block .medecin-nom{font-weight:600;font-size:13px;color:var(--c-text)}
+    #pro-header .meta-block .medecin-sub{font-size:12px;color:var(--c-text-soft)}
     .icon-btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      width:36px; height:36px;
-      border-radius:9px;
-      border:1px solid var(--c-border-strong);
-      background:var(--c-surface);
-      color:var(--c-text-soft);
-      cursor:pointer;
-      transition:all .15s ease;
+      display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
+      border-radius:9px;border:1px solid var(--c-border-strong);background:var(--c-surface);
+      color:var(--c-text-soft);cursor:pointer;transition:all .15s ease
     }
-    .icon-btn:hover{
-      background:var(--c-danger-light);
-      border-color:var(--c-danger);
-      color:var(--c-danger);
-    }
-    .icon-btn svg{ width:16px; height:16px; }
+    .icon-btn:hover{background:var(--c-danger-light);border-color:var(--c-danger);color:var(--c-danger)}
 
-    /* ===== BOUTONS GÉNÉRIQUES ===== */
+    /* ===== BOUTONS ===== */
     .btn-id{
-      all:unset;
-      box-sizing:border-box;
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-      padding:9px 16px;
-      border-radius:9px;
-      font-size:13.5px;
-      font-weight:600;
-      cursor:pointer;
-      border:1px solid var(--c-border-strong);
-      background:var(--c-surface);
-      color:var(--c-text);
-      transition:all .15s ease;
+      all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+      gap:7px;padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;
+      cursor:pointer;border:1px solid var(--c-border-strong);background:var(--c-surface);
+      color:var(--c-text);transition:all .15s ease
     }
-    .btn-id svg{ width:15px; height:15px; flex-shrink:0; }
-    .btn-id:hover{
-      border-color:var(--c-primary);
-      background:var(--c-primary-light);
-      color:var(--c-primary-dark);
-    }
-    .btn-id-v{ background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
-    .btn-id-v:hover{ background:var(--c-primary-dark); border-color:var(--c-primary-dark); color:#fff; }
-    .btn-id-c:hover{ background:var(--c-danger-light); border-color:var(--c-danger); color:var(--c-danger); }
-    .btn-id-ghost{ border-color:transparent; background:transparent; color:var(--c-text-soft); }
-    .btn-id-ghost:hover{ background:var(--c-primary-light); color:var(--c-primary-dark); border-color:transparent; }
-    .btn-id[disabled]{ opacity:.5; cursor:not-allowed; pointer-events:none; }
+    .btn-id:hover{border-color:var(--c-primary);background:var(--c-primary-light);color:var(--c-primary-dark)}
+    .btn-id-v{background:var(--c-primary);border-color:var(--c-primary);color:#fff}
+    .btn-id-v:hover{background:var(--c-primary-dark);border-color:var(--c-primary-dark);color:#fff}
+    .btn-id-c:hover{background:var(--c-danger-light);border-color:var(--c-danger);color:var(--c-danger)}
+    .btn-id[disabled]{opacity:.5;cursor:not-allowed;pointer-events:none}
 
-    /* ===== LAYOUT PRINCIPAL ===== */
+    /* ===== LES 2 BLOCS ===== */
     .ordonnance-wrapper{
-      display:flex;
-      gap:18px;
-      flex:1;
-      min-height:0;
-      overflow:hidden;
-      padding:18px 22px;
+      display:flex;gap:18px;flex:1;min-height:0;overflow:hidden;padding:18px 22px;
     }
-
-    .zone-prescription, .historique-ordos{
-      display:flex;
-      flex-direction:column;
-      min-height:0;
-    }
-    .zone-prescription{ flex:1.65; }
-    .historique-ordos{ flex:1; }
-
-    /* ===== ZONE DE PRESCRIPTION ===== */
-    .editor-container{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      border:1px solid var(--c-border);
-      border-radius:var(--radius-lg);
-      background:var(--c-surface);
-      box-shadow:var(--shadow-sm);
-      overflow:hidden;
-      min-height:0;
-    }
-    .editor-container > .rx-header{
-      flex-shrink:0;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 16px;
-      background:#fafcff;
-      border-bottom:1px solid var(--c-border);
-    }
-    .editor-container > .rx-header label{
-      font-weight:600;
-      font-size:14px;
-      color:var(--c-text);
-      display:flex; align-items:center; gap:8px;
-    }
-    #rx-status{
-      font-size:11.5px;
-      font-weight:600;
-      padding:3px 9px;
-      border-radius:20px;
-      background:var(--c-success-light);
-      color:var(--c-success);
-    }
-    #rx-status.locked{ background:var(--c-warning-light); color:var(--c-warning); }
-
-    .editor-toolbar{
-      flex-shrink:0;
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      padding:10px 16px;
-      background:#fafcff;
-      border-bottom:1px solid var(--c-border);
-    }
-
-    #rx-list{
-      flex:1;
-      overflow-y:auto;
-      padding:16px;
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    #rx-empty{
-      margin:auto;
-      text-align:center;
-      color:var(--c-text-faint);
-      font-size:13.5px;
-      max-width:280px;
-      line-height:1.5;
-    }
-
-    /* ---- Carte item médicament / consigne ---- */
-    .rx-item{
-      display:flex;
-      gap:8px;
-      background:var(--c-surface);
-      border:1px solid var(--c-border);
-      border-radius:var(--radius);
-      padding:12px 12px 12px 6px;
-      transition:border-color .15s ease, box-shadow .15s ease;
-    }
-    .rx-item:hover{ border-color:var(--c-border-strong); }
-    .rx-item.dragging{ opacity:.4; }
-    .rx-item.drag-over{ border-color:var(--c-primary); box-shadow:0 0 0 2px var(--c-primary-light); }
-
-    .rx-drag{
-      flex-shrink:0;
-      width:20px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      padding-top:10px;
-      color:var(--c-text-faint);
-      cursor:grab;
-      user-select:none;
-    }
-    .rx-num{
-      flex-shrink:0;
-      width:24px; height:24px;
-      margin-top:6px;
-      border-radius:7px;
-      background:var(--c-primary-light);
-      color:var(--c-primary-dark);
-      font-size:12px;
-      font-weight:700;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .rx-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
-
-    .rx-row-main{ display:flex; gap:8px; align-items:center; position:relative; }
-    .rx-nom{
-      flex:1;
-      font-weight:600;
-      font-size:14.5px;
-    }
-    .rx-row-sub{ display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; }
-
-    input.rx-input, textarea.rx-input{
-      width:100%;
-      padding:9px 11px;
-      border:1px solid var(--c-border);
-      border-radius:8px;
-      font-size:13.5px;
-      font-family:inherit;
-      color:var(--c-text);
-      background:#fbfdff;
-      transition:border-color .15s ease, background .15s ease;
-    }
-    input.rx-input:focus, textarea.rx-input:focus{
-      outline:none;
-      border-color:var(--c-primary);
-      background:#fff;
-    }
-    textarea.rx-input{ resize:vertical; min-height:38px; }
-
-    .rx-chips{ display:flex; flex-wrap:wrap; gap:6px; }
-    .rx-chip{
-      border:1px dashed var(--c-border-strong);
-      background:#fff;
-      color:var(--c-text-soft);
-      font-size:11.5px;
-      padding:4px 9px;
-      border-radius:20px;
-      cursor:pointer;
-      transition:all .15s ease;
-    }
-    .rx-chip:hover{ border-color:var(--c-primary); color:var(--c-primary-dark); background:var(--c-primary-light); }
-
-    .rx-del{
-      flex-shrink:0;
-      width:28px; height:28px;
-      border-radius:7px;
-      border:1px solid transparent;
-      background:transparent;
-      color:var(--c-text-faint);
-      cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .rx-del:hover{ background:var(--c-danger-light); color:var(--c-danger); }
-    .rx-del svg{ width:14px; height:14px; }
-
-    /* ---- Consigne (note) ---- */
-    .rx-item.rx-note .rx-nom{ font-weight:500; }
-
-    /* ---- Séparateur de section ---- */
-    .rx-item.rx-section{
-      background:transparent;
-      border:none;
-      padding:4px 0 0 0;
-      align-items:center;
-    }
-    .rx-item.rx-section .rx-drag{ padding-top:0; }
-    .rx-item.rx-section .rx-fields{
-      flex-direction:row;
-      align-items:center;
-      gap:10px;
-    }
-    .rx-section-line{ flex:1; height:1px; background:var(--c-border-strong); }
-    .rx-section input.rx-input{
-      max-width:260px;
-      font-weight:700;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.4px;
-      color:var(--c-primary-dark);
-      background:transparent;
-      border:none;
-      border-bottom:1px dashed var(--c-border-strong);
-      border-radius:0;
-      padding:4px 2px;
-    }
-    .rx-section input.rx-input:focus{ background:transparent; border-bottom-color:var(--c-primary); }
-
-    /* ===== AUTOCOMPLETE ===== */
-    #autocomplete-box{
-      position:fixed;
-      background:#fff;
-      border:1px solid var(--c-border);
-      border-radius:10px;
-      box-shadow:var(--shadow);
-      width:320px;
-      max-width:calc(100vw - 32px);
-      max-height:260px;
-      overflow-y:auto;
-      z-index:99999;
-      display:none;
-      padding:6px 0;
-    }
-    .autocomplete-item{
-      padding:8px 14px;
-      font-size:13.5px;
-      cursor:pointer;
-    }
-    .autocomplete-item:hover, .autocomplete-item.active{ background:var(--c-primary-light); }
-
-    /* ===== BOUTONS D'ACTION BAS ===== */
-    .buttons-wrapper{
-      flex-shrink:0;
-      display:flex;
-      gap:10px;
-      padding:14px 16px;
-      border-top:1px solid var(--c-border);
-      background:#fafcff;
-    }
-    .buttons-wrapper .btn-id{ flex:1; justify-content:center; }
-    #validate-prescription-btn{
-      flex-shrink:0;
-      margin:14px 16px;
-      justify-content:center;
-    }
-
-    /* ===== HISTORIQUE ===== */
+    .zone-prescription,.historique-ordos{display:flex;flex-direction:column;min-height:0}
+    .zone-prescription{flex:1.65;min-width:0}
     .historique-ordos{
-      border:1px solid var(--c-border);
-      border-radius:var(--radius-lg);
-      background:var(--c-surface);
-      box-shadow:var(--shadow-sm);
-      overflow:hidden;
+      flex:1;min-width:280px;border:1px solid var(--c-border);border-radius:var(--radius-lg);
+      background:var(--c-surface);box-shadow:var(--shadow-sm);overflow:hidden;
     }
+
+    /* ===== BLOC GAUCHE : PRESCRIPTION ===== */
+    .editor-container{
+      flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+      border:1px solid var(--c-border);border-radius:var(--radius-lg);
+      background:var(--c-surface);box-shadow:var(--shadow-sm)
+    }
+    .rx-header{
+      flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;background:#fafcff;border-bottom:1px solid var(--c-border)
+    }
+    .rx-header label{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+    #rx-status{
+      font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;
+      background:var(--c-success-light);color:var(--c-success)
+    }
+
+    .exam-toolbar{
+      flex-shrink:0;padding:12px 16px;background:#fafcff;border-bottom:1px solid var(--c-border)
+    }
+    #searchExamen{
+      width:100%;padding:10px 11px;border:1px solid var(--c-border);border-radius:8px;
+      font-size:13.5px;background:#fbfdff;color:var(--c-text);transition:border-color .15s,background .15s
+    }
+    #searchExamen:focus{outline:none;border-color:var(--c-primary);background:#fff;box-shadow:0 0 0 3px var(--c-primary-light)}
+
+    #resultatsExamens{
+      max-height:210px;overflow-y:auto;margin-top:8px;border:1px solid var(--c-border);
+      border-radius:8px;background:#fff
+    }
+    .result-item{
+      padding:9px 11px;display:flex;align-items:center;gap:9px;cursor:pointer;
+      transition:background .15s;border-bottom:1px solid #f1f5f9;font-size:13px
+    }
+    .result-item:last-child{border-bottom:none}
+    .result-item:hover{background:var(--c-primary-light)}
+    .result-item span{font-size:15px}
+    .result-item strong{font-weight:600}
+    .result-item small{margin-left:auto;font-size:11px;color:var(--c-text-soft)}
+
+    .selected-header{
+      flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px 8px;font-size:13px;font-weight:600;color:var(--c-text)
+    }
+    .selected-header span{font-size:11.5px;font-weight:500;color:var(--c-text-faint)}
+    #examensSelectionnes{
+      flex:1;min-height:0;overflow-y:auto;padding:0 16px 14px
+    }
+    .empty-exams{
+      margin:20px auto;text-align:center;color:var(--c-text-faint);font-size:13px;
+      line-height:1.5;max-width:330px
+    }
+    #examensSelectionnes > div{
+      display:flex;align-items:center;gap:8px;padding:10px;margin-bottom:7px;
+      border:1px solid var(--c-border);border-radius:9px;background:#fff;
+      transition:border-color .15s,box-shadow .15s
+    }
+    #examensSelectionnes > div:hover{border-color:var(--c-border-strong)}
+    #examensSelectionnes strong{
+      flex:0 0 220px;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;
+      text-overflow:ellipsis;color:var(--c-text)
+    }
+    #examensSelectionnes input{
+      flex:1;min-width:0;padding:8px 10px;border:1px solid var(--c-border);
+      border-radius:8px;font-size:12.5px;background:#fbfdff
+    }
+    #examensSelectionnes input:focus{outline:none;border-color:var(--c-primary);background:#fff}
+    .delete-examen-btn{
+      flex-shrink:0!important;width:30px!important;height:30px!important;padding:0!important;
+      border:1px solid transparent!important;border-radius:7px!important;background:transparent!important;
+      color:var(--c-text-faint)!important;cursor:pointer!important;font-size:14px!important
+    }
+    .delete-examen-btn:hover{background:var(--c-danger-light)!important;color:var(--c-danger)!important}
+
+    .prescription-actions{
+      flex-shrink:0;display:flex;gap:10px;padding:14px 16px;
+      border-top:1px solid var(--c-border);background:#fafcff
+    }
+    .prescription-actions .btn-id{flex:1}
+    #btnValiderPrescription{width:100%}
+
+    #postValidationActions{
+      flex-shrink:0;display:none!important;gap:10px;align-items:center;justify-content:center;
+      padding:14px 16px;border-top:1px solid var(--c-border);background:#fafcff
+    }
+    #postValidationActions[style*="display: flex"]{display:flex!important}
+    #postValidationActions h3{margin:0;font-size:13.5px;color:var(--c-success)}
+    #postValidationActions .btn-id{flex:1}
+
+    /* ===== BLOC DROIT : HISTORIQUE ===== */
     .historique-ordos h3{
-      margin:0;
-      padding:14px 16px;
-      font-size:14px;
-      font-weight:600;
-      background:#fafcff;
-      border-bottom:1px solid var(--c-border);
-      flex-shrink:0;
+      margin:0;padding:14px 16px;font-size:14px;font-weight:600;
+      background:#fafcff;border-bottom:1px solid var(--c-border);flex-shrink:0
     }
     #historique-search{
-      flex-shrink:0;
-      margin:10px 14px 0;
-      padding:8px 11px;
-      border:1px solid var(--c-border);
-      border-radius:8px;
-      font-size:13px;
-      background:#fbfdff;
+      flex-shrink:0;margin:10px 14px 0;padding:8px 11px;border:1px solid var(--c-border);
+      border-radius:8px;font-size:13px;background:#fbfdff
     }
-    #historique-search:focus{ outline:none; border-color:var(--c-primary); background:#fff; }
+    #historique-search:focus{outline:none;border-color:var(--c-primary);background:#fff}
+    #listeOrdonnances{flex:1;overflow-y:auto;min-height:0;padding:10px 8px}
+    .ordo-row{padding:12px;border-radius:9px;cursor:pointer;background:var(--c-surface);transition:background .15s}
+    .ordo-row:hover{background:var(--c-primary-light)}
+    .ordo-date{font-weight:700;font-size:12.5px;color:var(--c-primary-dark);margin-bottom:4px}
+    .ordo-preview{font-size:12.5px;color:var(--c-text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .history-empty{text-align:center;padding:22px 12px;color:var(--c-text-faint);font-size:13px;line-height:1.5}
 
-    #listeOrdonnances{
-      flex:1;
-      overflow-y:auto;
-      min-height:0;
-      padding:10px 8px;
-    }
-    .ordo-row{
-      padding:12px 12px;
-      border-radius:9px;
-      cursor:pointer;
-      transition:background .15s ease;
-      background:var(--c-surface);
-    }
-    .ordo-row:hover{ background:var(--c-primary-light); }
-    .ordo-date{
-      font-weight:700;
-      font-size:12.5px;
-      color:var(--c-primary-dark);
-      margin-bottom:4px;
-    }
-    .ordo-preview{
-      font-size:12.5px;
-      color:var(--c-text-soft);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    /* ===== APERÇU / MODALE DE CONFIRMATION ===== */
-    .preview-ordo{
-      background:#fbfdff;
-      padding:18px 20px;
-      border-radius:10px;
-      border:1px solid var(--c-border);
-      text-align:left;
-      max-height:50vh;
-      overflow-y:auto;
-      font-size:13.5px;
-      line-height:1.6;
-    }
-    .preview-ordo .pv-section{
-      margin:14px 0 8px;
-      padding-top:10px;
-      border-top:1px dashed var(--c-border-strong);
-      font-size:11.5px;
-      font-weight:700;
-      letter-spacing:.4px;
-      text-transform:uppercase;
-      color:var(--c-primary-dark);
-    }
-    .preview-ordo .pv-section:first-child{ margin-top:0; padding-top:0; border-top:none; }
-    .preview-ordo .pv-item{ margin-bottom:10px; }
-    .preview-ordo .pv-item b{ color:var(--c-text); }
-    .preview-ordo .pv-sub{ color:var(--c-text-soft); font-size:12.5px; margin-top:2px; }
-
-    /* ===== MODALES ===== */
-    .modal{
-      position:fixed; inset:0;
-      background:rgba(15,23,42,0.45);
-      backdrop-filter:blur(4px);
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:9999;
-    }
-    .modal-content{
-      background:#fff;
-      border-radius:16px;
-      box-shadow:0 12px 40px rgba(15,23,42,0.25);
-      padding:26px 28px;
-      width:90%;
-      max-width:460px;
-      text-align:center;
-    }
-    #confirmPrescriptionModal .modal-content{ max-width:640px; max-height:90vh; overflow-y:auto; text-align:left; }
-    .modal-content h2{ margin:0 0 8px; color:var(--c-text); font-size:19px; }
-    .modal-content h3{ margin:0 0 4px; font-size:14.5px; }
-    .modal-content p{ color:var(--c-text-soft); font-size:14px; }
-    .modal-buttons{ display:flex; gap:10px; margin-top:18px; }
-    .modal-buttons .btn-id{ flex:1; justify-content:center; }
-    .confirm-banner{
-      background:var(--c-warning-light);
-      color:var(--c-warning);
-      padding:11px 14px;
-      border-radius:9px;
-      margin-bottom:16px;
-      font-weight:600;
-      font-size:13px;
-      text-align:center;
-    }
-
-    #emailSelectModal .email-options{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
-    #emailSelectModal label{
-      display:flex; align-items:center; gap:8px;
-      padding:8px 10px; border-radius:8px; cursor:pointer;
-      background:#fbfdff; border:1px solid var(--c-border);
-    }
-    #emailSelectModal label:hover{ background:var(--c-primary-light); }
-    #emailSelectModal input[type="checkbox"]{ accent-color:var(--c-primary); }
-    #emailSelectModal input[type="email"]{
-      width:100%; margin-top:8px; padding:9px 10px; border-radius:8px;
-      border:1px solid var(--c-border); font-size:13.5px;
-    }
-    #emailSelectModal input[type="email"]:focus{ outline:none; border-color:var(--c-primary); }
-
-    #loadingModal .loader-wrapper, #loadingScreen .spinner{ margin:0 auto 14px; }
-    .loader-wrapper{ position:relative; width:80px; height:80px; }
-    .loader-logo{ position:absolute; top:50%; left:50%; height:44px; transform:translate(-50%,-50%); z-index:2; }
-    .loader-ring{
-      position:absolute; top:50%; left:50%; width:74px; height:74px;
-      border:4px solid #eef2fb; border-top:4px solid var(--c-primary);
-      border-radius:50%; transform:translate(-50%,-50%);
-      animation:spin 1s linear infinite;
-    }
-    @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
-
-    #loadingScreen{
-      display:none; position:fixed; inset:0;
-      background:rgba(15,23,42,0.6);
-      justify-content:center; align-items:center;
-      z-index:9999; color:#fff; text-align:center;
-    }
-    .spinner{
-      border:5px solid rgba(255,255,255,0.3); border-top:5px solid #fff;
-      border-radius:50%; width:52px; height:52px;
-      animation:spin 1s linear infinite;
-    }
-
+    /* ===== MODALES / NOTIFICATIONS ===== */
     .modalna{
-      position:fixed; inset:0; display:none;
-      align-items:center; justify-content:center;
-      background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); z-index:9999;
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+      background:rgba(15,23,42,.45);backdrop-filter:blur(4px);z-index:9999
     }
     .modalna .card{
-      background:#fff; padding:24px 30px; border-radius:14px;
-      text-align:center; max-width:400px; box-shadow:var(--shadow);
+      background:#fff;padding:24px 30px;border-radius:14px;text-align:center;
+      max-width:400px;box-shadow:var(--shadow)
     }
-    .modalna h2{ color:var(--c-danger); margin-bottom:10px; }
-
-    /* ===== BULLES DE NOTIFICATION ===== */
-    #bubble-container{
-      position:fixed; top:20px; right:20px;
-      display:flex; flex-direction:column; gap:10px;
-      z-index:9999; align-items:flex-end;
+    .modalna h2{color:var(--c-danger);margin-bottom:10px}
+    #bubble-container,#notification-container{
+      position:fixed;top:20px;right:20px;z-index:99999
     }
     .bubble{
-      max-width:300px; padding:10px 15px; border-radius:9px; color:#fff;
-      font-family:'Inter',sans-serif; font-size:13.5px;
-      box-shadow:var(--shadow); animation:fadeout .5s ease-in-out 1.5s forwards;
+      max-width:300px;padding:10px 15px;border-radius:9px;color:#fff;font-size:13.5px;
+      box-shadow:var(--shadow)
     }
-    .administratif{ background:var(--c-primary); }
-    .alerte{ background:var(--c-danger); }
-    @keyframes fadeout{ to{ opacity:0; transform:translateX(-20px); } }
+    .administratif{background:var(--c-primary)}
+    .alerte{background:var(--c-danger)}
 
-    /* zone technique conservée pour l'enregistrement (non affichée) */
-    #prescription-text{ display:none; }
-  
+    #loadingScreen{
+      display:none;position:fixed;inset:0;z-index:9999;border:none;background:transparent
+    }
+    #prescription-text{display:none}
 
-/* ===== ADAPTATION PRESCRIPTION D'EXAMENS : APERÇU GAUCHE ===== */
-body{overflow-x:hidden;}
-.ordonnance-wrapper{
-  display:grid;
-  grid-template-columns:minmax(0, 1.45fr) minmax(340px, .85fr);
-  gap:20px;
-  align-items:stretch;
-  max-width:1400px;
-  margin:24px auto 0;
-  padding:0 22px 30px;
-}
-.zone-prescription, .historique-ordos{
-  min-width:0;
-}
-.editor-container, .historique-ordos{
-  background:var(--c-panel,#fff);
-  border:1px solid var(--c-border,#e5e7eb);
-  border-radius:var(--radius,14px);
-  box-shadow:var(--shadow,0 8px 24px rgba(15,23,42,.08));
-}
-.zone-prescription .editor-container{
-  padding:0;
-  overflow:hidden;
-}
-.rx-header{
-  border-bottom:1px solid var(--c-border,#e5e7eb);
-}
-.exam-preview-wrap{
-  padding:24px;
-  background:linear-gradient(180deg,#f8fafc 0,#f1f5f9 100%);
-  min-height:620px;
-}
-.exam-preview-paper{
-  width:min(100%,760px);
-  min-height:650px;
-  margin:0 auto;
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:10px;
-  box-shadow:0 10px 30px rgba(15,23,42,.09);
-  padding:44px 52px 52px;
-  color:#111827;
-  position:relative;
-}
-.exam-preview-paper::before{
-  content:"";
-  position:absolute;
-  top:0;left:0;right:0;height:4px;
-  background:linear-gradient(90deg,#2563eb,#60a5fa);
-  border-radius:10px 10px 0 0;
-}
-.exam-preview-title{
-  text-align:center;
-  font-size:24px;
-  font-weight:700;
-  margin:4px 0 8px;
-  color:#111827;
-}
-.exam-preview-subtitle{
-  text-align:center;
-  color:#64748b;
-  font-size:13px;
-  margin-bottom:30px;
-}
-.exam-preview-patient{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px 24px;
-  padding:14px 16px;
-  background:#f8fafc;
-  border:1px solid #e2e8f0;
-  border-radius:10px;
-  margin-bottom:28px;
-  font-size:13px;
-}
-.exam-preview-patient span{color:#64748b;}
-.exam-preview-patient strong{color:#111827;font-weight:600;}
-.exam-preview-heading{
-  font-size:14px;
-  font-weight:700;
-  color:#334155;
-  margin:0 0 14px;
-}
-.exam-preview-list{
-  min-height:220px;
-}
-.exam-preview-empty{
-  color:#94a3b8;
-  text-align:center;
-  padding:72px 20px;
-  border:1px dashed #cbd5e1;
-  border-radius:10px;
-  font-size:14px;
-}
-.preview-exam{
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-  padding:11px 0;
-  border-bottom:1px solid #eef2f7;
-  font-size:14px;
-}
-.preview-exam:last-child{border-bottom:none;}
-.preview-num{
-  width:25px;height:25px;border-radius:50%;
-  background:#eff6ff;color:#2563eb;
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;flex:0 0 auto;
-}
-.preview-exam-main{min-width:0;flex:1;}
-.preview-exam-name{font-weight:600;color:#0f172a;}
-.preview-exam-comment{margin-top:4px;color:#64748b;font-size:12.5px;}
-.exam-preview-footer{
-  margin-top:42px;
-  padding-top:16px;
-  border-top:1px solid #e2e8f0;
-  display:flex;
-  justify-content:space-between;
-  gap:18px;
-  font-size:12px;
-  color:#64748b;
-}
-.exam-controls{
-  display:flex;
-  flex-direction:column;
-  height:100%;
-}
-.exam-controls .panel-content{
-  padding:18px;
-  display:flex;
-  flex-direction:column;
-  min-height:620px;
-}
-.exam-search-wrap{margin-bottom:10px;}
-#searchExamen{
-  width:100%;
-  box-sizing:border-box;
-}
-#resultatsExamens{
-  max-height:260px;
-  overflow:auto;
-  margin-bottom:14px;
-  border:1px solid var(--c-border,#e5e7eb);
-  border-radius:10px;
-  background:#fff;
-}
-.result-item{
-  padding:11px 12px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  cursor:pointer;
-  transition:.15s;
-  border-bottom:1px solid #f1f5f9;
-}
-.result-item:last-child{border-bottom:none;}
-.result-item:hover{background:#f8fbff;}
-.result-item span{font-size:17px;}
-.result-item strong{font-size:13px;color:#0f172a;}
-.result-item small{margin-left:auto;color:#64748b;font-size:11px;}
-.selection-summary{
-  font-size:12px;
-  color:var(--c-text-muted,#64748b);
-  margin:0 0 10px;
-}
-#examensSelectionnes{
-  flex:1;
-  overflow:auto;
-  min-height:160px;
-  max-height:none;
-}
-#examensSelectionnes>div{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px;
-  margin-bottom:7px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  border-radius:10px;
-}
-#examensSelectionnes strong{
-  flex:0 0 130px;
-  min-width:130px;
-  max-width:130px;
-  font-size:12.5px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-#examensSelectionnes input{
-  flex:1;
-  min-width:0;
-  padding:7px 8px;
-  border-radius:8px;
-  border:1px solid #dbe2ea;
-  font-size:12px;
-  box-sizing:border-box;
-}
-#examensSelectionnes button{
-  flex:0 0 auto;
-  background:transparent;border:none;cursor:pointer;
-  font-size:14px;color:#e74c3c;
-}
-.exam-validation{
-  margin-top:14px;
-  padding-top:14px;
-  border-top:1px solid #e5e7eb;
-}
-.exam-validation #btnValiderPrescription{
-  width:100%;
-  justify-content:center;
-}
-#postValidationActions{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-  margin-top:12px;
-}
-#postValidationActions h3{margin:0;font-size:14px;}
-#postValidationActions .btn-id{width:100%;justify-content:center;box-sizing:border-box;}
-#prescription-text{display:none!important;}
-@media (max-width:1000px){
- .ordonnance-wrapper{grid-template-columns:1fr;}
- .exam-preview-paper{min-height:560px;padding:34px 28px 40px;}
- .exam-controls .panel-content{min-height:0;}
-}
-@media (max-width:620px){
- .ordonnance-wrapper{padding:0 12px 20px;}
- .exam-preview-wrap{padding:12px;}
- .exam-preview-paper{padding:28px 18px 30px;}
- .exam-preview-patient{grid-template-columns:1fr;}
- #examensSelectionnes strong{flex-basis:100px;min-width:100px;max-width:100px;}
-}
-</style>
-</link></head>
+    @media (max-width:900px){
+      html,body{overflow:auto}
+      .ordonnance-wrapper{flex-direction:column;overflow:visible}
+      .zone-prescription,.historique-ordos{flex:none;width:100%;min-height:420px}
+      .historique-ordos{min-width:0}
+      #examensSelectionnes strong{flex-basis:180px}
+    }
+    @media (max-width:620px){
+      #pro-header{padding:10px 14px}
+      #pro-header .meta-block{display:none}
+      .ordonnance-wrapper{padding:12px;gap:12px}
+      #examensSelectionnes > div{flex-wrap:wrap}
+      #examensSelectionnes strong{flex-basis:100%}
+      #examensSelectionnes input{flex-basis:calc(100% - 38px)}
+    }
+
+  </style>
+
+</head>
 <body>
-<img alt="Logo médical" crossorigin="anonymous" id="logo-img" src="logo.png" style="display:none"/>
-<header id="pro-header" style="display:none">
-<div class="brand">
-<div class="brand-icon">Rx</div>
-<div class="brand-text">
-<h1>Prescription d'examens</h1>
-<span>Prescription médicale</span>
-</div>
-</div>
-<div class="meta">
-<div class="meta-block">
-<div class="medecin-nom" id="header-medecin">—</div>
-<div class="medecin-sub" id="header-date">—</div>
-</div>
-<button class="icon-btn" id="new-prescription-btn" onclick="resetExamensUI()" title="Nouvelle prescription">
-<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
-<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>
-</svg>
-</button>
-</div>
+
+<img id="logo-img" src="logo.png" style="display:none" crossorigin="anonymous" alt="Logo médical">
+
+<header id="pro-header">
+  <div class="brand">
+    <div class="brand-icon">Rx</div>
+    <div class="brand-text">
+      <h1>Prescripteur d'examens</h1>
+      <span>Prescription médicale</span>
+    </div>
+  </div>
+  <div class="meta">
+    <div class="meta-block">
+      <div class="medecin-nom" id="header-medecin">Médecin</div>
+      <div class="medecin-sub" id="header-date">—</div>
+    </div>
+  </div>
 </header>
-<!-- Champs techniques conservés pour la logique existante -->
+
+<!-- Données patient conservées pour le dossier / Firestore -->
 <div class="form-group hidden-field">
-<div class="form-group"><label>Prénom</label><input id="patient-first-name" type="text"/></div>
-<div class="form-group"><label>Nom</label><input id="patient-last-name" type="text"/></div>
-<div class="form-group"><label>Date de naissance</label><input id="patient-birthdate" type="date"/></div>
-<div class="form-group"><label>Sexe</label>
-<select id="sexe"><option value="M">M</option><option value="Mme">Mme</option><option value="L'enfant">L'enfant</option></select>
+  <div class="form-group"><label>Prénom</label><input type="text" id="patient-first-name"></div>
+  <div class="form-group"><label>Nom</label><input type="text" id="patient-last-name"></div>
+  <div class="form-group"><label>Date de naissance</label><input type="date" id="patient-birthdate"></div>
+  <div class="form-group">
+    <label>Sexe</label>
+    <select id="sexe">
+      <option value="M">M</option>
+      <option value="Mme">Mme</option>
+      <option value="L'enfant">L'enfant</option>
+    </select>
+  </div>
 </div>
-</div>
+
 <div class="ordonnance-wrapper">
-<!-- ================= ZONE GAUCHE : APERÇU ================= -->
-<section class="zone-prescription">
-<div class="editor-container">
-<div class="rx-header">
-<label>
-<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16">
-<path d="M9 2h6l1 4H8l1-4Z"></path><path d="M7 6h10l1 14a2 2 0 0 1-2-2L7 6Z"></path>
-</svg>
-          Aperçu
+
+  <!-- BLOC GAUCHE : prescription -->
+  <section class="zone-prescription">
+    <div class="editor-container">
+
+      <div class="rx-header">
+        <label>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2h6l1 4H8l1-4Z"/><path d="M7 6h10l1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L7 6Z"/>
+          </svg>
+          Prescription d'examens
         </label>
-<span id="rx-status">Brouillon</span>
-</div>
-<div class="exam-preview-wrap">
-<div class="exam-preview-paper">
-<div class="exam-preview-title">Prescription d'examens</div>
-<div class="exam-preview-subtitle">Document médical</div>
-<div class="exam-preview-patient">
-<div><span>Patient</span><br/><strong id="preview-patient-name">—</strong></div>
-<div><span>Date de naissance</span><br/><strong id="preview-patient-birth">—</strong></div>
-<div><span>Sexe</span><br/><strong id="preview-patient-sex">—</strong></div>
-<div><span>Médecin</span><br/><strong id="preview-medecin">—</strong></div>
-</div>
-<div class="exam-preview-heading">Faire réaliser :</div>
-<div class="exam-preview-list" id="exam-preview-list">
-<div class="exam-preview-empty">Aucun examen sélectionné pour le moment.</div>
-</div>
-<div class="exam-preview-footer">
-<span id="preview-lieu">—</span>
-<span id="preview-date">—</span>
-</div>
-</div>
-</div>
-<!-- Zone technique conservée exactement pour l'enregistrement / génération -->
-<div contenteditable="true" id="prescription-text" lang="fr" spellcheck="true"></div>
-</div>
-</section>
-<!-- ================= ZONE DROITE : SÉLECTION ================= -->
-<aside class="historique-ordos exam-controls">
-<div class="rx-header">
-<label>
-<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16">
-<path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3 6h.01M3 12h.01M3 18h.01"></path>
-</svg>
-        Examens
-      </label>
-<span id="selection-count">0</span>
-</div>
-<div class="panel-content">
-<div class="selection-summary">Recherchez un examen puis cliquez dessus pour l'ajouter à la prescription.</div>
-<div class="exam-search-wrap">
-<input id="searchExamen" placeholder="🔍 Rechercher un examen..." type="text">
-</input></div>
-<div id="resultatsExamens"></div>
-<div class="selection-summary">Examens sélectionnés — ajoutez un commentaire ou supprimez un examen.</div>
-<div id="examensSelectionnes"></div>
-<div class="exam-validation">
-<button class="btn-id btn-id-v" id="btnValiderPrescription" onclick="validerPrescription()" type="button">
-<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
-<path d="m5 12 4 4L19 6"></path>
-</svg>
-          Valider &amp; enregistrer la prescription
+        <span id="rx-status">Brouillon</span>
+      </div>
+
+      <div class="exam-toolbar">
+        <input type="text" id="searchExamen" placeholder="🔍 Rechercher un examen..." autocomplete="off">
+        <div id="resultatsExamens"></div>
+      </div>
+
+      <div class="selected-header">
+        <span>Examens sélectionnés</span>
+        <span id="selected-count">0 examen</span>
+      </div>
+
+      <div id="examensSelectionnes">
+        <div class="empty-exams">Aucun examen sélectionné pour l'instant.<br>Recherchez un examen ci-dessus pour commencer.</div>
+      </div>
+
+      <div class="prescription-actions">
+        <button id="btnValiderPrescription" type="button" class="btn-id btn-id-v" onclick="validerPrescription()">
+          <span>✓</span> Valider & enregistrer la prescription
         </button>
-<div id="postValidationActions">
-<h3>✓ Prescription validée</h3>
-<button class="btn-id" onclick="imprimer()" type="button">
-<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
-<path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path>
-</svg>
-            Imprimer la prescription
-          </button>
-<button class="btn-id" onclick="genererPrescription('True')" type="button">
-<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
-<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>
-</svg>
-            Télécharger la prescription
-          </button>
+      </div>
+
+      <div id="postValidationActions">
+        <h3>✓ Prescription validée</h3>
+        <button class="btn-id" onclick="imprimer()">🖨️ Ouvrir la prescription</button>
+      </div>
+
+      <div id="prescription-text" contenteditable="true" spellcheck="true" lang="fr"></div>
+    </div>
+  </section>
+
+  <!-- BLOC DROIT : historique -->
+  <aside class="historique-ordos">
+    <h3>Historique des prescriptions</h3>
+    <input type="text" id="historique-search" placeholder="Rechercher dans l'historique..." autocomplete="off">
+    <div id="listeOrdonnances">
+      <div class="history-empty">Chargement de l'historique…</div>
+    </div>
+  </aside>
+
 </div>
-</div>
-</div>
-</aside>
-</div>
+
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
+
+
+
 <div id="bubble-container"></div>
-<div class="modalna" id="modal-no-access">
-<div class="card">
-<h2>⛔️ Accès refusé</h2>
-<p>Vous n’avez pas accès à cette page.</p>
-<p>Veuillez contacter un administrateur pour plus d'informations.</p>
+ <div id="modal-no-access" class="modalna">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
+        <p>veuillez contacter un administrateur pour plus d'informations.</p>
+
+  </div>
 </div>
-</div>
-<div class="modalna" id="modal-error">
-<div class="card">
-<h2>😞 Oups, une erreur est survenue</h2>
-<p>Veuillez réessayer un peu plus tard</p>
-<p>Si le problème persiste, contactez un administrateur</p>
-</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un administrateur</p>
+
+  </div>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1033,6 +443,17 @@ onAuthStateChanged(auth, async (user) => {
         window.medecinSpecialite = medecinSpecialite;
         window.medecinLieu = medecinLieu;
 
+        const headerMedecin = document.getElementById("header-medecin");
+        const headerDate = document.getElementById("header-date");
+        if (headerMedecin) {
+          headerMedecin.textContent = medecinNom
+            ? `Dr ${medecinNom}${medecinSpecialite ? " — " + medecinSpecialite : ""}`
+            : "Médecin non renseigné";
+        }
+        if (headerDate) {
+          headerDate.textContent = new Date().toLocaleDateString("fr-FR");
+        }
+
         // Mise à jour des éléments HTML si présents
         const nomElem = document.getElementById("nom-medecin");
         if (nomElem) nomElem.textContent = medecinNom;
@@ -1061,6 +482,7 @@ const modal = document.getElementById("modal-no-access");
         alert("Utilisateur non trouvé, veuillez vous reconnecter.");
         return;
       }
+      await chargerAnciennesPrescriptionsExamens();
       masquerLoader();
     } catch (error) {
       const modal = document.getElementById("modal-error");
@@ -1283,19 +705,27 @@ function normaliser(texte) {
 }
 function afficherExamensSelectionnes() {
   const container = document.getElementById("examensSelectionnes");
+  const count = document.getElementById("selected-count");
   container.innerHTML = "";
+
+  if (count) {
+    count.textContent = `${examensSelectionnes.length} examen${examensSelectionnes.length > 1 ? "s" : ""}`;
+  }
+
+  if (!examensSelectionnes.length) {
+    container.innerHTML = `<div class="empty-exams">Aucun examen sélectionné pour l'instant.<br>Recherchez un examen ci-dessus pour commencer.</div>`;
+    return;
+  }
 
   examensSelectionnes.forEach((ex, index) => {
     const div = document.createElement("div");
-
     div.innerHTML = `
-      <strong>${ex.type}</strong>
-      <input type="text" placeholder="Commentaire..." 
-        value="${ex.commentaire}" 
+      <strong title="${escapeHtml(ex.type)}">${escapeHtml(ex.type)}</strong>
+      <input type="text" placeholder="Commentaire..." value="${escapeAttr(ex.commentaire)}"
         onchange="modifierCommentaire(${index}, this.value)" />
-      <button class="delete-examen-btn" onclick="supprimerExamen(${index})">❌</button>
+      <button type="button" class="delete-examen-btn" aria-label="Supprimer" title="Supprimer"
+        onclick="supprimerExamen(${index})">✕</button>
     `;
-
     container.appendChild(div);
   });
 }
@@ -1380,6 +810,111 @@ window.addEventListener("message",(event)=>{
 
 
 
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function escapeAttr(value) { return escapeHtml(value); }
+
+let ultimesPrescriptionsExamens = [];
+
+function parseDatePrescriptionFR(value) {
+  if (!value) return 0;
+  const m = String(value).match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return 0;
+  return new Date(
+    Number(m[3]), Number(m[2])-1, Number(m[1]),
+    Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0)
+  ).getTime();
+}
+
+async function chargerAnciennesPrescriptionsExamens() {
+  const container = document.getElementById("listeOrdonnances");
+  const idPatient = window.patientId;
+  if (!container || !idPatient) {
+    if (container) container.innerHTML = `<div class="history-empty">Aucun patient associé.</div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="history-empty">Chargement…</div>`;
+
+  try {
+    const q = query(collection(db, "documents"), where("patientId", "==", idPatient));
+    const snapshot = await getDocs(q);
+    const prescriptions = [];
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.type !== "Prescription d'examens") return;
+      prescriptions.push({ id: docSnap.id, ...data });
+    });
+
+    prescriptions.sort((a,b) => parseDatePrescriptionFR(b.dateCreation) - parseDatePrescriptionFR(a.dateCreation));
+    ultimesPrescriptionsExamens = prescriptions;
+    renderHistoriquePrescriptionsExamens(prescriptions);
+  } catch (err) {
+    console.error("Erreur chargement historique :", err);
+    container.innerHTML = `<div class="history-empty" style="color:var(--c-danger)">Erreur de chargement de l'historique.</div>`;
+  }
+}
+
+function renderHistoriquePrescriptionsExamens(prescriptions) {
+  const container = document.getElementById("listeOrdonnances");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (!prescriptions.length) {
+    container.innerHTML = `<div class="history-empty">Aucune prescription d'examens enregistrée.</div>`;
+    return;
+  }
+
+  prescriptions.forEach(data => {
+    const row = document.createElement("div");
+    row.className = "ordo-row";
+
+    let contenu = data.contenu || "";
+    if (Array.isArray(contenu)) {
+      contenu = contenu.map(x => x?.value || "").join(" ");
+    }
+    contenu = String(contenu).replace(/\n/g, " ").trim();
+
+    row.innerHTML = `
+      <div class="ordo-date">${escapeHtml(data.dateCreation || "")}</div>
+      <div class="ordo-preview">${escapeHtml(contenu.substring(0, 110))}${contenu.length > 110 ? "…" : ""}</div>
+    `;
+    row.title = "Double-cliquez pour ouvrir la prescription";
+
+    row.addEventListener("dblclick", () => {
+      window.parent.postMessage({
+        type: "OPEN_TAB",
+        title: "Prescription d'examens",
+        url: `viewer.html?docId=${encodeURIComponent(data.id)}`
+      }, "*");
+    });
+
+    container.appendChild(row);
+  });
+}
+
+document.getElementById("historique-search")?.addEventListener("input", function () {
+  const term = this.value.toLowerCase().trim();
+  if (!term) {
+    renderHistoriquePrescriptionsExamens(ultimesPrescriptionsExamens);
+    return;
+  }
+  const filtered = ultimesPrescriptionsExamens.filter(o =>
+    String(o.contenu || "").toLowerCase().includes(term) ||
+    String(o.dateCreation || "").toLowerCase().includes(term)
+  );
+  renderHistoriquePrescriptionsExamens(filtered);
+});
+
+
 function formatDate(date) {
   const pad = (n) => n.toString().padStart(2, '0');
   const jour = pad(date.getDate());
@@ -1400,6 +935,7 @@ const btn = document.getElementById("btnValiderPrescription");
  const prescriptionText = construirePrescriptionText();
 
   if (!prescriptionText) {
+    btn.disabled = false;
     afficherBulle("⛔ Aucun examen sélectionné !", "alerte");
     return;
   }
@@ -1438,6 +974,10 @@ localStorage.setItem("pdfIdExistante", idUnique);
  document.getElementById("btnValiderPrescription").style.display = "none";
   document.getElementById("postValidationActions").style.display = "flex";
 
+      document.getElementById("rx-status").textContent = "Validée";
+      document.getElementById("rx-status").style.background = "var(--c-success-light)";
+      document.getElementById("rx-status").style.color = "var(--c-success)";
+      await chargerAnciennesPrescriptionsExamens();
       console.log("✅ Prescription enregistrée avec ID unique :", idUnique);
       afficherBulle("✅ Prescription enregistrée !", "success");
 
@@ -1581,81 +1121,7 @@ window.genererPrescription=genererPrescription;
 
 
 </script>
-<script>
-(function(){
-  function formatDateFr(v){
-    if(!v) return "—";
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? v : d.toLocaleDateString("fr-FR");
-  }
-  window.actualiserApercuExamens = function(){
-    const list = document.getElementById("exam-preview-list");
-    const count = document.getElementById("selection-count");
-    if(!list) return;
-    const items = Array.isArray(window.examensSelectionnes) ? window.examensSelectionnes : [];
-    if(count) count.textContent = String(items.length);
-    if(items.length === 0){
-      list.innerHTML = '<div class="exam-preview-empty">Aucun examen sélectionné pour le moment.</div>';
-    } else {
-      list.innerHTML = items.map((ex,i) => `
-        <div class="preview-exam">
-          <div class="preview-num">${i+1}</div>
-          <div class="preview-exam-main">
-            <div class="preview-exam-name">${escapePreview(ex.type || "")}</div>
-            ${ex.commentaire ? `<div class="preview-exam-comment">${escapePreview(ex.commentaire)}</div>` : ""}
-          </div>
-        </div>
-      `).join("");
-    }
-    const fn = document.getElementById("patient-first-name")?.value?.trim() || "";
-    const ln = document.getElementById("patient-last-name")?.value?.trim() || "";
-    const bd = document.getElementById("patient-birthdate")?.value || "";
-    const sx = document.getElementById("sexe")?.value || "—";
-    document.getElementById("preview-patient-name").textContent = (fn+" "+ln).trim() || "—";
-    document.getElementById("preview-patient-birth").textContent = bd ? formatDateFr(bd) : "—";
-    document.getElementById("preview-patient-sex").textContent = sx;
-    document.getElementById("preview-medecin").textContent = window.medecinNom || "Dr Non renseigné";
-    document.getElementById("preview-lieu").textContent = window.medecinLieu || "—";
-    document.getElementById("preview-date").textContent = new Date().toLocaleDateString("fr-FR");
-  };
-  function escapePreview(s){
-    return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-  }
-  function wrap(){
-    if(typeof window.afficherExamensSelectionnes === "function" && !window.__previewWrapped){
-      const original = window.afficherExamensSelectionnes;
-      window.afficherExamensSelectionnes = function(){
-        const r = original.apply(this, arguments);
-        window.actualiserApercuExamens();
-        return r;
-      };
-      window.__previewWrapped = true;
-    }
-    window.actualiserApercuExamens();
-  }
-  document.addEventListener("input", window.actualiserApercuExamens);
-  document.addEventListener("DOMContentLoaded", wrap);
-  setTimeout(wrap, 300);
-  setInterval(function(){
-    if(!window.__previewWrapped && typeof window.afficherExamensSelectionnes === "function") wrap();
-    window.actualiserApercuExamens();
-  }, 800);
 
-  window.resetExamensUI = function(){
-    const inputs = ["searchExamen"];
-    inputs.forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
-    if(Array.isArray(window.examensSelectionnes)) window.examensSelectionnes.length = 0;
-    if(typeof window.afficherExamensSelectionnes === "function") window.afficherExamensSelectionnes();
-    const btn=document.getElementById("btnValiderPrescription");
-    if(btn){ btn.disabled=false; btn.style.display=""; }
-    const post=document.getElementById("postValidationActions");
-    if(post) post.style.display="none";
-    const status=document.getElementById("rx-status");
-    if(status){ status.textContent="Brouillon"; status.classList.remove("locked"); }
-    window.pdfIdExistante=null;
-    window.actualiserApercuExamens();
-  };
-})();
-</script>
+
 </body>
 </html>

@@ -32,7 +32,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.firebaseIdPhoto = { db, doc, setDoc, serverTimestamp };
+    window.firebaseIdPhoto = { db, doc, getDoc, setDoc, serverTimestamp };
     window.dispatchEvent(new Event("firebase-ready"));
   </script>
 
@@ -315,7 +315,7 @@
     <section class="card">
       <div class="id-badge">
         <span>●</span>
-        <span>Identifiant : <strong id="urlId">—</strong></span>
+        <span>Scan n°<strong id="urlId">—</strong></span>
       </div>
 
       <div class="type-title">Type de document</div>
@@ -357,8 +357,7 @@
       <div class="status" id="status"></div>
 
       <div class="privacy">
-        Les informations détectées sont enregistrées directement dans
-        Firestore. Elles ne sont pas affichées à l'écran.
+        Les informations détectées sont enregistrées de manière sécurisée pour être transmises.
       </div>
     </section>
   </main>
@@ -461,7 +460,7 @@
       const rawText = result.data.text || "";
 
       // Le document temporaire indique le mode et, en vérification, le type de pièce.
-      const { db, doc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
+      const { db, doc, getDoc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
       const sessionSnap = await getDoc(doc(db, "id-photo", recordId));
       if (!sessionSnap.exists()) {
         throw new Error("Session de lecture introuvable ou expirée.");
@@ -516,7 +515,7 @@
   }
 
   async function saveToFirestore(fields, docType, rawText, effectiveMode, requestedType) {
-    const { db, doc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
+    const { db, doc, getDoc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
 
     const data = {};
     Object.keys(fields).forEach(function (key) {

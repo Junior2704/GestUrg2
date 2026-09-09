@@ -1,23 +1,21 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="ordToPdf.js"></script>
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🧪 Prescripteur d'Examens</title>
-      <link rel="icon" type="image/jpeg" href="logog2.png">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Prescription d'examens</title>
+<link href="logog2.png" rel="icon" type="image/jpeg"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&amp;display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <!-- EmailJS (fallback d'envoi d'e-mails multi-comptes) -->
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
-  <style>
-
+<style>
     :root{
       --c-bg:#f2f6fb;
       --c-surface:#ffffff;
@@ -595,494 +593,374 @@
     /* zone technique conservée pour l'enregistrement (non affichée) */
     #prescription-text{ display:none; }
   
-/* =========================================================
-   ADAPTATION PRESCRIPTION D'EXAMENS
-   Style basé sur Ordonnancierf, logique JS inchangée.
-   ========================================================= */
 
-body {
-  overflow-y: auto;
+/* ===== ADAPTATION PRESCRIPTION D'EXAMENS : APERÇU GAUCHE ===== */
+body{overflow-x:hidden;}
+.ordonnance-wrapper{
+  display:grid;
+  grid-template-columns:minmax(0, 1.45fr) minmax(340px, .85fr);
+  gap:20px;
+  align-items:stretch;
+  max-width:1400px;
+  margin:24px auto 0;
+  padding:0 22px 30px;
 }
-
-/* Les champs patient restent techniques et invisibles comme avant */
-.hidden-field {
-  display: none !important;
+.zone-prescription, .historique-ordos{
+  min-width:0;
 }
-
-/* Organisation en 2 zones */
-.ordonnance-wrapper {
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
-  align-items: stretch;
+.editor-container, .historique-ordos{
+  background:var(--c-panel,#fff);
+  border:1px solid var(--c-border,#e5e7eb);
+  border-radius:var(--radius,14px);
+  box-shadow:var(--shadow,0 8px 24px rgba(15,23,42,.08));
 }
-
-.zone-prescription {
-  min-width: 0;
+.zone-prescription .editor-container{
+  padding:0;
+  overflow:hidden;
 }
-
-/* Panneau gauche */
-.examens-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.rx-header{
+  border-bottom:1px solid var(--c-border,#e5e7eb);
 }
-
-.examens-intro {
-  color: var(--c-text);
-  font-size: 13px;
-  line-height: 1.55;
-  margin-bottom: 2px;
+.exam-preview-wrap{
+  padding:24px;
+  background:linear-gradient(180deg,#f8fafc 0,#f1f5f9 100%);
+  min-height:620px;
 }
-
-.exam-search-wrap {
-  position: relative;
+.exam-preview-paper{
+  width:min(100%,760px);
+  min-height:650px;
+  margin:0 auto;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  box-shadow:0 10px 30px rgba(15,23,42,.09);
+  padding:44px 52px 52px;
+  color:#111827;
+  position:relative;
 }
-
-#searchExamen {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font-family: inherit;
-  font-size: 13px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s, background .2s;
+.exam-preview-paper::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,#2563eb,#60a5fa);
+  border-radius:10px 10px 0 0;
 }
-
-#searchExamen::placeholder {
-  color: #9aa3b2;
+.exam-preview-title{
+  text-align:center;
+  font-size:24px;
+  font-weight:700;
+  margin:4px 0 8px;
+  color:#111827;
 }
-
-#searchExamen:focus {
-  border-color: var(--c-primary);
-  box-shadow: 0 0 0 3px var(--c-primary-soft);
+.exam-preview-subtitle{
+  text-align:center;
+  color:#64748b;
+  font-size:13px;
+  margin-bottom:30px;
 }
-
-/* Résultats de recherche */
-#resultatsExamens {
-  min-height: 170px;
-  max-height: 360px;
-  overflow-y: auto;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  box-shadow: var(--shadow-sm);
+.exam-preview-patient{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px 24px;
+  padding:14px 16px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  margin-bottom:28px;
+  font-size:13px;
 }
-
-#resultatsExamens:empty {
-  min-height: 0;
-  max-height: 0;
-  border: 0;
-  box-shadow: none;
+.exam-preview-patient span{color:#64748b;}
+.exam-preview-patient strong{color:#111827;font-weight:600;}
+.exam-preview-heading{
+  font-size:14px;
+  font-weight:700;
+  color:#334155;
+  margin:0 0 14px;
 }
-
-.result-item {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
-  border-bottom: 1px solid var(--c-border);
-  color: var(--c-text);
-  cursor: pointer;
-  transition: background .15s, transform .15s;
+.exam-preview-list{
+  min-height:220px;
 }
-
-.result-item:last-child {
-  border-bottom: 0;
+.exam-preview-empty{
+  color:#94a3b8;
+  text-align:center;
+  padding:72px 20px;
+  border:1px dashed #cbd5e1;
+  border-radius:10px;
+  font-size:14px;
 }
-
-.result-item:hover {
-  background: var(--c-primary-soft);
+.preview-exam{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:11px 0;
+  border-bottom:1px solid #eef2f7;
+  font-size:14px;
 }
-
-.result-item span {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--c-primary-soft);
-  flex: 0 0 28px;
+.preview-exam:last-child{border-bottom:none;}
+.preview-num{
+  width:25px;height:25px;border-radius:50%;
+  background:#eff6ff;color:#2563eb;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex:0 0 auto;
 }
-
-.result-item strong {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
+.preview-exam-main{min-width:0;flex:1;}
+.preview-exam-name{font-weight:600;color:#0f172a;}
+.preview-exam-comment{margin-top:4px;color:#64748b;font-size:12.5px;}
+.exam-preview-footer{
+  margin-top:42px;
+  padding-top:16px;
+  border-top:1px solid #e2e8f0;
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  font-size:12px;
+  color:#64748b;
 }
-
-.result-item small {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--c-muted);
-  white-space: nowrap;
+.exam-controls{
+  display:flex;
+  flex-direction:column;
+  height:100%;
 }
-
-/* Panneau droit */
-.historique-ordos {
-  min-width: 0;
+.exam-controls .panel-content{
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  min-height:620px;
 }
-
-.historique-ordos .panel-title {
-  margin-bottom: 4px;
+.exam-search-wrap{margin-bottom:10px;}
+#searchExamen{
+  width:100%;
+  box-sizing:border-box;
 }
-
-.selection-summary {
-  font-size: 12px;
-  color: var(--c-muted);
-  margin: 0 0 10px;
+#resultatsExamens{
+  max-height:260px;
+  overflow:auto;
+  margin-bottom:14px;
+  border:1px solid var(--c-border,#e5e7eb);
+  border-radius:10px;
+  background:#fff;
 }
-
-/* On réutilise le vocabulaire visuel du modèle pour la liste */
-#examensSelectionnes {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  min-height: 120px;
-  max-height: 410px;
-  overflow-y: auto;
-  padding-right: 2px;
+.result-item{
+  padding:11px 12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  transition:.15s;
+  border-bottom:1px solid #f1f5f9;
 }
-
-#examensSelectionnes:empty::before {
-  content: "Aucun examen sélectionné.";
-  display: block;
-  padding: 22px 14px;
-  border: 1px dashed var(--c-border);
-  border-radius: var(--radius-md);
-  color: var(--c-muted);
-  background: var(--c-surface-2);
-  text-align: center;
-  font-size: 12px;
+.result-item:last-child{border-bottom:none;}
+.result-item:hover{background:#f8fbff;}
+.result-item span{font-size:17px;}
+.result-item strong{font-size:13px;color:#0f172a;}
+.result-item small{margin-left:auto;color:#64748b;font-size:11px;}
+.selection-summary{
+  font-size:12px;
+  color:var(--c-text-muted,#64748b);
+  margin:0 0 10px;
 }
-
-#examensSelectionnes > div {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1.15fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  box-shadow: var(--shadow-sm);
+#examensSelectionnes{
+  flex:1;
+  overflow:auto;
+  min-height:160px;
+  max-height:none;
 }
-
-#examensSelectionnes strong {
-  min-width: 0;
-  max-width: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--c-text);
+#examensSelectionnes>div{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px;
+  margin-bottom:7px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:10px;
 }
-
-#examensSelectionnes input {
-  min-width: 0;
-  width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 9px;
-  border: 1px solid var(--c-border);
-  background: var(--c-surface-2);
-  color: var(--c-text);
-  font-family: inherit;
-  font-size: 11px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
+#examensSelectionnes strong{
+  flex:0 0 130px;
+  min-width:130px;
+  max-width:130px;
+  font-size:12.5px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-
-#examensSelectionnes input:focus {
-  border-color: var(--c-primary);
-  box-shadow: 0 0 0 3px var(--c-primary-soft);
-  background: var(--c-surface);
+#examensSelectionnes input{
+  flex:1;
+  min-width:0;
+  padding:7px 8px;
+  border-radius:8px;
+  border:1px solid #dbe2ea;
+  font-size:12px;
+  box-sizing:border-box;
 }
-
-#examensSelectionnes button {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid rgba(220, 38, 38, .18);
-  background: rgba(220, 38, 38, .05);
-  color: #dc2626;
-  font-size: 13px;
-  cursor: pointer;
-  transition: transform .15s, background .15s;
+#examensSelectionnes button{
+  flex:0 0 auto;
+  background:transparent;border:none;cursor:pointer;
+  font-size:14px;color:#e74c3c;
 }
-
-#examensSelectionnes button:hover {
-  transform: scale(1.04);
-  background: rgba(220, 38, 38, .10);
+.exam-validation{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #e5e7eb;
 }
-
-/* Le titre "Examens sélectionnés" devient un header cohérent avec Ordonnancier */
-.examens-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 8px;
+.exam-validation #btnValiderPrescription{
+  width:100%;
+  justify-content:center;
 }
-
-.examens-title h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--c-text);
+#postValidationActions{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
 }
-
-.examens-title span {
-  font-size: 11px;
-  color: var(--c-muted);
+#postValidationActions h3{margin:0;font-size:14px;}
+#postValidationActions .btn-id{width:100%;justify-content:center;box-sizing:border-box;}
+#prescription-text{display:none!important;}
+@media (max-width:1000px){
+ .ordonnance-wrapper{grid-template-columns:1fr;}
+ .exam-preview-paper{min-height:560px;padding:34px 28px 40px;}
+ .exam-controls .panel-content{min-height:0;}
 }
-
-/* Zone des actions */
-.exam-validation {
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-#btnValiderPrescription {
-  width: 100%;
-  justify-content: center;
-}
-
-#postValidationActions {
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 16px !important;
-}
-
-#postValidationActions h3 {
-  width: 100%;
-  margin: 0 0 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c-success);
-}
-
-#postValidationActions .btn-id {
-  justify-content: center;
-}
-
-/* Le champ technique reste fonctionnel mais invisible */
-#prescription-text {
-  display: none !important;
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-  .ordonnance-wrapper {
-    grid-template-columns: 1fr;
-  }
-
-  .historique-ordos {
-    min-height: auto;
-  }
-
-  #examensSelectionnes {
-    max-height: 360px;
-  }
-}
-
-@media (max-width: 620px) {
-  #examensSelectionnes > div {
-    grid-template-columns: 1fr auto;
-  }
-
-  #examensSelectionnes input {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  #examensSelectionnes button {
-    grid-column: 2;
-    grid-row: 1;
-  }
+@media (max-width:620px){
+ .ordonnance-wrapper{padding:0 12px 20px;}
+ .exam-preview-wrap{padding:12px;}
+ .exam-preview-paper{padding:28px 18px 30px;}
+ .exam-preview-patient{grid-template-columns:1fr;}
+ #examensSelectionnes strong{flex-basis:100px;min-width:100px;max-width:100px;}
 }
 </style>
-</head>
+</link></head>
 <body>
-
-<!-- ===== EN-TÊTE PRO : même style qu'Ordonnancierf ===== -->
+<img alt="Logo médical" crossorigin="anonymous" id="logo-img" src="logo.png" style="display:none"/>
 <header id="pro-header" style="display:none">
-  <div class="brand">
-    <div class="brand-icon">Rx</div>
-    <div class="brand-text">
-      <h1>Prescription d'examens</h1>
-      <span>Prescription médicale</span>
-    </div>
-  </div>
-
-  <div class="meta">
-    <div class="meta-block">
-      <div class="medecin-nom" id="nom-medecin">—</div>
-      <div class="medecin-sub" id="specialite">Prescription d'examens</div>
-    </div>
-  </div>
+<div class="brand">
+<div class="brand-icon">Rx</div>
+<div class="brand-text">
+<h1>Prescription d'examens</h1>
+<span>Prescription médicale</span>
+</div>
+</div>
+<div class="meta">
+<div class="meta-block">
+<div class="medecin-nom" id="header-medecin">—</div>
+<div class="medecin-sub" id="header-date">—</div>
+</div>
+<button class="icon-btn" id="new-prescription-btn" onclick="resetExamensUI()" title="Nouvelle prescription">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>
+</svg>
+</button>
+</div>
 </header>
-
-<!-- Champs patient conservés exactement pour la logique existante -->
+<!-- Champs techniques conservés pour la logique existante -->
 <div class="form-group hidden-field">
-  <div class="form-group">
-    <label>Prénom</label>
-    <input type="text" id="patient-first-name">
-  </div>
-  <div class="form-group">
-    <label>Nom</label>
-    <input type="text" id="patient-last-name">
-  </div>
-  <div class="form-group">
-    <label>Date de naissance</label>
-    <input type="date" id="patient-birthdate">
-  </div>
-  <div class="form-group">
-    <label>Sexe</label>
-    <select id="sexe">
-      <option value="M">M</option>
-      <option value="Mme">Mme</option>
-      <option value="L'enfant">L'enfant</option>
-    </select>
-  </div>
+<div class="form-group"><label>Prénom</label><input id="patient-first-name" type="text"/></div>
+<div class="form-group"><label>Nom</label><input id="patient-last-name" type="text"/></div>
+<div class="form-group"><label>Date de naissance</label><input id="patient-birthdate" type="date"/></div>
+<div class="form-group"><label>Sexe</label>
+<select id="sexe"><option value="M">M</option><option value="Mme">Mme</option><option value="L'enfant">L'enfant</option></select>
 </div>
-
-<!-- ===== STRUCTURE 2 ZONES ===== -->
+</div>
 <div class="ordonnance-wrapper">
-
-  <!-- ZONE 1 : recherche / sélection -->
-  <section class="zone-prescription">
-    <div class="editor-container">
-
-      <div class="rx-header">
-        <label>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 2h6l1 4H8l1-4Z"/>
-            <path d="M7 6h10l1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L7 6Z"/>
-          </svg>
-          Prescription d'examens
+<!-- ================= ZONE GAUCHE : APERÇU ================= -->
+<section class="zone-prescription">
+<div class="editor-container">
+<div class="rx-header">
+<label>
+<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16">
+<path d="M9 2h6l1 4H8l1-4Z"></path><path d="M7 6h10l1 14a2 2 0 0 1-2-2L7 6Z"></path>
+</svg>
+          Aperçu
         </label>
-        <span id="rx-status">Brouillon</span>
-      </div>
-
-      <div class="examens-editor">
-        <div class="examens-intro">
-          Recherchez un examen puis cliquez dessus pour l’ajouter à la prescription.
-        </div>
-
-        <div class="exam-search-wrap">
-          <input type="text"
-                 id="searchExamen"
-                 placeholder="🔍 Rechercher un examen..." />
-        </div>
-
-        <div id="resultatsExamens"></div>
-
-        <div class="exam-validation">
-          <button id="btnValiderPrescription"
-                  type="button"
-                  class="btn-id btn-id-v"
-                  onclick="validerPrescription()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m5 12 4 4L19 6"/>
-            </svg>
-            Valider & enregistrer la prescription
-          </button>
-
-          <div id="postValidationActions" style="display:none;">
-            <h3>✓ Prescription validée</h3>
-
-            <button type="button" class="btn-id" onclick="imprimer()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 9V2h12v7"/>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                <path d="M6 14h12v8H6z"/>
-              </svg>
-              Imprimer la prescription
-            </button>
-
-            <button type="button" class="btn-id" onclick="genererPrescription('True')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v12"/>
-                <path d="m7 10 5 5 5-5"/>
-                <path d="M5 21h14"/>
-              </svg>
-              Télécharger la prescription
-            </button>
-          </div>
-        </div>
-
-        <!-- Zone technique conservée -->
-        <div id="prescription-text" contenteditable="true" spellcheck="true" lang="fr"></div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ZONE 2 : examens sélectionnés -->
-  <aside class="historique-ordos">
-    <div class="rx-header">
-      <label>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 6h13"/>
-          <path d="M8 12h13"/>
-          <path d="M8 18h13"/>
-          <path d="M3 6h.01"/>
-          <path d="M3 12h.01"/>
-          <path d="M3 18h.01"/>
-        </svg>
-        Examens sélectionnés
-      </label>
-      <span id="selection-count">—</span>
-    </div>
-
-    <div class="panel-content">
-      <div class="selection-summary">
-        Les examens apparaîtront ici. Vous pouvez ajouter un commentaire ou supprimer un examen.
-      </div>
-      <div id="examensSelectionnes"></div>
-    </div>
-  </aside>
-
+<span id="rx-status">Brouillon</span>
 </div>
-
+<div class="exam-preview-wrap">
+<div class="exam-preview-paper">
+<div class="exam-preview-title">Prescription d'examens</div>
+<div class="exam-preview-subtitle">Document médical</div>
+<div class="exam-preview-patient">
+<div><span>Patient</span><br/><strong id="preview-patient-name">—</strong></div>
+<div><span>Date de naissance</span><br/><strong id="preview-patient-birth">—</strong></div>
+<div><span>Sexe</span><br/><strong id="preview-patient-sex">—</strong></div>
+<div><span>Médecin</span><br/><strong id="preview-medecin">—</strong></div>
+</div>
+<div class="exam-preview-heading">Faire réaliser :</div>
+<div class="exam-preview-list" id="exam-preview-list">
+<div class="exam-preview-empty">Aucun examen sélectionné pour le moment.</div>
+</div>
+<div class="exam-preview-footer">
+<span id="preview-lieu">—</span>
+<span id="preview-date">—</span>
+</div>
+</div>
+</div>
+<!-- Zone technique conservée exactement pour l'enregistrement / génération -->
+<div contenteditable="true" id="prescription-text" lang="fr" spellcheck="true"></div>
+</div>
+</section>
+<!-- ================= ZONE DROITE : SÉLECTION ================= -->
+<aside class="historique-ordos exam-controls">
+<div class="rx-header">
+<label>
+<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16">
+<path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3 6h.01M3 12h.01M3 18h.01"></path>
+</svg>
+        Examens
+      </label>
+<span id="selection-count">0</span>
+</div>
+<div class="panel-content">
+<div class="selection-summary">Recherchez un examen puis cliquez dessus pour l'ajouter à la prescription.</div>
+<div class="exam-search-wrap">
+<input id="searchExamen" placeholder="🔍 Rechercher un examen..." type="text">
+</input></div>
+<div id="resultatsExamens"></div>
+<div class="selection-summary">Examens sélectionnés — ajoutez un commentaire ou supprimez un examen.</div>
+<div id="examensSelectionnes"></div>
+<div class="exam-validation">
+<button class="btn-id btn-id-v" id="btnValiderPrescription" onclick="validerPrescription()" type="button">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="m5 12 4 4L19 6"></path>
+</svg>
+          Valider &amp; enregistrer la prescription
+        </button>
+<div id="postValidationActions">
+<h3>✓ Prescription validée</h3>
+<button class="btn-id" onclick="imprimer()" type="button">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path>
+</svg>
+            Imprimer la prescription
+          </button>
+<button class="btn-id" onclick="genererPrescription('True')" type="button">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>
+</svg>
+            Télécharger la prescription
+          </button>
+</div>
+</div>
+</div>
+</aside>
+</div>
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
 <div id="bubble-container"></div>
-
-<!-- Modales d'accès conservées -->
-<div id="modal-no-access" class="modalna">
-  <div class="card">
-    <h2>⛔️ Accès refusé</h2>
-    <p>Vous n’avez pas accès à cette page.</p>
-    <p>Veuillez contacter un administrateur pour plus d'informations.</p>
-  </div>
+<div class="modalna" id="modal-no-access">
+<div class="card">
+<h2>⛔️ Accès refusé</h2>
+<p>Vous n’avez pas accès à cette page.</p>
+<p>Veuillez contacter un administrateur pour plus d'informations.</p>
 </div>
-
-<div id="modal-error" class="modalna">
-  <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez ré-essayer un peu plus tard.</p>
-    <p>Si le problème persiste, contactez un administrateur.</p>
-  </div>
 </div>
-
+<div class="modalna" id="modal-error">
+<div class="card">
+<h2>😞 Oups, une erreur est survenue</h2>
+<p>Veuillez réessayer un peu plus tard</p>
+<p>Si le problème persiste, contactez un administrateur</p>
+</div>
+</div>
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
@@ -1702,26 +1580,82 @@ contenu.push({ type: "newline" });
 window.genererPrescription=genererPrescription;
 
 
-
 </script>
-
 <script>
-/* Compteur visuel uniquement : ne modifie pas la logique de prescription. */
 (function(){
-  const updateCount = () => {
-    const n = document.querySelectorAll("#examensSelectionnes > div").length;
-    const el = document.getElementById("selection-count");
-    if (el) el.textContent = n ? (n + " examen" + (n > 1 ? "s" : "")) : "Aucun";
-    const status = document.getElementById("rx-status");
-    if (status) status.textContent = n ? "En cours" : "Brouillon";
-  };
-  const target = document.getElementById("examensSelectionnes");
-  if (target) {
-    new MutationObserver(updateCount).observe(target, {childList:true, subtree:true});
+  function formatDateFr(v){
+    if(!v) return "—";
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleDateString("fr-FR");
   }
-  updateCount();
+  window.actualiserApercuExamens = function(){
+    const list = document.getElementById("exam-preview-list");
+    const count = document.getElementById("selection-count");
+    if(!list) return;
+    const items = Array.isArray(window.examensSelectionnes) ? window.examensSelectionnes : [];
+    if(count) count.textContent = String(items.length);
+    if(items.length === 0){
+      list.innerHTML = '<div class="exam-preview-empty">Aucun examen sélectionné pour le moment.</div>';
+    } else {
+      list.innerHTML = items.map((ex,i) => `
+        <div class="preview-exam">
+          <div class="preview-num">${i+1}</div>
+          <div class="preview-exam-main">
+            <div class="preview-exam-name">${escapePreview(ex.type || "")}</div>
+            ${ex.commentaire ? `<div class="preview-exam-comment">${escapePreview(ex.commentaire)}</div>` : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+    const fn = document.getElementById("patient-first-name")?.value?.trim() || "";
+    const ln = document.getElementById("patient-last-name")?.value?.trim() || "";
+    const bd = document.getElementById("patient-birthdate")?.value || "";
+    const sx = document.getElementById("sexe")?.value || "—";
+    document.getElementById("preview-patient-name").textContent = (fn+" "+ln).trim() || "—";
+    document.getElementById("preview-patient-birth").textContent = bd ? formatDateFr(bd) : "—";
+    document.getElementById("preview-patient-sex").textContent = sx;
+    document.getElementById("preview-medecin").textContent = window.medecinNom || "Dr Non renseigné";
+    document.getElementById("preview-lieu").textContent = window.medecinLieu || "—";
+    document.getElementById("preview-date").textContent = new Date().toLocaleDateString("fr-FR");
+  };
+  function escapePreview(s){
+    return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+  function wrap(){
+    if(typeof window.afficherExamensSelectionnes === "function" && !window.__previewWrapped){
+      const original = window.afficherExamensSelectionnes;
+      window.afficherExamensSelectionnes = function(){
+        const r = original.apply(this, arguments);
+        window.actualiserApercuExamens();
+        return r;
+      };
+      window.__previewWrapped = true;
+    }
+    window.actualiserApercuExamens();
+  }
+  document.addEventListener("input", window.actualiserApercuExamens);
+  document.addEventListener("DOMContentLoaded", wrap);
+  setTimeout(wrap, 300);
+  setInterval(function(){
+    if(!window.__previewWrapped && typeof window.afficherExamensSelectionnes === "function") wrap();
+    window.actualiserApercuExamens();
+  }, 800);
+
+  window.resetExamensUI = function(){
+    const inputs = ["searchExamen"];
+    inputs.forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+    if(Array.isArray(window.examensSelectionnes)) window.examensSelectionnes.length = 0;
+    if(typeof window.afficherExamensSelectionnes === "function") window.afficherExamensSelectionnes();
+    const btn=document.getElementById("btnValiderPrescription");
+    if(btn){ btn.disabled=false; btn.style.display=""; }
+    const post=document.getElementById("postValidationActions");
+    if(post) post.style.display="none";
+    const status=document.getElementById("rx-status");
+    if(status){ status.textContent="Brouillon"; status.classList.remove("locked"); }
+    window.pdfIdExistante=null;
+    window.actualiserApercuExamens();
+  };
 })();
 </script>
-
 </body>
 </html>

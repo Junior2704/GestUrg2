@@ -365,7 +365,7 @@
       </div>
 
       <button class="camera-button" id="cameraBtn" type="button" disabled>
-        📷 Prendre une photo
+        📷 Prendre / choisir une photo
       </button>
 
       <input
@@ -421,6 +421,9 @@
 
   if (recordId) {
     urlId.textContent = recordId;
+    // Le choix de la photo ne dépend pas de Firebase Auth dans cette page.
+    // Si un identifiant de session est présent, le bouton doit être immédiatement utilisable.
+    cameraBtn.disabled = false;
   } else {
     urlId.textContent = "ID manquant";
     showStatus("Lien invalide : aucun identifiant n'est présent dans l'URL.", "error");
@@ -428,12 +431,12 @@
 
   window.addEventListener("firebase-ready", function () {
     firebaseReady = true;
-    // Depuis mobile.html, l'écriture est effectuée par la page parente.
-    // Le bouton peut donc être utilisé sans attendre une session Auth dans l'iframe.
-    if (recordId) cameraBtn.disabled = false;
-
     requestParentSession();
   });
+
+  // Demande également la session au parent sans attendre un éventuel événement Firebase.
+  // Cela permet au bouton photo de fonctionner immédiatement, y compris sur ordinateur.
+  requestParentSession();
 
   window.addEventListener("firebase-auth-ready", function (event) {
     firebaseAuthReady = true;
@@ -485,7 +488,10 @@
   });
 
   cameraBtn.addEventListener("click", function () {
-    if (!recordId || !firebaseReady) return;
+    if (!recordId) {
+      showStatus("Lien invalide : aucun identifiant de session n'est présent.", "error");
+      return;
+    }
     imageInput.click();
   });
 

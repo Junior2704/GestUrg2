@@ -870,135 +870,7 @@ header {
     background-color: #b71c1c; /* rouge plus foncé au survol */
     border-color: #b71c1c;
   }
-/* ==========================================================
-   MODALES DE CLÔTURE — mise en page cohérente
-   ========================================================== */
-#modalSignaturePatient .modal {
-  width: min(92vw, 470px);
-  max-width: 470px;
-  max-height: 92vh;
-  box-sizing: border-box;
-  padding: 28px 30px 26px;
-  text-align: center;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-}
-
-#modalSignaturePatient .modal h3 {
-  width: 100%;
-  margin: 0 0 18px;
-  line-height: 1.25;
-}
-
-#qrcodeSignature {
-  width: 250px;
-  min-width: 250px;
-  height: 250px;
-  min-height: 250px;
-  margin: 0 auto 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-#qrcodeSignature img,
-#qrcodeSignature canvas {
-  display: block;
-  max-width: 250px;
-  max-height: 250px;
-}
-
-#modalSignaturePatient .signature-status {
-  width: 100%;
-  min-height: 44px;
-  box-sizing: border-box;
-  margin: 0 0 18px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  background: #f4f8fc;
-  border: 1px solid #dce8f4;
-  color: #334155;
-  font-size: 14px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#modalSignaturePatient .modal > p {
-  width: 100%;
-  margin: 5px 0;
-  line-height: 1.45;
-  color: #4b5563;
-}
-
-#modalSignaturePatient .signature-actions {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 2px;
-}
-
-#modalSignaturePatient .signature-actions .btn-id {
-  width: 100%;
-  min-height: 44px;
-  box-sizing: border-box;
-  justify-content: center;
-  margin: 0 !important;
-  white-space: normal;
-  line-height: 1.25;
-}
-
-/* Modale de lecture badge : plus large pour laisser respirer l'animation */
-#modalCodeCloture .modal {
-    width: min(94vw, 700px);
-    max-width: 700px;
-    box-sizing: border-box;
-    padding: 28px 34px 24px;
-}
-
-#modalCodeCloture .idcheck-badge-iframe-wrapper {
-    width: 100%;
-    max-width: 130px;
-    height: 130px;
-    margin: 10px auto 4px;
-}
-
-#modalCodeCloture .idcheck-badge-anim {
-    width: 130px;
-    height: 130px;
-    object-fit: contain;
-    margin: 10px auto 4px;
-    display: block;
-}
-
-#modalCodeCloture .idcheck-badge-hint {
-    font-size: 14px;
-    color: #374151;
-    margin: 4px 0 0;
-    line-height: 1.45;
-}
-
-@media (max-width: 600px) {
-  #modalCodeCloture .modal {
-    width: calc(100vw - 24px);
-    padding: 22px 18px;
-  }
-
-  #modalSignaturePatient .modal {
-    width: calc(100vw - 24px);
-    padding: 22px 18px;
-  }
-}
-
-/* 🏥 Modale de saisie du code de clôture */
+	  /* 🏥 Modale de saisie du code de clôture */
 #modalCodeCloture.modal-overlay {
   position: fixed;
   top: 0;
@@ -3414,6 +3286,9 @@ z-index: 3000;
 
 
 <h2>🫆 Identité</h2>
+
+    <button type="button" id="btnRemplirInfosImage" class="btn-id" style="margin:0 0 14px 0;">📷 Remplir les infos depuis une image</button>
+
     <label for="adminId">ID Patient</label>
     <input type="text" id="adminId" disabled />
 	
@@ -3481,6 +3356,36 @@ z-index: 3000;
     </div>
   </div>
 </div>
+
+<!-- Modal Lecture identité par QR -->
+<div id="modalLectureIdentiteImage" class="modal-overlay" style="z-index:3100;">
+  <div class="modal" style="max-width:700px;">
+    <h3 id="titreLectureIdentiteImage">📷 Lecture de pièce d'identité</h3>
+    <div id="qrcodeLectureIdentiteImage" style="display:flex;justify-content:center;margin:15px 0;"></div>
+    <p id="texteLectureIdentiteImage" style="text-align:center;">Scannez ce QR Code avec le téléphone.</p>
+    <div id="etatLectureIdentiteImage" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;">⏳ En attente de lecture…</div>
+    <div id="resultatLectureIdentiteImage" style="margin-top:15px;display:none;"></div>
+    <div class="modal-buttons" style="margin-top:15px;">
+      <button type="button" id="btnFermerLectureIdentiteImage" class="btn-id btn-id-c">❌ Annuler</button>
+      <button type="button" id="btnAppliquerLectureIdentiteImage" class="btn-id btn-id-v" style="display:none;">✅ Remplacer les champs sélectionnés</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalVerificationIdentiteQR" class="modal-overlay" style="z-index:3100;">
+  <div class="modal" style="max-width:700px;">
+    <h3>🪪 Vérification par pièce d'identité</h3>
+    <div id="qrcodeVerificationIdentite" style="display:flex;justify-content:center;margin:15px 0;"></div>
+    <p style="text-align:center;">Scannez ce QR Code avec le téléphone puis présentez la pièce d'identité.</p>
+    <div id="etatVerificationIdentiteQR" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;">⏳ En attente de lecture…</div>
+    <div id="resultatVerificationIdentiteQR" style="margin-top:15px;display:none;"></div>
+    <div class="modal-buttons" style="margin-top:15px;">
+      <button type="button" id="btnAnnulerVerificationQR" class="btn-id btn-id-c">❌ Annuler</button>
+      <button type="button" id="btnContinuerVerificationQR" class="btn-id btn-id-v" style="display:none;">➡️ Continuer la vérification</button>
+    </div>
+  </div>
+</div>
+
  <div id="modalVerificationIdentite" class="modal-overlay">
   <div class="modal">
     <h3>🪪 Vérification de l'identité</h3>
@@ -3495,6 +3400,9 @@ z-index: 3000;
       <option value="Carte Vitale avec photo">Carte Vitale avec photo</option>
       <option value="Autre">Autre</option>
     </select>
+
+    <button type="button" id="btnLectureQRVerification" class="btn-id" style="margin-top:12px;">📷 Vérifier depuis une image</button>
+    <input type="hidden" id="verifNumeroDocument" value="">
 
     <hr>
 
@@ -3579,28 +3487,28 @@ z-index: 3000;
 <p>
       Ou scannez le via l'App Mobile GestUrg2.
     </p>
-    <div id="etatSignature" class="signature-status">
+    <div id="etatSignature">
       ⏳ En attente de signature...
     </div>
+<button id="btnRefusSignature" class="btn-id btn-id-c">
+  ⛔ Refus de signer
+</button>
+    <button
+      id="btnContinuerCloture"
+      style="display:none"
+      class="btn-id btn-id-v">
 
-    <div class="signature-actions">
-      <button id="btnRefusSignature" class="btn-id btn-id-c">
-        ⛔ Refus de signer
-      </button>
+     ✔️ Valider la clôture
 
-      <button
-        id="btnContinuerCloture"
-        style="display:none"
-        class="btn-id btn-id-v">
-        ✔️ Poursuivre la clôture
-      </button>
+    </button>
+<button
+    id="btnAnnulerSignature"
+    class="btn-id btn-id-c"
+    style="margin-top:10px;">
 
-      <button
-        id="btnAnnulerSignature"
-        class="btn-id btn-id-c">
-        ❌ Annuler
-      </button>
-    </div>
+  ❌ Annuler
+
+</button>
   </div>
 
 </div>
@@ -3720,7 +3628,8 @@ import {
   where,
   deleteField,
    arrayUnion,
-   Timestamp, 
+   Timestamp,
+   deleteDoc, 
    serverTimestamp,
    onSnapshot,
   runTransaction,
@@ -4965,95 +4874,46 @@ const inputCode = document.getElementById("codeClotureInput");
 const btnAnnulerCode = document.getElementById("btnAnnulerCode");
 const btnValiderCode = document.getElementById("btnValiderCode");
 
-// 🔹 Démarrage de la clôture : EMAIL → SIGNATURE → BADGE/CCH → CLÔTURE
-async function verifierEmailAvantCloture() {
-  const patientRef = doc(db, "patients", patientId);
-  const patientSnap = await getDoc(patientRef);
+// 🔹 Ouvrir la modale quand on clique sur "Clôturer"
+document.getElementById("btnCloturer").addEventListener("click", async () => {
 
-  if (!patientSnap.exists()) {
-    afficherBulle("❌ Patient introuvable", "error");
-    return null;
-  }
+  try {
+const docSnap = await getDoc(patientRef);
 
-  const patientData = patientSnap.data();
-  const emailPatient = (
-    patientData.email ||
-    patientData.emailPatient ||
-    patientData.mail ||
-    ""
-  ).trim();
-
-  if (!emailPatient) {
-    const modalAvertissement = document.getElementById("modalAvertissementEmail");
-    const btnAnnuler = document.getElementById("btnAnnulerClotureEmail");
-    const btnContinuer = document.getElementById("btnContinuerClotureEmail");
-
-    if (!modalAvertissement || !btnAnnuler || !btnContinuer) {
-      console.error("Éléments de la modale d'avertissement e-mail introuvables.");
-      afficherBulle("❌ Impossible d'afficher l'avertissement e-mail", "error");
-      return null;
+    if (!docSnap.exists()) {
+      console.error("Document introuvable");
+      afficherBulle("❌ Patient introuvable", "error");
+      return;
     }
 
-    modalAvertissement.style.display = "flex";
+    const patientData = docSnap.data();
 
-    const continuer = await new Promise(resolve => {
-      const annuler = () => {
-        modalAvertissement.style.display = "none";
-        btnAnnuler.onclick = null;
-        btnContinuer.onclick = null;
-        resolve(false);
-      };
+    const signatureRef =
+      await addDoc(collection(db, "signatures-patient"), {
 
-      const poursuivre = () => {
-        modalAvertissement.style.display = "none";
-        btnAnnuler.onclick = null;
-        btnContinuer.onclick = null;
-        resolve(true);
-      };
-
-      btnAnnuler.onclick = annuler;
-      btnContinuer.onclick = poursuivre;
-    });
-
-    if (!continuer) return null;
-  }
-
-  return patientData;
-}
-
-async function demarrerSignatureCloture(patientData) {
-  const signatureRef = await addDoc(collection(db, "signatures-patient"), {
-    patientId,
-    dateCreation: serverTimestamp(),
-    nom: patientData.nom || "",
+        patientId,
+        dateCreation: serverTimestamp(),
+nom: patientData.nom || "",
     prenom: patientData.prenom || "",
     dateNaissance: patientData.dateNaissance || "",
-    signee: false,
-    statut: "attente",
-    signatureImage: null,
-    signatureDate: null
-  });
 
-  const url =
-    `https://junior2704.github.io/GestUrg2/signature-patient.html?id=${signatureRef.id}`;
+        signee: false,
+statut: "attente",
+        signatureImage: null,
+        signatureDate: null
+      });
+const url =
+`https://junior2704.github.io/GestUrg2/signature-patient.html?id=${signatureRef.id}`;
+    ouvrirModalSignature(url, signatureRef.id);
 
-  ouvrirModalSignature(url, signatureRef.id);
-}
+  } catch(err){
 
-document.getElementById("btnCloturer").addEventListener("click", async () => {
-  try {
-    // 1️⃣ EMAIL EN PREMIER
-    const patientData = await verifierEmailAvantCloture();
-    if (!patientData) return;
+    console.error(err);
+    afficherBulle("Erreur création signature","error");
 
-    // 2️⃣ SIGNATURE PATIENT
-    await demarrerSignatureCloture(patientData);
-  } catch (err) {
-    console.error("Erreur démarrage clôture :", err);
-    afficherBulle("Erreur lors du démarrage de la clôture", "error");
   }
-});
 
+});
 document
   .getElementById("btnRefusSignature")
   .addEventListener("click", async () => {
@@ -5346,7 +5206,50 @@ async function executerCloture() {
         return;
     }
 
-    // L'e-mail a déjà été vérifié en première étape, avant la signature.
+    const patientData = patientSnap.data();
+    const emailPatient = (
+        patientData.email ||
+        patientData.emailPatient ||
+        patientData.mail ||
+        ""
+    ).trim();
+
+    // Pas d'e-mail : demander confirmation avant de poursuivre.
+    if (!emailPatient) {
+        const modalAvertissement = document.getElementById("modalAvertissementEmail");
+        const btnAnnuler = document.getElementById("btnAnnulerClotureEmail");
+        const btnContinuer = document.getElementById("btnContinuerClotureEmail");
+
+        if (!modalAvertissement || !btnAnnuler || !btnContinuer) {
+            console.error("Éléments de la modale d'avertissement e-mail introuvables.");
+            afficherBulle("❌ Impossible d'afficher l'avertissement e-mail", "error");
+            return;
+        }
+
+        modalAvertissement.style.display = "flex";
+
+        const continuer = await new Promise(resolve => {
+            const annuler = () => {
+                modalAvertissement.style.display = "none";
+                btnAnnuler.onclick = null;
+                btnContinuer.onclick = null;
+                resolve(false);
+            };
+
+            const poursuivre = () => {
+                modalAvertissement.style.display = "none";
+                btnAnnuler.onclick = null;
+                btnContinuer.onclick = null;
+                resolve(true);
+            };
+
+            btnAnnuler.onclick = annuler;
+            btnContinuer.onclick = poursuivre;
+        });
+
+        if (!continuer) return;
+    }
+
     return executerClotureSansAvertissement();
 }
 
@@ -5367,8 +5270,6 @@ async function executerClotureSansAvertissement() {
     const signatureId =
         window.signatureId;
 
-    // Les contrôles d'identité (e-mail → signature → badge/CCH) sont déjà terminés.
-    // Cette progression concerne uniquement la finalisation technique de la clôture.
     const totalEtapes = 9;
     let etape = 0;
 
@@ -7080,32 +6981,27 @@ document
   .addEventListener("click", ouvrirVerificationIdentite);
 
 async function ouvrirVerificationIdentite() {
-
   const docSnap = await getDoc(patientRef);
 
-    if (!docSnap.exists()) {
-      console.error("Document introuvable");
-      afficherBulle("❌ Patient introuvable", "error");
-      return;
-    }
+  if (!docSnap.exists()) {
+    console.error("Document introuvable");
+    afficherBulle("❌ Patient introuvable", "error");
+    return;
+  }
 
-    const data = docSnap.data();
+  const data = docSnap.data();
 
   document.getElementById("typePieceIdentite").value = "";
   document.getElementById("certificationVerif").checked = false;
+  document.getElementById("verifNumeroDocument").value = "";
 
-  document.getElementById("verifNom").textContent =
-    data.nom || "-";
+  document.getElementById("verifNom").textContent = data.nom || "-";
+  document.getElementById("verifPrenom").textContent = data.prenom || "-";
+  document.getElementById("verifDdn").textContent = data.dateNaissance || "-";
 
-  document.getElementById("verifPrenom").textContent =
-    data.prenom || "-";
-
-  document.getElementById("verifDdn").textContent =
-    data.dateNaissance || "-";
-
-  document.getElementById("modalVerificationIdentite")
-    .style.display = "flex";
+  document.getElementById("modalVerificationIdentite").style.display = "flex";
 }
+
 window.fermerVerificationIdentite = function() {
 
   document.getElementById(
@@ -7145,13 +7041,24 @@ window.enregistrerVerificationIdentite = async function () {
       typePiece,
 
       nom:
+        verificationQRResult?.nom ||
         document.getElementById("adminNom").value || "",
 
       prenom:
+        verificationQRResult?.prenom ||
+        verificationQRResult?.prenoms ||
         document.getElementById("adminPrenom").value || "",
 
       dateNaissance:
+        verificationQRResult?.dateNaissance ||
         document.getElementById("adminNaissance").value || "",
+
+      numeroDocument:
+        verificationQRResult?.numeroDocument ||
+        document.getElementById("verifNumeroDocument").value || "",
+
+      concordanceOCR:
+        verificationQRResult?.concordanceOCR ?? null,
 
       verifiePar:
         window.medecinNom || "",
@@ -7168,6 +7075,22 @@ window.enregistrerVerificationIdentite = async function () {
       identiteVerifications:
         arrayUnion(verification)
     });
+
+    // Le document id-photo ne sert que de relais temporaire entre le QR
+    // et cette fiche : il est supprimé après l'enregistrement.
+    if (verificationQRUnsubscribe) {
+      verificationQRUnsubscribe();
+      verificationQRUnsubscribe = null;
+    }
+    if (verificationQRTempId) {
+      try {
+        await deleteDoc(doc(db, "id-photo", verificationQRTempId));
+      } catch (cleanupError) {
+        console.warn("Nettoyage document vérification", cleanupError);
+      }
+      verificationQRTempId = null;
+    }
+    verificationQRResult = null;
 
     fermerVerificationIdentite();
 
@@ -7951,6 +7874,394 @@ function startAutoRefresh(patientId) {
     });
   });
 }
+
+
+// ============================================================
+// 📷 LECTURE D'IDENTITÉ PAR QR — ADMINISTRATION / VÉRIFICATION
+// ============================================================
+let lectureIdentiteUnsubscribe = null;
+let lectureIdentiteTempId = null;
+let lectureIdentiteMode = null;
+let lectureIdentiteResult = null;
+
+const URL_ANALYSE_IDENTITE =
+  new URL("analyse-image-id.html", window.location.href).href;
+
+function genererIdLectureIdentite() {
+  return doc(collection(db, "id-photo")).id;
+}
+
+function fermerModaleLectureIdentiteQR() {
+  if (lectureIdentiteUnsubscribe) {
+    lectureIdentiteUnsubscribe();
+    lectureIdentiteUnsubscribe = null;
+  }
+  document.getElementById("modalLectureIdentiteImage").style.display = "none";
+  lectureIdentiteMode = null;
+  lectureIdentiteResult = null;
+}
+
+async function supprimerLectureIdentiteTemporaire() {
+  if (!lectureIdentiteTempId) return;
+  try {
+    await deleteDoc(doc(db, "id-photo", lectureIdentiteTempId));
+  } catch (e) {
+    console.warn("Suppression document id-photo impossible", e);
+  }
+  lectureIdentiteTempId = null;
+}
+
+function afficherQRIdentite(containerId, url) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  new QRCode(container, {
+    text: url,
+    width: 250,
+    height: 250,
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function valeurComparable(v) {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
+function formatValeur(v) {
+  if (v === null || v === undefined || v === "") return "—";
+  return String(v);
+}
+
+function construireLigneComparaison(label, champ, ancienne, nouvelle, selectable = true) {
+  const id = "ocr-field-" + champ;
+  return `
+    <label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #e3e8f2;border-radius:12px;margin-bottom:8px;background:#fff;cursor:pointer;">
+      ${selectable ? `<input type="checkbox" class="ocr-field-check" id="${id}" data-field="${champ}" style="margin-top:4px;accent-color:#0b5ed7;">` : ""}
+      <span style="flex:1;">
+        <strong>${label}</strong><br>
+        <span style="color:#777;font-size:12px;">Avant : </span><span>${formatValeur(ancienne)}</span><br>
+        <span style="color:#0b5ed7;font-size:12px;">Après : </span><strong style="color:#0b5ed7;">${formatValeur(nouvelle)}</strong>
+      </span>
+    </label>`;
+}
+
+function valeurPatientPourChamp(field, data) {
+  if (field === "nom") return data.nom || "";
+  if (field === "prenom") return data.prenom || "";
+  if (field === "sexe") return data.sexe || "";
+  if (field === "dateNaissance") return data.dateNaissance || "";
+  return "";
+}
+
+function valeurOCRPourChamp(field, data) {
+  if (field === "nom") return data.nom || "";
+  if (field === "prenom") return data.prenom || data.prenoms || "";
+  if (field === "sexe") {
+    const s = String(data.sexe || "").toUpperCase();
+    return s === "M" ? "H" : s === "F" ? "F" : s;
+  }
+  if (field === "dateNaissance") {
+    return data.dateNaissance || "";
+  }
+  return "";
+}
+
+function construireComparaisonAdmin(patientData, ocrData) {
+  const champs = [
+    ["Nom", "nom"],
+    ["Prénom", "prenom"],
+    ["Sexe", "sexe"],
+    ["Date de naissance", "dateNaissance"]
+  ];
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px;">
+      <strong>Informations détectées</strong>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center;cursor:pointer;">
+        <input type="checkbox" id="ocr-select-all" style="accent-color:#0b5ed7;"> Tout sélectionner
+      </label>
+    </div>`;
+
+  let nbDifferents = 0;
+  champs.forEach(([label, field]) => {
+    const oldValue = valeurPatientPourChamp(field, patientData);
+    const newValue = valeurOCRPourChamp(field, ocrData);
+    if (!newValue) return;
+    if (valeurComparable(oldValue) !== valeurComparable(newValue)) nbDifferents++;
+    html += construireLigneComparaison(label, field, oldValue, newValue, true);
+  });
+
+  if (!nbDifferents) {
+    html += `<div style="padding:12px;border-radius:10px;background:#eaf7ef;color:#146c43;">✓ Aucun changement détecté.</div>`;
+  }
+
+  return html;
+}
+
+async function lancerLectureIdentiteAdmin() {
+  if (!patientId) return;
+
+  try {
+    await fermerEtNettoyerLectureEnCours();
+
+    lectureIdentiteMode = "admin";
+    lectureIdentiteTempId = genererIdLectureIdentite();
+
+    const tempRef = doc(db, "id-photo", lectureIdentiteTempId);
+    await setDoc(tempRef, {
+      mode: "admin",
+      patientId,
+      statut: "attente",
+      creeLe: serverTimestamp()
+    });
+
+    const url = `${URL_ANALYSE_IDENTITE}?id=${encodeURIComponent(lectureIdentiteTempId)}`;
+
+    document.getElementById("titreLectureIdentiteImage").textContent = "📷 Remplir les informations depuis une image";
+    document.getElementById("texteLectureIdentiteImage").textContent = "Scannez ce QR Code avec le téléphone puis photographiez la pièce d'identité.";
+    document.getElementById("etatLectureIdentiteImage").textContent = "⏳ En attente de lecture…";
+    document.getElementById("resultatLectureIdentiteImage").style.display = "none";
+    document.getElementById("btnAppliquerLectureIdentiteImage").style.display = "none";
+    document.getElementById("modalLectureIdentiteImage").style.display = "flex";
+
+    afficherQRIdentite("qrcodeLectureIdentiteImage", url);
+    surveillerLectureIdentiteAdmin(tempRef);
+  } catch (e) {
+    console.error(e);
+    await supprimerLectureIdentiteTemporaire();
+    afficherBulle("❌ Impossible de créer la lecture par QR", "error");
+  }
+}
+
+function surveillerLectureIdentiteAdmin(tempRef) {
+  lectureIdentiteUnsubscribe = onSnapshot(tempRef, async snap => {
+    if (!snap.exists()) {
+      document.getElementById("etatLectureIdentiteImage").textContent = "⚠️ Session de lecture supprimée.";
+      return;
+    }
+
+    const data = snap.data();
+
+    if (data.statut === "lecture") {
+      document.getElementById("etatLectureIdentiteImage").textContent = "📷 Document photographié — analyse en cours…";
+    }
+
+    if (data.statut === "termine" || data.statut === "complete") {
+      lectureIdentiteResult = data;
+      await afficherResultatAdmin(data);
+    }
+
+    if (data.statut === "erreur") {
+      document.getElementById("etatLectureIdentiteImage").textContent = "❌ " + (data.message || "Erreur de lecture");
+    }
+  });
+}
+
+async function afficherResultatAdmin(ocrData) {
+  const patientSnap = await getDoc(patientRef);
+  if (!patientSnap.exists()) throw new Error("Patient introuvable");
+
+  const patientData = patientSnap.data();
+  const result = document.getElementById("resultatLectureIdentiteImage");
+  result.innerHTML = construireComparaisonAdmin(patientData, ocrData);
+  result.style.display = "block";
+
+  const checks = result.querySelectorAll(".ocr-field-check");
+  checks.forEach(chk => chk.addEventListener("change", actualiserSelectionOCR));
+
+  const selectAll = result.querySelector("#ocr-select-all");
+  if (selectAll) {
+    selectAll.addEventListener("change", () => {
+      checks.forEach(c => c.checked = selectAll.checked);
+      actualiserSelectionOCR();
+    });
+  }
+
+  document.getElementById("etatLectureIdentiteImage").textContent = "✅ Lecture terminée — sélectionnez les champs à remplacer.";
+  document.getElementById("btnAppliquerLectureIdentiteImage").style.display = checks.length ? "inline-block" : "none";
+}
+
+function actualiserSelectionOCR() {
+  const checks = document.querySelectorAll(".ocr-field-check");
+  const any = Array.from(checks).some(c => c.checked);
+  document.getElementById("btnAppliquerLectureIdentiteImage").disabled = !any;
+}
+
+async function appliquerLectureIdentiteAdmin() {
+  if (!lectureIdentiteResult) return;
+
+  const champs = {};
+  document.querySelectorAll(".ocr-field-check:checked").forEach(c => {
+    champs[c.dataset.field] = valeurOCRPourChamp(c.dataset.field, lectureIdentiteResult);
+  });
+
+  if (!Object.keys(champs).length) {
+    afficherBulle("Sélectionnez au moins un champ", "warning");
+    return;
+  }
+
+  try {
+    await updateDoc(patientRef, champs);
+    await fermerEtNettoyerLectureEnCours();
+    document.getElementById("modalLectureIdentiteImage").style.display = "none";
+    afficherBulle("✅ Informations administratives mises à jour", "success");
+
+    // Recharger les valeurs de la modale administrative
+    const snap = await getDoc(patientRef);
+    if (snap.exists()) {
+      const d = snap.data();
+      document.getElementById("adminNom").value = d.nom || "";
+      document.getElementById("adminPrenom").value = d.prenom || "";
+      document.getElementById("adminSexe").value = d.sexe || "";
+      document.getElementById("adminNaissance").value = d.dateNaissance || "";
+    }
+  } catch (e) {
+    console.error(e);
+    afficherBulle("❌ Erreur lors du remplacement des informations", "error");
+  }
+}
+
+async function fermerEtNettoyerLectureEnCours() {
+  if (lectureIdentiteUnsubscribe) {
+    lectureIdentiteUnsubscribe();
+    lectureIdentiteUnsubscribe = null;
+  }
+  if (lectureIdentiteTempId) {
+    try {
+      await deleteDoc(doc(db, "id-photo", lectureIdentiteTempId));
+    } catch (e) {
+      console.warn("Nettoyage id-photo", e);
+    }
+    lectureIdentiteTempId = null;
+  }
+}
+
+document.getElementById("btnRemplirInfosImage")?.addEventListener("click", lancerLectureIdentiteAdmin);
+document.getElementById("btnFermerLectureIdentiteImage")?.addEventListener("click", async () => {
+  await fermerEtNettoyerLectureEnCours();
+  fermerModaleLectureIdentiteQR();
+});
+document.getElementById("btnAppliquerLectureIdentiteImage")?.addEventListener("click", appliquerLectureIdentiteAdmin);
+
+// ============================================================
+// 🪪 VÉRIFICATION D'IDENTITÉ PAR QR
+// ============================================================
+let verificationQRUnsubscribe = null;
+let verificationQRTempId = null;
+let verificationQRResult = null;
+
+async function lancerVerificationIdentiteQR() {
+  const typePiece = document.getElementById("typePieceIdentite").value;
+  if (!typePiece) {
+    afficherBulle("Sélectionnez d'abord le type de pièce présentée", "warning");
+    return;
+  }
+
+  try {
+    if (verificationQRUnsubscribe) verificationQRUnsubscribe();
+    if (verificationQRTempId) {
+      try { await deleteDoc(doc(db, "id-photo", verificationQRTempId)); } catch (_) {}
+    }
+
+    verificationQRTempId = genererIdLectureIdentite();
+    const ref = doc(db, "id-photo", verificationQRTempId);
+
+    await setDoc(ref, {
+      mode: "verification",
+      patientId,
+      typePiece,
+      statut: "attente",
+      creeLe: serverTimestamp()
+    });
+
+    const url = `${URL_ANALYSE_IDENTITE}?id=${encodeURIComponent(verificationQRTempId)}`;
+
+    document.getElementById("etatVerificationIdentiteQR").textContent = "⏳ En attente de lecture…";
+    document.getElementById("resultatVerificationIdentiteQR").style.display = "none";
+    document.getElementById("btnContinuerVerificationQR").style.display = "none";
+    document.getElementById("modalVerificationIdentiteQR").style.display = "flex";
+    afficherQRIdentite("qrcodeVerificationIdentite", url);
+
+    verificationQRUnsubscribe = onSnapshot(ref, async snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.statut === "lecture") {
+        document.getElementById("etatVerificationIdentiteQR").textContent = "📷 Pièce photographiée — vérification en cours…";
+      }
+      if (data.statut === "termine" || data.statut === "complete") {
+        verificationQRResult = data;
+        await afficherResultatVerification(data);
+      }
+      if (data.statut === "erreur") {
+        document.getElementById("etatVerificationIdentiteQR").textContent = "❌ " + (data.message || "Erreur de lecture");
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    afficherBulle("❌ Impossible de lancer la vérification", "error");
+  }
+}
+
+async function afficherResultatVerification(data) {
+  const patientSnap = await getDoc(patientRef);
+  if (!patientSnap.exists()) throw new Error("Patient introuvable");
+  const p = patientSnap.data();
+
+  const controles = [
+    ["Nom", p.nom || "", data.nom || ""],
+    ["Prénom", p.prenom || "", data.prenom || data.prenoms || ""],
+    ["Date de naissance", p.dateNaissance || "", data.dateNaissance || ""]
+  ];
+
+  let tousCorrespondent = true;
+  let html = `<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Résultat de la comparaison</div>`;
+
+  controles.forEach(([label, attendu, lu]) => {
+    const ok = valeurComparable(attendu) === valeurComparable(lu) && valeurComparable(lu) !== "";
+    if (!ok) tousCorrespondent = false;
+    html += `
+      <div style="padding:10px;border-radius:10px;margin-bottom:7px;background:${ok ? '#eaf7ef' : '#fff0f1'};color:${ok ? '#146c43' : '#b02a37'};">
+        ${ok ? '✓' : '⚠️'} <strong>${label}</strong><br>
+        <span style="font-size:12px;">Dossier : ${formatValeur(attendu)} · Document : ${formatValeur(lu)}</span>
+      </div>`;
+  });
+
+  html += `
+    <div style="padding:10px;border-radius:10px;background:#f5f7fb;margin-top:8px;">
+      <strong>Numéro de document :</strong> ${formatValeur(data.numeroDocument)}
+    </div>`;
+
+  document.getElementById("resultatVerificationIdentiteQR").innerHTML = html;
+  document.getElementById("resultatVerificationIdentiteQR").style.display = "block";
+  document.getElementById("verifNumeroDocument").value = data.numeroDocument || "";
+
+  data.concordanceOCR = tousCorrespondent;
+  document.getElementById("etatVerificationIdentiteQR").textContent = tousCorrespondent
+    ? "✅ Identité concordante"
+    : "⚠️ Une ou plusieurs informations ne concordent pas";
+
+  document.getElementById("btnContinuerVerificationQR").style.display = "inline-block";
+}
+
+document.getElementById("btnLectureQRVerification")?.addEventListener("click", lancerVerificationIdentiteQR);
+
+document.getElementById("btnAnnulerVerificationQR")?.addEventListener("click", async () => {
+  if (verificationQRUnsubscribe) verificationQRUnsubscribe();
+  verificationQRUnsubscribe = null;
+  if (verificationQRTempId) {
+    try { await deleteDoc(doc(db, "id-photo", verificationQRTempId)); } catch (_) {}
+    verificationQRTempId = null;
+  }
+  document.getElementById("modalVerificationIdentiteQR").style.display = "none";
+});
+
+document.getElementById("btnContinuerVerificationQR")?.addEventListener("click", () => {
+  document.getElementById("modalVerificationIdentiteQR").style.display = "none";
+  document.getElementById("modalVerificationIdentite").style.display = "flex";
+});
 </script>
 
 </body>

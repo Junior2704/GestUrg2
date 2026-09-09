@@ -14,6 +14,7 @@
     import {
       getFirestore,
       doc,
+      getDoc,
       setDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -23,12 +24,9 @@
       de ton projet GestUrg2.
     */
     const firebaseConfig = {
-      apiKey: "A_REMPLACER",
+      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
       authDomain: "urgences-a8ed4.firebaseapp.com",
-      projectId: "urgences-a8ed4",
-      storageBucket: "urgences-a8ed4.firebasestorage.app",
-      messagingSenderId: "A_REMPLACER",
-      appId: "A_REMPLACER"
+      projectId: "urgences-a8ed4"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -371,6 +369,7 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const recordId = (urlParams.get("id") || "").trim();
+  const mode = (urlParams.get("mode") || "").trim();
 
   const urlId = document.getElementById("urlId");
   const cameraBtn = document.getElementById("cameraBtn");
@@ -460,7 +459,19 @@
       );
 
       const rawText = result.data.text || "";
-      const docType = document.querySelector('input[name="doctype"]:checked').value;
+
+      // Le document temporaire indique le mode et, en vérification, le type de pièce.
+      const { db, doc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
+      const sessionSnap = await getDoc(doc(db, "id-photo", recordId));
+      if (!sessionSnap.exists()) {
+        throw new Error("Session de lecture introuvable ou expirée.");
+      }
+      const session = sessionSnap.data();
+      const effectiveMode = session.mode || mode || "admin";
+      const requestedType = session.typePiece || "";
+      const docType = requestedType === "Carte Vitale avec photo"
+        ? "vitale"
+        : (document.querySelector('input[name="doctype"]:checked')?.value || "cni");
 
       const fields =
         docType === "vitale"
@@ -470,13 +481,15 @@
       progressFill.style.width = "100%";
       progressText.textContent = "Enregistrement dans Firestore…";
 
-      await saveToFirestore(fields, docType, rawText);
+      await saveToFirestore(fields, docType, rawText, effectiveMode, requestedType);
 
       progressWrap.style.display = "none";
       previewWrap.style.display = "none";
 
       showStatus(
-        "✓ Les informations ont été enregistrées avec succès.",
+        effectiveMode === "verification"
+          ? "✓ Vérification terminée. Vous pouvez revenir sur l'écran de contrôle."
+          : "✓ Les informations ont été enregistrées avec succès.",
         "success"
       );
 
@@ -502,27 +515,25 @@
     }
   }
 
-  async function saveToFirestore(fields, docType, rawText) {
+  async function saveToFirestore(fields, docType, rawText, effectiveMode, requestedType) {
     const { db, doc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
 
     const data = {};
-
     Object.keys(fields).forEach(function (key) {
       data[key] = fields[key].value || "";
     });
 
-    /*
-      Document :
-      id-photo/{id présent dans l'URL}
-
-      Les champs sont enregistrés directement dans le document.
-    */
     const ref = doc(db, "id-photo", recordId);
 
+    // Dans les deux modes, les résultats OCR sont déposés dans le document
+    // temporaire. La page appelante décide ensuite de les appliquer ou non.
     await setDoc(ref, {
       ...data,
-      typeDocument: docType,
+      typeDocument: requestedType || docType,
+      ocrType: docType,
+      mode: effectiveMode,
       ocrBrut: rawText || "",
+      statut: "termine",
       traiteLe: serverTimestamp()
     }, {
       merge: true

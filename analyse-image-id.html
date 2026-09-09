@@ -12,6 +12,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
       getFirestore,
       doc,
       getDoc,
@@ -31,9 +35,37 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    window.firebaseIdPhoto = { db, doc, getDoc, setDoc, serverTimestamp };
-    window.dispatchEvent(new Event("firebase-ready"));
+    // IMPORTANT :
+    // Cette page est ouverte dans l'iframe de mobile.html, sur le même
+    // domaine GestUrg2. Firebase Auth restaure donc la session déjà ouverte
+    // sur le téléphone. On attend cette restauration avant d'autoriser
+    // toute écriture Firestore.
+    window.firebaseIdPhoto = {
+      db,
+      doc,
+      getDoc,
+      setDoc,
+      serverTimestamp,
+      auth,
+      getCurrentUser: () => auth.currentUser
+    };
+
+    onAuthStateChanged(auth, function (user) {
+      window.firebaseIdPhoto.authReady = true;
+      window.firebaseIdPhoto.currentUser = user || null;
+
+      if (user) {
+        console.log("👤 Session Firebase restaurée :", user.uid);
+      } else {
+        console.warn("⚠️ Aucune session Firebase trouvée dans l'iframe.");
+      }
+
+      window.dispatchEvent(new CustomEvent("firebase-auth-ready", {
+        detail: { user: user || null }
+      }));
+    });
   </script>
 
   <style>
@@ -333,7 +365,7 @@
       </div>
 
       <button class="camera-button" id="cameraBtn" type="button" disabled>
-        📷 Prendre une photo
+        📷 Prendre / choisir une photo
       </button>
 
       <input
@@ -382,6 +414,8 @@
 
   let currentImageSource = null;
   let firebaseReady = false;
+  let firebaseAuthReady = false;
+  let firebaseCurrentUser = null;
 
   if (recordId) {
     urlId.textContent = recordId;
@@ -391,15 +425,42 @@
   }
 
   window.addEventListener("firebase-ready", function () {
+    // Conservé pour la compatibilité, mais l'accès réel dépend aussi
+    // de la restauration de la session Firebase Auth.
     firebaseReady = true;
 
-    if (recordId) {
+    if (recordId && firebaseAuthReady && firebaseCurrentUser) {
+      cameraBtn.disabled = false;
+    }
+  });
+
+  window.addEventListener("firebase-auth-ready", function (event) {
+    firebaseAuthReady = true;
+    firebaseCurrentUser = event.detail?.user || null;
+
+    if (!firebaseCurrentUser) {
+      cameraBtn.disabled = true;
+      showStatus(
+        "Aucune session GestUrg2 active. Revenez dans l'application puis réessayez.",
+        "error"
+      );
+      return;
+    }
+
+    if (recordId && firebaseReady) {
       cameraBtn.disabled = false;
     }
   });
 
   cameraBtn.addEventListener("click", function () {
-    if (!recordId || !firebaseReady) return;
+    if (!recordId || !firebaseReady || !firebaseAuthReady || !firebaseCurrentUser) {
+      showStatus(
+        "Connexion GestUrg2 requise pour enregistrer les résultats.",
+        "error"
+      );
+      return;
+    }
+
     imageInput.click();
   });
 
@@ -428,26 +489,19 @@
 
     reader.readAsDataURL(file);
   });
-let utilisateurConnecte = null;
 
-window.addEventListener("message", (event) => {
-  if (!event.data) return;
-
-  if (
-    event.data.source === "GestUrg2-Mobile" &&
-    event.data.type === "AUTH_USER"
-  ) {
-    utilisateurConnecte = event.data.user;
-
-    console.log("👤 Utilisateur reçu :", utilisateurConnecte);
-
-    // Maintenant les sauvegardes peuvent utiliser :
-    // utilisateurConnecte.uid
-    // utilisateurConnecte.email
-  }
-});
   async function analyzeAndSave() {
     if (!currentImageSource || !recordId || !firebaseReady) return;
+
+    // Une écriture Firestore soumise à des règles "request.auth != null"
+    // nécessite une vraie session Firebase Auth dans CETTE page.
+    if (!firebaseAuthReady || !firebaseCurrentUser) {
+      showStatus(
+        "Session Firebase introuvable. Ouvrez cette page depuis l'application GestUrg2.",
+        "error"
+      );
+      return;
+    }
 
     cameraBtn.disabled = true;
     progressWrap.style.display = "block";
@@ -527,12 +581,24 @@ window.addEventListener("message", (event) => {
         "error"
       );
     } finally {
-      cameraBtn.disabled = !recordId || !firebaseReady;
+      cameraBtn.disabled =
+        !recordId ||
+        !firebaseReady ||
+        !firebaseAuthReady ||
+        !firebaseCurrentUser;
     }
   }
 
   async function saveToFirestore(fields, docType, rawText, effectiveMode, requestedType) {
-    const { db, doc, getDoc, setDoc, serverTimestamp } = window.firebaseIdPhoto;
+    const { db, doc, getDoc, setDoc, serverTimestamp, auth } = window.firebaseIdPhoto;
+
+    // Double sécurité : on vérifie que Firebase Auth considère réellement
+    // cette page comme connectée avant de faire le setDoc().
+    const user = auth?.currentUser || null;
+
+    if (!user) {
+      throw new Error("Utilisateur Firebase non connecté. Impossible d'enregistrer les résultats.");
+    }
 
     const data = {};
     Object.keys(fields).forEach(function (key) {
@@ -550,7 +616,11 @@ window.addEventListener("message", (event) => {
       mode: effectiveMode,
       ocrBrut: rawText || "",
       statut: "termine",
-      traiteLe: serverTimestamp()
+      traiteLe: serverTimestamp(),
+
+      // Utilisateur réellement authentifié par Firebase
+      traiteParUid: user.uid,
+      traiteParEmail: user.email || null
     }, {
       merge: true
     });

@@ -2489,25 +2489,18 @@ document.getElementById("scanFrameClose").addEventListener("click", closeScanFra
 
 function openScanFrame(url){
   document.getElementById("scanFrameTitle").textContent = url.replace(/^https?:\/\//, "");
-  document.getElementById("scanFrameIframe").src = url;
+
+  const iframe = document.getElementById("scanFrameIframe");
+
+  // La page ouverte dans l'iframe initialise elle-même Firebase Auth.
+  // Comme elle est sur le même domaine que GestUrg2, Firebase peut
+  // restaurer la session déjà ouverte sur le téléphone.
+  iframe.src = url;
   scanFrameOverlay.classList.add("open");
-  iframe.onload = () => {
-    const user = auth.currentUser;
 
-    if (!user) {
-      console.warn("⚠️ Aucun utilisateur connecté à transmettre");
-      return;
-    }
-
-    iframe.contentWindow.postMessage({
-      source: "GestUrg2-Mobile",
-      type: "AUTH_USER",
-      user: {
-        uid: user.uid,
-        email: user.email || null
-      }
-    }, "*");
-  };
+  // On ne transmet PAS simplement le uid par postMessage :
+  // un uid seul n'est pas une authentification Firebase.
+  // La page enfant doit récupérer la vraie session Firebase Auth.
 }
 
 function closeScanFrame(){

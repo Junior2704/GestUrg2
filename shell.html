@@ -2582,52 +2582,111 @@ function preventDevTools(e) {
   }
 }
 
-
-// ===== LOCK =====
 window.lockSession = async function() {
+
+    // Évite plusieurs appels simultanés
+    if (isLocked) return;
+
     isLocked = true;
+
     sessionStorage.setItem("appLocked", "true");
 
-    document.body.classList.add("locked");
-    document.getElementById("lockOverlay").classList.add("active");
-    document.getElementById("unlockPassword").value = "";
-    document.getElementById("lockError").textContent = "";
+    const overlay = document.getElementById("lockOverlay");
+    const passwordInput = document.getElementById("unlockPassword");
+    const errorDiv = document.getElementById("lockError");
 
+    // Nettoyage
+    passwordInput.value = "";
+    errorDiv.textContent = "";
+
+    // --------------------------------------------------
     // Récupération de la préférence de connexion
+    // --------------------------------------------------
+
+    let preference = "mdp";
+
     const user = auth.currentUser;
 
     if (user) {
-        const userSnap = await getDoc(
-            doc(db, "medecins", user.uid)
-        );
 
-        if (userSnap.exists()) {
-            const userData = userSnap.data();
-            const prefCo = userData.préférenceConnexion || "mdp";
+        try {
 
-            if (prefCo === "badge") {
-                switchLockTab("badge");
-            } else {
-                switchLockTab("password");
+            const userSnap = await getDoc(
+                doc(db, "medecins", user.uid)
+            );
+
+            if (userSnap.exists()) {
+
+                const userData = userSnap.data();
+
+                preference =
+                    userData.préférenceConnexion === "badge"
+                        ? "badge"
+                        : "mdp";
             }
-        } else {
-            switchLockTab("password");
+
+        } catch (error) {
+
+            console.warn(
+                "Impossible de récupérer la préférence de connexion",
+                error
+            );
+
+            preference = "mdp";
         }
-    } else {
-        switchLockTab("password");
     }
+
+    // --------------------------------------------------
+    // Préparation de l'animation
+    // --------------------------------------------------
+
+    const animationType =
+        preference === "badge"
+            ? "badge"
+            : "password";
+
+    await attendreAnimation(animationType);
+
+    // --------------------------------------------------
+    // Sélection du panneau
+    // --------------------------------------------------
+
+    switchLockTab(animationType);
+
+    // --------------------------------------------------
+    // Affichage de la modale SEULEMENT maintenant
+    // --------------------------------------------------
+
+    document.body.classList.add("locked");
+
+    overlay.classList.add("active");
+
+    // --------------------------------------------------
+    // Verrouillage des iframes
+    // --------------------------------------------------
 
     document.addEventListener("keydown", preventDevTools);
 
     document.querySelectorAll("iframe").forEach(iframe => {
-        iframe.contentWindow.postMessage(
+
+        // Ne pas toucher à l'iframe de chargement éventuelle
+        if (
+            iframe.classList.contains("login-badge-anim") ||
+            iframe.classList.contains("login-password-anim")
+        ) {
+            iframe.style.pointerEvents = "auto";
+        } else {
+            iframe.style.pointerEvents = "none";
+        }
+
+        iframe.contentWindow?.postMessage(
             { type: "APP_LOCK" },
             "*"
         );
 
-        iframe.style.pointerEvents = "none";
         iframe.blur();
     });
+
 };
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "v") {
@@ -2637,23 +2696,65 @@ document.addEventListener("keydown", (e) => {
 });
 // ===== VOLETS MDP / BADGE =====
 window.switchLockTab = function(tab) {
-  const isBadge = tab === "badge";
 
-  document.getElementById("lockTabBadge").classList.toggle("active", isBadge);
-  document.getElementById("lockTabPassword").classList.toggle("active", !isBadge);
-  document.getElementById("lockPanelBadge").classList.toggle("active", isBadge);
-  document.getElementById("lockPanelPassword").classList.toggle("active", !isBadge);
+    const isBadge = tab === "badge";
 
-  document.getElementById("lockError").textContent = "";
+    const badgePanel = document.getElementById("lockPanelBadge");
+    const passwordPanel = document.getElementById("lockPanelPassword");
 
-  if (isBadge) {
-    document.getElementById("unlockBadge").value = "";
-    setTimeout(focusBadgeInput, 50);
-  } else {
-    setTimeout(() => document.getElementById("unlockPassword").focus(), 50);
-  }
-}
+    const badgeFrame = document.querySelector(".login-badge-anim");
+    const passwordFrame = document.querySelector(".login-password-anim");
 
+    document.getElementById("lockTabBadge")
+        .classList.toggle("active", isBadge);
+
+    document.getElementById("lockTabPassword")
+        .classList.toggle("active", !isBadge);
+
+    badgePanel.classList.toggle("active", isBadge);
+    passwordPanel.classList.toggle("active", !isBadge);
+
+    document.getElementById("lockError").textContent = "";
+
+    // --------------------------------------------------
+    // Informe l'animation qu'elle est maintenant visible
+    // --------------------------------------------------
+
+    if (isBadge && animationReady.badge) {
+
+        badgeFrame.contentWindow.postMessage(
+            { type: "PANEL_VISIBLE" },
+            "*"
+        );
+
+    }
+
+    if (!isBadge && animationReady.password) {
+
+        passwordFrame.contentWindow.postMessage(
+            { type: "PANEL_VISIBLE" },
+            "*"
+        );
+
+    }
+
+    // --------------------------------------------------
+    // Focus
+    // --------------------------------------------------
+
+    if (isBadge) {
+
+        document.getElementById("unlockBadge").value = "";
+
+        setTimeout(focusBadgeInput, 50);
+
+    } else {
+
+        setTimeout(() => {
+            document.getElementById("unlockPassword").focus();
+        }, 50);
+    }
+};
 window.focusBadgeInput = function() {
   const input = document.getElementById("unlockBadge");
   if (document.getElementById("lockPanelBadge").classList.contains("active")) {
@@ -2733,18 +2834,22 @@ window.unlockSession = async function() {
     );
 
     await reauthenticateWithCredential(auth.currentUser, credential);
-document.querySelector('.login-password-anim')
-  .contentWindow
-  .postMessage("Valide", "*");
+await attendreAnimation("password");
+
+document.querySelector(".login-password-anim")
+    .contentWindow
+    .postMessage("Valide", "*");
         setTimeout(() =>{ 
       handleUnlockSuccess();
     }, 2000);
     
 
   } catch (error) {
-        document.querySelector('.login-password-anim')
-  .contentWindow
-  .postMessage("Invalide", "*");
+  await attendreAnimation("password");
+
+document.querySelector(".login-password-anim")
+    .contentWindow
+    .postMessage("Invalide", "*");
   setTimeout(() =>{ 
       handleUnlockFail("Mot de passe incorrect", errorDiv);
   },2000);
@@ -2772,18 +2877,22 @@ window.unlockSessionByBadge = async function() {
     const userSnap = await getDoc(doc(db, "medecins", auth.currentUser.uid));
 
     if (userSnap.exists() && userSnap.data().idBadge && userSnap.data().idBadge === badgeValue) {
-      document.querySelector('.login-badge-anim')
-  .contentWindow
-  .postMessage("Valide", "*");
+     await attendreAnimation("badge");
+
+document.querySelector(".login-badge-anim")
+    .contentWindow
+    .postMessage("Valide", "*");
         setTimeout(() =>{ 
       handleUnlockSuccess();
     }, 2000);
     } else {
       badgeInput.value = "";
       focusBadgeInput();
-      document.querySelector('.login-badge-anim')
-  .contentWindow
-  .postMessage("Invalide", "*");
+await attendreAnimation("badge");
+
+document.querySelector(".login-badge-anim")
+    .contentWindow
+    .postMessage("Invalide", "*");
   setTimeout(() =>{ 
       handleUnlockFail("Badge non reconnu", errorDiv);
   },2000);
@@ -2988,7 +3097,70 @@ if(premierChargement){
   });
 
 }
+// ======================================================
+// GESTION DU CHARGEMENT DES ANIMATIONS DE VERROUILLAGE
+// ======================================================
 
+const animationFrames = {
+    badge: document.querySelector(".login-badge-anim"),
+    password: document.querySelector(".login-password-anim")
+};
+
+const animationReady = {
+    badge: false,
+    password: false
+};
+
+Object.entries(animationFrames).forEach(([type, iframe]) => {
+
+    if (!iframe) return;
+
+    iframe.addEventListener("load", () => {
+
+        animationReady[type] = true;
+
+        console.log(`✅ Animation ${type} chargée`);
+
+        // Informe éventuellement l'animation que l'application est prête
+        iframe.contentWindow.postMessage(
+            { type: "APP_READY" },
+            "*"
+        );
+    });
+
+});
+function attendreAnimation(type, timeout = 5000) {
+
+    return new Promise(resolve => {
+
+        if (animationReady[type]) {
+            resolve();
+            return;
+        }
+
+        const debut = Date.now();
+
+        const verifier = () => {
+
+            if (animationReady[type]) {
+                resolve();
+                return;
+            }
+
+            if (Date.now() - debut >= timeout) {
+                console.warn(
+                    `⚠️ Timeout chargement animation ${type}`
+                );
+                resolve();
+                return;
+            }
+
+            requestAnimationFrame(verifier);
+        };
+
+        verifier();
+    });
+}
 
 surveillerMessagesNonLus();
 

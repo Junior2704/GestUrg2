@@ -1293,6 +1293,11 @@
 
     if(!count){
       mentions.innerHTML = '<div class="preview-placeholder">Les mentions sélectionnées apparaîtront ici.</div>';
+      if(empty) empty.style.display = '';
+    } else {
+      // Le message "Aucune mention sélectionnée" ne doit plus rester
+      // affiché dès qu'au moins une case est cochée.
+      if(empty) empty.style.display = 'none';
     }
 
     const countEl = document.getElementById('preview-count');
@@ -1340,6 +1345,10 @@
 
   window.addEventListener('DOMContentLoaded', function(){
     updateCertPreview();
+    const initialEmpty = document.getElementById('rx-empty');
+    if(initialEmpty && document.querySelector('.cert-check:checked')){
+      initialEmpty.style.display = 'none';
+    }
     ['nom','prenom','dateNaissance','sexe'].forEach(id => {
       const el=document.getElementById(id);
       if(el) el.addEventListener('input', updateCertPreview);
@@ -1522,37 +1531,14 @@ async function telechargerCertif() {
   afficherBulle("📥 PDF téléchargé", "success");
 }
 window.telechargerCertif =telechargerCertif;
-  // utilitaire notifications
-  function afficherBulle(msg, type = 'info') {
-    const container = document.getElementById('notification-container');
-    const el = document.createElement('div');
-    el.textContent = msg;
-    el.style.padding = '10px 14px';
-    el.style.borderRadius = '8px';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-    el.style.fontSize = '14px';
-    el.style.fontWeight = '500';
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-8px)';
-    el.style.transition = 'opacity 0.25s, transform 0.25s';
-
-    switch (type) {
-      case 'success': el.style.background = '#e6ffed'; el.style.color = '#064e22'; break;
-      case 'alerte': case 'error': el.style.background = '#ffdede'; el.style.color = '#a00'; break;
-      case 'warning': el.style.background = '#fff4e5'; el.style.color = '#663c00'; break;
-      default: el.style.background = '#333'; el.style.color = '#fff'; break;
-    }
-
-    container.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-
-    setTimeout(() => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-8px)';
-      el.addEventListener('transitionend', () => el.remove());
-    }, 3000);
+const ORIGINE_PARENT_BULLE = "*";
+function afficherBulle(message, typeBulle) {
+  if (window.parent === window) {
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+    return;
   }
-
+  window.parent.postMessage({ source: "notification-bulle", message, typeBulle }, ORIGINE_PARENT_BULLE);
+}
   // format date
   window.formatDate = function(date) {
     const pad = n => n.toString().padStart(2, '0');

@@ -6,43 +6,337 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
 <style>
+   body{
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    margin: 12px;
+    background:#ffffff;
+    color:#1d2d50;
+  }
 
-:root{
-  --c-bg:#ffff;
-  --c-surface:#ffffff;
-  --c-border:#e2e8f0;
-  --c-border-strong:#cbd5e1;
-  --c-primary:#1657c4;
-  --c-primary-dark:#0f3f92;
-  --c-primary-light:#eaf1ff;
-  --c-text:#1e293b;
-  --c-text-soft:#64748b;
-  --c-text-faint:#94a3b8;
-  --c-danger:#dc2626;
-  --c-danger-light:#fdecec;
-  --c-success:#16a34a;
-  --c-success-light:#eafaf0;
-  --c-warning:#b45309;
-  --c-warning-light:#fff4e0;
-  --radius:10px;
-  --radius-lg:14px;
-  --shadow-sm:0 1px 2px rgba(15,40,90,.06);
-  --shadow:0 6px 20px rgba(15,40,90,.08);
+  h1{
+    font-size:22px;
+    font-weight:700;
+    color:#0b5ed7;
+    margin-bottom:14px;
+  }
+
+  .container{max-width:1200px;margin:0 auto}
+
+  .row{display:flex;gap:16px}
+
+  .col{
+    background:#ffffff;
+    border-radius:12px;
+    padding:16px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.08);
+    border:1px solid #e3e9f2;
+  }
+
+  .col.small{flex:0 0 360px}
+  .col.big{flex:1}
+
+  #search{
+width: 100%;
+    box-sizing: border-box;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccd6e0;
+    background:#f8fbff;
+   
+
 }
 
-*{box-sizing:border-box}
+  #medicaments-list{
+    max-height:480px;
+    overflow:auto;
+    margin-top:8px;
+    padding:4px;
+  }
 
-html,body{
-  height:100%;
-  margin:0;
-  overflow:hidden;
-  background:var(--c-bg);
-  color:var(--c-text);
-  font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;
+  .medicament-item{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #e0e6ef;
+    margin-bottom:8px;
+    background:white;
+    cursor:pointer;
+    transition:0.15s;
+  }
+  .medicament-item:hover{
+    background:#eaf3ff;
+    border-color:#bcd4ff;
+  }
+
+  /* --- HISTORIQUE --- */
+  .history-list{max-height:480px;overflow:auto;margin-top:12px;}
+
+  .history-item{
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:10px;
+    background:#f7f9fc;
+    border-left:5px solid #b8c7e8;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  /* couleurs selon statut */
+  .history-item[data-status="a-donner"]{
+    border-left-color:#0d6efd;
+  }
+  .history-item[data-status="en-retard"]{
+    border-left-color:#ff6b6b;
+    background:#ffecec;
+  }
+  .history-item[data-status="pris"]{
+    border-left-color:#32c671;
+    background:#e8fff1;
+  }
+
+  .badge{
+    padding:4px 8px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+  }
+
+  /* couleur badge statut */
+  .badge[data-status="a-donner"]{
+    background:#dceaff;
+    color:#0d6efd;
+  }
+  .badge[data-status="en-retard"]{
+    background:#ffdada;
+    color:#c62828;
+  }
+  .badge[data-status="pris"]{
+    background:#cbf7d5;
+    color:#146c2e;
+  }
+
+  .btn{
+    padding:6px 12px;
+    border-radius:6px;
+    border:1px solid #aac2dd;
+    background:#f4f8ff;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .btn:hover{
+    background:#e2ecff;
+  }
+  .btn.primary{
+    background:#0b5ed7;
+    color:white;
+    border-color:#0b5ed7;
+  }
+  .btn.primary:hover{
+    background:#0948a8;
+  }
+
+  /* --- MODALES --- */
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter: blur(3px);
+  }
+  .modal .card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    min-width:360px;
+    max-width:720px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
+    border:1px solid #e3e9f2;
+  }
+
+  label{
+    margin-top:10px;
+    font-size:14px;
+    font-weight:600;
+    color:#1d2d50;
+  }
+
+  input[type=text],textarea,select,
+  input[type=datetime-local],input[type=number]{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccd6e0;
+    background:#f8fbff;
+    margin-top:4px;
+  }
+
+  .flex{display:flex;gap:12px;align-items:center}
+  .muted{color:#627089;font-size:13px;margin-top:4px}
+/* Badge d'état du médicament */
+.badge {
+    font-size: 1.1rem;          /* plus gros */
+    font-weight: 700;           /* bien visible */
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #dceaff;        /* bleu clair lisible */
+    color: #0d47a1;             /* bleu foncé médical */
+    display: inline-block;
+}
+.modal {
+    position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
 }
 
-body{display:flex;flex-direction:column}
+.modal .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
 
+.modal h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modal p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modal .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.history-item {
+    display: grid;
+    grid-template-columns: 1fr 100px 40px 110px 110px; 
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #f7f9fc;
+    border-left: 5px solid #b8c7e8;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.history-center {
+    justify-self: center;
+}
+
+.history-right {
+    justify-self: end;
+}
+
+.container {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.modalna {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* flou de l'écran */
+  z-index: 9999;
+}
+
+.modalna .card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.modalna h2 {
+  color: #d32f2f; /* rouge pour danger/erreur */
+  margin-bottom: 12px;
+}
+
+.modalna p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modalna .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.btn-id {
+  all: unset;
+  background: transparent;
+  color: #000;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(2px);
+}
+
+.btn-id:hover {
+  background: rgba(0, 120, 255, 0.12);
+  border-color: rgba(0, 120, 255, 0.6);
+  color: #0078ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+}
+
+.btn-id:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+}
+
+.btn-id:focus {
+  outline: none;
+  border-color: rgba(0, 120, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+}
+.btn-id-c:hover {
+  background: rgba(255, 0, 0, 0.10);
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #e60000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
+}
+
+.btn-id-c:focus {
+  border-color: rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+.btn-id-v:hover {
+  background: rgba(0, 200, 80, 0.12);
+  border-color: rgba(0, 200, 80, 0.6);
+  color: #00b35a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+}
+
+.btn-id-v:focus {
+  border-color: rgba(0, 200, 80, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+}
 
 /* Chrome, Edge, Opera */
 ::-webkit-scrollbar {
@@ -71,525 +365,169 @@ body{display:flex;flex-direction:column}
     scrollbar-color: #2196f3 #eef3ff;
 }
 
-.hidden-field{display:none!important}
-
-/* ===== EN-TÊTE PRO : conservé pour compatibilité avec la page parent ===== */
-#pro-header{
-  flex-shrink:0;
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  padding:12px 22px;
-  background:var(--c-surface);
-  border-bottom:1px solid var(--c-border);
+.row{
+  display:flex;
+  gap:16px;
+  align-items:stretch; /* important : force même hauteur */
 }
 
-#pro-header .brand{display:flex;align-items:center;gap:10px}
-#pro-header .brand .brand-icon{
-  width:34px;height:34px;border-radius:9px;
-  background:var(--c-primary-light);color:var(--c-primary);
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:16px
-}
-#pro-header .brand-text h1{margin:0;font-weight:600;font-size:17px}
-#pro-header .brand-text span{display:block;font-size:12px;color:var(--c-text-soft)}
-#pro-header .meta{display:flex;align-items:center;gap:18px}
-#pro-header .meta-block{text-align:right;line-height:1.3}
-#pro-header .medecin-nom{font-weight:600;font-size:13px}
-#pro-header .medecin-sub{font-size:12px;color:var(--c-text-soft)}
-
-.icon-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:36px;height:36px;border-radius:9px;
-  border:1px solid var(--c-border-strong);
-  background:var(--c-surface);color:var(--c-text-soft);
-  cursor:pointer;transition:all .15s ease
-}
-.icon-btn:hover{
-  background:var(--c-danger-light);
-  border-color:var(--c-danger);color:var(--c-danger)
+/* Hauteur commune des deux blocs */
+.col{
+  height: 90vh; /* ajuste si besoin */
+  display:flex;
+  flex-direction:column;
 }
 
-/* ===== BOUTONS ===== */
-.btn-id{
-  all:unset;
-  box-sizing:border-box;
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  padding:9px 16px;
-  border-radius:9px;
-  font-size:13.5px;
-  font-weight:600;
-  cursor:pointer;
-  border:1px solid var(--c-border-strong);
-  background:var(--c-surface);
-  color:var(--c-text);
-  transition:all .15s ease;
-}
-.btn-id:hover{
-  border-color:var(--c-primary);
-  background:var(--c-primary-light);
-  color:var(--c-primary-dark);
-}
-.btn-id-v{
-  background:var(--c-primary);
-  border-color:var(--c-primary);
-  color:#fff;
-}
-.btn-id-v:hover{
-  background:var(--c-primary-dark);
-  border-color:var(--c-primary-dark);
-  color:#fff;
-}
-.btn-id-c:hover{
-  background:var(--c-danger-light);
-  border-color:var(--c-danger);
-  color:var(--c-danger);
-}
-.btn-id:focus{
-  outline:none;
-  box-shadow:0 0 0 3px rgba(22,87,196,.15)
-}
-.btn{
-  box-sizing:border-box;
-  padding:8px 12px;
-  border-radius:9px;
-  border:1px solid var(--c-border-strong);
-  background:var(--c-surface);
-  color:var(--c-text);
-  cursor:pointer;
-  font-size:13px;
-  transition:all .15s ease;
-}
-.btn:hover{
-  border-color:var(--c-primary);
-  background:var(--c-primary-light);
-  color:var(--c-primary-dark)
-}
-.btn.primary{
-  background:var(--c-primary);
-  border-color:var(--c-primary);
-  color:#fff
-}
-
-/* ===== LAYOUT PRINCIPAL ===== */
-.container{
-  width:100%;
-  max-width:none;
-  margin:0;
-  padding:18px 22px;
+/* zones scrollables */
+#medicaments-list,
+#history{
   flex:1;
-  min-height:0;
+  overflow:auto;
+  max-height:none; /* on enlève l'ancien comportement */
+}
+.container{
+  max-width: 100%;
 }
 
 .row{
-  display:flex;
-  gap:18px;
-  height:100%;
-  min-height:0;
-  align-items:stretch;
+  display: grid;
+  grid-template-columns: 500px 1fr;
+  gap: 16px;
+}
+/* ===== MODALE PRESCRIPTION CLEAN UI ===== */
+
+#modal-prescription .card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px 26px;
+  width: 520px;
+  max-width: 95vw;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
-.col{
-  display:flex;
-  flex-direction:column;
-  min-height:0;
-  background:var(--c-surface);
-  border:1px solid var(--c-border);
-  border-radius:var(--radius-lg);
-  box-shadow:var(--shadow-sm);
-  padding:0;
-  overflow:hidden;
+/* Titre */
+#modal-prescription h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b5ed7;
+  border-bottom: 1px solid #e6eef9;
+  padding-bottom: 10px;
 }
 
-.col.small{flex:1.05;min-width:300px}
-.col.big{flex:1.65;min-width:0}
-
-/* ===== EN-TÊTES DES CARTES ===== */
-.col.small::before{
-  content:"Médicaments";
-  display:block;
-  flex-shrink:0;
-  padding:14px 16px;
-  background:#fafcff;
-  border-bottom:1px solid var(--c-border);
-  font-size:14px;
-  font-weight:600;
-  color:var(--c-text);
+/* Labels */
+#modal-prescription label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
-.col.big h3{
-  margin:0;
-  padding:14px 16px 4px;
-  background:#fafcff;
-  font-size:14px;
-  font-weight:600;
-  color:var(--c-text);
-  flex-shrink:0;
+/* Champs input / textarea */
+#modal-prescription input[type="text"],
+#modal-prescription input[type="number"],
+#modal-prescription input[type="datetime-local"],
+#modal-prescription textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d6deea;
+  background: #f8fbff;
+  font-size: 14px;
+  transition: 0.2s;
 }
 
-.col.big .muted{
-  margin:0;
-  padding:0 16px 12px;
-  background:#fafcff;
-  border-bottom:1px solid var(--c-border);
+/* focus propre */
+#modal-prescription input:focus,
+#modal-prescription textarea:focus {
+  outline: none;
+  border-color: #0b5ed7;
+  box-shadow: 0 0 0 3px rgba(11,94,215,0.15);
+  background: #fff;
 }
 
-/* ===== RECHERCHE ===== */
-#search{
-  flex-shrink:0;
-  width:auto;
-  margin:10px 14px 0;
-  padding:9px 11px;
-  border:1px solid var(--c-border);
-  border-radius:8px;
-  font-size:13px;
-  font-family:inherit;
-  background:#fbfdff;
-  color:var(--c-text);
-}
-#search:focus{
-  outline:none;
-  border-color:var(--c-primary);
-  background:#fff;
-  box-shadow:0 0 0 3px rgba(22,87,196,.08)
+/* warning mieux intégré */
+#pres-warning {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-/* ===== LISTE MÉDICAMENTS ===== */
-#medicaments-list{
-  flex:1;
-  min-height:0;
-  overflow-y:auto;
-  max-height:none;
-  margin:0;
-  padding:10px 14px 14px;
+/* radio group propre */
+#modal-prescription .flex {
+  gap: 18px;
+  margin-top: 6px;
+  margin-bottom: 4px;
+  align-items: center;
 }
 
-.medicament-item{
-  padding:11px 12px;
-  border:1px solid var(--c-border);
-  border-radius:9px;
-  margin-bottom:7px;
-  background:var(--c-surface);
-  color:var(--c-text);
-  cursor:pointer;
-  font-size:13px;
-  line-height:1.35;
-  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .15s ease;
-}
-.medicament-item:hover{
-  background:var(--c-primary-light);
-  border-color:#b9ccef;
-  box-shadow:var(--shadow-sm);
-  transform:translateY(-1px)
-}
-.medicament-item:active{transform:translateY(0)}
-
-/* ===== HISTORIQUE ===== */
-.history-list{
-  flex:1;
-  min-height:0;
-  overflow-y:auto;
-  max-height:none;
-  margin:0;
-  padding:12px 14px 14px;
+#modal-prescription .flex label {
+  margin: 0;
+  font-weight: 500;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.history-item{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 100px 40px 110px 110px;
-  align-items:center;
-  gap:10px;
-  padding:12px;
-  border:1px solid var(--c-border);
-  border-left:4px solid #b9c8e6;
-  border-radius:9px;
-  margin-bottom:9px;
-  background:var(--c-surface);
-  box-shadow:var(--shadow-sm);
-  transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;
-}
-.history-item:hover{
-  border-color:var(--c-border-strong);
-  box-shadow:var(--shadow);
-}
-.history-item[data-status="a-donner"]{
-  border-left-color:var(--c-primary);
-}
-.history-item[data-status="en-retard"]{
-  border-left-color:var(--c-danger);
-  background:var(--c-danger-light);
-}
-.history-item[data-status="pris"]{
-  border-left-color:var(--c-success);
-  background:var(--c-success-light);
-}
-.history-center{justify-self:center}
-.history-right{justify-self:end}
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:4px 9px;
-  border-radius:20px;
-  font-size:11.5px;
-  font-weight:700;
-  white-space:nowrap;
-}
-.badge[data-status="a-donner"]{
-  background:var(--c-primary-light);
-  color:var(--c-primary-dark)
-}
-.badge[data-status="prevu"]{
-  background:#f1f5f9;
-  color:#475569
-}
-.badge[data-status="en-retard"]{
-  background:#fee2e2;
-  color:#b91c1c
-}
-.badge[data-status="pris"]{
-  background:var(--c-success-light);
-  color:#15803d
+/* bloc fréquence (évite effet collé) */
+#modal-prescription .flex input {
+  flex: 1;
 }
 
-/* ===== FORMULAIRES / MODALES ===== */
-label{
-  display:block;
-  margin-top:12px;
-  font-size:13px;
-  font-weight:600;
-  color:var(--c-text)
-}
-input[type=text],textarea,select,input[type=datetime-local],input[type=number]{
-  width:100%;
-  padding:9px 11px;
-  border-radius:8px;
-  border:1px solid var(--c-border);
-  background:#fbfdff;
-  color:var(--c-text);
-  font-family:inherit;
-  font-size:13.5px;
-  margin-top:5px;
-  transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;
-}
-input[type=text]:focus,textarea:focus,select:focus,input[type=datetime-local]:focus,input[type=number]:focus{
-  outline:none;
-  border-color:var(--c-primary);
-  background:#fff;
-  box-shadow:0 0 0 3px rgba(22,87,196,.12)
-}
-textarea{resize:vertical}
-.flex{display:flex;gap:12px;align-items:center}
-.muted{color:var(--c-text-soft);font-size:12px;line-height:1.45}
-
-.modal{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(15,23,42,.45);
-  backdrop-filter:blur(4px);
-  z-index:9999;
-}
-.modal .card{
-  width:90%;
-  max-width:520px;
-  max-height:90vh;
-  overflow-y:auto;
-  background:#fff;
-  border:1px solid var(--c-border);
-  border-radius:16px;
-  padding:26px 28px;
-  box-shadow:12px 12px 40px rgba(15,23,42,.25);
-}
-.modal .card h3{
-  margin:0 0 8px;
-  font-size:19px;
-  color:var(--c-text)
-}
-.modal h2{
-  color:var(--c-danger);
-  margin:0 0 10px;
-  font-size:19px
-}
-.modal p{
-  color:var(--c-text-soft);
-  font-size:14px;
-  line-height:1.5;
-}
-.modalna{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(15,23,42,.45);
-  backdrop-filter:blur(4px);
-  z-index:9999
-}
-.modalna .card{
-  background:#fff;
-  padding:24px 30px;
-  border-radius:14px;
-  text-align:center;
-  max-width:400px;
-  box-shadow:var(--shadow)
-}
-.modalna h2{color:var(--c-danger);margin-bottom:10px}
-.modalna p{color:var(--c-text-soft);font-size:14px}
-
-/* ===== MODALE PRESCRIPTION ===== */
-#modal-prescription .card{
-  width:520px;
-  max-width:95vw;
-  border-radius:16px;
-  padding:26px 28px;
-}
-#modal-prescription h3{
-  margin:0 0 16px;
-  padding-bottom:10px;
-  border-bottom:1px solid var(--c-border);
-  color:var(--c-primary);
-  font-size:19px;
-}
-#modal-prescription label{
-  display:block;
-  margin-top:14px;
-  margin-bottom:6px;
-  font-size:13px;
-}
-#modal-prescription .flex{
-  gap:18px;
-  margin-top:6px;
-  margin-bottom:4px;
-  align-items:center
-}
-#modal-prescription .flex label{
-  margin:0;
-  font-weight:500;
-  display:flex;
-  align-items:center;
-  gap:6px
-}
-#modal-prescription .flex input{flex:1}
-#pres-warning{
-  margin-top:10px!important;
-  padding:10px 12px!important;
-  border-radius:9px!important;
-  font-size:13px!important;
-  line-height:1.4
+/* bouton zone */
+#modal-prescription .card > div:last-child {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f7;
 }
 
-/* ===== DÉTAILS / PRISE ===== */
-#modal-details .card,#modal-take .card{max-width:480px}
-#modal-details .card>div:last-child,#modal-take .card>div:last-child{
-  margin-top:18px;
-  padding-top:12px;
-  border-top:1px solid var(--c-border)
+/* espacement général */
+#modal-prescription * {
+  box-sizing: border-box;
 }
-
-/* ===== NOTIFICATIONS ===== */
-#notification-container{
-  position:fixed;
-  top:20px;
-  right:20px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  z-index:10000;
-  align-items:flex-end
+#modal-prescription .card {
+  font-size: 16px;
 }
-.bubble{
-  max-width:300px;
-  padding:10px 15px;
-  border-radius:9px;
-  color:#fff;
-  font-size:13.5px;
-  box-shadow:var(--shadow)
+#modal-prescription .flex {
+  justify-content: center;
+  gap: 20px;
+  align-items: center;
 }
-.administratif{background:var(--c-primary)}
-.alerte{background:var(--c-danger)}
-
-@media (max-width:900px){
-  html,body{overflow:auto}
-  .container{padding:12px}
-  .row{height:auto;flex-direction:column}
-  .col.small,.col.big{min-height:42vh}
-  .history-item{grid-template-columns:minmax(0,1fr) auto auto}
-  .history-center,.history-right{justify-self:start}
-}
-
-@media (max-width:620px){
-  .history-item{
-    grid-template-columns:1fr;
-    gap:7px
-  }
-  .history-center,.history-right{justify-self:start}
-  #modal-prescription .card,.modal .card{padding:20px}
-}
-
-  </style>
+</style>
 
 </head>
 <body>
-
-  <!-- En-tête conservé pour compatibilité avec la logique existante -->
-  <header id="pro-header">
-    <div class="brand">
-      <div class="brand-icon">Rx</div>
-      <div class="brand-text">
-        <h1>Médicaments d'urgence</h1>
-        <span>Administration et demandes</span>
-      </div>
-    </div>
-    <div class="meta">
-      <div class="meta-block">
-        <div class="medecin-nom" id="nom-medecin">—</div>
-        <div class="medecin-sub" id="specialite">—</div>
-        <div class="medecin-sub" id="lieu-medecin">—</div>
-      </div>
-    </div>
-  </header>
-
-  <div class="container">
+  <!--<div class="container">!-->
+    
     <div class="row">
-
-      <!-- COLONNE GAUCHE : médicaments -->
-      <section class="col small">
-        <input id="search" placeholder="Rechercher un médicament..." autocomplete="off" />
-        <div id="medicaments-list">
-          <!-- liste fournie par medicaments.json et générée par JS -->
+      <div class="col small">
+        <input id="search" placeholder="Rechercher un médicament..." />
+        <div id="medicaments-list"> <!-- list fournie par l'utilisateur; placeholder remplie via JS -->
         </div>
-      </section>
+      </div>
 
-      <!-- COLONNE DROITE : historique / demandes -->
-      <section class="col big">
-        <h3>Historique &amp; demandes</h3>
-        <div class="muted">
-          Liste des prescriptions / demandes enregistrées pour le patient (triées par date de création).
-        </div>
+      <div class="col big">
+        <h3>Historique & demandes</h3>
+        <div class="muted">Liste des prescriptions / demandes enregistrées pour le patient (triées par date de création).</div>
         <div id="history" class="history-list"></div>
-      </section>
-
+      </div>
     </div>
   </div>
 
-  <!-- Modal pour créer une demande -->
+  <!-- Modal pour créer demande -->
   <div id="modal-prescription" class="modal">
     <div class="card">
       <h3 id="modal-title">Nouvelle demande</h3>
-
       <label>Produit</label>
       <input type="text" id="pres-name"/>
-
       <div id="pres-warning" style="display:none; background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:10px; border-radius:8px; font-size:13px; margin-top:8px; text-align:left;">
         🚨 <strong>Attention :</strong> Ce médicament n'est pas présent dans la base de données des médicaments. Il se peut qu'il ne soit pas/plus disponible.
       </div>
-
       <label>Commentaires</label>
       <textarea id="pres-comment" rows="3"></textarea>
 
@@ -598,42 +536,39 @@ textarea{resize:vertical}
         <label><input type="radio" name="when" value="now" checked/> Maintenant</label>
         <label><input type="radio" name="when" value="at"/> A une date/heure</label>
       </div>
+            <input type="datetime-local" id="pres-datetime" style="display:none;margin-top:6px;" />
 
-      <input type="datetime-local" id="pres-datetime" style="display:none;margin-top:6px;" />
-
-      <label style="margin-top:14px;">
-        <input type="checkbox" id="pres-repeat-toggle" />
-        Répétition
-      </label>
-
-      <div id="frequency-block" style="display:none;">
-        <label>Fréquence</label>
-        <div class="flex">
-          <input type="number" id="pres-every-hours" placeholder="toutes les X heures" min="1"/>
-          <input type="number" id="pres-repeat-count" placeholder="N répétitions (ex:6)" min="1"/>
-        </div>
+<label style="margin-top:14px;">
+  <input type="checkbox" id="pres-repeat-toggle" />
+  Répétition
+</label>
+<div id="frequency-block" style="display:none;">
+      <label>Fréquence</label>
+      <div class="flex">
+        <input type="number" id="pres-every-hours" placeholder="toutes les X heures" min="1"/>
+        <input type="number" id="pres-repeat-count" placeholder="N répétitions (ex:6)" min="1"/>
       </div>
-
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:12px;border-top:1px solid var(--c-border);">
-        <button class="btn-id btn-id-c" id="pres-cancel">❌ Annuler</button>
-        <button class="btn-id btn-id-v" id="pres-save">✔️ Valider &amp; enregistrer</button>
+</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+       <button class="btn-id btn-id-c" id="pres-cancel">❌ Annuler</button>
+        <button class="btn-id btn-id-v" id="pres-save">✔️ Valider & enregistrer</button>
       </div>
     </div>
   </div>
+<div id="modal-details" class="modal">
+  <div class="card" style="max-width:480px">
+    <h3>Détails du médicament</h3>
+    <div id="detail-content"></div>
 
-  <!-- Modal détails -->
-  <div id="modal-details" class="modal">
-    <div class="card">
-      <h3>Détails du médicament</h3>
-      <div id="detail-content"></div>
-      <div style="display:flex;justify-content:space-between;gap:10px;margin-top:18px;">
-        <button class="btn" id="btnDeleteDetail" style="display:none;background:#ffdddd;color:#a00;border-color:#ffb3b3;">
-          Supprimer
-        </button>
-        <button class="btn-id btn-id-c" onclick="closeDetails()">Fermer</button>
-      </div>
+    <div style="display:flex; justify-content:space-between; margin-top:18px;">
+      <button class="btn" id="btnDeleteDetail" style="display:none;background:#ffdddd; color:#a00; border-color:#ffb3b3;">
+        Supprimer
+      </button>
+      <button class="btn-id btn-id-c" onclick="closeDetails()">Fermer</button>
     </div>
   </div>
+</div>
+
 
   <!-- Modal prise -->
   <div id="modal-take" class="modal">
@@ -643,31 +578,29 @@ textarea{resize:vertical}
       <input type="text" id="take-name" readonly />
       <label>Commentaire prise</label>
       <textarea id="take-comment" rows="3"></textarea>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:12px;border-top:1px solid var(--c-border);">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
         <button class="btn-id btn-id-c" id="take-cancel">❌ Annuler</button>
         <button class="btn-id btn-id-v" id="take-save">✔️ Valider prise</button>
       </div>
     </div>
   </div>
-
-  <!-- Modale d'accès refusé -->
-  <div id="modal-no-access" class="modal">
-    <div class="card">
-      <h2>⛔️ Accès refusé</h2>
-      <p>Vous n’avez pas accès à cette page.</p>
-    </div>
+<!-- Modale d'accès refusé -->
+<div id="modal-no-access" class="modal">
+  <div class="card">
+    <h2>⛔️ Accès refusé</h2>
+    <p>Vous n’avez pas accès à cette page.</p>
   </div>
+</div>
+<div id="modal-error" class="modalna">
+  <div class="card">
+    <h2>😞 Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+        <p>Si le problème persiste, contactez un administrateur</p>
 
-  <div id="modal-error" class="modalna">
-    <div class="card">
-      <h2>😞 Oups, une erreur est survenue</h2>
-      <p>Veuillez re-essayer un peu plus tard</p>
-      <p>Si le problème persiste, contactez un administrateur</p>
-    </div>
   </div>
-
+</div>
+ 
   <script type="module">
-
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 

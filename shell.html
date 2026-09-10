@@ -853,6 +853,98 @@ iframe {
   flex-direction: column;
   align-items: center;
 }
+
+/* ===== RACCOURCIS / ACTIVITÉ RÉCENTE (page d'accueil) ===== */
+#home-shortcuts{
+  width:100%;
+  max-width:760px;
+  margin-top:22px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.home-shortcuts-block{
+  display:none; /* affiché en JS uniquement s'il y a du contenu */
+}
+.home-shortcuts-block.has-items{
+  display:block;
+}
+.home-shortcuts-title{
+  font-size:12.5px;
+  font-weight:700;
+  color:#5b6472;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-bottom:6px;
+  text-align:center;
+}
+.home-shortcuts-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:center;
+}
+.shortcut-chip{
+  all:unset;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(255,255,255,.75);
+  border:1.5px solid rgba(0,0,0,.12);
+  border-radius:999px;
+  padding:7px 14px;
+  font-size:13px;
+  font-weight:500;
+  color:#374151;
+  cursor:pointer;
+  backdrop-filter:blur(2px);
+  transition:all .2s ease;
+}
+.shortcut-chip:hover{
+  background:rgba(0,120,255,.12);
+  border-color:rgba(0,120,255,.6);
+  color:#0078ff;
+  transform:translateY(-1px);
+  box-shadow:0 6px 15px rgba(0,120,255,.15);
+}
+.shortcut-chip .chip-count{
+  background:rgba(0,120,255,.15);
+  color:#0078d4;
+  font-size:11px;
+  font-weight:700;
+  border-radius:999px;
+  padding:1px 7px;
+}
+
+/* Bandeau "reprendre la session" */
+#resume-banner{
+  width:100%;
+  max-width:760px;
+  margin-top:18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  background:rgba(0,120,255,.08);
+  border:1.5px solid rgba(0,120,255,.25);
+  border-radius:14px;
+  padding:12px 16px;
+  flex-wrap:wrap;
+}
+#resume-banner-text{
+  font-size:13.5px;
+  font-weight:600;
+  color:#0f3d6b;
+}
+#resume-banner-actions{
+  display:flex;
+  gap:8px;
+}
+#resume-banner-actions .btn-id{
+  padding:7px 14px;
+  font-size:13px;
+}
+
 .btn-id {
   all: unset;
   background: transparent;
@@ -1128,6 +1220,17 @@ transform:none;
   z-index:999999;
 
   isolation:isolate;
+}
+
+/* ===== SCROLL DU MENU OUTILS =====
+   Empêche le menu de dépasser la fenêtre : au-delà de la hauteur
+   disponible, une barre de défilement apparaît (au lieu de couper
+   les derniers outils, inaccessibles). */
+.dropdown-content{
+  max-height:calc(100vh - 90px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
 }
 #actions{
   overflow:visible;
@@ -1529,6 +1632,25 @@ transform:none;
 
 </div>
 
+  <div id="resume-banner" style="display:none;">
+    <span id="resume-banner-text"></span>
+    <div id="resume-banner-actions">
+      <button class="btn-id" id="resume-banner-open">↩️ Reprendre</button>
+      <button class="btn-id" id="resume-banner-dismiss">Ignorer</button>
+    </div>
+  </div>
+
+  <div id="home-shortcuts">
+    <div class="home-shortcuts-block" id="home-shortcuts-frequent">
+      <div class="home-shortcuts-title">⭐ Vos outils fréquents</div>
+      <div class="home-shortcuts-list" id="home-shortcuts-frequent-list"></div>
+    </div>
+    <div class="home-shortcuts-block" id="home-shortcuts-recent">
+      <div class="home-shortcuts-title">🕓 Récemment utilisés</div>
+      <div class="home-shortcuts-list" id="home-shortcuts-recent-list"></div>
+    </div>
+  </div>
+
   <div id="home-messages-container">
   <div id="home-messages-carousel"></div>
   <div id="home-messages-controls">
@@ -1616,10 +1738,182 @@ transform:none;
 let tabs = [];
 let activeTab = null;
 
+/* =========================================================
+   ACTIVITÉ UTILISATEUR : outils fréquents, récents, reprise
+   de session — comme dans un logiciel professionnel.
+   Les données sont stockées localement (par compte connecté)
+   et ne quittent jamais le poste.
+   ========================================================= */
+window.currentUser = null;
+
+function activityStorageKey(){
+  const uid = (window.currentUser && window.currentUser.uid) || "anonyme";
+  return "gesturg2_activity_" + uid;
+}
+
+function loadActivity(){
+  try{
+    const raw = localStorage.getItem(activityStorageKey());
+    if(!raw) return { recent: [], counts: {}, openTabs: [] };
+    const parsed = JSON.parse(raw);
+    return {
+      recent: parsed.recent || [],
+      counts: parsed.counts || {},
+      openTabs: parsed.openTabs || []
+    };
+  }catch(e){
+    return { recent: [], counts: {}, openTabs: [] };
+  }
+}
+
+function saveActivity(data){
+  try{
+    localStorage.setItem(activityStorageKey(), JSON.stringify(data));
+  }catch(e){
+    console.warn("Impossible d'enregistrer l'activité :", e);
+  }
+}
+
+// Construit un annuaire {url -> {title, label, page}} à partir des
+// boutons/éléments existants (boutons du bandeau + items du menu Outils),
+// pour ne jamais dupliquer les libellés/icônes déjà présents dans la page.
+let toolsRegistry = {};
+function buildToolsRegistry(){
+  toolsRegistry = {};
+  document.querySelectorAll('[onclick*="openTab("]').forEach(el=>{
+    const m = el.getAttribute('onclick').match(/openTab\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/);
+    if(!m) return;
+    const [, title, url] = m;
+    let label;
+    if (el.tagName === 'SPAN' && el.parentElement){
+      // item du menu Outils : l'icône + le nom sont sur le conteneur parent
+      label = el.parentElement.textContent.replace(el.textContent, '').trim();
+    } else {
+      label = el.textContent.trim();
+    }
+    const pageHolder = el.closest('[data-page]');
+    toolsRegistry[url] = {
+      title,
+      url,
+      label: label || title,
+      page: pageHolder ? pageHolder.dataset.page : null
+    };
+  });
+}
+
+// Un outil reste-t-il autorisé/visible pour l'utilisateur (droits appliqués) ?
+function isShortcutVisible(url){
+  const info = toolsRegistry[url];
+  if(!info) return false;
+  if(!info.page) return true;
+  const holder = document.querySelector('[data-page="' + info.page + '"]');
+  if(!holder) return true;
+  return holder.style.display !== "none";
+}
+
+function trackActivity(title, url){
+  const data = loadActivity();
+
+  data.recent = data.recent.filter(r => r.url !== url);
+  data.recent.unshift({ title, url, ts: Date.now() });
+  data.recent = data.recent.slice(0, 8);
+
+  if(!data.counts[url]) data.counts[url] = { title, count: 0 };
+  data.counts[url].title = title;
+  data.counts[url].count++;
+
+  saveActivity(data);
+  renderHomeShortcuts();
+}
+
+// Sauvegarde en continu les onglets ouverts, pour pouvoir proposer
+// de "reprendre où on en était" à la prochaine connexion.
+function saveTabsState(){
+  const data = loadActivity();
+  data.openTabs = tabs.map(t => ({ title: t.title, url: t.url }));
+  saveActivity(data);
+}
+
+function shortcutChip(entry, extraLabel){
+  const btn = document.createElement('button');
+  btn.className = 'shortcut-chip';
+  btn.type = 'button';
+  const info = toolsRegistry[entry.url];
+  const label = (info && info.label) ? info.label : entry.title;
+  btn.innerHTML = '<span>' + label + '</span>' +
+    (extraLabel ? '<span class="chip-count">' + extraLabel + '</span>' : '');
+  btn.addEventListener('click', () => openTab(entry.title, entry.url));
+  return btn;
+}
+
+function renderHomeShortcuts(){
+  const data = loadActivity();
+
+  // --- Outils fréquents ---
+  const freqList = document.getElementById('home-shortcuts-frequent-list');
+  const freqBlock = document.getElementById('home-shortcuts-frequent');
+  if(freqList && freqBlock){
+    freqList.innerHTML = '';
+    const frequentEntries = Object.entries(data.counts)
+      .map(([url, c]) => ({ url, title: c.title, count: c.count }))
+      .filter(e => isShortcutVisible(e.url))
+      .sort((a,b)=> b.count - a.count)
+      .slice(0, 6);
+    frequentEntries.forEach(e => {
+      freqList.appendChild(shortcutChip(e, e.count > 1 ? (e.count + '×') : null));
+    });
+    freqBlock.classList.toggle('has-items', frequentEntries.length > 0);
+  }
+
+  // --- Récemment utilisés ---
+  const recentList = document.getElementById('home-shortcuts-recent-list');
+  const recentBlock = document.getElementById('home-shortcuts-recent');
+  if(recentList && recentBlock){
+    recentList.innerHTML = '';
+    const recentEntries = data.recent.filter(r => isShortcutVisible(r.url)).slice(0, 6);
+    recentEntries.forEach(e => {
+      recentList.appendChild(shortcutChip(e, null));
+    });
+    recentBlock.classList.toggle('has-items', recentEntries.length > 0);
+  }
+}
+
+// Propose de rouvrir automatiquement les onglets de la session précédente.
+function renderResumeBanner(){
+  const banner = document.getElementById('resume-banner');
+  if(!banner) return;
+
+  const dismissedNow = sessionStorage.getItem('resumeBannerDismissed') === 'true';
+  const data = loadActivity();
+  const savedTabs = (data.openTabs || []).filter(t => isShortcutVisible(t.url));
+
+  if(dismissedNow || tabs.length > 0 || savedTabs.length === 0){
+    banner.style.display = 'none';
+    return;
+  }
+
+  const text = document.getElementById('resume-banner-text');
+  text.textContent = savedTabs.length === 1
+    ? "Vous aviez un onglet ouvert lors de votre dernière visite."
+    : `Vous aviez ${savedTabs.length} onglets ouverts lors de votre dernière visite.`;
+
+  banner.style.display = 'flex';
+
+  document.getElementById('resume-banner-open').onclick = () => {
+    savedTabs.forEach(t => openTab(t.title, t.url));
+    banner.style.display = 'none';
+  };
+  document.getElementById('resume-banner-dismiss').onclick = () => {
+    sessionStorage.setItem('resumeBannerDismissed', 'true');
+    banner.style.display = 'none';
+  };
+}
+
 function openTab(title, url){
  let existing = tabs.find(t=>t.url===url);
   if(existing){
     setActive(existing.id);
+    trackActivity(title, url);
     return;
   }
 
@@ -1655,6 +1949,9 @@ function openTab(title, url){
 document.getElementById('menuOutils').classList.remove("open");
   document.getElementById('home').style.display='none';
   setActive(id);
+
+  trackActivity(title, url);
+  saveTabsState();
 }
 
 function setActive(id){
@@ -1676,9 +1973,13 @@ function closeTab(id){
   document.querySelector(`.tab[data-id='${id}']`)?.remove();
   document.querySelector(`iframe[data-id='${id}']`)?.remove();
 
+  saveTabsState();
+
   if(!tabs.length){
     document.getElementById('home').style.display='flex';
-    activeTab=null;return;
+    activeTab=null;
+    renderHomeShortcuts();
+    return;
   }
   if(activeTab===id) setActive(tabs[tabs.length-1].id);
 }
@@ -1888,6 +2189,8 @@ function closeAllTabs() {
 
   activeTab = null;
   document.getElementById('home').style.display = 'flex';
+  saveTabsState();
+  renderHomeShortcuts();
 }
 // Fermer seulement si clic ailleurs
 document.addEventListener("click", () => {
@@ -2144,6 +2447,13 @@ const snap = await getDoc(doc(db, "medecins", user.uid));
     const pages = snap.data().pages || {};
 
     appliquerDroits(pages);
+
+    // Active le suivi d'activité pour CET utilisateur (raccourcis,
+    // outils récents, reprise de session) une fois les droits connus.
+    window.currentUser = user;
+    buildToolsRegistry();
+    renderHomeShortcuts();
+    renderResumeBanner();
 
   // Parcours des iframes ouvertes
   document.querySelectorAll('iframe').forEach(iframe => {

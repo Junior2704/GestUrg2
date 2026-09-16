@@ -2353,26 +2353,44 @@ function afficherModalSystemeDeverrouille() {
     }
   }
 
+// État précédent du kill-switch.
+// null = premier snapshot : false est l'état normal et ne constitue
+// donc pas un événement de déverrouillage.
+let dernierEtatVerrouillage = null;
+let modalDeverrouillageDejaAffichee = false;
+
 function surveillerBlocageSysteme() {
   onSnapshot(
     doc(db, "referentiels", "fonctionnement"),
     (snap) => {
       const data = snap.data();
 
-      if (!data) return;
+      if (!data || typeof data.verrouille !== "boolean") return;
+
+      const etatActuel = data.verrouille;
 
       // 🔴 SYSTÈME VERROUILLÉ
-      if (data.verrouille === true) {
+      if (etatActuel === true) {
+        dernierEtatVerrouillage = true;
+        modalDeverrouillageDejaAffichee = false;
+
         activerBlocageSysteme(data.commentaire);
         return;
       }
 
       // 🟢 SYSTÈME DÉVERROUILLÉ
-      if (data.verrouille === false) {
-        
+      // La modale n'apparaît que lors d'une vraie transition
+      // true -> false. Le premier snapshot false est ignoré.
+      if (
+        etatActuel === false &&
+        dernierEtatVerrouillage === true &&
+        !modalDeverrouillageDejaAffichee
+      ) {
+        modalDeverrouillageDejaAffichee = true;
         afficherModalSystemeDeverrouille();
-        return;
       }
+
+      dernierEtatVerrouillage = false;
     },
     (erreur) => {
       console.error(

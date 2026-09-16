@@ -606,6 +606,42 @@ tbody tr.warn{background:#fffaf1}
   #filtres .champ select{min-width:0;width:100%}
   .modal-overlay{padding:10px}
 }
+
+/* ===== ACQUITTEMENT DES ÉVÈNEMENTS ===== */
+.badge-acquittement{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-top:6px;
+  padding:3px 7px;
+  border:1px solid #b8c7d6;
+  background:#eef3f7;
+  color:#40566b;
+  border-radius:3px;
+  font:600 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+.badge-acquittement.acquitte{
+  border-color:#9ab7a4;
+  background:#edf7f0;
+  color:#25613b;
+}
+.btn-acquitter{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-top:7px;
+  padding:5px 8px;
+  border:1px solid #9fb4c8;
+  border-radius:3px;
+  background:#f7fafc;
+  color:#164b72;
+  font:600 11px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;
+  cursor:pointer;
+}
+.btn-acquitter:hover{background:#e8f1f7}
+.btn-acquitter:disabled{opacity:.55;cursor:wait}
+.action-acquittement{white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -728,6 +764,10 @@ tbody tr.warn{background:#fffaf1}
     <div class="champ checkbox">
       <input type="checkbox" id="filtreAnomaliesSeules">
       <label for="filtreAnomaliesSeules" style="font-weight:500">Anomalies uniquement</label>
+    </div>
+    <div class="champ checkbox">
+      <input type="checkbox" id="filtreNonAcquittesSeuls">
+      <label for="filtreNonAcquittesSeuls" style="font-weight:500">Non acquittés uniquement</label>
     </div>
     <div class="champ">
       <label>Nombre de lignes</label>
@@ -1463,17 +1503,68 @@ function remplirFiltres(logs) {
   if ([...selAction.options].some(o => o.value === valAction)) selAction.value = valAction;
 }
 
+
+async function acquitterEvenement(logId) {
+  if (!logId) return;
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Session expirée. Reconnecte-toi pour acquitter cet événement.");
+    return;
+  }
+
+  const log = tousLesLogs.find(l => l.id === logId);
+  if (!log) {
+    console.error("[audit] Événement introuvable :", logId);
+    return;
+  }
+
+  if (log.acquitte === true) return;
+
+  const bouton = document.querySelector(`[data-acquitter-id="${CSS.escape(logId)}"]`);
+  if (bouton) {
+    bouton.disabled = true;
+    bouton.textContent = "Acquittement…";
+  }
+
+  try {
+    await setDoc(
+      doc(db, "logs_audit", logId),
+      {
+        acquitte: true,
+        acquittePar: user.email || user.uid,
+        acquitteParUid: user.uid,
+        acquitteLe: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    // On laisse le snapshot temps réel actualiser l'affichage.
+  } catch (e) {
+    console.error("[audit] Erreur d'acquittement :", e);
+    if (bouton) {
+      bouton.disabled = false;
+      bouton.textContent = "✓ Acquitter";
+    }
+    alert("Impossible d'acquitter cet événement : " + e.message);
+  }
+}
+
+window.acquitterEvenement = acquitterEvenement;
+
 function appliquerFiltresEtAfficher() {
   const util = document.getElementById("filtreUtilisateur").value;
   const action = document.getElementById("filtreAction").value;
   const gravite = document.getElementById("filtreGravite").value;
   const anomaliesSeules = document.getElementById("filtreAnomaliesSeules").checked;
+  const nonAcquittesSeuls = document.getElementById("filtreNonAcquittesSeuls").checked;
 
   const filtres = logsAvecAnomalies.filter(l => {
     if (util && (l.email || l.uid) !== util) return false;
     if (action && l.action !== action) return false;
     if (gravite && l.niveau !== gravite) return false;
     if (anomaliesSeules && !l.anomalies?.length) return false;
+    if (nonAcquittesSeuls && l.acquitte === true) return false;
     return true;
   });
 
@@ -1496,6 +1587,9 @@ function appliquerFiltresEtAfficher() {
       <td class="action-cell">
         <span class="puce ${escapeHtml(l.niveau || "info")}"></span>${escapeHtml(l.action || "—")}
         ${l.anomalies?.length ? `<div class="tags-anomalie">${l.anomalies.map(a => `<span class="tag-anomalie">${escapeHtml(a)}</span>`).join("")}</div>` : ""}
+        ${l.acquitte === true
+          ? `<div class="badge-acquittement acquitte">✓ ACQUITTÉ${l.acquittePar ? ` · ${escapeHtml(l.acquittePar)}` : ""}${l.acquitteLe ? ` · ${escapeHtml(formatDate(l.acquitteLe))}` : ""}</div>`
+          : `<button type="button" class="btn-acquitter" data-acquitter-id="${escapeHtmlAttr(l.id)}" onclick="acquitterEvenement('${escapeHtmlAttr(l.id)}')">✓ Acquitter</button>`}
       </td>
       <td class="cell-details">${escapeHtml(formatDetails(l.details))}</td>
       <td class="cell-device">${escapeHtml(l.userAgent || "—")}</td>
@@ -1526,7 +1620,7 @@ function escapeHtml(value) {
 }
 function escapeHtmlAttr(value) { return escapeHtml(value); }
 
-["filtreUtilisateur","filtreAction","filtreGravite","filtreAnomaliesSeules"].forEach(id => {
+["filtreUtilisateur","filtreAction","filtreGravite","filtreAnomaliesSeules","filtreNonAcquittesSeuls"].forEach(id => {
   document.getElementById(id).addEventListener("change", appliquerFiltresEtAfficher);
 });
 document.getElementById("filtreLimite").addEventListener("change", demarrerTempsReel);

@@ -5,105 +5,155 @@
 <title>GestUrg2 — Journal d'audit</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root{
-    --bleu:#0078d4;
-    --bleu-fonce:#005fa3;
-    --fond:#f0f4f8;
-    --carte:#ffffff;
-    --texte:#0f172a;
-    --texte-att:#5b6472;
-    --bordure:#e2e8f0;
-    --rouge:#e74c3c;
-    --orange:#f39c12;
-    --vert:#16a34a;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;font-family:Inter,Arial,sans-serif;background:var(--fond);
-    color:var(--texte);min-height:100vh;
-  }
-  header{
-    background:var(--carte);padding:16px 24px;box-shadow:0 4px 16px rgba(0,0,0,.08);
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
-    position:sticky;top:0;z-index:10;
-  }
-  header h1{font-size:19px;margin:0;font-weight:700}
-  header .sous-titre{font-size:12.5px;color:var(--texte-att);margin-top:2px}
-  #btnActualiser{
-    background:var(--bleu);color:#fff;border:none;border-radius:10px;
-    padding:9px 16px;font-weight:600;cursor:pointer;transition:.2s;
-  }
-  #btnActualiser:hover{background:var(--bleu-fonce)}
-  main{padding:20px 24px 60px;max-width:1400px;margin:0 auto}
+:root{
+  --bleu:#0078d4; --bleu-fonce:#005fa3; --fond:#f0f4f8; --carte:#fff;
+  --texte:#0f172a; --texte-att:#5b6472; --bordure:#e2e8f0;
+  --rouge:#e74c3c; --orange:#f39c12; --vert:#16a34a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,Arial,sans-serif;background:var(--fond);color:var(--texte)}
+body{min-height:100vh}
+header{
+  background:var(--carte);padding:14px 24px;box-shadow:0 4px 16px rgba(0,0,0,.08);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  position:sticky;top:0;z-index:20;
+}
+header h1{font-size:19px;margin:0;font-weight:700}
+header .sous-titre{font-size:12.5px;color:var(--texte-att);margin-top:3px}
+.header-actions{display:flex;align-items:center;gap:10px}
+.pastille-live{
+  display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:999px;
+  background:#f0fdf4;color:#15803d;font-size:12px;font-weight:700;
+}
+.pastille-live i{width:8px;height:8px;border-radius:50%;background:#22c55e;display:block;box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+button{
+  border:0;border-radius:9px;padding:9px 13px;font:inherit;font-size:13px;font-weight:650;
+  cursor:pointer;
+}
+.btn-principal{background:var(--bleu);color:#fff}
+.btn-principal:hover{background:var(--bleu-fonce)}
+.btn-secondaire{background:#eef3f8;color:#17324d}
+.btn-danger{background:#fff1f2;color:#b42318}
+main{padding:20px 24px 60px;max-width:1500px;margin:0 auto}
+#etatAcces{display:flex;align-items:center;justify-content:center;min-height:70vh;text-align:center}
+#etatAcces .carte{background:var(--carte);padding:32px 40px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08);max-width:520px}
+#etatAcces h2{margin-top:0}
 
-  #etatAcces{display:flex;align-items:center;justify-content:center;min-height:60vh;text-align:center}
-  #etatAcces .carte{background:var(--carte);padding:32px 40px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08);max-width:420px}
-  #etatAcces h2{margin-top:0}
+.cartes-resume{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.resume-carte{
+  background:var(--carte);border-radius:14px;padding:16px 18px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+  border-left:4px solid var(--bleu)
+}
+.resume-carte.alerte{border-left-color:var(--rouge)}
+.resume-carte.attention{border-left-color:var(--orange)}
+.resume-carte .chiffre{font-size:26px;font-weight:800}
+.resume-carte .libelle{font-size:12.5px;color:var(--texte-att);margin-top:2px}
 
-  .cartes-resume{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;
-  }
-  .resume-carte{
-    background:var(--carte);border-radius:14px;padding:16px 18px;box-shadow:0 4px 14px rgba(0,0,0,.06);
-    border-left:4px solid var(--bleu);
-  }
-  .resume-carte.alerte{border-left-color:var(--rouge)}
-  .resume-carte.attention{border-left-color:var(--orange)}
-  .resume-carte .chiffre{font-size:26px;font-weight:800}
-  .resume-carte .libelle{font-size:12.5px;color:var(--texte-att);margin-top:2px}
+#panneauAlertes,#panneauNotifications{
+  background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+  margin-bottom:18px;overflow:hidden
+}
+#panneauAlertes h3,#panneauNotifications h3{
+  margin:0;padding:14px 18px;background:#fff5f5;color:var(--rouge);font-size:15px;
+  border-bottom:1px solid var(--bordure)
+}
+#panneauAlertes.vide h3{background:#f0fdf4;color:var(--vert)}
+.liste-alertes{max-height:280px;overflow-y:auto}
+.alerte-item{
+  padding:10px 18px;border-bottom:1px solid var(--bordure);font-size:13.5px;
+  display:flex;justify-content:space-between;gap:12px;align-items:center
+}
+.alerte-item:last-child{border-bottom:none}
+.badge-gravite{
+  font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap
+}
+.badge-gravite.critical{background:#fde2e1;color:var(--rouge)}
+.badge-gravite.warn{background:#fef3d7;color:#a96b06}
 
-  #panneauAlertes{
-    background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
-    margin-bottom:20px;overflow:hidden;
-  }
-  #panneauAlertes h3{
-    margin:0;padding:14px 18px;background:#fff5f5;color:var(--rouge);font-size:15px;
-    border-bottom:1px solid var(--bordure);
-  }
-  #panneauAlertes.vide h3{background:#f0fdf4;color:var(--vert)}
-  .liste-alertes{max-height:260px;overflow-y:auto}
-  .alerte-item{
-    padding:10px 18px;border-bottom:1px solid var(--bordure);font-size:13.5px;
-    display:flex;justify-content:space-between;gap:10px;align-items:center;
-  }
-  .alerte-item:last-child{border-bottom:none}
-  .badge-gravite{
-    font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;
-  }
-  .badge-gravite.critical{background:#fde2e1;color:var(--rouge)}
-  .badge-gravite.warn{background:#fef3d7;color:#a96b06}
+.notif-config{padding:15px 18px}
+.notif-ligne{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.notif-explication{font-size:12.5px;color:var(--texte-att);line-height:1.5;margin:8px 0 13px}
+.switch{position:relative;display:inline-flex;width:44px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked + .slider{background:var(--bleu)}
+.switch input:checked + .slider:before{transform:translateX(20px)}
+#listeDestinataires{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:7px;margin-top:10px}
+.destinataire{
+  border:1px solid var(--bordure);border-radius:9px;padding:9px 10px;display:flex;gap:9px;align-items:center;
+  background:#fafbfc
+}
+.destinataire small{display:block;color:var(--texte-att);margin-top:2px}
+.notif-actions{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+#etatNotif{font-size:12px;color:var(--texte-att)}
 
-  #filtres{
-    background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
-    padding:14px 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;
-  }
-  #filtres .champ{display:flex;flex-direction:column;gap:4px}
-  #filtres label{font-size:12px;color:var(--texte-att);font-weight:600}
-  #filtres select,#filtres input{
-    padding:8px 10px;border-radius:8px;border:1px solid var(--bordure);font-size:13.5px;min-width:150px;
-  }
-  #filtres .champ.checkbox{flex-direction:row;align-items:center;gap:6px}
+#filtres{
+  background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+  padding:14px 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px
+}
+#filtres .champ{display:flex;flex-direction:column;gap:4px}
+#filtres label{font-size:12px;color:var(--texte-att);font-weight:600}
+#filtres select,#filtres input[type="text"]{
+  padding:8px 10px;border-radius:8px;border:1px solid var(--bordure);font-size:13.5px;min-width:150px;
+}
+#filtres .champ.checkbox{flex-direction:row;align-items:center;gap:6px}
 
-  table{width:100%;border-collapse:collapse;background:var(--carte);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.06)}
-  thead th{
-    text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--texte-att);
-    padding:12px 14px;border-bottom:2px solid var(--bordure);background:#fafbfc;position:sticky;top:64px;
-  }
-  tbody td{padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--bordure);vertical-align:top}
-  tbody tr:hover{background:#f8fafc}
-  tbody tr.critical{background:#fff6f5}
-  tbody tr.warn{background:#fffaf0}
-  .puce{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-  .puce.info{background:#94a3b8}
-  .puce.warn{background:var(--orange)}
-  .puce.critical{background:var(--rouge)}
-  .tags-anomalie{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
-  .tag-anomalie{
-    font-size:10.5px;font-weight:700;background:#fde2e1;color:var(--rouge);
-    padding:2px 7px;border-radius:10px;white-space:nowrap;
-  }
-  #vide{text-align:center;padding:40px;color:var(--texte-att)}
-  #chargement{text-align:center;padding:40px;color:var(--texte-att)}
+.table-wrap{
+  width:100%;overflow-x:auto;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06)
+}
+table{
+  width:100%;min-width:1050px;table-layout:fixed;border-collapse:separate;border-spacing:0;
+  background:var(--carte)
+}
+col.date{width:145px}
+col.user{width:205px}
+col.action{width:260px}
+col.details{width:auto}
+col.device{width:250px}
+thead th{
+  text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--texte-att);
+  padding:12px 14px;border-bottom:2px solid var(--bordure);background:#fafbfc;
+  position:sticky;top:0;z-index:5
+}
+tbody td{
+  padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--bordure);
+  vertical-align:top;overflow-wrap:anywhere;word-break:break-word;line-height:1.35
+}
+tbody tr:hover{background:#f8fafc}
+tbody tr.critical{background:#fff6f5}
+tbody tr.warn{background:#fffaf0}
+.cell-date{white-space:nowrap}
+.cell-user{overflow-wrap:anywhere}
+.cell-device{color:var(--texte-att);font-size:12px}
+.cell-details{white-space:normal}
+.action-cell{min-width:0}
+.puce{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.puce.info{background:#94a3b8}.puce.warn{background:var(--orange)}.puce.critical{background:var(--rouge)}
+.tags-anomalie{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.tag-anomalie{
+  font-size:10.5px;font-weight:700;background:#fde2e1;color:var(--rouge);
+  padding:2px 7px;border-radius:10px;white-space:normal
+}
+#vide,#chargement{text-align:center;padding:40px;color:var(--texte-att)}
+#chargement{display:none}
+.small-muted{font-size:11.5px;color:var(--texte-att)}
+.hidden{display:none!important}
+
+/* ===== IFRAME DE CONNEXION ===== */
+#overlayConnexion{
+  position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;padding:20px;z-index:100
+}
+#boiteConnexion{
+  width:min(460px,100%);height:min(720px,92vh);background:#fff;border-radius:18px;
+  box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden;position:relative
+}
+#boiteConnexion iframe{display:block;width:100%;height:100%;border:0}
+#fermerConnexion{
+  position:absolute;right:10px;top:10px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.94);color:#334155;font-size:20px;z-index:2;padding:0
+}
 </style>
 </head>
 <body>
@@ -113,16 +163,42 @@
     <h1>🛡️ Journal d'audit — GestUrg2</h1>
     <div class="sous-titre" id="sousTitreConnecte">Connexion en cours…</div>
   </div>
-  <button id="btnActualiser">↻ Actualiser</button>
+  <div class="header-actions">
+    <div class="pastille-live"><i></i> Temps réel</div>
+  </div>
 </header>
 
 <main id="main" style="display:none">
-
   <div class="cartes-resume" id="cartesResume"></div>
 
   <div id="panneauAlertes">
     <h3 id="titreAlertes">Anomalies détectées</h3>
     <div class="liste-alertes" id="listeAlertes"></div>
+  </div>
+
+  <div id="panneauNotifications">
+    <h3>🔔 Notifications des anomalies</h3>
+    <div class="notif-config">
+      <div class="notif-ligne">
+        <label class="switch">
+          <input type="checkbox" id="notifActive">
+          <span class="slider"></span>
+        </label>
+        <strong>Envoyer une notification lorsqu'une anomalie est détectée</strong>
+      </div>
+      <div class="notif-explication">
+        Les notifications sont envoyées uniquement pour les <strong>nouvelles anomalies détectées</strong>
+        pendant que ce tableau de bord fonctionne. Les anomalies déjà présentes lors de l'ouverture
+        de la page ne déclenchent pas une avalanche de notifications.
+      </div>
+      <div class="small-muted">Destinataires :</div>
+      <div id="listeDestinataires">Chargement des utilisateurs…</div>
+      <div class="notif-actions">
+        <button class="btn-principal" id="btnSauverNotif">Enregistrer les paramètres</button>
+        <button class="btn-secondaire" id="btnTesterNotif">Envoyer un test</button>
+        <span id="etatNotif"></span>
+      </div>
+    </div>
   </div>
 
   <div id="filtres">
@@ -158,20 +234,25 @@
   </div>
 
   <div id="chargement">Chargement des journaux…</div>
-  <table id="tableLogs" style="display:none">
-    <thead>
-      <tr>
-        <th>Date / heure</th>
-        <th>Utilisateur</th>
-        <th>Action</th>
-        <th>Détails</th>
-        <th>Appareil</th>
-      </tr>
-    </thead>
-    <tbody id="corpsTable"></tbody>
-  </table>
-  <div id="vide" style="display:none">Aucun journal ne correspond aux filtres.</div>
 
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table id="tableLogs">
+      <colgroup>
+        <col class="date"><col class="user"><col class="action"><col class="details"><col class="device">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Date / heure</th>
+          <th>Utilisateur</th>
+          <th>Action</th>
+          <th>Détails</th>
+          <th>Appareil</th>
+        </tr>
+      </thead>
+      <tbody id="corpsTable"></tbody>
+    </table>
+  </div>
+  <div id="vide" style="display:none">Aucun journal ne correspond aux filtres.</div>
 </main>
 
 <div id="etatAcces">
@@ -181,11 +262,19 @@
   </div>
 </div>
 
+<!-- Connexion autonome : connexion.html doit envoyer un postMessage après connexion -->
+<div id="overlayConnexion" class="hidden">
+  <div id="boiteConnexion">
+    <button id="fermerConnexion" title="Fermer">×</button>
+    <iframe id="iframeConnexion" src="connexion.html" title="Connexion GestUrg2"></iframe>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit
+  getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -202,88 +291,187 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let tousLesLogs = [];       // logs bruts triés du plus récent au plus ancien
-let logsAvecAnomalies = []; // même liste, enrichie d'un tableau "anomalies"
+let utilisateurConnecte = null;
+let tousLesLogs = [];
+let logsAvecAnomalies = [];
+let unsubscribeLogs = null;
+let premiereSnapshot = true;
+let configNotif = {
+  active: false,
+  destinataires: []
+};
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    document.getElementById("titreAcces").textContent = "Non connecté";
-    document.getElementById("texteAcces").textContent =
-      "Connecte-toi d'abord à GestUrg2, puis reviens sur cette page.";
-    return;
-  }
+const overlayConnexion = document.getElementById("overlayConnexion");
+const iframeConnexion = document.getElementById("iframeConnexion");
 
-  try {
-    const snap = await getDoc(doc(db, "medecins", user.uid));
-    const estAdmin = snap.exists() && snap.data().pages.adminsysteme === true;
+function afficherConnexion() {
+  overlayConnexion.classList.remove("hidden");
+}
+function cacherConnexion() {
+  overlayConnexion.classList.add("hidden");
+}
 
-    if (!estAdmin) {
-      document.getElementById("titreAcces").textContent = "Accès refusé";
+document.getElementById("fermerConnexion").addEventListener("click", () => {
+  // On ne ferme pas une connexion qui n'est pas terminée : retour à l'état initial.
+  afficherConnexion();
+});
+
+/*
+ * CONTRAT AVEC connexion.html
+ *
+ * Après connexion réussie, connexion.html doit faire :
+ *
+ * window.parent.postMessage({
+ *   type: "gesturg-connexion-ok",
+ *   user: {
+ *     uid: user.uid,
+ *     email: user.email || "",
+ *     displayName: user.displayName || ""
+ *   }
+ * }, window.location.origin);
+ *
+ * Après déconnexion :
+ * window.parent.postMessage({ type:"gesturg-deconnexion" }, window.location.origin);
+ */
+window.addEventListener("message", async (event) => {
+  if (event.source !== iframeConnexion.contentWindow) return;
+
+  const data = event.data || {};
+  if (data.type === "gesturg-connexion-ok" && data.user?.uid) {
+    // La source est l'iframe attendue. On revérifie néanmoins le compte côté Firebase.
+    const currentUser = auth.currentUser;
+
+    // Si l'iframe et le parent partagent la même persistance Firebase,
+    // currentUser est normalement déjà disponible ici.
+    if (!currentUser || currentUser.uid !== data.user.uid) {
+      document.getElementById("titreAcces").textContent = "Connexion reçue";
       document.getElementById("texteAcces").textContent =
-        "Ce tableau de bord est réservé aux comptes administrateurs.";
+        "Vérification de la session Firebase en cours…";
+      // onAuthStateChanged reprendra la main.
       return;
     }
 
+    await initialiserTableau(currentUser);
+  }
+
+  if (data.type === "gesturg-deconnexion") {
+    arreterTempsReel();
+    utilisateurConnecte = null;
+    document.getElementById("main").style.display = "none";
+    document.getElementById("etatAcces").style.display = "flex";
+    document.getElementById("titreAcces").textContent = "Non connecté";
+    document.getElementById("texteAcces").textContent = "Connecte-toi pour accéder au journal.";
+    afficherConnexion();
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    arreterTempsReel();
+    utilisateurConnecte = null;
+    document.getElementById("main").style.display = "none";
+    document.getElementById("etatAcces").style.display = "flex";
+    document.getElementById("titreAcces").textContent = "Connexion requise";
+    document.getElementById("texteAcces").textContent =
+      "Le tableau possède son propre écran de connexion.";
+    afficherConnexion();
+    return;
+  }
+
+  await initialiserTableau(user);
+});
+
+async function initialiserTableau(user) {
+  try {
+    const snap = await getDoc(doc(db, "medecins", user.uid));
+    const data = snap.exists() ? snap.data() : {};
+    const estAdmin = data.pages?.adminsysteme === true;
+
+    if (!estAdmin) {
+      document.getElementById("main").style.display = "none";
+      document.getElementById("etatAcces").style.display = "flex";
+      document.getElementById("titreAcces").textContent = "Accès refusé";
+      document.getElementById("texteAcces").textContent =
+        "Ce tableau de bord est réservé aux comptes administrateurs.";
+      cacherConnexion();
+      return;
+    }
+
+    utilisateurConnecte = user;
+    cacherConnexion();
     document.getElementById("etatAcces").style.display = "none";
     document.getElementById("main").style.display = "block";
     document.getElementById("sousTitreConnecte").textContent =
-      `Connecté en tant que ${user.email}`;
+      `Connecté en tant que ${user.email || user.uid}`;
 
-    await chargerLogs();
+    await chargerDestinataires();
+    chargerConfigNotif();
+    demarrerTempsReel();
   } catch (e) {
     document.getElementById("titreAcces").textContent = "Erreur";
     document.getElementById("texteAcces").textContent =
       "Impossible de vérifier les droits d'accès : " + e.message;
   }
-});
+}
 
-document.getElementById("btnActualiser").addEventListener("click", chargerLogs);
-["filtreUtilisateur","filtreAction","filtreGravite","filtreAnomaliesSeules"].forEach(id => {
-  document.getElementById(id).addEventListener("change", appliquerFiltresEtAfficher);
-});
-document.getElementById("filtreLimite").addEventListener("change", chargerLogs);
+/* ======================================================
+   1. TEMPS RÉEL
+   ====================================================== */
+function arreterTempsReel() {
+  if (unsubscribeLogs) {
+    unsubscribeLogs();
+    unsubscribeLogs = null;
+  }
+}
 
-// ======================================================
-// 2. CHARGEMENT DES LOGS
-// ======================================================
-async function chargerLogs() {
-  document.getElementById("chargement").style.display = "block";
-  document.getElementById("tableLogs").style.display = "none";
-  document.getElementById("vide").style.display = "none";
+function demarrerTempsReel() {
+  arreterTempsReel();
+  premiereSnapshot = true;
 
   const nb = Number(document.getElementById("filtreLimite").value);
+  const q = query(
+    collection(db, "logs_audit"),
+    orderBy("clientTimestamp", "desc"),
+    limit(nb)
+  );
 
-  try {
-    const q = query(
-      collection(db, "logs_audit"),
-      orderBy("clientTimestamp", "desc"),
-      limit(nb)
-    );
-    const snap = await getDocs(q);
+  document.getElementById("chargement").style.display = "block";
 
-    tousLesLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // On remet dans l'ordre chronologique croissant pour l'analyse des séquences,
-    // puis on ré-inversera juste pour l'affichage.
-    const chrono = [...tousLesLogs].sort((a, b) => (a.clientTimestamp||0) - (b.clientTimestamp||0));
+  unsubscribeLogs = onSnapshot(q, (snap) => {
+    const nouveauxLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const chrono = [...nouveauxLogs].sort((a,b) => timestampMs(a.clientTimestamp) - timestampMs(b.clientTimestamp));
+    const anciens = new Map(logsAvecAnomalies.map(l => [l.id, l]));
 
-    logsAvecAnomalies = detecterAnomalies(chrono).reverse(); // le plus récent en premier
+    logsAvecAnomalies = detecterAnomalies(chrono).reverse();
+    tousLesLogs = nouveauxLogs;
 
     remplirFiltres(logsAvecAnomalies);
     afficherResume(logsAvecAnomalies);
     appliquerFiltresEtAfficher();
 
-  } catch (e) {
+    if (premiereSnapshot) {
+      // On initialise la mémoire des anomalies sans envoyer de notifications historiques.
+      marquerAnomaliesCommeVues(logsAvecAnomalies);
+      premiereSnapshot = false;
+    } else {
+      traiterNouvellesAnomalies(logsAvecAnomalies, anciens);
+    }
+
+    document.getElementById("chargement").style.display = "none";
+  }, (e) => {
+    document.getElementById("chargement").style.display = "block";
     document.getElementById("chargement").textContent =
-      "Erreur de chargement : " + e.message +
-      " (vérifie les règles Firestore sur la collection logs_audit)";
-  }
+      "Erreur temps réel : " + e.message +
+      " (vérifie les règles Firestore sur logs_audit)";
+  });
 }
 
-// ======================================================
-// 3. DÉTECTION D'ANOMALIES (heuristiques simples, côté client)
-// ======================================================
+/* ======================================================
+   2. DÉTECTION D'ANOMALIES
+   ====================================================== */
 function detecterAnomalies(logsChrono) {
   const parUtilisateur = {};
+
   logsChrono.forEach(l => {
     const cle = l.uid || l.email || "inconnu";
     if (!parUtilisateur[cle]) parUtilisateur[cle] = [];
@@ -293,42 +481,46 @@ function detecterAnomalies(logsChrono) {
   Object.values(parUtilisateur).forEach(logsUser => {
     const appareilsConnus = new Set();
 
-    logsUser.forEach((log, i) => {
+    logsUser.forEach(log => {
       log.anomalies = [];
 
-      // --- a) échecs de déverrouillage répétés (fenêtre de 10 min) ---
-      if (log.action === "deverrouillage_echec" || log.action === "deconnexion_forcee_echecs_repetes") {
-        const dixMinAvant = (log.clientTimestamp || 0) - 10 * 60 * 1000;
+      // a) ≥ 3 échecs de déverrouillage dans une fenêtre de 10 minutes.
+      if (log.action === "deverrouillage_echec" ||
+          log.action === "deconnexion_forcee_echecs_repetes") {
+        const maintenant = timestampMs(log.clientTimestamp);
+        const dixMinAvant = maintenant - 10 * 60 * 1000;
+
         const echecsRecents = logsUser.filter(l2 =>
-          (l2.action === "deverrouillage_echec") &&
-          (l2.clientTimestamp || 0) >= dixMinAvant &&
-          (l2.clientTimestamp || 0) <= (log.clientTimestamp || 0)
+          l2.action === "deverrouillage_echec" &&
+          timestampMs(l2.clientTimestamp) >= dixMinAvant &&
+          timestampMs(l2.clientTimestamp) <= maintenant
         );
+
         if (echecsRecents.length >= 3) {
           log.anomalies.push("Échecs répétés de déverrouillage");
         }
       }
 
-      // --- b) horaire inhabituel (00h–5h59) ---
-      const ts = log.clientTimestamp ? new Date(log.clientTimestamp) : null;
+      // b) activité entre 00:00 et 05:59.
+      const ts = timestampMs(log.clientTimestamp);
       if (ts) {
-        const h = ts.getHours();
+        const h = new Date(ts).getHours();
         if (h >= 0 && h < 6) {
           log.anomalies.push("Activité hors horaires (nuit)");
         }
       }
 
-      // --- c) rafale d'actions (≥ 15 actions en 60 secondes) ---
-      const uneMinAvant = (log.clientTimestamp || 0) - 60 * 1000;
+      // c) ≥ 15 actions dans une fenêtre de 60 secondes.
+      const uneMinAvant = ts - 60 * 1000;
       const actionsRecentes = logsUser.filter(l2 =>
-        (l2.clientTimestamp || 0) >= uneMinAvant &&
-        (l2.clientTimestamp || 0) <= (log.clientTimestamp || 0)
+        timestampMs(l2.clientTimestamp) >= uneMinAvant &&
+        timestampMs(l2.clientTimestamp) <= ts
       );
       if (actionsRecentes.length >= 15) {
         log.anomalies.push("Rafale d'actions (activité anormalement rapide)");
       }
 
-      // --- d) nouvel appareil / navigateur pour cet utilisateur ---
+      // d) nouvel user-agent après qu'au moins un autre appareil ait été vu.
       if (log.userAgent) {
         if (appareilsConnus.size > 0 && !appareilsConnus.has(log.userAgent)) {
           log.anomalies.push("Nouvel appareil / navigateur détecté");
@@ -336,7 +528,7 @@ function detecterAnomalies(logsChrono) {
         appareilsConnus.add(log.userAgent);
       }
 
-      // --- e) niveau critique explicite ---
+      // e) événement déjà marqué critical.
       if (log.niveau === "critical" && !log.anomalies.length) {
         log.anomalies.push("Évènement marqué critique");
       }
@@ -346,12 +538,195 @@ function detecterAnomalies(logsChrono) {
   return logsChrono;
 }
 
-// ======================================================
-// 4. AFFICHAGE
-// ======================================================
+function timestampMs(ts) {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts;
+  if (typeof ts === "string") {
+    const n = Date.parse(ts);
+    return Number.isNaN(n) ? 0 : n;
+  }
+  if (typeof ts.toMillis === "function") return ts.toMillis();
+  if (typeof ts.seconds === "number") return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+  return 0;
+}
+
+function cleAnomalie(log) {
+  return `${log.id}|${(log.anomalies || []).join("||")}`;
+}
+
+function marquerAnomaliesCommeVues(logs) {
+  const vues = JSON.parse(localStorage.getItem("gesturg_audit_anomalies_vues") || "[]");
+  const set = new Set(vues);
+  logs.filter(l => l.anomalies?.length).forEach(l => set.add(cleAnomalie(l)));
+  localStorage.setItem("gesturg_audit_anomalies_vues", JSON.stringify([...set].slice(-2000)));
+}
+
+async function traiterNouvellesAnomalies(logs, anciens) {
+  const vues = new Set(JSON.parse(localStorage.getItem("gesturg_audit_anomalies_vues") || "[]"));
+  const nouvelles = [];
+
+  for (const log of logs) {
+    if (!log.anomalies?.length) continue;
+
+    const cle = cleAnomalie(log);
+    if (vues.has(cle)) continue;
+
+    const ancien = anciens.get(log.id);
+    // On notifie si l'anomalie vient d'apparaître ou si c'est un nouveau log anomal.
+    if (!ancien || !ancien.anomalies?.length) {
+      nouvelles.push(log);
+    }
+    vues.add(cle);
+  }
+
+  localStorage.setItem("gesturg_audit_anomalies_vues", JSON.stringify([...vues].slice(-2000)));
+
+  if (!configNotif.active || !configNotif.destinataires.length) return;
+
+  for (const log of nouvelles) {
+    await notifierAnomalie(log);
+  }
+}
+
+async function notifierAnomalie(log) {
+  const destinataires = [...configNotif.destinataires];
+
+  const title = log.niveau === "critical"
+    ? "🚨 GestUrg2 — anomalie critique"
+    : "⚠️ GestUrg2 — anomalie détectée";
+
+  const body =
+    `${log.email || log.uid || "Utilisateur inconnu"} — ${log.action} — ` +
+    `${log.anomalies.join(", ")}`;
+
+  for (const userId of destinataires) {
+    await envoyerNotification(userId, title, body);
+  }
+}
+
+/* ======================================================
+   3. NOTIFICATIONS
+   ====================================================== */
+async function envoyerNotification(userId, title, body) {
+  try {
+    const response = await fetch(
+      "https://firebase-notification-server.onrender.com/send-notification-user",
+      {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId, title, body})
+      }
+    );
+
+    const result = await response.json();
+    console.log("🔔 Notification :", result);
+    return result;
+  } catch (error) {
+    console.error("❌ Erreur notification :", error);
+  }
+}
+window.envoyerNotification = envoyerNotification;
+
+async function chargerDestinataires() {
+  const conteneur = document.getElementById("listeDestinataires");
+  try {
+    const snap = await getDocs(collection(db, "medecins"));
+    const medecins = snap.docs.map(d => ({
+      uid: d.id,
+      ...d.data()
+    })).sort((a,b) =>
+      String(a.nom || a.email || "").localeCompare(String(b.nom || b.email || ""), "fr")
+    );
+
+    if (!medecins.length) {
+      conteneur.textContent = "Aucun utilisateur trouvé dans medecins.";
+      return;
+    }
+
+    conteneur.innerHTML = medecins.map(m => {
+      const nom = m.nom || m.email || m.uid;
+      const detail = [m.specialite, m.lieu, m.email].filter(Boolean).join(" · ");
+      return `
+        <label class="destinataire">
+          <input type="checkbox" class="check-destinataire" value="${escapeHtmlAttr(m.uid)}">
+          <span><strong>${escapeHtml(nom)}</strong><small>${escapeHtml(detail || m.uid)}</small></span>
+        </label>
+      `;
+    }).join("");
+
+    appliquerConfigAuxCases();
+  } catch (e) {
+    conteneur.textContent = "Impossible de charger les utilisateurs : " + e.message;
+  }
+}
+
+function chargerConfigNotif() {
+  try {
+    const raw = localStorage.getItem("gesturg_audit_notification_config");
+    if (raw) {
+      const c = JSON.parse(raw);
+      configNotif = {
+        active: c.active === true,
+        destinataires: Array.isArray(c.destinataires) ? c.destinataires : []
+      };
+    }
+  } catch(e) {
+    console.warn("Configuration notifications illisible", e);
+  }
+
+  document.getElementById("notifActive").checked = configNotif.active;
+  appliquerConfigAuxCases();
+}
+
+function appliquerConfigAuxCases() {
+  document.querySelectorAll(".check-destinataire").forEach(c => {
+    c.checked = configNotif.destinataires.includes(c.value);
+  });
+}
+
+document.getElementById("btnSauverNotif").addEventListener("click", () => {
+  const destinataires = [...document.querySelectorAll(".check-destinataire:checked")]
+    .map(c => c.value);
+
+  configNotif = {
+    active: document.getElementById("notifActive").checked,
+    destinataires
+  };
+
+  localStorage.setItem("gesturg_audit_notification_config", JSON.stringify(configNotif));
+
+  const etat = document.getElementById("etatNotif");
+  etat.textContent = `Paramètres enregistrés (${destinataires.length} destinataire(s)).`;
+  setTimeout(() => etat.textContent = "", 3000);
+});
+
+document.getElementById("btnTesterNotif").addEventListener("click", async () => {
+  const destinataires = [...document.querySelectorAll(".check-destinataire:checked")].map(c => c.value);
+  const etat = document.getElementById("etatNotif");
+
+  if (!destinataires.length) {
+    etat.textContent = "Sélectionne au moins un destinataire.";
+    return;
+  }
+
+  etat.textContent = "Envoi du test…";
+  for (const uid of destinataires) {
+    await envoyerNotification(
+      uid,
+      "🔔 GestUrg2 — test du journal d'audit",
+      "Ceci est une notification de test du système de surveillance."
+    );
+  }
+  etat.textContent = "Test envoyé.";
+  setTimeout(() => etat.textContent = "", 3000);
+});
+
+/* ======================================================
+   4. AFFICHAGE
+   ====================================================== */
 function afficherResume(logs) {
   const total = logs.length;
-  const anomalies = logs.filter(l => l.anomalies && l.anomalies.length);
+  const anomalies = logs.filter(l => l.anomalies?.length);
   const critiques = logs.filter(l => l.niveau === "critical");
   const utilisateurs = new Set(logs.map(l => l.email || l.uid || "inconnu")).size;
 
@@ -360,7 +735,7 @@ function afficherResume(logs) {
       <div class="chiffre">${total}</div>
       <div class="libelle">Actions journalisées</div>
     </div>
-    <div class="resume-carte" style="border-left-color:var(--bleu)">
+    <div class="resume-carte">
       <div class="chiffre">${utilisateurs}</div>
       <div class="libelle">Utilisateurs distincts</div>
     </div>
@@ -385,16 +760,16 @@ function afficherResume(logs) {
   } else {
     panneau.classList.remove("vide");
     titre.textContent = `⚠️ ${anomalies.length} anomalie(s) détectée(s)`;
-    liste.innerHTML = anomalies.slice(0, 30).map(l => `
+    liste.innerHTML = anomalies.slice(0,30).map(l => `
       <div class="alerte-item">
         <span>
-          <strong>${formatDate(l.clientTimestamp)}</strong>
-          — ${l.email || l.uid || "utilisateur inconnu"}
-          — ${l.action}
-          <span style="color:var(--texte-att)"> · ${l.anomalies.join(", ")}</span>
+          <strong>${escapeHtml(formatDate(l.clientTimestamp))}</strong>
+          — ${escapeHtml(l.email || l.uid || "utilisateur inconnu")}
+          — ${escapeHtml(l.action || "—")}
+          <span style="color:var(--texte-att)"> · ${escapeHtml(l.anomalies.join(", "))}</span>
         </span>
-        <span class="badge-gravite ${l.niveau === 'critical' ? 'critical' : 'warn'}">
-          ${l.niveau === 'critical' ? 'CRITIQUE' : 'ATTENTION'}
+        <span class="badge-gravite ${l.niveau === "critical" ? "critical" : "warn"}">
+          ${l.niveau === "critical" ? "CRITIQUE" : "ATTENTION"}
         </span>
       </div>
     `).join("");
@@ -404,19 +779,19 @@ function afficherResume(logs) {
 function remplirFiltres(logs) {
   const selUtil = document.getElementById("filtreUtilisateur");
   const selAction = document.getElementById("filtreAction");
-  const valUtilActuelle = selUtil.value;
-  const valActionActuelle = selAction.value;
+  const valUtil = selUtil.value;
+  const valAction = selAction.value;
 
   const utilisateurs = [...new Set(logs.map(l => l.email || l.uid).filter(Boolean))].sort();
   const actions = [...new Set(logs.map(l => l.action).filter(Boolean))].sort();
 
   selUtil.innerHTML = '<option value="">Tous</option>' +
-    utilisateurs.map(u => `<option value="${u}">${u}</option>`).join("");
+    utilisateurs.map(u => `<option value="${escapeHtmlAttr(u)}">${escapeHtml(u)}</option>`).join("");
   selAction.innerHTML = '<option value="">Toutes</option>' +
-    actions.map(a => `<option value="${a}">${a}</option>`).join("");
+    actions.map(a => `<option value="${escapeHtmlAttr(a)}">${escapeHtml(a)}</option>`).join("");
 
-  selUtil.value = valUtilActuelle;
-  selAction.value = valActionActuelle;
+  if ([...selUtil.options].some(o => o.value === valUtil)) selUtil.value = valUtil;
+  if ([...selAction.options].some(o => o.value === valAction)) selAction.value = valAction;
 }
 
 function appliquerFiltresEtAfficher() {
@@ -429,7 +804,7 @@ function appliquerFiltresEtAfficher() {
     if (util && (l.email || l.uid) !== util) return false;
     if (action && l.action !== action) return false;
     if (gravite && l.niveau !== gravite) return false;
-    if (anomaliesSeules && (!l.anomalies || !l.anomalies.length)) return false;
+    if (anomaliesSeules && !l.anomalies?.length) return false;
     return true;
   });
 
@@ -437,45 +812,55 @@ function appliquerFiltresEtAfficher() {
   document.getElementById("chargement").style.display = "none";
 
   if (!filtres.length) {
-    document.getElementById("tableLogs").style.display = "none";
+    document.getElementById("tableWrap").style.display = "none";
     document.getElementById("vide").style.display = "block";
     return;
   }
 
   document.getElementById("vide").style.display = "none";
-  document.getElementById("tableLogs").style.display = "table";
+  document.getElementById("tableWrap").style.display = "block";
 
   corps.innerHTML = filtres.map(l => `
-    <tr class="${l.anomalies && l.anomalies.length ? (l.niveau === 'critical' ? 'critical' : 'warn') : ''}">
-      <td>${formatDate(l.clientTimestamp)}</td>
-      <td>${l.email || l.uid || "—"}</td>
-      <td>
-        <span class="puce ${l.niveau || 'info'}"></span>${l.action}
-        ${l.anomalies && l.anomalies.length ? `<div class="tags-anomalie">${l.anomalies.map(a => `<span class="tag-anomalie">${a}</span>`).join("")}</div>` : ""}
+    <tr class="${l.anomalies?.length ? (l.niveau === "critical" ? "critical" : "warn") : ""}">
+      <td class="cell-date">${escapeHtml(formatDate(l.clientTimestamp))}</td>
+      <td class="cell-user">${escapeHtml(l.email || l.uid || "—")}</td>
+      <td class="action-cell">
+        <span class="puce ${escapeHtml(l.niveau || "info")}"></span>${escapeHtml(l.action || "—")}
+        ${l.anomalies?.length ? `<div class="tags-anomalie">${l.anomalies.map(a => `<span class="tag-anomalie">${escapeHtml(a)}</span>`).join("")}</div>` : ""}
       </td>
-      <td>${formatDetails(l.details)}</td>
-      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--texte-att);font-size:12px">
-        ${l.userAgent || "—"}
-      </td>
+      <td class="cell-details">${escapeHtml(formatDetails(l.details))}</td>
+      <td class="cell-device">${escapeHtml(l.userAgent || "—")}</td>
     </tr>
   `).join("");
 }
 
 function formatDate(ts) {
-  if (!ts) return "—";
-  return new Date(ts).toLocaleString("fr-FR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  const ms = timestampMs(ts);
+  if (!ms) return "—";
+  return new Date(ms).toLocaleString("fr-FR", {
+    day:"2-digit",month:"2-digit",year:"numeric",
+    hour:"2-digit",minute:"2-digit",second:"2-digit"
   });
 }
 
 function formatDetails(details) {
-  if (!details || !Object.keys(details).length) return "—";
+  if (!details || typeof details !== "object" || !Object.keys(details).length) return "—";
   return Object.entries(details)
-    .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+    .map(([k,v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
     .join(" · ");
 }
-</script>
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function escapeHtmlAttr(value) { return escapeHtml(value); }
+
+["filtreUtilisateur","filtreAction","filtreGravite","filtreAnomaliesSeules"].forEach(id => {
+  document.getElementById(id).addEventListener("change", appliquerFiltresEtAfficher);
+});
+document.getElementById("filtreLimite").addEventListener("change", demarrerTempsReel);
+</script>
 </body>
 </html>

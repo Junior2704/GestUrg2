@@ -87,6 +87,54 @@ main{padding:20px 24px 60px;max-width:1500px;margin:0 auto}
 .destinataire small{display:block;color:var(--texte-att);margin-top:2px}
 .notif-actions{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
 #etatNotif{font-size:12px;color:var(--texte-att)}
+.notif-resume{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.notif-resume span{font-size:13.5px;color:var(--texte-att)}
+
+/* ===== MODALES GÉNÉRIQUES ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);
+  display:flex;align-items:center;justify-content:center;padding:20px;z-index:200
+}
+.modal-boite{
+  width:min(560px,100%);max-height:88vh;background:#fff;border-radius:16px;
+  box-shadow:0 24px 70px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden
+}
+.modal-entete{
+  display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+  border-bottom:1px solid var(--bordure)
+}
+.modal-entete h3{margin:0;font-size:16px}
+.modal-fermer{background:transparent;color:var(--texte-att);font-size:20px;padding:2px 8px;border-radius:8px}
+.modal-fermer:hover{background:#f1f5f9}
+.modal-corps{padding:16px 20px;overflow-y:auto}
+.modal-pied{display:flex;gap:8px;align-items:center;padding:14px 20px;border-top:1px solid var(--bordure);flex-wrap:wrap}
+.champ-recherche{margin:12px 0 8px}
+.champ-recherche input{
+  width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--bordure);font-size:13.5px
+}
+.champ-modale{margin-bottom:12px}
+.champ-modale label{display:block;font-size:12px;font-weight:600;color:var(--texte-att);margin-bottom:4px}
+.champ-modale input,.champ-modale textarea{
+  width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--bordure);font:inherit;font-size:13.5px
+}
+.champ-modale textarea{resize:vertical}
+.erreur-modale{color:var(--rouge);font-size:12.5px;margin-top:8px;min-height:16px}
+.destinataire.masque{display:none}
+
+/* ===== VERROUILLAGE ===== */
+#panneauVerrou{
+  background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+  margin-bottom:18px;overflow:hidden
+}
+#panneauVerrou h3{
+  margin:0;padding:14px 18px;background:#f8fafc;color:var(--texte);font-size:15px;
+  border-bottom:1px solid var(--bordure)
+}
+.verrou-corps{padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.verrou-etat{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge-verrou{font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;white-space:nowrap}
+.badge-verrou.actif{background:#fde2e1;color:var(--rouge)}
+.badge-verrou.inactif{background:#f0fdf4;color:var(--vert)}
 
 #filtres{
   background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
@@ -176,27 +224,81 @@ tbody tr.warn{background:#fffaf0}
     <div class="liste-alertes" id="listeAlertes"></div>
   </div>
 
+  <div id="panneauVerrou">
+    <h3>🔒 État de l'application</h3>
+    <div class="verrou-corps">
+      <div class="verrou-etat">
+        <span class="badge-verrou" id="badgeVerrou">Chargement…</span>
+        <span class="small-muted" id="detailVerrou"></span>
+      </div>
+      <button class="btn-danger" id="btnBasculerVerrou" disabled>…</button>
+    </div>
+  </div>
+
   <div id="panneauNotifications">
     <h3>🔔 Notifications des anomalies</h3>
-    <div class="notif-config">
-      <div class="notif-ligne">
-        <label class="switch">
-          <input type="checkbox" id="notifActive">
-          <span class="slider"></span>
-        </label>
-        <strong>Envoyer une notification lorsqu'une anomalie est détectée</strong>
+    <div class="notif-resume">
+      <span id="notifResumeTexte">Chargement…</span>
+      <button class="btn-secondaire" id="btnOuvrirReglagesNotif">⚙️ Réglages des notifications</button>
+    </div>
+  </div>
+
+  <!-- Modale : réglages des notifications -->
+  <div id="modalNotif" class="modal-overlay hidden">
+    <div class="modal-boite">
+      <div class="modal-entete">
+        <h3>🔔 Réglages des notifications</h3>
+        <button class="modal-fermer" id="fermerModalNotif" title="Fermer">×</button>
       </div>
-      <div class="notif-explication">
-        Les notifications sont envoyées uniquement pour les <strong>nouvelles anomalies détectées</strong>
-        pendant que ce tableau de bord fonctionne. Les anomalies déjà présentes lors de l'ouverture
-        de la page ne déclenchent pas une avalanche de notifications.
+      <div class="modal-corps">
+        <div class="notif-ligne">
+          <label class="switch">
+            <input type="checkbox" id="notifActive">
+            <span class="slider"></span>
+          </label>
+          <strong>Envoyer une notification lorsqu'une anomalie est détectée</strong>
+        </div>
+        <div class="notif-explication">
+          Les notifications sont envoyées uniquement pour les <strong>nouvelles anomalies détectées</strong>
+          pendant que ce tableau de bord fonctionne. Les anomalies déjà présentes lors de l'ouverture
+          de la page ne déclenchent pas une avalanche de notifications.
+        </div>
+        <div class="champ-recherche">
+          <input type="text" id="rechercheDestinataire" placeholder="Rechercher un utilisateur (nom, email, spécialité, lieu)…">
+        </div>
+        <div class="small-muted">Destinataires :</div>
+        <div id="listeDestinataires">Chargement des utilisateurs…</div>
       </div>
-      <div class="small-muted">Destinataires :</div>
-      <div id="listeDestinataires">Chargement des utilisateurs…</div>
-      <div class="notif-actions">
+      <div class="modal-pied notif-actions">
         <button class="btn-principal" id="btnSauverNotif">Enregistrer les paramètres</button>
         <button class="btn-secondaire" id="btnTesterNotif">Envoyer un test</button>
         <span id="etatNotif"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : confirmation verrouillage / déverrouillage -->
+  <div id="modalVerrou" class="modal-overlay hidden">
+    <div class="modal-boite" style="width:min(440px,100%)">
+      <div class="modal-entete">
+        <h3 id="titreModalVerrou">Confirmer</h3>
+        <button class="modal-fermer" id="fermerModalVerrou" title="Fermer">×</button>
+      </div>
+      <div class="modal-corps">
+        <p id="texteModalVerrou" class="small-muted" style="margin-top:0"></p>
+        <div class="champ-modale">
+          <label for="motDePasseVerrou">Confirme avec ton mot de passe</label>
+          <input type="password" id="motDePasseVerrou" autocomplete="current-password" placeholder="Mot de passe">
+        </div>
+        <div class="champ-modale">
+          <label for="commentaireVerrou">Commentaire (optionnel)</label>
+          <textarea id="commentaireVerrou" rows="3" placeholder="Raison de cette action…"></textarea>
+        </div>
+        <div class="erreur-modale" id="erreurVerrou"></div>
+      </div>
+      <div class="modal-pied">
+        <button class="btn-secondaire" id="annulerVerrou">Annuler</button>
+        <button class="btn-danger" id="confirmerVerrou">Confirmer</button>
       </div>
     </div>
   </div>
@@ -272,9 +374,12 @@ tbody tr.warn{background:#fffaf0}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, onSnapshot
+  getAuth, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, onSnapshot,
+  setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -300,6 +405,9 @@ let configNotif = {
   active: false,
   destinataires: []
 };
+let etatVerrouActuel = null;
+let unsubscribeVerrou = null;
+let cibleVerrouEnCours = null;
 
 const overlayConnexion = document.getElementById("overlayConnexion");
 const iframeConnexion = document.getElementById("iframeConnexion");
@@ -407,6 +515,7 @@ async function initialiserTableau(user) {
     await chargerDestinataires();
     chargerConfigNotif();
     demarrerTempsReel();
+    demarrerSuiviVerrou();
   } catch (e) {
     document.getElementById("titreAcces").textContent = "Erreur";
     document.getElementById("texteAcces").textContent =
@@ -421,6 +530,10 @@ function arreterTempsReel() {
   if (unsubscribeLogs) {
     unsubscribeLogs();
     unsubscribeLogs = null;
+  }
+  if (unsubscribeVerrou) {
+    unsubscribeVerrou();
+    unsubscribeVerrou = null;
   }
 }
 
@@ -676,6 +789,44 @@ function chargerConfigNotif() {
 
   document.getElementById("notifActive").checked = configNotif.active;
   appliquerConfigAuxCases();
+  majResumeNotif();
+}
+
+function majResumeNotif() {
+  const resume = document.getElementById("notifResumeTexte");
+  if (!configNotif.active) {
+    resume.textContent = "Notifications désactivées.";
+  } else if (!configNotif.destinataires.length) {
+    resume.textContent = "Activées, mais aucun destinataire choisi.";
+  } else {
+    resume.textContent =
+      `Activées pour ${configNotif.destinataires.length} destinataire(s).`;
+  }
+}
+
+/* ---- Modale réglages notifications ---- */
+const modalNotif = document.getElementById("modalNotif");
+document.getElementById("btnOuvrirReglagesNotif").addEventListener("click", () => {
+  document.getElementById("rechercheDestinataire").value = "";
+  filtrerDestinataires("");
+  modalNotif.classList.remove("hidden");
+});
+document.getElementById("fermerModalNotif").addEventListener("click", () => {
+  modalNotif.classList.add("hidden");
+});
+modalNotif.addEventListener("click", (e) => {
+  if (e.target === modalNotif) modalNotif.classList.add("hidden");
+});
+document.getElementById("rechercheDestinataire").addEventListener("input", (e) => {
+  filtrerDestinataires(e.target.value);
+});
+
+function filtrerDestinataires(terme) {
+  const t = terme.trim().toLowerCase();
+  document.querySelectorAll("#listeDestinataires .destinataire").forEach(el => {
+    const correspond = !t || el.textContent.toLowerCase().includes(t);
+    el.classList.toggle("masque", !correspond);
+  });
 }
 
 function appliquerConfigAuxCases() {
@@ -694,6 +845,7 @@ document.getElementById("btnSauverNotif").addEventListener("click", () => {
   };
 
   localStorage.setItem("gesturg_audit_notification_config", JSON.stringify(configNotif));
+  majResumeNotif();
 
   const etat = document.getElementById("etatNotif");
   etat.textContent = `Paramètres enregistrés (${destinataires.length} destinataire(s)).`;
@@ -719,6 +871,118 @@ document.getElementById("btnTesterNotif").addEventListener("click", async () => 
   }
   etat.textContent = "Test envoyé.";
   setTimeout(() => etat.textContent = "", 3000);
+});
+
+/* ======================================================
+   4bis. VERROUILLAGE DE L'APPLICATION
+   (collection "referentiels", document "fonctionnement", champ "verrouille")
+   ====================================================== */
+const refDocFonctionnement = doc(db, "referentiels", "fonctionnement");
+const badgeVerrou = document.getElementById("badgeVerrou");
+const detailVerrou = document.getElementById("detailVerrou");
+const btnBasculerVerrou = document.getElementById("btnBasculerVerrou");
+const modalVerrou = document.getElementById("modalVerrou");
+
+function demarrerSuiviVerrou() {
+  if (unsubscribeVerrou) unsubscribeVerrou();
+  unsubscribeVerrou = onSnapshot(refDocFonctionnement, (snap) => {
+    const data = snap.exists() ? snap.data() : {};
+    etatVerrouActuel = data.verrouille === true;
+    afficherEtatVerrou(data);
+  }, (e) => {
+    badgeVerrou.textContent = "Erreur";
+    detailVerrou.textContent = "Impossible de lire l'état : " + e.message;
+  });
+}
+
+function afficherEtatVerrou(data) {
+  if (etatVerrouActuel) {
+    badgeVerrou.textContent = "VERROUILLÉE";
+    badgeVerrou.className = "badge-verrou actif";
+    btnBasculerVerrou.textContent = "🔓 Déverrouiller l'application";
+    btnBasculerVerrou.className = "btn-principal";
+  } else {
+    badgeVerrou.textContent = "ACTIVE";
+    badgeVerrou.className = "badge-verrou inactif";
+    btnBasculerVerrou.textContent = "🔒 Verrouiller l'application";
+    btnBasculerVerrou.className = "btn-danger";
+  }
+  btnBasculerVerrou.disabled = false;
+
+  const morceaux = [];
+  if (data?.modifiePar) morceaux.push(`par ${data.modifiePar}`);
+  if (data?.modifieLe) morceaux.push(`le ${formatDate(data.modifieLe)}`);
+  if (data?.commentaire) morceaux.push(`« ${data.commentaire} »`);
+  detailVerrou.textContent = morceaux.length ? "Dernière modification " + morceaux.join(" ") : "";
+}
+
+btnBasculerVerrou.addEventListener("click", () => {
+  cibleVerrouEnCours = !etatVerrouActuel;
+  document.getElementById("titreModalVerrou").textContent =
+    cibleVerrouEnCours ? "Confirmer le verrouillage" : "Confirmer le déverrouillage";
+  document.getElementById("texteModalVerrou").textContent = cibleVerrouEnCours
+    ? "L'application sera indiquée comme verrouillée pour tous les utilisateurs. Merci de confirmer ton mot de passe."
+    : "L'application redeviendra accessible normalement. Merci de confirmer ton mot de passe.";
+  document.getElementById("motDePasseVerrou").value = "";
+  document.getElementById("commentaireVerrou").value = "";
+  document.getElementById("erreurVerrou").textContent = "";
+  modalVerrou.classList.remove("hidden");
+  document.getElementById("motDePasseVerrou").focus();
+});
+
+document.getElementById("annulerVerrou").addEventListener("click", () => {
+  modalVerrou.classList.add("hidden");
+});
+document.getElementById("fermerModalVerrou").addEventListener("click", () => {
+  modalVerrou.classList.add("hidden");
+});
+modalVerrou.addEventListener("click", (e) => {
+  if (e.target === modalVerrou) modalVerrou.classList.add("hidden");
+});
+
+document.getElementById("confirmerVerrou").addEventListener("click", async () => {
+  const motDePasse = document.getElementById("motDePasseVerrou").value;
+  const commentaire = document.getElementById("commentaireVerrou").value.trim();
+  const erreur = document.getElementById("erreurVerrou");
+  const btnConfirmer = document.getElementById("confirmerVerrou");
+
+  if (!motDePasse) {
+    erreur.textContent = "Merci de saisir ton mot de passe.";
+    return;
+  }
+  if (!utilisateurConnecte?.email) {
+    erreur.textContent = "Impossible d'identifier ton compte (pas d'email associé).";
+    return;
+  }
+
+  btnConfirmer.disabled = true;
+  btnConfirmer.textContent = "Vérification…";
+  erreur.textContent = "";
+
+  try {
+    const credential = EmailAuthProvider.credential(utilisateurConnecte.email, motDePasse);
+    await reauthenticateWithCredential(utilisateurConnecte, credential);
+
+    await setDoc(refDocFonctionnement, {
+      verrouille: cibleVerrouEnCours,
+      commentaire: commentaire || null,
+      modifiePar: utilisateurConnecte.email || utilisateurConnecte.uid,
+      modifieLe: serverTimestamp()
+    }, { merge: true });
+
+    modalVerrou.classList.add("hidden");
+  } catch (e) {
+    if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+      erreur.textContent = "Mot de passe incorrect.";
+    } else if (e.code === "auth/too-many-requests") {
+      erreur.textContent = "Trop de tentatives. Réessaie dans quelques instants.";
+    } else {
+      erreur.textContent = "Erreur : " + e.message;
+    }
+  } finally {
+    btnConfirmer.disabled = false;
+    btnConfirmer.textContent = "Confirmer";
+  }
 });
 
 /* ======================================================

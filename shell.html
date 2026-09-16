@@ -1542,7 +1542,7 @@ transform:none;
     </div>
     <div class="dropdown-item" data-desc="Administration et paramétrage de GestUrg2" data-page="parametres">
       ⚙️ Administration GestUrg2
-      <span onclick="openTab('Adminsitration','parametres.html')">Ouvrir</span>
+      <span onclick="openTab('Administration','parametres.html')">Ouvrir</span>
     </div>
       <div class="dropdown-item" data-desc="Gestion des comptes d'accès à GestUrg2" data-page="admin">
 🔐 Gestion des comptes GestUrg2
@@ -1696,12 +1696,29 @@ transform:none;
   <div class="system-block-modal">
     <div class="system-block-icon">⛔</div>
     <h2>Accès suspendu</h2>
-    <p>L'accès à GestUrg2 a été suspendu par un administrateur.</p>
+    <p>L'accès à GestUrg2 a été suspendu par un administrateur système. Veuillez ne pas fermer cette page ni tenter de vous reconnecter. Nous faisons tout notre possible pour remedier à ce problème</p>
     <p id="systemBlockComment" class="system-block-comment" style="display:none;"></p>
     <p class="system-block-footer">Merci de contacter votre administrateur système pour plus d'informations.</p>
   </div>
 </div>
+<div id="modalSystemUnlocked" class="modal-overlay" style="display:none;">
+  <div class="modal-system-unlocked">
+    <div class="unlock-icon">✓</div>
 
+    <h2>Système déverrouillé</h2>
+
+    <p>
+      Le système est à nouveau disponible.<br>
+      Nous nous excusons pour la gène occasionée, toute menace est maintenant ecartée ! <br>
+      Vous allez être redirigé vers la page de connexion.<br>
+      Nous vous souhaitons une excellente continuation
+    </p>
+
+    <button id="btnSystemUnlockedOk" type="button">
+      OK
+    </button>
+  </div>
+</div>
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999; display:flex; flex-direction:column; gap:10px; align-items:flex-end;"></div>
 <script>
 let tabs = [];
@@ -2173,7 +2190,22 @@ import {
       el.style.display = "none";
     }
   }
+function afficherModalSystemeDeverrouille() {
+  const modal = document.getElementById("modalSystemUnlocked");
+  const btn = document.getElementById("btnSystemUnlockedOk");
 
+  if (!modal || !btn) {
+    // Sécurité : si la modale n'existe pas, redirection directe
+    window.location.href = "connexion.html";
+    return;
+  }
+
+  modal.style.display = "flex";
+
+  btn.onclick = () => {
+    window.location.href = "connexion.html";
+  };
+}
   function bloquerToutesLesIframes() {
     document.querySelectorAll("iframe").forEach(iframe => {
       iframe.style.pointerEvents = "none";
@@ -2263,23 +2295,36 @@ import {
     }
   }
 
-  function surveillerBlocageSysteme() {
-    onSnapshot(
-      doc(db, "referentiels", "fonctionnement"),
-      (snap) => {
-        const data = snap.data();
-        if (data && data.verrouille === true) {
-          activerBlocageSysteme(data.commentaire);
-        }
-        // Volontairement pas de "déblocage" automatique côté client une
-        // fois le blocage déclenché : le retour à la normale se fait par
-        // un rechargement de page (état sain), après action de l'admin.
-      },
-      (erreur) => {
-        console.error("[kill-switch] Erreur de surveillance :", erreur.code, erreur.message);
+function surveillerBlocageSysteme() {
+  onSnapshot(
+    doc(db, "referentiels", "fonctionnement"),
+    (snap) => {
+      const data = snap.data();
+
+      if (!data) return;
+
+      // 🔴 SYSTÈME VERROUILLÉ
+      if (data.verrouille === true) {
+        activerBlocageSysteme(data.commentaire);
+        return;
       }
-    );
-  }
+
+      // 🟢 SYSTÈME DÉVERROUILLÉ
+      if (data.verrouille === false) {
+        
+        afficherModalSystemeDeverrouille();
+        return;
+      }
+    },
+    (erreur) => {
+      console.error(
+        "[kill-switch] Erreur de surveillance :",
+        erreur.code,
+        erreur.message
+      );
+    }
+  );
+}
 
   // Démarré immédiatement, indépendamment de l'état d'authentification :
   // voir les règles Firestore recommandées pour rendre ce document lisible

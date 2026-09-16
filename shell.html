@@ -696,6 +696,80 @@ iframe {
   font-size: 15px;
 }
 
+/* ===== BLOCAGE SYSTÈME (VERROUILLAGE ADMINISTRATEUR) ===== */
+/* z-index volontairement au-dessus de TOUT (veille, modales, overflow...) */
+.system-block-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0b0f14;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647; /* valeur max de z-index CSS */
+}
+
+.system-block-overlay.active {
+  display: flex !important;
+}
+
+.system-block-modal {
+  background: #ffffff;
+  padding: 36px 40px;
+  border-radius: 18px;
+  width: 480px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(0,0,0,.5);
+}
+
+.system-block-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.system-block-modal h2 {
+  margin: 0 0 12px;
+  color: #b91c1c;
+}
+
+.system-block-modal p {
+  margin: 6px 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.system-block-comment {
+  margin-top: 16px !important;
+  padding: 12px 14px;
+  background: #f3f4f6;
+  border-left: 3px solid #b91c1c;
+  border-radius: 6px;
+  text-align: left;
+  font-style: italic;
+  color: #1f2937 !important;
+}
+
+.system-block-footer {
+  margin-top: 18px !important;
+  font-size: 13px !important;
+  color: #6b7280 !important;
+}
+
+/* Quand le blocage est actif : on gèle tout le reste, y compris la veille */
+body.system-blocked #shell-topbar,
+body.system-blocked #content,
+body.system-blocked .lock-overlay,
+body.system-blocked #notification-container {
+  pointer-events: none !important;
+  user-select: none !important;
+  filter: blur(6px) grayscale(0.8) !important;
+}
+
+body.system-blocked {
+  overflow: hidden !important;
+}
+
 .lock-actions {
   margin-top: 20px;
   display: flex;
@@ -1617,6 +1691,17 @@ transform:none;
   </div>
 </div>
 
+<!-- ===== BLOCAGE SYSTÈME (VERROUILLAGE ADMINISTRATEUR) ===== -->
+<div id="systemBlockOverlay" class="system-block-overlay">
+  <div class="system-block-modal">
+    <div class="system-block-icon">⛔</div>
+    <h2>Accès suspendu</h2>
+    <p>L'accès à GestUrg2 a été suspendu par un administrateur.</p>
+    <p id="systemBlockComment" class="system-block-comment" style="display:none;"></p>
+    <p class="system-block-footer">Merci de contacter votre administrateur système pour plus d'informations.</p>
+  </div>
+</div>
+
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999; display:flex; flex-direction:column; gap:10px; align-items:flex-end;"></div>
 <script>
 let tabs = [];
@@ -2059,6 +2144,147 @@ import {
   window.authGestUrg = auth;
   const db = getFirestore(app);
   const messaging = getMessaging(app);
+
+  // ======================================================
+  // BLOCAGE SYSTÈME (KILL-SWITCH ADMINISTRATEUR)
+  // ------------------------------------------------------
+  // Doc surveillé : referentiels/fonctionnement
+  //   - verrouille  (bool)   -> déclenche le blocage total
+  //   - commentaire (string) -> affiché tel quel dans la modale
+  //
+  // IMPORTANT : ce blocage côté client est un confort visuel et une
+  // première ligne de défense. La vraie barrière de sécurité doit être
+  // posée dans les règles Firestore (voir documentation fournie à part),
+  // car un attaquant qui inspecte/modifie le JS exécuté dans SON PROPRE
+  // navigateur peut toujours faire disparaître un élément du DOM. C'est
+  // pour cela qu'on force aussi une déconnexion serveur (signOut) : même
+  // sans overlay visible, ses requêtes Firestore seront refusées.
+  // ======================================================
+
+  let systemeBloque = false;
+
+  function afficherCommentaireBlocage(commentaire) {
+    const el = document.getElementById("systemBlockComment");
+    if (!el) return;
+    if (commentaire && String(commentaire).trim()) {
+      el.textContent = String(commentaire).trim();
+      el.style.display = "block";
+    } else {
+      el.style.display = "none";
+    }
+  }
+
+  function bloquerToutesLesIframes() {
+    document.querySelectorAll("iframe").forEach(iframe => {
+      iframe.style.pointerEvents = "none";
+    });
+  }
+
+  function blockAllKeysWhileSystemLocked(e) {
+    // On bloque large : DevTools, view-source, impression, recherche...
+    const combosBloquees =
+      e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+      (e.ctrlKey && ["u", "p", "s"].includes(e.key.toLowerCase()));
+    if (combosBloquees) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  function blockContextMenuWhileSystemLocked(e) {
+    e.preventDefault();
+  }
+
+  function demarrerSurveillanceOverlayBlocage() {
+    const overlay = document.getElementById("systemBlockOverlay");
+    if (!overlay) return;
+
+    // Garde-fou 1 : si quelqu'un retire l'overlay du DOM ou lui enlève
+    // sa classe "active" via la console, on le réimpose aussitôt.
+    const observer = new MutationObserver(() => {
+      if (!systemeBloque) return;
+      if (!document.body.contains(overlay)) {
+        document.body.appendChild(overlay);
+      }
+      if (!overlay.classList.contains("active")) {
+        overlay.classList.add("active");
+      }
+      if (!document.body.classList.contains("system-blocked")) {
+        document.body.classList.add("system-blocked");
+      }
+    });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
+    });
+
+    // Garde-fou 2 : filet de sécurité indépendant du MutationObserver.
+    setInterval(() => {
+      if (!systemeBloque) return;
+      if (!document.body.contains(overlay)) document.body.appendChild(overlay);
+      overlay.classList.add("active");
+      document.body.classList.add("system-blocked");
+      bloquerToutesLesIframes();
+    }, 500);
+  }
+
+  function activerBlocageSysteme(commentaire) {
+    afficherCommentaireBlocage(commentaire);
+
+    if (systemeBloque) return; // déjà actif, on a juste rafraîchi le commentaire
+    systemeBloque = true;
+
+    const overlay = document.getElementById("systemBlockOverlay");
+    overlay.classList.add("active");
+    document.body.classList.add("system-blocked");
+
+    bloquerToutesLesIframes();
+
+    document.addEventListener("keydown", blockAllKeysWhileSystemLocked, true);
+    document.addEventListener("contextmenu", blockContextMenuWhileSystemLocked, true);
+
+    // Coupe le mécanisme de mise en veille, qui n'a plus de sens ici
+    try { clearTimeout(inactivityTimer); } catch (e) {}
+
+    // Invalide la session côté serveur : la vraie barrière. On laisse un
+    // court délai pour que l'overlay soit bien affiché en premier.
+    setTimeout(() => {
+      signOut(auth).catch(() => {});
+      sessionStorage.removeItem("appLocked");
+    }, 300);
+
+    demarrerSurveillanceOverlayBlocage();
+
+    if (window.logAction) {
+      window.logAction("systeme_bloque_administrateur", {}, "critical").catch(() => {});
+    }
+  }
+
+  function surveillerBlocageSysteme() {
+    onSnapshot(
+      doc(db, "referentiels", "fonctionnement"),
+      (snap) => {
+        const data = snap.data();
+        if (data && data.verrouille === true) {
+          activerBlocageSysteme(data.commentaire);
+        }
+        // Volontairement pas de "déblocage" automatique côté client une
+        // fois le blocage déclenché : le retour à la normale se fait par
+        // un rechargement de page (état sain), après action de l'admin.
+      },
+      (erreur) => {
+        console.error("[kill-switch] Erreur de surveillance :", erreur.code, erreur.message);
+      }
+    );
+  }
+
+  // Démarré immédiatement, indépendamment de l'état d'authentification :
+  // voir les règles Firestore recommandées pour rendre ce document lisible
+  // publiquement en lecture (et non modifiable depuis le client).
+  surveillerBlocageSysteme();
 
   // ======================================================
   // JOURNAL D'AUDIT — enregistre chaque action sensible

@@ -1393,30 +1393,6 @@ transform:none;
   max-height: calc(100vh - 90px);
 }
 
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
 </style>
 </head>
 <body>
@@ -1685,6 +1661,7 @@ function openTab(title, url){
 document.getElementById('menuOutils').classList.remove("open");
   document.getElementById('home').style.display='none';
   setActive(id);
+  if (window.logAction) window.logAction("ouverture_module", { titre: title, url });
 }
 
 function setActive(id){
@@ -1702,6 +1679,8 @@ document.getElementById("btnLogout").addEventListener("click", () => {
       });
   });
 function closeTab(id){
+  const tabInfo = tabs.find(t => t.id === id);
+  if (window.logAction) window.logAction("fermeture_module", { titre: tabInfo?.title, url: tabInfo?.url });
   tabs=tabs.filter(t=>t.id!==id);
   document.querySelector(`.tab[data-id='${id}']`)?.remove();
   document.querySelector(`iframe[data-id='${id}']`)?.remove();
@@ -2055,6 +2034,7 @@ import {
   where,
   onSnapshot,
   updateDoc,
+  addDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -2080,8 +2060,71 @@ import {
   const db = getFirestore(app);
   const messaging = getMessaging(app);
 
+  // ======================================================
+  // JOURNAL D'AUDIT — enregistre chaque action sensible
+  // ======================================================
+
+  // Un identifiant unique par onglet/session de navigateur,
+  // pour pouvoir relier plusieurs actions entre elles.
+  if (!sessionStorage.getItem("auditSessionId")) {
+    sessionStorage.setItem(
+      "auditSessionId",
+      `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    );
+  }
+  const auditSessionId = sessionStorage.getItem("auditSessionId");
+
+  /**
+   * Enregistre une action dans la collection Firestore "logs_audit".
+   * @param {string} action   - identifiant court de l'action (ex: "deverrouillage_echec")
+   * @param {object} details  - détails libres (ex: { module: "patients" })
+   * @param {"info"|"warn"|"critical"} niveau - gravité indicative
+   */
+  async function logAction(action, details = {}, niveau = "info") {
+    try {
+      const user = auth.currentUser;
+      await addDoc(collection(db, "logs_audit"), {
+        uid: user ? user.uid : null,
+        email: user ? user.email : null,
+        action,
+        details,
+        niveau,
+        sessionId: auditSessionId,
+        userAgent: navigator.userAgent,
+        page: window.location.pathname,
+        timestamp: serverTimestamp(),
+        // Horodatage client, utile pour trier même si serverTimestamp
+        // n'est pas encore résolu (écriture optimiste locale).
+        clientTimestamp: Date.now()
+      });
+    } catch (error) {
+      // On ne bloque jamais l'app si le log échoue, mais on le
+      // signale en console pour le déboguage.
+      console.error("[audit] échec de l'écriture du log :", action, error);
+    }
+  }
+  window.logAction = logAction;
+
+  // Permet aux pages chargées dans les iframes (patients.html,
+  // urgences.html, messagerie.html, etc.) de journaliser elles aussi,
+  // simplement avec : window.parent.postMessage({type:"LOG_ACTION", action:"...", details:{...}}, "*")
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || data.type !== "LOG_ACTION") return;
+
+    const iframe = [...document.querySelectorAll("iframe")]
+      .find(f => f.contentWindow === event.source);
+
+    logAction(
+      data.action || "action_inconnue",
+      { ...(data.details || {}), sourceModule: iframe ? iframe.src : null },
+      data.niveau || "info"
+    );
+  });
+
   // Déconnexion
   document.getElementById("btnLogout").addEventListener("click", () => {
+    logAction("deconnexion_manuelle", {});
     signOut(auth)
       .then(() => {
         window.location.href = "index.html";
@@ -2149,6 +2192,10 @@ async function envoyerNotification(userId, title, body) {
   // Auth state + récupération du médecin
  onAuthStateChanged(auth, async (user) => {
 if (user) {
+    if (!sessionStorage.getItem("auditSessionLogged")) {
+      sessionStorage.setItem("auditSessionLogged", "true");
+      logAction("ouverture_session_shell", {});
+    }
     const snap = await getDoc(doc(db, "medecins", user.uid));
 
     if (snap.exists()) {
@@ -2634,6 +2681,8 @@ window.lockSession = async function() {
 
     isLocked = true;
 
+    if (window.logAction) window.logAction("verrouillage_session", {});
+
     sessionStorage.setItem("appLocked", "true");
 
     const overlay = document.getElementById("lockOverlay");
@@ -2818,6 +2867,7 @@ window.attemptUnlock = function() {
 
 // ===== SUCCES / ECHEC (communs mdp + badge) =====
 function handleUnlockSuccess() {
+  if (window.logAction) window.logAction("deverrouillage_reussi", { tentatives: lockAttempts });
   isLocked = false;
   lockAttempts = 0;
 
@@ -2840,8 +2890,17 @@ async function handleUnlockFail(message, errorDiv) {
   lockAttempts++;
   errorDiv.textContent = `${message} (${lockAttempts}/3)`;
 
+  if (window.logAction) {
+    window.logAction(
+      "deverrouillage_echec",
+      { motif: message, tentative: lockAttempts },
+      lockAttempts >= 3 ? "critical" : "warn"
+    );
+  }
+
   if (lockAttempts >= 3) {
-    
+    if (window.logAction) window.logAction("deconnexion_forcee_echecs_repetes", {}, "critical");
+
     isLocked = false;
     lockAttempts = 0;
 await signOut(auth);
@@ -2951,6 +3010,7 @@ document.querySelector(".login-badge-anim")
 };
 // ===== BOUTON DECONNEXION =====
 window.forceLogout = async function() {
+  if (window.logAction) await window.logAction("deconnexion_manuelle", {});
   await signOut(auth);
  await handleUnlockSuccess();
   window.location.href = "index.html";

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>GestUrg2 — Journal d'audit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bleu:#0078d4;
+    --bleu-fonce:#005fa3;
+    --fond:#f0f4f8;
+    --carte:#ffffff;
+    --texte:#0f172a;
+    --texte-att:#5b6472;
+    --bordure:#e2e8f0;
+    --rouge:#e74c3c;
+    --orange:#f39c12;
+    --vert:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Inter,Arial,sans-serif;background:var(--fond);
+    color:var(--texte);min-height:100vh;
+  }
+  header{
+    background:var(--carte);padding:16px 24px;box-shadow:0 4px 16px rgba(0,0,0,.08);
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    position:sticky;top:0;z-index:10;
+  }
+  header h1{font-size:19px;margin:0;font-weight:700}
+  header .sous-titre{font-size:12.5px;color:var(--texte-att);margin-top:2px}
+  #btnActualiser{
+    background:var(--bleu);color:#fff;border:none;border-radius:10px;
+    padding:9px 16px;font-weight:600;cursor:pointer;transition:.2s;
+  }
+  #btnActualiser:hover{background:var(--bleu-fonce)}
+  main{padding:20px 24px 60px;max-width:1400px;margin:0 auto}
+
+  #etatAcces{display:flex;align-items:center;justify-content:center;min-height:60vh;text-align:center}
+  #etatAcces .carte{background:var(--carte);padding:32px 40px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08);max-width:420px}
+  #etatAcces h2{margin-top:0}
+
+  .cartes-resume{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;
+  }
+  .resume-carte{
+    background:var(--carte);border-radius:14px;padding:16px 18px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+    border-left:4px solid var(--bleu);
+  }
+  .resume-carte.alerte{border-left-color:var(--rouge)}
+  .resume-carte.attention{border-left-color:var(--orange)}
+  .resume-carte .chiffre{font-size:26px;font-weight:800}
+  .resume-carte .libelle{font-size:12.5px;color:var(--texte-att);margin-top:2px}
+
+  #panneauAlertes{
+    background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+    margin-bottom:20px;overflow:hidden;
+  }
+  #panneauAlertes h3{
+    margin:0;padding:14px 18px;background:#fff5f5;color:var(--rouge);font-size:15px;
+    border-bottom:1px solid var(--bordure);
+  }
+  #panneauAlertes.vide h3{background:#f0fdf4;color:var(--vert)}
+  .liste-alertes{max-height:260px;overflow-y:auto}
+  .alerte-item{
+    padding:10px 18px;border-bottom:1px solid var(--bordure);font-size:13.5px;
+    display:flex;justify-content:space-between;gap:10px;align-items:center;
+  }
+  .alerte-item:last-child{border-bottom:none}
+  .badge-gravite{
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .badge-gravite.critical{background:#fde2e1;color:var(--rouge)}
+  .badge-gravite.warn{background:#fef3d7;color:#a96b06}
+
+  #filtres{
+    background:var(--carte);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.06);
+    padding:14px 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;
+  }
+  #filtres .champ{display:flex;flex-direction:column;gap:4px}
+  #filtres label{font-size:12px;color:var(--texte-att);font-weight:600}
+  #filtres select,#filtres input{
+    padding:8px 10px;border-radius:8px;border:1px solid var(--bordure);font-size:13.5px;min-width:150px;
+  }
+  #filtres .champ.checkbox{flex-direction:row;align-items:center;gap:6px}
+
+  table{width:100%;border-collapse:collapse;background:var(--carte);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+  thead th{
+    text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--texte-att);
+    padding:12px 14px;border-bottom:2px solid var(--bordure);background:#fafbfc;position:sticky;top:64px;
+  }
+  tbody td{padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--bordure);vertical-align:top}
+  tbody tr:hover{background:#f8fafc}
+  tbody tr.critical{background:#fff6f5}
+  tbody tr.warn{background:#fffaf0}
+  .puce{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .puce.info{background:#94a3b8}
+  .puce.warn{background:var(--orange)}
+  .puce.critical{background:var(--rouge)}
+  .tags-anomalie{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+  .tag-anomalie{
+    font-size:10.5px;font-weight:700;background:#fde2e1;color:var(--rouge);
+    padding:2px 7px;border-radius:10px;white-space:nowrap;
+  }
+  #vide{text-align:center;padding:40px;color:var(--texte-att)}
+  #chargement{text-align:center;padding:40px;color:var(--texte-att)}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🛡️ Journal d'audit — GestUrg2</h1>
+    <div class="sous-titre" id="sousTitreConnecte">Connexion en cours…</div>
+  </div>
+  <button id="btnActualiser">↻ Actualiser</button>
+</header>
+
+<main id="main" style="display:none">
+
+  <div class="cartes-resume" id="cartesResume"></div>
+
+  <div id="panneauAlertes">
+    <h3 id="titreAlertes">Anomalies détectées</h3>
+    <div class="liste-alertes" id="listeAlertes"></div>
+  </div>
+
+  <div id="filtres">
+    <div class="champ">
+      <label>Utilisateur</label>
+      <select id="filtreUtilisateur"><option value="">Tous</option></select>
+    </div>
+    <div class="champ">
+      <label>Type d'action</label>
+      <select id="filtreAction"><option value="">Toutes</option></select>
+    </div>
+    <div class="champ">
+      <label>Gravité</label>
+      <select id="filtreGravite">
+        <option value="">Toutes</option>
+        <option value="critical">Critique</option>
+        <option value="warn">Attention</option>
+        <option value="info">Info</option>
+      </select>
+    </div>
+    <div class="champ checkbox">
+      <input type="checkbox" id="filtreAnomaliesSeules">
+      <label for="filtreAnomaliesSeules" style="font-weight:500">Anomalies uniquement</label>
+    </div>
+    <div class="champ">
+      <label>Nombre de lignes</label>
+      <select id="filtreLimite">
+        <option value="300">300 dernières</option>
+        <option value="500" selected>500 dernières</option>
+        <option value="1000">1000 dernières</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="chargement">Chargement des journaux…</div>
+  <table id="tableLogs" style="display:none">
+    <thead>
+      <tr>
+        <th>Date / heure</th>
+        <th>Utilisateur</th>
+        <th>Action</th>
+        <th>Détails</th>
+        <th>Appareil</th>
+      </tr>
+    </thead>
+    <tbody id="corpsTable"></tbody>
+  </table>
+  <div id="vide" style="display:none">Aucun journal ne correspond aux filtres.</div>
+
+</main>
+
+<div id="etatAcces">
+  <div class="carte">
+    <h2 id="titreAcces">Vérification des droits…</h2>
+    <p id="texteAcces" style="color:var(--texte-att)">Merci de patienter.</p>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4",
+  storageBucket: "urgences-a8ed4.firebasestorage.app",
+  messagingSenderId: "392921498200",
+  appId: "1:392921498200:web:7ccce767332c67c697c02d",
+  measurementId: "G-C74MK2KYDL"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let tousLesLogs = [];       // logs bruts triés du plus récent au plus ancien
+let logsAvecAnomalies = []; // même liste, enrichie d'un tableau "anomalies"
+
+// ======================================================
+// 1. CONTRÔLE D'ACCÈS — seuls les comptes marqués "admin"
+//    dans leur document medecins/{uid} peuvent voir ce tableau de bord.
+//    (ajoute manuellement le champ `admin: true` au document du/des
+//    responsables sécurité dans Firestore)
+// ======================================================
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    document.getElementById("titreAcces").textContent = "Non connecté";
+    document.getElementById("texteAcces").textContent =
+      "Connecte-toi d'abord à GestUrg2, puis reviens sur cette page.";
+    return;
+  }
+
+  try {
+    const snap = await getDoc(doc(db, "medecins", user.uid));
+    const estAdmin = snap.exists() && snap.data().admin === true;
+
+    if (!estAdmin) {
+      document.getElementById("titreAcces").textContent = "Accès refusé";
+      document.getElementById("texteAcces").textContent =
+        "Ce tableau de bord est réservé aux comptes administrateurs.";
+      return;
+    }
+
+    document.getElementById("etatAcces").style.display = "none";
+    document.getElementById("main").style.display = "block";
+    document.getElementById("sousTitreConnecte").textContent =
+      `Connecté en tant que ${user.email}`;
+
+    await chargerLogs();
+  } catch (e) {
+    document.getElementById("titreAcces").textContent = "Erreur";
+    document.getElementById("texteAcces").textContent =
+      "Impossible de vérifier les droits d'accès : " + e.message;
+  }
+});
+
+document.getElementById("btnActualiser").addEventListener("click", chargerLogs);
+["filtreUtilisateur","filtreAction","filtreGravite","filtreAnomaliesSeules"].forEach(id => {
+  document.getElementById(id).addEventListener("change", appliquerFiltresEtAfficher);
+});
+document.getElementById("filtreLimite").addEventListener("change", chargerLogs);
+
+// ======================================================
+// 2. CHARGEMENT DES LOGS
+// ======================================================
+async function chargerLogs() {
+  document.getElementById("chargement").style.display = "block";
+  document.getElementById("tableLogs").style.display = "none";
+  document.getElementById("vide").style.display = "none";
+
+  const nb = Number(document.getElementById("filtreLimite").value);
+
+  try {
+    const q = query(
+      collection(db, "logs_audit"),
+      orderBy("clientTimestamp", "desc"),
+      limit(nb)
+    );
+    const snap = await getDocs(q);
+
+    tousLesLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // On remet dans l'ordre chronologique croissant pour l'analyse des séquences,
+    // puis on ré-inversera juste pour l'affichage.
+    const chrono = [...tousLesLogs].sort((a, b) => (a.clientTimestamp||0) - (b.clientTimestamp||0));
+
+    logsAvecAnomalies = detecterAnomalies(chrono).reverse(); // le plus récent en premier
+
+    remplirFiltres(logsAvecAnomalies);
+    afficherResume(logsAvecAnomalies);
+    appliquerFiltresEtAfficher();
+
+  } catch (e) {
+    document.getElementById("chargement").textContent =
+      "Erreur de chargement : " + e.message +
+      " (vérifie les règles Firestore sur la collection logs_audit)";
+  }
+}
+
+// ======================================================
+// 3. DÉTECTION D'ANOMALIES (heuristiques simples, côté client)
+// ======================================================
+function detecterAnomalies(logsChrono) {
+  const parUtilisateur = {};
+  logsChrono.forEach(l => {
+    const cle = l.uid || l.email || "inconnu";
+    if (!parUtilisateur[cle]) parUtilisateur[cle] = [];
+    parUtilisateur[cle].push(l);
+  });
+
+  Object.values(parUtilisateur).forEach(logsUser => {
+    const appareilsConnus = new Set();
+
+    logsUser.forEach((log, i) => {
+      log.anomalies = [];
+
+      // --- a) échecs de déverrouillage répétés (fenêtre de 10 min) ---
+      if (log.action === "deverrouillage_echec" || log.action === "deconnexion_forcee_echecs_repetes") {
+        const dixMinAvant = (log.clientTimestamp || 0) - 10 * 60 * 1000;
+        const echecsRecents = logsUser.filter(l2 =>
+          (l2.action === "deverrouillage_echec") &&
+          (l2.clientTimestamp || 0) >= dixMinAvant &&
+          (l2.clientTimestamp || 0) <= (log.clientTimestamp || 0)
+        );
+        if (echecsRecents.length >= 3) {
+          log.anomalies.push("Échecs répétés de déverrouillage");
+        }
+      }
+
+      // --- b) horaire inhabituel (00h–5h59) ---
+      const ts = log.clientTimestamp ? new Date(log.clientTimestamp) : null;
+      if (ts) {
+        const h = ts.getHours();
+        if (h >= 0 && h < 6) {
+          log.anomalies.push("Activité hors horaires (nuit)");
+        }
+      }
+
+      // --- c) rafale d'actions (≥ 15 actions en 60 secondes) ---
+      const uneMinAvant = (log.clientTimestamp || 0) - 60 * 1000;
+      const actionsRecentes = logsUser.filter(l2 =>
+        (l2.clientTimestamp || 0) >= uneMinAvant &&
+        (l2.clientTimestamp || 0) <= (log.clientTimestamp || 0)
+      );
+      if (actionsRecentes.length >= 15) {
+        log.anomalies.push("Rafale d'actions (activité anormalement rapide)");
+      }
+
+      // --- d) nouvel appareil / navigateur pour cet utilisateur ---
+      if (log.userAgent) {
+        if (appareilsConnus.size > 0 && !appareilsConnus.has(log.userAgent)) {
+          log.anomalies.push("Nouvel appareil / navigateur détecté");
+        }
+        appareilsConnus.add(log.userAgent);
+      }
+
+      // --- e) niveau critique explicite ---
+      if (log.niveau === "critical" && !log.anomalies.length) {
+        log.anomalies.push("Évènement marqué critique");
+      }
+    });
+  });
+
+  return logsChrono;
+}
+
+// ======================================================
+// 4. AFFICHAGE
+// ======================================================
+function afficherResume(logs) {
+  const total = logs.length;
+  const anomalies = logs.filter(l => l.anomalies && l.anomalies.length);
+  const critiques = logs.filter(l => l.niveau === "critical");
+  const utilisateurs = new Set(logs.map(l => l.email || l.uid || "inconnu")).size;
+
+  document.getElementById("cartesResume").innerHTML = `
+    <div class="resume-carte">
+      <div class="chiffre">${total}</div>
+      <div class="libelle">Actions journalisées</div>
+    </div>
+    <div class="resume-carte" style="border-left-color:var(--bleu)">
+      <div class="chiffre">${utilisateurs}</div>
+      <div class="libelle">Utilisateurs distincts</div>
+    </div>
+    <div class="resume-carte attention">
+      <div class="chiffre">${anomalies.length}</div>
+      <div class="libelle">Anomalies détectées</div>
+    </div>
+    <div class="resume-carte alerte">
+      <div class="chiffre">${critiques.length}</div>
+      <div class="libelle">Évènements critiques</div>
+    </div>
+  `;
+
+  const panneau = document.getElementById("panneauAlertes");
+  const liste = document.getElementById("listeAlertes");
+  const titre = document.getElementById("titreAlertes");
+
+  if (!anomalies.length) {
+    panneau.classList.add("vide");
+    titre.textContent = "✅ Aucune anomalie détectée sur la période chargée";
+    liste.innerHTML = "";
+  } else {
+    panneau.classList.remove("vide");
+    titre.textContent = `⚠️ ${anomalies.length} anomalie(s) détectée(s)`;
+    liste.innerHTML = anomalies.slice(0, 30).map(l => `
+      <div class="alerte-item">
+        <span>
+          <strong>${formatDate(l.clientTimestamp)}</strong>
+          — ${l.email || l.uid || "utilisateur inconnu"}
+          — ${l.action}
+          <span style="color:var(--texte-att)"> · ${l.anomalies.join(", ")}</span>
+        </span>
+        <span class="badge-gravite ${l.niveau === 'critical' ? 'critical' : 'warn'}">
+          ${l.niveau === 'critical' ? 'CRITIQUE' : 'ATTENTION'}
+        </span>
+      </div>
+    `).join("");
+  }
+}
+
+function remplirFiltres(logs) {
+  const selUtil = document.getElementById("filtreUtilisateur");
+  const selAction = document.getElementById("filtreAction");
+  const valUtilActuelle = selUtil.value;
+  const valActionActuelle = selAction.value;
+
+  const utilisateurs = [...new Set(logs.map(l => l.email || l.uid).filter(Boolean))].sort();
+  const actions = [...new Set(logs.map(l => l.action).filter(Boolean))].sort();
+
+  selUtil.innerHTML = '<option value="">Tous</option>' +
+    utilisateurs.map(u => `<option value="${u}">${u}</option>`).join("");
+  selAction.innerHTML = '<option value="">Toutes</option>' +
+    actions.map(a => `<option value="${a}">${a}</option>`).join("");
+
+  selUtil.value = valUtilActuelle;
+  selAction.value = valActionActuelle;
+}
+
+function appliquerFiltresEtAfficher() {
+  const util = document.getElementById("filtreUtilisateur").value;
+  const action = document.getElementById("filtreAction").value;
+  const gravite = document.getElementById("filtreGravite").value;
+  const anomaliesSeules = document.getElementById("filtreAnomaliesSeules").checked;
+
+  const filtres = logsAvecAnomalies.filter(l => {
+    if (util && (l.email || l.uid) !== util) return false;
+    if (action && l.action !== action) return false;
+    if (gravite && l.niveau !== gravite) return false;
+    if (anomaliesSeules && (!l.anomalies || !l.anomalies.length)) return false;
+    return true;
+  });
+
+  const corps = document.getElementById("corpsTable");
+  document.getElementById("chargement").style.display = "none";
+
+  if (!filtres.length) {
+    document.getElementById("tableLogs").style.display = "none";
+    document.getElementById("vide").style.display = "block";
+    return;
+  }
+
+  document.getElementById("vide").style.display = "none";
+  document.getElementById("tableLogs").style.display = "table";
+
+  corps.innerHTML = filtres.map(l => `
+    <tr class="${l.anomalies && l.anomalies.length ? (l.niveau === 'critical' ? 'critical' : 'warn') : ''}">
+      <td>${formatDate(l.clientTimestamp)}</td>
+      <td>${l.email || l.uid || "—"}</td>
+      <td>
+        <span class="puce ${l.niveau || 'info'}"></span>${l.action}
+        ${l.anomalies && l.anomalies.length ? `<div class="tags-anomalie">${l.anomalies.map(a => `<span class="tag-anomalie">${a}</span>`).join("")}</div>` : ""}
+      </td>
+      <td>${formatDetails(l.details)}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--texte-att);font-size:12px">
+        ${l.userAgent || "—"}
+      </td>
+    </tr>
+  `).join("");
+}
+
+function formatDate(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+function formatDetails(details) {
+  if (!details || !Object.keys(details).length) return "—";
+  return Object.entries(details)
+    .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join(" · ");
+}
+</script>
+
+</body>
+</html>

@@ -1387,6 +1387,14 @@ transform:none;
   margin-top: 10px;
 }
 
+/* ===== ASCENSEUR SUR LE MENU DEROULANT "OUTILS" QUAND IL Y A TROP D'ELEMENTS ===== */
+.dropdown-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Valeur de secours si le JS n'a pas encore calculé la hauteur disponible */
+  max-height: calc(100vh - 90px);
+}
+
 </style>
 </head>
 <body>
@@ -1851,6 +1859,15 @@ const dropdownOutils = document.getElementById("dropdownOutils");
 
 let pinnedOpen = false;
 
+// Calcule la hauteur dispo entre le haut du menu et le bas de l'écran,
+// et applique un ascenseur (scroll) si les outils ne rentrent pas.
+function ajusterHauteurMenuOutils() {
+  const marge = 12; // petite marge en bas de l'écran
+  const top = menuOutils.getBoundingClientRect().top;
+  const hauteurDispo = window.innerHeight - top - marge;
+  menuOutils.style.maxHeight = Math.max(120, hauteurDispo) + "px";
+}
+
 // clic bouton = verrouille ouvert
 btnOutils.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -1859,9 +1876,15 @@ btnOutils.addEventListener("click", (e) => {
 
   if (pinnedOpen) {
     menuOutils.classList.add("open");
+    ajusterHauteurMenuOutils();
   } else {
     menuOutils.classList.remove("open");
   }
+});
+
+// recalcule la hauteur si la fenêtre change de taille pendant que le menu est ouvert
+window.addEventListener("resize", () => {
+  if (pinnedOpen) ajusterHauteurMenuOutils();
 });
 
 // clic dans menu

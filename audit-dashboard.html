@@ -205,12 +205,6 @@ const db = getFirestore(app);
 let tousLesLogs = [];       // logs bruts triés du plus récent au plus ancien
 let logsAvecAnomalies = []; // même liste, enrichie d'un tableau "anomalies"
 
-// ======================================================
-// 1. CONTRÔLE D'ACCÈS — seuls les comptes marqués "admin"
-//    dans leur document medecins/{uid} peuvent voir ce tableau de bord.
-//    (ajoute manuellement le champ `admin: true` au document du/des
-//    responsables sécurité dans Firestore)
-// ======================================================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     document.getElementById("titreAcces").textContent = "Non connecté";
@@ -221,7 +215,7 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const snap = await getDoc(doc(db, "medecins", user.uid));
-    const estAdmin = snap.exists() && snap.data().admin === true;
+    const estAdmin = snap.exists() && snap.data().adminsysteme === true;
 
     if (!estAdmin) {
       document.getElementById("titreAcces").textContent = "Accès refusé";

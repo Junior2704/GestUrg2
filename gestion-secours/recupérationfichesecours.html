@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GestUrg2 — Fiche secours</title>
+<link rel="icon" type="image/png" href="logog2.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4f8;--surface:#fff;--surface2:#f7f9fb;--surface3:#e9eff5;
+  --line:#d8e0e8;--text:#17212b;--muted:#667685;--blue:#0078d4;--blue2:#005ea2;
+  --red:#c62828;--orange:#d97706;--green:#16834b;--shadow:0 5px 20px rgba(31,55,75,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:13px}
+.logo{width:38px;height:38px;object-fit:contain;border-radius:9px}
+.title{font-weight:800;font-size:15px}.subtitle{font-size:11.5px;color:var(--muted);margin-top:2px}.spacer{flex:1}
+.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+main{max-width:980px;margin:auto;padding:20px 18px 45px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:19px 21px;margin-bottom:15px;box-shadow:var(--shadow)}
+.card h2{font-size:15px;margin:0 0 5px}.desc{font-size:12px;color:var(--muted);margin-bottom:15px}
+.patient-card{display:flex;align-items:center;gap:15px}
+.patient-avatar{width:48px;height:48px;border-radius:12px;background:#e3f0fb;color:var(--blue2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.patient-name{font-size:18px;font-weight:800}.patient-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.badge{display:inline-flex;align-items:center;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.blue{background:#e5f2fc;color:var(--blue2)}.badge.green{background:#e5f6ed;color:var(--green)}
+.badge.orange{background:#fff1dc;color:var(--orange)}.badge.red{background:#fde9e9;color:var(--red)}
+.grid{display:grid;gap:13px}.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:720px){.c2,.c3{grid-template-columns:1fr}.patient-card{align-items:flex-start}}
+.field{margin-bottom:1px}label{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:6px}
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:9px;background:var(--surface2);padding:10px 11px;color:var(--text);font-size:13px}
+textarea{min-height:78px;resize:vertical}input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px #0078d41c}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.section-title h2{margin:0}
+.readonly{background:#f1f4f7;color:#465563}
+.actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;padding:10px 15px;border-radius:9px;font-weight:700;font-size:13px}
+.btn:hover{background:var(--surface3)}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue2)}
+.btn.danger{color:var(--red)}
+.notice{padding:11px 13px;border-radius:9px;background:#edf6fd;border:1px solid #cfe6f7;color:#15527e;font-size:12px;margin-bottom:14px}
+.notice.success{background:#edf9f2;border-color:#cfead9;color:#17623b}
+.notice.warn{background:#fff7e9;border-color:#f3dfb7;color:#78500c}
+.alert{color:var(--red);font-size:12px;min-height:18px;margin-top:8px}
+.loader{position:fixed;inset:0;background:rgba(240,244,248,.84);display:flex;align-items:center;justify-content:center;z-index:100}
+.loader.hidden{display:none}.loaderbox{background:#fff;border:1px solid var(--line);border-radius:13px;padding:22px 28px;box-shadow:var(--shadow);text-align:center}
+.spinner{width:28px;height:28px;border:3px solid #d9e5ef;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal{position:fixed;inset:0;background:rgba(20,31,41,.48);display:none;align-items:center;justify-content:center;padding:18px;z-index:90}
+.modal.show{display:flex}.modal-box{background:#fff;border-radius:14px;max-width:430px;width:100%;padding:23px;box-shadow:0 15px 45px #0003}
+.modal-box h3{margin:0 0 9px;font-size:17px}.modal-box p{font-size:13px;color:var(--muted);line-height:1.5}.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.hidden{display:none!important}
+@media print{.topbar,.actions,.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #aaa}.readonly{background:#fff}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img class="logo" src="logog2.png" onerror="this.style.display='none'">
+  <div><div class="title">Fiche secours</div><div class="subtitle">GestUrg2 · dossier de prise en charge préhospitalière</div></div>
+  <div class="spacer"></div>
+  <div class="status"><span class="status-dot"></span><span id="accessStatus">Vérification des accès…</span></div>
+</div>
+
+<main id="app" class="hidden">
+  <section class="card patient-card">
+    <div class="patient-avatar" id="patientAvatar">?</div>
+    <div>
+      <div class="patient-name" id="patientName">Patient</div>
+      <div class="patient-meta" id="patientMeta">Chargement du dossier…</div>
+      <div style="margin-top:7px"><span class="badge blue" id="ficheBadge">Fiche secours</span></div>
+    </div>
+</section>
+
+  <div id="existingNotice" class="notice success hidden">
+    <b>✓ Fiche secours jointe au dossier.</b><br>
+    Cette victime possède déjà une fiche secours. Les informations ci-dessous correspondent à la fiche enregistrée.
+  </div>
+  <div id="newNotice" class="notice hidden">
+    <b>Nouvelle fiche secours</b><br>
+    Les informations saisies seront enregistrées directement dans l’hospitalisation active de cette victime.
+  </div>
+
+  <section class="card">
+    <div class="section-title"><h2>Identification de l'intervention</h2><span class="badge blue">Secours</span></div>
+    <div class="grid c3">
+      <div class="field"><label>N° de fiche secours</label><input id="s_numero" placeholder="Ex. SEC-2026-00124"></div>
+      <div class="field"><label>Date / heure de prise en charge</label><input id="s_date" type="datetime-local"></div>
+      <div class="field"><label>Type d'intervention</label><input id="s_intervention" placeholder="AVP, malaise, incendie…"></div>
+    </div>
+    <div class="grid c2" style="margin-top:13px">
+      <div class="field"><label>Catégorisation SINUS</label>
+        <select id="s_sinus">
+          <option value="">Non renseignée</option><option value="UA">UA · Urgence absolue</option>
+          <option value="UR">UR · Urgence relative</option><option value="IMPL">Impliqué</option><option value="DCD">Décédé</option>
+        </select>
+      </div>
+      <div class="field"><label>Devenir / destination</label><input id="s_destination" placeholder="Établissement, domicile, autre…"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>État clinique initial</h2></div>
+    <div class="grid c3">
+      <div class="field"><label>Conscience · AVPU</label>
+        <select id="s_avpu"><option value="">Non renseignée</option><option>A — Alerte</option><option>V — Réagit à la voix</option><option>P — Réagit à la douleur</option><option>U — Inconscient</option></select>
+      </div>
+      <div class="field"><label>Âge au moment de l'intervention</label><input id="s_age" type="number" min="0"></div>
+      <div class="field"><label>Sexe</label><select id="s_sexe"><option value="">Non renseigné</option><option>H</option><option>F</option></select></div>
+    </div>
+    <div class="grid c3" style="margin-top:13px">
+      <div class="field"><label>FC · bpm</label><input id="s_fc" type="number"></div>
+      <div class="field"><label>TA · mmHg</label><input id="s_ta"></div>
+      <div class="field"><label>FR · /min</label><input id="s_fr" type="number"></div>
+      <div class="field"><label>SpO₂ · %</label><input id="s_spo2" type="number"></div>
+      <div class="field"><label>Température · °C</label><input id="s_temp"></div>
+      <div class="field"><label>Glasgow · /15</label><input id="s_glasgow" type="number" min="3" max="15"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>Antécédents & traitements</h2></div>
+    <div class="grid c2">
+      <div class="field"><label>Allergies connues</label><textarea id="s_allergies"></textarea></div>
+      <div class="field"><label>Traitements en cours</label><textarea id="s_medicaments"></textarea></div>
+      <div class="field"><label>Antécédents médicaux</label><textarea id="s_passe"></textarea></div>
+      <div class="field"><label>Plainte principale</label><textarea id="s_plainte"></textarea></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>Gestes réalisés par les secours</h2></div>
+    <div class="field"><label>Gestes / soins / traitements réalisés</label><textarea id="s_gestes" placeholder="Ex. O₂ 9 L/min, immobilisation, RCP, adrénaline…"></textarea></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>Transmission des secours</h2></div>
+    <div class="field"><label>Transmission / observations</label><textarea id="s_transmission" style="min-height:120px"></textarea></div>
+  </section>
+
+  <section class="card">
+    <div id="saveInfo" class="desc"></div>
+    <div class="actions no-print">
+      <button class="btn" onclick="window.print()">🖨 Imprimer</button>
+      <button id="cancelEditBtn" class="btn hidden" onclick="annulerModification()">Annuler</button>
+      <button id="editBtn" class="btn hidden" onclick="activerModification()">Modifier la fiche</button>
+      <button id="saveBtn" class="btn primary" onclick="enregistrerFiche()">Enregistrer la fiche secours</button>
+    </div>
+    <div id="formError" class="alert"></div>
+  </section>
+</main>
+
+<div id="loader" class="loader">
+  <div class="loaderbox"><div class="spinner"></div><b id="loaderText">Chargement du dossier…</b></div>
+</div>
+
+<div id="modal-no-access" class="modal">
+  <div class="modal-box">
+    <h3>Accès refusé</h3>
+    <p>Votre compte n'est pas habilité à utiliser la page « Fiche secours ».</p>
+    <div class="modal-actions"><button class="btn" onclick="window.history.back()">Retour</button></div>
+  </div>
+</div>
+
+<div id="modal-error" class="modal">
+  <div class="modal-box">
+    <h3>Impossible de charger la fiche</h3>
+    <p id="errorText">Une erreur est survenue lors du chargement du dossier.</p>
+    <div class="modal-actions"><button class="btn" onclick="window.history.back()">Retour</button></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4",
+  storageBucket: "urgences-a8ed4.firebasestorage.app",
+  messagingSenderId: "392921498200",
+  appId: "1:392921498200:web:7ccce767332c67c697c02d",
+  measurementId: "G-C74MK2KYDL"
+};
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const patientId = new URLSearchParams(location.search).get("id");
+
+let currentUser = null;
+let patient = null;
+let hospitalisation = null;
+let hospitalisationId = null;
+let ficheExistante = null;
+let modeLecture = false;
+
+const PAGE_ALIASES = ["récupérationfichesecours"];
+
+const $ = id => document.getElementById(id);
+const val = id => $(id)?.value ?? "";
+const setVal = (id,v) => { if($(id)) $(id).value = v ?? ""; };
+const esc = x => x == null ? "" : String(x);
+
+function afficherLoader(txt="Chargement…"){
+  $("loaderText").textContent=txt; $("loader").classList.remove("hidden");
+}
+function masquerLoader(){ $("loader").classList.add("hidden"); }
+function erreur(msg){
+  $("errorText").textContent=msg; $("modal-error").classList.add("show"); masquerLoader();
+}
+function currentPageNames(){
+  const p=location.pathname.split("/").pop().replace(/\.html$/i,"");
+  return [p,...PAGE_ALIASES].filter(Boolean);
+}
+function remplirNomPatient(){
+  const nom=[patient?.civilite,patient?.prenom,patient?.nom].filter(Boolean).join(" ");
+  $("patientName").textContent=nom || "Patient sans identité";
+  $("patientAvatar").textContent=((patient?.prenom||patient?.nom||"?").charAt(0)).toUpperCase();
+  const meta=[];
+  if(patient?.dateNaissance) meta.push("Né(e) le "+patient.dateNaissance);
+  if(patient?.sexe) meta.push("Sexe "+patient.sexe);
+  meta.push("Dossier patient : "+patientId);
+  $("patientMeta").textContent=meta.join(" · ");
+}
+
+function lockForm(lock){
+  document.querySelectorAll("#app input,#app select,#app textarea").forEach(e=>e.disabled=lock);
+  $("saveBtn").classList.toggle("hidden",lock);
+  $("editBtn").classList.toggle("hidden",!lock || !ficheExistante);
+  $("cancelEditBtn").classList.toggle("hidden",lock || !ficheExistante);
+}
+
+function formatDate(ts){
+  try{
+    if(ts?.toDate) return ts.toDate().toLocaleString("fr-FR");
+    if(typeof ts==="string") return new Date(ts).toLocaleString("fr-FR");
+  }catch{}
+  return "";
+}
+
+function toDateTimeLocal(value){
+  if(!value) return "";
+  const d=value?.toDate ? value.toDate() : new Date(value);
+  if(Number.isNaN(d.getTime())) return "";
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function ficheVersChamps(f){
+  const s=f || {};
+  setVal("s_numero",s.numero);
+  setVal("s_date",toDateTimeLocal(s.datePriseEnCharge));
+  setVal("s_intervention",s.typeIntervention);
+  setVal("s_sinus",s.sinusCategorie);
+  setVal("s_destination",s.destination);
+  setVal("s_avpu",s.avpu);
+  setVal("s_age",s.age);
+  setVal("s_sexe",s.sexe);
+  setVal("s_fc",s.constantes?.fc);
+  setVal("s_ta",s.constantes?.ta);
+  setVal("s_fr",s.constantes?.fr);
+  setVal("s_spo2",s.constantes?.spo2);
+  setVal("s_temp",s.constantes?.temp);
+  setVal("s_glasgow",s.constantes?.glasgow);
+  setVal("s_allergies",s.allergies);
+  setVal("s_medicaments",s.medicaments);
+  setVal("s_passe",s.antecedents);
+  setVal("s_plainte",s.plainte);
+  setVal("s_gestes",s.gestes);
+  setVal("s_transmission",s.transmission);
+}
+
+function champsVersFiche(){
+  return {
+    presente:true,
+    numero:val("s_numero").trim(),
+    datePriseEnCharge:val("s_date") || null,
+    typeIntervention:val("s_intervention").trim(),
+    sinusCategorie:val("s_sinus"),
+    destination:val("s_destination").trim(),
+    avpu:val("s_avpu"),
+    age:val("s_age"),
+    sexe:val("s_sexe"),
+    constantes:{
+      fc:val("s_fc"), ta:val("s_ta"), fr:val("s_fr"),
+      spo2:val("s_spo2"), temp:val("s_temp"), glasgow:val("s_glasgow")
+    },
+    allergies:val("s_allergies").trim(),
+    medicaments:val("s_medicaments").trim(),
+    antecedents:val("s_passe").trim(),
+    plainte:val("s_plainte").trim(),
+    gestes:val("s_gestes").trim(),
+    transmission:val("s_transmission").trim()
+  };
+}
+
+function preRemplirDepuisPatient(){
+  if(ficheExistante) return;
+  // On exploite uniquement les informations déjà présentes dans le dossier patient.
+  setVal("s_allergies",patient?.allergies || "");
+  setVal("s_sexe",patient?.sexe || "");
+}
+
+async function chargerDossier(){
+  if(!patientId) throw new Error("Aucun identifiant patient n'est présent dans l'URL (?id=...).");
+
+  const patientSnap=await getDoc(doc(db,"patients",patientId));
+  if(!patientSnap.exists()) throw new Error("Patient introuvable.");
+  patient={id:patientSnap.id,...patientSnap.data()};
+  remplirNomPatient();
+
+  hospitalisationId=patient.hospitalisationActiveId;
+  if(!hospitalisationId) throw new Error("Aucune hospitalisation active n'est associée à ce patient.");
+
+  const hospSnap=await getDoc(doc(db,"hospitalisations",hospitalisationId));
+  if(!hospSnap.exists()) throw new Error("Hospitalisation active introuvable.");
+  hospitalisation={id:hospSnap.id,...hospSnap.data()};
+
+  ficheExistante=hospitalisation.ficheSecours || null;
+
+  if(ficheExistante){
+    ficheVersChamps(ficheExistante);
+    $("existingNotice").classList.remove("hidden");
+    $("newNotice").classList.add("hidden");
+    $("ficheBadge").textContent="✓ Fiche secours jointe";
+    $("ficheBadge").className="badge green";
+    $("saveInfo").textContent="Fiche enregistrée le "+(formatDate(ficheExistante.dateModification)||formatDate(ficheExistante.dateCreation)||"date inconnue")+".";
+    modeLecture=true;
+    lockForm(true);
+  }else{
+    preRemplirDepuisPatient();
+    setVal("s_date",toDateTimeLocal(new Date()));
+    $("newNotice").classList.remove("hidden");
+    $("existingNotice").classList.add("hidden");
+    $("ficheBadge").textContent="Nouvelle fiche secours";
+    $("ficheBadge").className="badge blue";
+    $("saveInfo").textContent="Aucune fiche secours n'est encore jointe à cette hospitalisation.";
+    modeLecture=false;
+    lockForm(false);
+  }
+
+  $("app").classList.remove("hidden");
+}
+
+async function verifierAcces(user){
+  currentUser=user;
+  if(!user) return;
+
+  try{
+    afficherLoader("Vérification des accès…");
+    const medSnap=await getDoc(doc(db,"medecins",user.uid));
+    if(!medSnap.exists()){
+      $("accessStatus").textContent="Compte médecin introuvable";
+      return erreur("Utilisateur non trouvé. Veuillez vous reconnecter.");
+    }
+
+    const data=medSnap.data();
+    window.medecinNom=data.nom || "";
+    window.medecinSpecialite=data.specialite || "";
+    window.medecinLieu=data.lieu || "";
+    window.medecinType=data.type || "";
+    window.medecinUid=user.uid;
+
+    const pages=data.pages || {};
+    const autorise=PAGE_ALIASES.some(p=>pages[p]===true) || currentPageNames().some(p=>pages[p]===true);
+
+    if(!autorise){
+      masquerLoader();
+      $("modal-no-access").classList.add("show");
+      $("accessStatus").textContent="Accès refusé";
+      return;
+    }
+
+    $("accessStatus").textContent="Accès autorisé";
+    await chargerDossier();
+    masquerLoader();
+  }catch(e){
+    console.error("Erreur chargement fiche secours :",e);
+    erreur(e.message || "Erreur inconnue.");
+  }
+}
+
+window.activerModification=()=>{
+  modeLecture=false;
+  lockForm(false);
+  $("saveInfo").textContent="Modification de la fiche secours. Enregistrez pour conserver les changements.";
+  $("existingNotice").classList.add("hidden");
+  $("newNotice").classList.remove("hidden");
+};
+
+window.annulerModification=()=>{
+  if(ficheExistante) ficheVersChamps(ficheExistante);
+  modeLecture=true;
+  lockForm(true);
+  $("existingNotice").classList.remove("hidden");
+  $("newNotice").classList.add("hidden");
+  $("saveInfo").textContent="Fiche enregistrée le "+(formatDate(ficheExistante?.dateModification)||formatDate(ficheExistante?.dateCreation)||"date inconnue")+".";
+};
+
+window.enregistrerFiche=async()=>{
+  if(!currentUser || !hospitalisationId) return;
+  $("formError").textContent="";
+  const numero=val("s_numero").trim();
+  if(!numero){ $("formError").textContent="Le numéro de fiche secours est requis."; $("s_numero").focus(); return; }
+
+  try{
+    afficherLoader(ficheExistante ? "Mise à jour de la fiche…" : "Enregistrement de la fiche…");
+    const fiche=champsVersFiche();
+
+    // Une seule fiche secours par hospitalisation : elle est directement
+    // embarquée dans l'hospitalisation active du patient.
+    const payload={
+      ficheSecours:{
+        ...fiche,
+        dateCreation:ficheExistante?.dateCreation || serverTimestamp(),
+        dateModification:serverTimestamp(),
+        creePar:ficheExistante?.creePar || currentUser.uid,
+        creeParNom:ficheExistante?.creeParNom || (window.medecinNom || ""),
+        modifiePar:currentUser.uid,
+        modifieParNom:window.medecinNom || "",
+        presente:true
+      },
+      ficheSecoursJointe:true,
+      ficheSecoursDerniereModification:serverTimestamp()
+    };
+
+    await setDoc(doc(db,"hospitalisations",hospitalisationId),payload,{merge:true});
+
+    ficheExistante=payload.ficheSecours;
+    ficheVersChamps(ficheExistante);
+    modeLecture=true;
+    lockForm(true);
+    $("existingNotice").classList.remove("hidden");
+    $("newNotice").classList.add("hidden");
+    $("ficheBadge").textContent="✓ Fiche secours jointe";
+    $("ficheBadge").className="badge green";
+    $("saveInfo").textContent="Fiche enregistrée / mise à jour avec succès.";
+    masquerLoader();
+
+    // Permet au shell GestUrg2 d'actualiser éventuellement la fiche sans rechargement.
+    window.parent?.postMessage({
+      type:"ficheSecoursEnregistree",
+      patientId,
+      hospitalisationId,
+      ficheSecoursJointe:true
+    },"*");
+
+  }catch(e){
+    console.error(e);
+    masquerLoader();
+    $("formError").textContent="Échec de l'enregistrement : "+(e.message || e);
+  }
+};
+
+onAuthStateChanged(auth, verifierAcces);
+</script>
+</body>
+</html>

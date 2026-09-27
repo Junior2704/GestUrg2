@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fiche Bilan — Secours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0d11; --surface:#12171e; --surface-2:#1a212a; --surface-3:#222b36;
+  --line:#26313d; --ink:#eef2f5; --muted:#8b9aa8; --muted-2:#5f6d7a;
+  --red:#e0393b; --red-dim:#7d2325; --teal:#22c1b4; --teal-dim:#0e4c47;
+  --amber:#e8a33d; --green:#3fbf72; --shadow:0 8px 24px rgba(0,0,0,.35);
+  --font-ui:'Manrope',system-ui,sans-serif; --font-data:'IBM Plex Mono',monospace;
+}
+html[data-theme="light"]{
+  --bg:#eef1f3; --surface:#ffffff; --surface-2:#f4f6f7; --surface-3:#e9edf0;
+  --line:#d7dde1; --ink:#151b21; --muted:#5c6975; --muted-2:#8896a2;
+  --red:#c92a2d; --red-dim:#f6d3d3; --teal:#0d8c81; --teal-dim:#d3f0ed;
+  --amber:#a1650a; --green:#1c7a45; --shadow:0 6px 18px rgba(20,30,40,.08);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);}
+body{padding-bottom:70px;-webkit-font-smoothing:antialiased;}
+input,select,textarea,button{font-family:inherit;color:inherit;}
+input,select,textarea{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;width:100%;font-size:14.5px;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-dim);}
+textarea{resize:vertical;min-height:60px;}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.01em;}
+.field{margin-bottom:13px;}
+.row{display:grid;gap:12px;}
+.row.c2{grid-template-columns:1fr 1fr;} .row.c3{grid-template-columns:1fr 1fr 1fr;} .row.c4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:700px){.row.c2,.row.c3,.row.c4{grid-template-columns:1fr 1fr;}}
+button{cursor:pointer;border:none;background:none;}
+.mono{font-family:var(--font-data);}
+
+/* app shell */
+.appbar{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding:12px 18px;}
+.appbar .mark{width:34px;height:34px;border-radius:9px;background:var(--red);display:flex;align-items:center;
+  justify-content:center;font-size:17px;flex:none;}
+.appbar .titles{line-height:1.25;}
+.appbar .titles .num{font-weight:800;font-size:15px;font-family:var(--font-data);}
+.appbar .titles .sub{font-size:11.5px;color:var(--muted);}
+.appbar .spacer{flex:1;}
+.pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:5px 10px;
+  border:1px solid var(--line);border-radius:20px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);}
+.dot.on{background:var(--green);} .dot.off{background:var(--red);}
+.icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink);font-size:15px;display:flex;align-items:center;justify-content:center;}
+.icon-btn:hover{background:var(--surface-3);}
+
+.shell{display:flex;max-width:1180px;margin:0 auto;}
+.rail{width:210px;flex:none;padding:20px 12px;position:sticky;top:61px;align-self:flex-start;
+  height:calc(100vh - 61px);}
+.rail button{width:100%;text-align:left;padding:11px 13px;border-radius:10px;font-size:13.5px;font-weight:700;
+  color:var(--muted);display:flex;align-items:center;gap:10px;margin-bottom:3px;}
+.rail button .num{font-family:var(--font-data);font-size:11px;color:var(--muted-2);}
+.rail button.active{background:var(--surface-2);color:var(--ink);}
+.rail button.active .num{color:var(--teal);}
+.rail button:hover{background:var(--surface-2);}
+@media(max-width:880px){.rail{display:none;}}
+
+main{flex:1;min-width:0;padding:22px 20px 20px;max-width:820px;}
+.section{display:none;} .section.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+  margin-bottom:16px;box-shadow:var(--shadow);}
+.card h2{font-size:15px;margin:0 0 4px;} .card .desc{font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+
+/* segmented / chip selectors */
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--muted);}
+.chip.sel{background:var(--teal);color:#03211e;border-color:var(--teal);}
+.chip.sel.danger{background:var(--red);color:#fff;border-color:var(--red);}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+.seg button{flex:1;padding:9px 6px;font-size:12.5px;font-weight:700;color:var(--muted);background:var(--surface-2);
+  border-right:1px solid var(--line);}
+.seg button:last-child{border-right:none;}
+.seg button.sel{background:var(--teal);color:#03211e;}
+
+/* vitals grid */
+.vitals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:600px){.vitals-grid{grid-template-columns:repeat(2,1fr);}}
+.vital{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px;}
+.vital label{margin-bottom:6px;}
+.vital input{font-family:var(--font-data);font-size:17px;font-weight:600;text-align:center;background:var(--surface);}
+.vital .unit{font-size:10.5px;color:var(--muted-2);text-align:center;margin-top:3px;}
+
+.const-log{margin-top:14px;}
+.const-log table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.const-log th{text-align:left;color:var(--muted-2);font-weight:700;font-size:10.5px;padding:4px 8px;
+  border-bottom:1px solid var(--line);}
+.const-log td{padding:6px 8px;border-bottom:1px solid var(--line);font-family:var(--font-data);}
+.add-row{margin-top:10px;padding:9px;border-radius:9px;border:1px dashed var(--muted-2);color:var(--muted);
+  width:100%;font-size:12.5px;font-weight:700;}
+.add-row:hover{background:var(--surface-2);}
+
+/* body map */
+.bodymap-wrap{display:flex;gap:20px;flex-wrap:wrap;}
+.bodymap-svg{flex:none;background:var(--surface-2);border-radius:12px;padding:10px;}
+.bodymap-svg svg{width:220px;height:auto;display:block;}
+.zone{fill:var(--surface-3);stroke:var(--line);stroke-width:1;cursor:pointer;transition:fill .12s;}
+.zone:hover{fill:var(--teal-dim);}
+.marker{cursor:pointer;}
+.picker{flex:1;min-width:230px;}
+.picker .hint{font-size:12.5px;color:var(--muted);margin-bottom:10px;}
+.trauma-types{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.trauma-list{margin-top:14px;}
+.trauma-item{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;
+  background:var(--surface-2);border-radius:9px;margin-bottom:7px;font-size:13px;}
+.trauma-item .rm{color:var(--red);font-size:12px;font-weight:700;}
+
+.chk-list{display:flex;flex-direction:column;}
+.chk-item{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);}
+.chk-item:last-child{border-bottom:none;}
+.chk-item input[type=checkbox]{width:19px;height:19px;flex:none;accent-color:var(--teal);}
+.chk-item .lbl{flex:1;font-size:13.5px;}
+.chk-item .time{width:78px;font-size:12px;flex:none;}
+
+.transmission-box{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;
+  font-size:13.5px;line-height:1.65;white-space:pre-wrap;font-family:var(--font-data);}
+.copy-btn{margin-top:10px;padding:9px 14px;border-radius:9px;background:var(--teal);color:#03211e;
+  font-weight:700;font-size:13px;}
+
+.bottombar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);
+  display:flex;gap:10px;padding:10px 16px;z-index:40;align-items:center;}
+.btn{padding:11px 16px;border-radius:10px;font-size:13.5px;font-weight:700;}
+.btn.save{background:var(--red);color:#fff;flex:1;}
+.btn.ghost{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);}
+.savemsg{font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right;}
+
+.tabbar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);
+  z-index:41;overflow-x:auto;white-space:nowrap;}
+@media(max-width:880px){.tabbar{display:flex;} .bottombar{bottom:52px;}}
+.tabbar button{padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);}
+.tabbar button.active{color:var(--teal);}
+
+.overlay{position:fixed;inset:0;background:rgba(4,6,9,.6);display:none;align-items:flex-start;justify-content:center;
+  padding:40px 14px;overflow-y:auto;z-index:60;}
+.overlay.show{display:flex;}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;
+  padding:22px 24px;box-shadow:var(--shadow);}
+.panel h3{margin:0 0 14px;font-size:16px;}
+.panel .close{float:right;font-size:20px;color:var(--muted);}
+.hist-row{display:flex;justify-content:space-between;padding:11px 8px;border-bottom:1px solid var(--line);
+  font-size:13px;cursor:pointer;}
+.hist-row:hover{background:var(--surface-2);}
+.hist-row .t{color:var(--muted);font-size:11.5px;}
+.hist-empty{color:var(--muted);font-size:13px;padding:14px 4px;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:800;}
+.badge.brouillon{background:var(--amber);color:#1a1100;} .badge.validee{background:var(--green);color:#04220f;}
+
+@media print{
+  .appbar,.rail,.tabbar,.bottombar,.overlay,.add-row{display:none !important;}
+  body{background:#fff;color:#000;padding-bottom:0;}
+  .shell{display:block;} main{max-width:100%;padding:0;}
+  .section{display:block !important;} .card{box-shadow:none;border:1px solid #999;break-inside:avoid;background:#fff;}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="mark">✚</div>
+  <div class="titles">
+    <div class="num" id="numeroFiche">INT-EN-COURS</div>
+    <div class="sub"><span id="statutBadgeTxt">Brouillon</span> · <span id="dateCreationTxt">—</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill"><span class="dot" id="statusDot"></span><span id="statusTxt">Non configuré</span></div>
+  <button class="icon-btn" title="Thème" onclick="toggleTheme()">◐</button>
+  <button class="icon-btn" title="Historique" onclick="openHistorique()">☰</button>
+  <button class="icon-btn" title="Nouvelle fiche" onclick="nouvelleFiche()">+</button>
+  <button class="icon-btn" title="Déconnexion" onclick="doSignOut()">⏻</button>
+</div>
+
+<div class="overlay show" id="authOverlay" style="align-items:center;background:var(--bg)">
+  <div class="panel" style="max-width:380px">
+    <h3 style="text-align:center;font-size:20px">✚ Fiche Bilan — Secours</h3>
+    <div class="desc" style="text-align:center;margin-bottom:18px">Connectez-vous avec votre compte pour accéder à vos fiches.</div>
+    <div class="field"><label>Adresse e-mail</label><input type="email" id="auth_email"></div>
+    <div class="field"><label>Mot de passe</label><input type="password" id="auth_password"></div>
+    <div class="field" id="authError" style="color:var(--red);font-size:12.5px;display:none"></div>
+    <button class="btn save" style="width:100%;margin-bottom:8px" onclick="doSignIn()">Se connecter</button>
+    <button class="btn ghost" style="width:100%" onclick="doSignUp()">Créer un compte</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="rail" id="rail"></nav>
+
+  <main>
+    <!-- 1. GENERAL -->
+    <section class="section" data-sec="general">
+      <div class="card">
+        <h2>Mission</h2><div class="desc">Horaires, lieu et moyens engagés</div>
+        <div class="row c4">
+          <div class="field"><label>Date</label><input type="date" id="h_date"></div>
+          <div class="field"><label>Alerte reçue</label><input type="time" id="h_alerte"></div>
+          <div class="field"><label>Départ</label><input type="time" id="h_depart"></div>
+          <div class="field"><label>Arrivée lieux</label><input type="time" id="h_arriveeLieux"></div>
+          <div class="field"><label>Auprès victime</label><input type="time" id="h_arriveeVictime"></div>
+          <div class="field"><label>Départ transport</label><input type="time" id="h_departTransport"></div>
+          <div class="field"><label>Arrivée hôpital</label><input type="time" id="h_arriveeHopital"></div>
+          <div class="field"><label>Disponible</label><input type="time" id="h_fin"></div>
+        </div>
+        <div class="row c2">
+          <div class="field"><label>Adresse</label><input id="lieu_adresse" placeholder="N°, rue, complément"></div>
+          <div class="field"><label>Ville / code postal</label><input id="lieu_ville" placeholder="Ville (CP)"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Nature de l'intervention</h2><div class="desc">Sélectionnez le motif principal</div>
+        <div class="chips" id="typeGrid"></div>
+        <div class="field" style="margin-top:14px"><label>Motif d'appel / circonstances</label><textarea id="motifAppel"></textarea></div>
+      </div>
+      <div class="card">
+        <h2>Moyens & intervenants</h2>
+        <div id="moyensList"></div>
+        <button class="add-row" onclick="addMoyen()">+ Ajouter un moyen (véhicule / équipe)</button>
+        <div id="intervenantsList" style="margin-top:12px"></div>
+        <button class="add-row" onclick="addIntervenant()">+ Ajouter un intervenant</button>
+      </div>
+    </section>
+
+    <!-- 2. VICTIME -->
+    <section class="section" data-sec="victime">
+      <div class="card">
+        <h2>Identité</h2>
+        <div class="row c4">
+          <div class="field"><label>Nom</label><input id="v_nom"></div>
+          <div class="field"><label>Prénom</label><input id="v_prenom"></div>
+          <div class="field"><label>Sexe</label><select id="v_sexe"><option value="">—</option><option>F</option><option>M</option></select></div>
+          <div class="field"><label>Âge / naissance</label><input id="v_age"></div>
+        </div>
+        <div class="field"><label>Plainte principale</label><textarea id="v_plainte"></textarea></div>
+      </div>
+      <div class="card">
+        <h2>SAMPLE — antécédents</h2><div class="desc">Signes · Allergies · Médicaments · Passé médical · Last meal · Événement</div>
+        <div class="row c2">
+          <div class="field"><label>Signes / symptômes</label><textarea id="s_signes"></textarea></div>
+          <div class="field"><label>Allergies connues</label><textarea id="s_allergies"></textarea></div>
+          <div class="field"><label>Médicaments / traitement en cours</label><textarea id="s_medicaments"></textarea></div>
+          <div class="field"><label>Passé médical / chirurgical</label><textarea id="s_passe"></textarea></div>
+          <div class="field"><label>Dernier repas</label><input id="s_repas"></div>
+          <div class="field"><label>Événement déclencheur</label><input id="s_evenement"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Douleur — OPQRST</h2>
+        <div class="row c3">
+          <div class="field"><label>Origine / provoquée par</label><input id="o_origine"></div>
+          <div class="field"><label>Pallié / aggravé par</label><input id="o_pallie"></div>
+          <div class="field"><label>Qualité (brûlure, étau...)</label><input id="o_qualite"></div>
+          <div class="field"><label>iRradiation</label><input id="o_irradiation"></div>
+          <div class="field"><label>Sévérité (EVA /10)</label><input type="number" min="0" max="10" id="o_severite"></div>
+          <div class="field"><label>Temps / évolution</label><input id="o_temps"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. BILAN VITAL -->
+    <section class="section" data-sec="bilan">
+      <div class="card">
+        <h2>Catégorisation SINUS</h2><div class="desc">Tri en situation d'afflux de victimes</div>
+        <div class="chips" id="sinusSeg"></div>
+      </div>
+      <div class="card">
+        <h2>Conscience</h2>
+        <div class="seg" id="avpuSeg">
+          <button data-v="A">A · Alerte</button><button data-v="V">V · Voix</button>
+          <button data-v="P">P · Douleur</button><button data-v="U">U · Inconscient</button>
+        </div>
+        <div class="row c2" style="margin-top:12px">
+          <div class="field"><label>Score de Glasgow (/15)</label><input type="number" min="3" max="15" id="glasgow"></div>
+          <div class="field"><label>Pupilles</label><input id="pupilles" placeholder="Symétriques, réactives..."></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Constantes actuelles</h2>
+        <div class="vitals-grid">
+          <div class="vital"><label>FC</label><input type="number" id="c_fc"><div class="unit">bpm</div></div>
+          <div class="vital"><label>TA</label><input id="c_ta" placeholder="12/8"><div class="unit">mmHg</div></div>
+          <div class="vital"><label>FR</label><input type="number" id="c_fr"><div class="unit">cycles/min</div></div>
+          <div class="vital"><label>SpO2</label><input type="number" id="c_spo2"><div class="unit">%</div></div>
+          <div class="vital"><label>Glycémie</label><input id="c_glyc"><div class="unit">g/l</div></div>
+          <div class="vital"><label>Température</label><input id="c_temp"><div class="unit">°C</div></div>
+          <div class="vital"><label>TRC</label><input id="c_trc"><div class="unit">secondes</div></div>
+          <div class="vital"><label>Coloration</label><input id="c_couleur" placeholder="Normale, pâle..."></div>
+        </div>
+        <div class="row c2" style="margin-top:12px">
+          <div class="field"><label>Ventilation — amplitude / régularité</label><input id="c_amplitude" placeholder="Ample, régulière..."></div>
+          <div class="field"><label>Hémorragie</label><input id="c_hemorragie" placeholder="Localisation, importance..."></div>
+        </div>
+        <div class="const-log">
+          <table><thead><tr><th>Heure</th><th>FC</th><th>TA</th><th>FR</th><th>SpO2</th><th></th></tr></thead>
+          <tbody id="constBody"></tbody></table>
+        </div>
+        <button class="add-row" onclick="logConstante()">+ Enregistrer ce relevé dans la surveillance</button>
+      </div>
+    </section>
+
+    <!-- 4. TRAUMA -->
+    <section class="section" data-sec="trauma">
+      <div class="card">
+        <h2>Schéma corporel</h2><div class="desc">Touchez une zone pour signaler une lésion</div>
+        <div class="bodymap-wrap">
+          <div class="bodymap-svg"><svg viewBox="0 0 200 400" id="bodySvg"></svg></div>
+          <div class="picker">
+            <div class="hint" id="zoneHint">Sélectionnez une zone sur le schéma.</div>
+            <div class="trauma-types" id="traumaTypes"></div>
+            <div class="field"><textarea id="traumaNote" placeholder="Précision (facultatif)"></textarea></div>
+            <button class="add-row" onclick="addTraumaMarker()">+ Ajouter au bilan lésionnel</button>
+            <div class="trauma-list" id="traumaList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. GESTES -->
+    <section class="section" data-sec="gestes">
+      <div class="card">
+        <h2>Gestes et soins effectués</h2>
+        <div class="chk-list" id="gestesList"></div>
+        <div class="field" style="margin-top:14px"><label>Médicaments administrés / observations complémentaires</label>
+          <textarea id="observations" style="min-height:80px"></textarea></div>
+      </div>
+    </section>
+
+    <!-- 6. TRANSMISSION -->
+    <section class="section" data-sec="transmission">
+      <div class="card">
+        <h2>Devenir</h2>
+        <div class="row c2">
+          <div class="field"><label>Destination / mode de transport</label><input id="devenirDestination"></div>
+          <div class="field"><label>Régulation médicale contactée</label><input id="devenirRegulation"></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:6px">
+          <input type="checkbox" style="width:18px;height:18px;accent-color:var(--red)" id="refusTransport">
+          Refus de soins / transport — décharge à faire signer
+        </label>
+      </div>
+      <div class="card">
+        <h2>Bilan de transmission</h2><div class="desc">Généré automatiquement — à relire avant transmission radio</div>
+        <div class="transmission-box" id="transmissionText">Complétez les sections précédentes pour générer le bilan.</div>
+        <button class="copy-btn" onclick="copyTransmission()">Copier le texte</button>
+      </div>
+    </section>
+
+    <!-- 7. MAIN COURANTE -->
+    <section class="section" data-sec="courante">
+      <div class="card">
+        <h2>Main courante</h2><div class="desc">Journal des événements horodaté, généré automatiquement — non modifiable</div>
+        <div id="couranteList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="bottombar">
+  <button class="btn ghost" onclick="marquerValidee()">✔ Valider</button>
+  <button class="btn ghost" onclick="window.print()">🖨 Imprimer</button>
+  <button class="btn save" onclick="enregistrerFiche()">Enregistrer sur Firestore</button>
+  <div class="savemsg" id="saveMsg"></div>
+</div>
+<div class="tabbar" id="tabbar"></div>
+
+<!-- Historique overlay -->
+<div class="overlay" id="histOverlay">
+  <div class="panel" style="max-width:720px">
+    <button class="close" onclick="closeOverlay('histOverlay')">×</button>
+    <h3>Historique des bilans</h3>
+    <div class="field"><input id="histSearch" placeholder="Rechercher (numéro, victime, lieu, type)..." oninput="renderHistorique()"></div>
+    <div id="histList"><div class="hist-empty">Chargement...</div></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script>
+
+ const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+  authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4",
+  storageBucket: "urgences-a8ed4.firebasestorage.app",
+  messagingSenderId: "392921498200",
+  appId: "1:392921498200:web:7ccce767332c67c697c02d",
+  measurementId: "G-C74MK2KYDL"
+};
+const COLLECTION_NAME = "bilans";
+
+const SECTIONS=[
+  {id:'general',n:'01',label:'Mission'},{id:'victime',n:'02',label:'Victime & antécédents'},
+  {id:'bilan',n:'03',label:'Bilan vital'},{id:'trauma',n:'04',label:'Schéma lésionnel'},
+  {id:'gestes',n:'05',label:'Gestes & soins'},{id:'transmission',n:'06',label:'Devenir & transmission'},
+  {id:'courante',n:'07',label:'Main courante'}
+];
+const SINUS=[{k:'UA',l:'UA · Urgence absolue',c:'#e0393b'},{k:'UR',l:'UR · Urgence relative',c:'#e8a33d'},
+  {k:'IMPL',l:'Impliqué',c:'#3fbf72'},{k:'DCD',l:'Décédé',c:'#3a3f45'}];
+const TYPES=["Malaise","Douleur thoracique","Détresse respiratoire","Arrêt cardio-respiratoire",
+  "Accident voie publique","Chute","Traumatisme","Plaie / hémorragie","Brûlure","Intoxication",
+  "Accouchement","Psychiatrique","Incendie","Autre"];
+const GESTES=["Oxygénothérapie","Pose garrot","Pansement compressif","Immobilisation membre",
+  "Immobilisation cervicale","Position latérale de sécurité","RCP débutée","Défibrillation (DAE)",
+  "Perfusion posée","Aspiration","Réassurance / surveillance","Transmission bilan régulation"];
+const TRAUMA_TYPES=[{k:'plaie',l:'Plaie',c:'#e0393b'},{k:'brulure',l:'Brûlure',c:'#e8a33d'},
+  {k:'fracture',l:'Fracture / trauma',c:'#22c1b4'},{k:'douleur',l:'Douleur',c:'#8b5cf6'}];
+const ZONES=[
+  {id:'tete',cx:100,cy:35,r:22},{id:'cou',cx:100,cy:66,r:8},
+  {id:'thorax',cx:100,cy:115,r:30},{id:'abdomen',cx:100,cy:168,r:24},
+  {id:'bras_d',cx:52,cy:120,r:13},{id:'bras_g',cx:148,cy:120,r:13},
+  {id:'main_d',cx:40,cy:195,r:9},{id:'main_g',cx:160,cy:195,r:9},
+  {id:'bassin',cx:100,cy:205,r:18},
+  {id:'cuisse_d',cx:80,cy:260,r:15},{id:'cuisse_g',cx:120,cy:260,r:15},
+  {id:'jambe_d',cx:80,cy:330,r:12},{id:'jambe_g',cx:120,cy:330,r:12},
+  {id:'pied_d',cx:80,cy:378,r:9},{id:'pied_g',cx:120,cy:378,r:9}
+];
+const ZONE_LABELS={tete:'Tête',cou:'Cou',thorax:'Thorax',abdomen:'Abdomen',bras_d:'Bras droit',bras_g:'Bras gauche',
+  main_d:'Main droite',main_g:'Main gauche',bassin:'Bassin',cuisse_d:'Cuisse droite',cuisse_g:'Cuisse gauche',
+  jambe_d:'Jambe droite',jambe_g:'Jambe gauche',pied_d:'Pied droit',pied_g:'Pied gauche'};
+
+let db=null, currentDocId=null, currentStatut='brouillon', selectedZone=null, selectedTraumaType=null;
+let traumaMarkers=[], constLog=[];
+const AUTOSAVE_KEY='fiche_bilan_draft';
+
+/* ---------- nav ---------- */
+function buildNav(){
+  const rail=document.getElementById('rail'), tabbar=document.getElementById('tabbar');
+  rail.innerHTML=''; tabbar.innerHTML='';
+  SECTIONS.forEach(s=>{
+    const b1=document.createElement('button'); b1.innerHTML=`<span class="num">${s.n}</span> ${s.label}`;
+    b1.onclick=()=>showSection(s.id); b1.dataset.sec=s.id; rail.appendChild(b1);
+    const b2=document.createElement('button'); b2.textContent=s.label.split(' ')[0];
+    b2.onclick=()=>showSection(s.id); b2.dataset.sec=s.id; tabbar.appendChild(b2);
+  });
+}
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.dataset.sec===id));
+  document.querySelectorAll('.rail button, .tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.sec===id));
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function toggleTheme(){
+  const html=document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+
+/* ---------- chips / segments ---------- */
+function buildTypeGrid(){
+  const g=document.getElementById('typeGrid');
+  TYPES.forEach(t=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=t; b.dataset.value=t;
+    b.onclick=()=>{document.querySelectorAll('#typeGrid .chip').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');autosave();};
+    g.appendChild(b);
+  });
+}
+document.getElementById('avpuSeg').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON')return;
+  document.querySelectorAll('#avpuSeg button').forEach(b=>b.classList.remove('sel'));
+  e.target.classList.add('sel'); autosave();
+});
+function buildSinus(){
+  const g=document.getElementById('sinusSeg');
+  SINUS.forEach(s=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=s.l; b.style.borderColor=s.c;
+    b.dataset.k=s.k;
+    b.onclick=()=>{
+      document.querySelectorAll('#sinusSeg .chip').forEach(x=>{x.classList.remove('sel');x.style.background='';x.style.color='';});
+      b.classList.add('sel'); b.style.background=s.c; b.style.color=(s.k==='DCD'||s.k==='UA')?'#fff':'#071b16';
+      logEvent('Catégorisation SINUS : '+s.l); autosave();
+    };
+    g.appendChild(b);
+  });
+}
+function buildGestes(){
+  const l=document.getElementById('gestesList');
+  GESTES.forEach((g,i)=>{
+    const d=document.createElement('div'); d.className='chk-item';
+    d.innerHTML=`<input type="checkbox" id="geste_${i}" onchange="onGeste(${i})">
+      <span class="lbl">${g}</span><input type="time" class="time" id="geste_h_${i}">`;
+    l.appendChild(d);
+  });
+}
+function onGeste(i){
+  const cb=document.getElementById('geste_'+i), h=document.getElementById('geste_h_'+i);
+  if(cb.checked){ if(!h.value) h.value=new Date().toTimeString().slice(0,5); logEvent('Geste : '+GESTES[i]); }
+  autosave();
+}
+
+/* ---------- main courante ---------- */
+let mainCourante=[];
+function logEvent(text){
+  mainCourante.unshift({t:new Date().toTimeString().slice(0,8), text});
+  renderCourante();
+}
+function renderCourante(){
+  const c=document.getElementById('couranteList'); if(!c) return;
+  if(!mainCourante.length){ c.innerHTML='<div class="hist-empty">Aucun événement enregistré pour le moment.</div>'; return; }
+  c.innerHTML=mainCourante.map(e=>`<div class="trauma-item"><span class="mono" style="color:var(--muted);margin-right:10px">${e.t}</span>${esc(e.text)}</div>`).join('');
+}
+
+/* ---------- moyens / intervenants ---------- */
+function esc(v){ return v===undefined||v===null?'':String(v).replace(/"/g,'&quot;'); }
+function addMoyen(data){
+  data=data||{};
+  const c=document.getElementById('moyensList');
+  const item=document.createElement('div'); item.className='row c3'; item.style.marginBottom='10px'; item.classList.add('repeat-item');
+  item.innerHTML=`<div class="field"><label>Véhicule / engin</label><input data-field="vehicule" value="${esc(data.vehicule)}"></div>
+    <div class="field"><label>Indicatif</label><input data-field="indicatif" value="${esc(data.indicatif)}"></div>
+    <div class="field"><label>Effectif <button class="rm" style="float:right;color:var(--red);font-size:11px" onclick="this.closest('.repeat-item').remove();autosave()">retirer ✕</button></label><input type="number" data-field="effectif" value="${esc(data.effectif)}"></div>`;
+  c.appendChild(item);
+}
+function addIntervenant(data){
+  data=data||{};
+  const c=document.getElementById('intervenantsList');
+  const item=document.createElement('div'); item.className='row c2'; item.style.marginBottom='10px'; item.classList.add('repeat-item');
+  item.innerHTML=`<div class="field"><label>Nom / prénom</label><input data-field="nom" value="${esc(data.nom)}"></div>
+    <div class="field"><label>Fonction <button class="rm" style="float:right;color:var(--red);font-size:11px" onclick="this.closest('.repeat-item').remove();autosave()">retirer ✕</button></label><input data-field="fonction" value="${esc(data.fonction)}"></div>`;
+  c.appendChild(item);
+}
+function readGroup(containerId){
+  const arr=[];
+  document.querySelectorAll('#'+containerId+' > .repeat-item').forEach(item=>{
+    const o={}; item.querySelectorAll('[data-field]').forEach(inp=>o[inp.dataset.field]=inp.value); arr.push(o);
+  });
+  return arr;
+}
+
+/* ---------- constantes (surveillance dans le temps) ---------- */
+function logConstante(){
+  const c={heure:new Date().toTimeString().slice(0,5), fc:v('c_fc'), ta:v('c_ta'), fr:v('c_fr'), spo2:v('c_spo2')};
+  constLog.push(c); renderConstLog(); autosave();
+}
+function renderConstLog(){
+  const b=document.getElementById('constBody'); b.innerHTML='';
+  constLog.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${esc(c.heure)}</td><td>${esc(c.fc)}</td><td>${esc(c.ta)}</td><td>${esc(c.fr)}</td><td>${esc(c.spo2)}</td>
+      <td><button class="rm" style="color:var(--red);font-size:11px" onclick="constLog.splice(${i},1);renderConstLog();autosave()">✕</button></td>`;
+    b.appendChild(tr);
+  });
+}
+
+/* ---------- body map ---------- */
+function buildBodySvg(){
+  const svg=document.getElementById('bodySvg');
+  let html=`<ellipse cx="100" cy="35" rx="22" ry="24" style="fill:none;stroke:var(--line)"/>
+    <path d="M78 65 Q100 60 122 65 L135 200 Q100 215 65 200 Z" style="fill:none;stroke:var(--line)"/>
+    <line x1="65" y1="90" x2="35" y2="200" stroke="var(--line)"/><line x1="135" y1="90" x2="165" y2="200" stroke="var(--line)"/>
+    <line x1="80" y1="215" x2="75" y2="385" stroke="var(--line)"/><line x1="120" y1="215" x2="125" y2="385" stroke="var(--line)"/>`;
+  ZONES.forEach(z=>{ html+=`<circle class="zone" data-id="${z.id}" cx="${z.cx}" cy="${z.cy}" r="${z.r}"></circle>`; });
+  svg.innerHTML=html;
+  svg.querySelectorAll('.zone').forEach(z=>z.addEventListener('click',()=>selectZone(z.dataset.id)));
+}
+function selectZone(id){
+  selectedZone=id;
+  document.getElementById('zoneHint').textContent='Zone sélectionnée : '+ZONE_LABELS[id]+'. Choisissez le type de lésion.';
+}
+function buildTraumaTypes(){
+  const c=document.getElementById('traumaTypes');
+  TRAUMA_TYPES.forEach(t=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=t.l; b.style.borderColor=t.c;
+    b.onclick=()=>{document.querySelectorAll('#traumaTypes .chip').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); b.style.background=t.c; b.style.color='#fff'; selectedTraumaType=t.k;};
+    c.appendChild(b);
+  });
+}
+function addTraumaMarker(){
+  if(!selectedZone){ alert('Sélectionnez d\'abord une zone sur le schéma.'); return; }
+  if(!selectedTraumaType){ alert('Sélectionnez un type de lésion.'); return; }
+  traumaMarkers.push({zone:selectedZone, type:selectedTraumaType, note:document.getElementById('traumaNote').value});
+  logEvent('Lésion ajoutée : '+ZONE_LABELS[selectedZone]+' ('+(TRAUMA_TYPES.find(t=>t.k===selectedTraumaType)||{}).l+')');
+  document.getElementById('traumaNote').value='';
+  renderTrauma(); autosave();
+}
+function renderTrauma(){
+  const svg=document.getElementById('bodySvg');
+  svg.querySelectorAll('.marker').forEach(m=>m.remove());
+  const list=document.getElementById('traumaList'); list.innerHTML='';
+  traumaMarkers.forEach((m,i)=>{
+    const z=ZONES.find(zz=>zz.id===m.zone); const tt=TRAUMA_TYPES.find(t=>t.k===m.type);
+    if(z && tt){
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('class','marker'); dot.setAttribute('cx',z.cx); dot.setAttribute('cy',z.cy);
+      dot.setAttribute('r',6); dot.setAttribute('fill',tt.c); dot.setAttribute('stroke','#fff'); dot.setAttribute('stroke-width','1.5');
+      svg.appendChild(dot);
+    }
+    const row=document.createElement('div'); row.className='trauma-item';
+    row.innerHTML=`<span>${ZONE_LABELS[m.zone]} — ${tt?tt.l:m.type}${m.note?' · '+esc(m.note):''}</span>
+      <button class="rm" onclick="traumaMarkers.splice(${i},1);renderTrauma();autosave()">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+/* ---------- helpers état ---------- */
+function v(id){ return document.getElementById(id).value; }
+function set(id,val){ document.getElementById(id).value=val||''; }
+
+function collectState(){
+  const type=document.querySelector('#typeGrid .chip.sel');
+  const avpu=document.querySelector('#avpuSeg button.sel');
+  return {
+    numero: document.getElementById('numeroFiche').textContent,
+    statut: currentStatut,
+    horaires:{date:v('h_date'),alerte:v('h_alerte'),depart:v('h_depart'),arriveeLieux:v('h_arriveeLieux'),
+      arriveeVictime:v('h_arriveeVictime'),departTransport:v('h_departTransport'),arriveeHopital:v('h_arriveeHopital'),fin:v('h_fin')},
+    lieu:{adresse:v('lieu_adresse'), ville:v('lieu_ville')},
+    typeIntervention: type?type.dataset.value:'', motifAppel:v('motifAppel'),
+    moyens:readGroup('moyensList'), intervenants:readGroup('intervenantsList'),
+    victime:{nom:v('v_nom'),prenom:v('v_prenom'),sexe:v('v_sexe'),age:v('v_age'),plainte:v('v_plainte')},
+    sample:{signes:v('s_signes'),allergies:v('s_allergies'),medicaments:v('s_medicaments'),passe:v('s_passe'),repas:v('s_repas'),evenement:v('s_evenement')},
+    opqrst:{origine:v('o_origine'),pallie:v('o_pallie'),qualite:v('o_qualite'),irradiation:v('o_irradiation'),severite:v('o_severite'),temps:v('o_temps')},
+    sinusCategorie: (document.querySelector('#sinusSeg .chip.sel')||{}).dataset ? (document.querySelector('#sinusSeg .chip.sel')||{}).dataset.k : '',
+    mainCourante: mainCourante,
+    conscience:{avpu:avpu?avpu.dataset.v:'', glasgow:v('glasgow'), pupilles:v('pupilles')},
+    constantes:{fc:v('c_fc'),ta:v('c_ta'),fr:v('c_fr'),spo2:v('c_spo2'),glyc:v('c_glyc'),temp:v('c_temp'),trc:v('c_trc'),
+      couleur:v('c_couleur'),amplitude:v('c_amplitude'),hemorragie:v('c_hemorragie')},
+    constantesLog: constLog, traumaMarkers: traumaMarkers,
+    gestes: GESTES.map((g,i)=>({geste:g,checked:document.getElementById('geste_'+i).checked,heure:v('geste_h_'+i)})).filter(g=>g.checked),
+    observations:v('observations'),
+    devenir:{destination:v('devenirDestination'), regulation:v('devenirRegulation'), refus:document.getElementById('refusTransport').checked}
+  };
+}
+function applyState(s){
+  s=s||{};
+  document.getElementById('numeroFiche').textContent=s.numero||genererNumero();
+  currentStatut=s.statut||'brouillon'; updateBadge();
+  const h=s.horaires||{};
+  ['date','alerte','depart','arriveeLieux','arriveeVictime','departTransport','arriveeHopital','fin'].forEach(k=>set('h_'+k,h[k]));
+  set('lieu_adresse',(s.lieu||{}).adresse); set('lieu_ville',(s.lieu||{}).ville);
+  document.querySelectorAll('#typeGrid .chip').forEach(b=>b.classList.toggle('sel', b.dataset.value===s.typeIntervention));
+  set('motifAppel', s.motifAppel);
+  document.getElementById('moyensList').innerHTML=''; (s.moyens||[]).forEach(m=>addMoyen(m));
+  document.getElementById('intervenantsList').innerHTML=''; (s.intervenants||[]).forEach(i=>addIntervenant(i));
+  const vi=s.victime||{}; set('v_nom',vi.nom); set('v_prenom',vi.prenom); set('v_sexe',vi.sexe||''); set('v_age',vi.age); set('v_plainte',vi.plainte);
+  const sa=s.sample||{}; set('s_signes',sa.signes); set('s_allergies',sa.allergies); set('s_medicaments',sa.medicaments);
+  set('s_passe',sa.passe); set('s_repas',sa.repas); set('s_evenement',sa.evenement);
+  const op=s.opqrst||{}; set('o_origine',op.origine); set('o_pallie',op.pallie); set('o_qualite',op.qualite);
+  set('o_irradiation',op.irradiation); set('o_severite',op.severite); set('o_temps',op.temps);
+  document.querySelectorAll('#sinusSeg .chip').forEach(b=>{
+    const sel=b.dataset.k===s.sinusCategorie; b.classList.toggle('sel',sel);
+    if(sel){ const sc=SINUS.find(x=>x.k===b.dataset.k); b.style.background=sc.c; b.style.color=(sc.k==='DCD'||sc.k==='UA')?'#fff':'#071b16'; }
+    else{ b.style.background=''; b.style.color=''; }
+  });
+  mainCourante=s.mainCourante||[]; renderCourante();
+  const co=s.conscience||{};
+  document.querySelectorAll('#avpuSeg button').forEach(b=>b.classList.toggle('sel', b.dataset.v===co.avpu));
+  set('glasgow',co.glasgow); set('pupilles',co.pupilles);
+  const c=s.constantes||{};
+  set('c_fc',c.fc); set('c_ta',c.ta); set('c_fr',c.fr); set('c_spo2',c.spo2); set('c_glyc',c.glyc); set('c_temp',c.temp);
+  set('c_trc',c.trc); set('c_couleur',c.couleur); set('c_amplitude',c.amplitude); set('c_hemorragie',c.hemorragie);
+  constLog=s.constantesLog||[]; renderConstLog();
+  traumaMarkers=s.traumaMarkers||[]; renderTrauma();
+  GESTES.forEach((g,i)=>{ document.getElementById('geste_'+i).checked=false; set('geste_h_'+i,''); });
+  (s.gestes||[]).forEach(g=>{ const idx=GESTES.indexOf(g.geste); if(idx>-1){document.getElementById('geste_'+idx).checked=true; set('geste_h_'+idx,g.heure);} });
+  set('observations', s.observations);
+  const de=s.devenir||{}; set('devenirDestination',de.destination); set('devenirRegulation',de.regulation);
+  document.getElementById('refusTransport').checked=!!de.refus;
+  updateTransmission();
+}
+
+/* ---------- transmission générée ---------- */
+function updateTransmission(){
+  const s=collectState();
+  const parts=[];
+  const nom=(s.victime.prenom||'')+' '+(s.victime.nom||'');
+  parts.push(`Bilan pour ${nom.trim()||'victime non identifiée'}${s.victime.age?', '+s.victime.age:''}${s.victime.sexe?', '+s.victime.sexe:''}.`);
+  if(s.sinusCategorie){ const sc=SINUS.find(x=>x.k===s.sinusCategorie); if(sc) parts.push(`Catégorisation : ${sc.l}.`); }
+  if(s.typeIntervention) parts.push(`Motif : ${s.typeIntervention}${s.motifAppel?' — '+s.motifAppel:''}.`);
+  if(s.victime.plainte) parts.push(`Plainte : ${s.victime.plainte}.`);
+  if(s.conscience.avpu) parts.push(`Conscience : ${s.conscience.avpu}${s.conscience.glasgow?' (Glasgow '+s.conscience.glasgow+'/15)':''}.`);
+  const c=s.constantes;
+  const cvals=[c.fc&&`FC ${c.fc}/min`,c.ta&&`TA ${c.ta}`,c.fr&&`FR ${c.fr}/min`,c.spo2&&`SpO2 ${c.spo2}%`,c.glyc&&`glycémie ${c.glyc}g/l`,c.temp&&`T° ${c.temp}°C`].filter(Boolean);
+  if(cvals.length) parts.push('Constantes : '+cvals.join(', ')+'.');
+  if(c.hemorragie) parts.push(`Hémorragie : ${c.hemorragie}.`);
+  if(s.opqrst.severite) parts.push(`Douleur EVA ${s.opqrst.severite}/10${s.opqrst.qualite?' ('+s.opqrst.qualite+')':''}.`);
+  if(s.traumaMarkers.length){
+    const tl=s.traumaMarkers.map(m=>ZONE_LABELS[m.zone]+' ('+(TRAUMA_TYPES.find(t=>t.k===m.type)||{}).l+')').join(', ');
+    parts.push('Bilan lésionnel : '+tl+'.');
+  }
+  if(s.sample.allergies) parts.push(`Allergies : ${s.sample.allergies}.`);
+  if(s.sample.medicaments) parts.push(`Traitement en cours : ${s.sample.medicaments}.`);
+  if(s.sample.passe) parts.push(`Antécédents : ${s.sample.passe}.`);
+  if(s.gestes.length) parts.push('Gestes réalisés : '+s.gestes.map(g=>g.geste).join(', ')+'.');
+  if(s.devenir.destination) parts.push(`Transport vers ${s.devenir.destination}.`);
+  if(s.devenir.regulation) parts.push(`Régulation contactée : ${s.devenir.regulation}.`);
+  if(s.devenir.refus) parts.push('Refus de soins / transport signé par la victime.');
+  document.getElementById('transmissionText').textContent=parts.join(' ');
+}
+function copyTransmission(){
+  navigator.clipboard.writeText(document.getElementById('transmissionText').textContent).then(()=>{
+    const b=document.querySelector('.copy-btn'); const old=b.textContent; b.textContent='Copié ✓';
+    setTimeout(()=>b.textContent=old,1500);
+  });
+}
+
+/* ---------- numéro / statut / nouvelle fiche ---------- */
+function genererNumero(){
+  const d=new Date(),pad=n=>String(n).padStart(2,'0'),rand=Math.floor(Math.random()*900+100);
+  return `INT-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${rand}`;
+}
+function updateBadge(){ document.getElementById('statutBadgeTxt').textContent = currentStatut==='validee'?'Validée':'Brouillon'; }
+function marquerValidee(){ currentStatut='validee'; updateBadge(); logEvent('Fiche marquée comme validée'); enregistrerFiche(); }
+function nouvelleFiche(){
+  if(!confirm('Créer une nouvelle fiche vierge ? Les modifications non enregistrées seront perdues.')) return;
+  currentDocId=null; localStorage.removeItem(AUTOSAVE_KEY); constLog=[]; traumaMarkers=[]; mainCourante=[];
+  applyState({numero:genererNumero(), horaires:{date:new Date().toISOString().slice(0,10)}});
+  document.getElementById('dateCreationTxt').textContent=new Date().toLocaleString('fr-FR');
+  logEvent('Nouvelle fiche créée');
+}
+
+/* ---------- autosave ---------- */
+let autosaveTimer=null;
+function autosave(){
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(()=>{
+    updateTransmission();
+    try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({docId:currentDocId, state:collectState()})); }catch(e){}
+  },400);
+}
+document.addEventListener('input', autosave);
+document.addEventListener('change', autosave);
+
+/* ---------- Firestore ---------- */
+/* ---------- Firebase : connexion & authentification ---------- */
+let currentUser=null;
+function initFirebase(){
+  if(FIREBASE_CONFIG.apiKey.startsWith('REMPLACER')){
+    setStatus(false,'Config Firebase manquante');
+    document.getElementById('authError').style.display='block';
+    document.getElementById('authError').textContent='Le développeur doit renseigner FIREBASE_CONFIG dans le code avant utilisation.';
+    return;
+  }
+  if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  db=firebase.firestore();
+  firebase.auth().onAuthStateChanged(user=>{
+    currentUser=user;
+    if(user){
+      document.getElementById('authOverlay').classList.remove('show');
+      setStatus(true, user.email);
+    } else {
+      document.getElementById('authOverlay').classList.add('show');
+      setStatus(false,'Non connecté');
+    }
+  });
+}
+function setStatus(on,txt){ document.getElementById('statusDot').className='dot '+(on?'on':'off'); document.getElementById('statusTxt').textContent=txt; }
+function showAuthError(e){
+  const box=document.getElementById('authError');
+  box.style.display='block';
+  box.textContent=({'auth/invalid-email':'Adresse e-mail invalide.','auth/user-not-found':'Aucun compte pour cette adresse.',
+    'auth/wrong-password':'Mot de passe incorrect.','auth/email-already-in-use':'Un compte existe déjà pour cette adresse.',
+    'auth/weak-password':'Le mot de passe doit contenir au moins 6 caractères.'})[e.code] || ('Erreur : '+e.message);
+}
+function doSignIn(){
+  document.getElementById('authError').style.display='none';
+  firebase.auth().signInWithEmailAndPassword(v('auth_email'), v('auth_password')).catch(showAuthError);
+}
+function doSignUp(){
+  document.getElementById('authError').style.display='none';
+  firebase.auth().createUserWithEmailAndPassword(v('auth_email'), v('auth_password')).catch(showAuthError);
+}
+function doSignOut(){ if(confirm('Se déconnecter ?')) firebase.auth().signOut(); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+
+async function enregistrerFiche(){
+  const msg=document.getElementById('saveMsg');
+  if(!db||!currentUser){ msg.textContent='⚠ Connectez-vous pour enregistrer.'; msg.style.color='var(--red)'; return; }
+  updateTransmission();
+  const state=collectState();
+  state.dateModification=firebase.firestore.FieldValue.serverTimestamp();
+  state.createdBy=currentUser.uid;
+  state.createdByEmail=currentUser.email;
+  msg.textContent='Enregistrement...'; msg.style.color='var(--muted)';
+  try{
+    if(currentDocId){ await db.collection(COLLECTION_NAME).doc(currentDocId).set(state,{merge:true}); }
+    else{ state.dateCreation=firebase.firestore.FieldValue.serverTimestamp(); const ref=await db.collection(COLLECTION_NAME).add(state); currentDocId=ref.id; }
+    msg.textContent='✔ Enregistré à '+new Date().toLocaleTimeString('fr-FR'); msg.style.color='var(--green)';
+    logEvent('Fiche enregistrée sur Firestore'); renderCourante();
+    localStorage.removeItem(AUTOSAVE_KEY);
+  }catch(e){ console.error(e); msg.textContent='⚠ Échec : '+e.message; msg.style.color='var(--red)'; }
+}
+async function openHistorique(){ document.getElementById('histOverlay').classList.add('show'); document.getElementById('histSearch').value=''; await chargerHistorique(); }
+let histCache=[];
+async function chargerHistorique(){
+  const list=document.getElementById('histList');
+  if(!db||!currentUser){ list.innerHTML='<div class="hist-empty">Connectez-vous pour voir vos fiches.</div>'; return; }
+  list.innerHTML='<div class="hist-empty">Chargement...</div>';
+  try{
+    const snap=await db.collection(COLLECTION_NAME).where('createdBy','==',currentUser.uid).orderBy('dateCreation','desc').limit(200).get();
+    histCache=[]; snap.forEach(doc=>histCache.push({id:doc.id,...doc.data()})); renderHistorique();
+  }catch(e){ console.error(e); list.innerHTML='<div class="hist-empty">⚠ '+e.message+'</div>'; }
+}
+function renderHistorique(){
+  const q=(v('histSearch')||'').toLowerCase(); const list=document.getElementById('histList');
+  const filtered=histCache.filter(s=>{
+    const vi=s.victime||{};
+    const hay=(s.numero+' '+(s.typeIntervention||'')+' '+((s.lieu||{}).ville||'')+' '+(vi.nom||'')+' '+(vi.prenom||'')).toLowerCase();
+    return hay.includes(q);
+  });
+  if(!filtered.length){ list.innerHTML='<div class="hist-empty">Aucun bilan trouvé.</div>'; return; }
+  list.innerHTML='';
+  filtered.forEach(s=>{
+    const vi=s.victime||{}; const row=document.createElement('div'); row.className='hist-row';
+    const date=s.dateCreation&&s.dateCreation.toDate?s.dateCreation.toDate().toLocaleString('fr-FR'):'—';
+    row.innerHTML=`<div><b>${s.numero||'—'}</b> — ${s.typeIntervention||'Type non renseigné'}<br>
+      <span class="t">${(vi.prenom||'')+' '+(vi.nom||'')||'Victime non renseignée'} · ${(s.lieu||{}).ville||''}</span></div>
+      <div class="t">${date}<br><span class="badge ${s.statut==='validee'?'validee':'brouillon'}">${s.statut==='validee'?'Validée':'Brouillon'}</span></div>`;
+    row.onclick=()=>{ currentDocId=s.id; applyState(s); closeOverlay('histOverlay'); };
+    list.appendChild(row);
+  });
+}
+
+/* ---------- démarrage ---------- */
+window.onload=()=>{
+  buildNav(); buildTypeGrid(); buildGestes(); buildBodySvg(); buildTraumaTypes(); buildSinus(); initFirebase();
+  showSection('general');
+  const draft=localStorage.getItem(AUTOSAVE_KEY);
+  if(draft){
+    try{
+      const d=JSON.parse(draft);
+      if(confirm('Un brouillon non enregistré a été trouvé. Le reprendre ?')){
+        currentDocId=d.docId; applyState(d.state);
+        document.getElementById('dateCreationTxt').textContent='(brouillon repris)';
+        return;
+      }
+    }catch(e){}
+  }
+  applyState({numero:genererNumero(), horaires:{date:new Date().toISOString().slice(0,10)}});
+  document.getElementById('dateCreationTxt').textContent=new Date().toLocaleString('fr-FR');
+};
+</script>
+</body>
+</html>

@@ -23,8 +23,10 @@ body{
 
 
 #app{
-    height:100vh;
+    height:100dvh;
+    min-height:0;
     display:flex;
+    overflow:hidden;
 }
 
 
@@ -219,7 +221,7 @@ textarea{
 
     flex:1;
     padding:25px;
-    max-width:750px;
+    max-width:900px;
 
 }
 
@@ -597,6 +599,87 @@ button.secondaire{
     margin-top:12px;
 }
 
+
+/* ===== RESPONSIVE / STABILITÉ DE LA BARRE D'ONGLETS ===== */
+@media (max-width:900px){
+    #sidebar{
+        width:285px;
+        min-width:245px;
+    }
+
+    #onglets{
+        padding-left:8px;
+        padding-right:8px;
+    }
+
+    .onglets-groupe{
+        padding-right:7px;
+        margin-right:7px;
+    }
+
+    .onglets-groupe::before{
+        display:none;
+    }
+
+    .onglet{
+        padding:0 12px;
+    }
+}
+
+@media (max-width:700px){
+    #app{
+        flex-direction:column;
+    }
+
+    #sidebar{
+        width:100%;
+        min-width:0;
+        height:auto;
+        max-height:43dvh;
+        border-right:0;
+        border-bottom:1px solid #dde5ee;
+    }
+
+    #liste-users{
+        min-height:100px;
+        max-height:180px;
+    }
+
+    #panel{
+        min-height:0;
+        flex:1;
+    }
+
+    #onglets{
+        min-height:58px;
+        padding-top:6px;
+    }
+
+    .onglet{
+        min-height:43px;
+        font-size:12px;
+        padding:0 11px;
+    }
+
+    #contenu{
+        padding:20px 14px 32px;
+    }
+
+    .header{
+        padding:15px 16px;
+        font-size:18px;
+    }
+}
+
+/* Toujours garder les onglets visibles : seul le contenu défile. */
+#panel > #onglets{
+    flex-shrink:0;
+}
+
+#contenu::-webkit-scrollbar{
+    width:8px;
+}
+
 </style>
 
 </head>
@@ -634,6 +717,9 @@ where,
 onSnapshot,
 addDoc,
 updateDoc,
+setDoc,
+arrayUnion,
+arrayRemove,
 serverTimestamp,
 increment,
 orderBy
@@ -683,63 +769,74 @@ const CODE_PAGE="messagerieadministration";
 ===========================
 COMPTES ADMINISTRATEURS
 ===========================
-Modifiable librement : ajouter / retirer des comptes
-depuis lesquels les messages peuvent être envoyés.
+Les trois comptes sont fixes. Leur accès est stocké dans
+"comptes-administrateurs/{id}" avec une liste "membres".
+Les anciennes autorisations pages.admin* sont reprises
+automatiquement lors de la première initialisation.
 */
 
-let COMPTES_ADMIN = [];
+const DEFINITIONS_COMPTES_ADMIN=[
+  {id:"systeme", nom:"Système", icon:"⚙️", page:"adminsysteme"},
+  {id:"admin-medical", nom:"Administration médicale", icon:"🏥", page:"adminmed"},
+  {id:"rh", nom:"Ressources Humaines", icon:"🗂️", page:"adminrh"}
+];
 
-async function chargerComptesAdmin() {
-  const user = auth.currentUser;
-  if (!user) return;
+let COMPTES_ADMIN=[];
+let compteAdminEnEdition=null;
+const membresAdminSelection=new Set();
 
-  const userRef = doc(db, "medecins", user.uid);
-  const userSnap = await getDoc(userRef);
+async function chargerComptesAdmin(){
 
-  if (!userSnap.exists()) return;
+  COMPTES_ADMIN=[];
 
-  const pages = userSnap.data().pages || {};
-
-  COMPTES_ADMIN = [];
-
-  if (pages.adminsysteme === true) {
-    COMPTES_ADMIN.push({
-      id: "systeme",
-      nom: "Système",
-      icon: "⚙️"
-    });
+  let users=[];
+  try{
+    const usersSnap=await getDocs(collection(db,"medecins"));
+    users=usersSnap.docs.map(d=>({uid:d.id,...d.data()}));
+  }catch(e){
+    console.error("Chargement utilisateurs pour comptes admin :",e);
   }
 
-  if (pages.adminmed === true) {
-    COMPTES_ADMIN.push({
-      id: "admin-medical",
-      nom: "Administration médicale",
-      icon: "🏥"
-    });
+  for(const definition of DEFINITIONS_COMPTES_ADMIN){
+    const ref=doc(db,"comptes-administrateurs",definition.id);
+    const snap=await getDoc(ref);
+
+    if(!snap.exists()){
+      const anciensMembres=users
+        .filter(u=>u.pages && u.pages[definition.page]===true)
+        .map(u=>u.uid);
+
+      try{
+        await setDoc(ref,{
+          nom:definition.nom,
+          icon:definition.icon,
+          membres:anciensMembres,
+          actif:true,
+          createdAt:serverTimestamp(),
+          initialiseDepuisPages:true
+        });
+        COMPTES_ADMIN.push({...definition,membres:anciensMembres,actif:true});
+      }catch(e){
+        console.error("Initialisation compte admin "+definition.id,e);
+        COMPTES_ADMIN.push({...definition,membres:anciensMembres,actif:true});
+      }
+    }else{
+      COMPTES_ADMIN.push({
+        ...definition,
+        ...snap.data(),
+        id:definition.id,
+        membres:snap.data().membres || []
+      });
+    }
   }
 
-  if (pages.adminrh === true) {
-    COMPTES_ADMIN.push({
-      id: "rh",
-      nom: "Ressources Humaines",
-      icon: "🗂️"
-    });
-  }
-Object.keys(comptesParId).forEach(k => delete comptesParId[k]);
+  Object.keys(comptesParId).forEach(k=>delete comptesParId[k]);
+  COMPTES_ADMIN.forEach(c=>comptesParId[c.id]=c);
 
-    COMPTES_ADMIN.forEach(c => {
-        comptesParId[c.id] = c;
-    });
-  console.log("Comptes autorisés :", COMPTES_ADMIN);
+  afficherComptesAdmin();
 }
 
-
 const comptesParId={};
-
-COMPTES_ADMIN.forEach(c=>{
-comptesParId[c.id]=c;
-});
-
 
 /*
 ===========================
@@ -890,7 +987,8 @@ document.getElementById("app").innerHTML=`
 <div id="sidebar">
 
 <div class="header">
-🛠️ Messagerie - Administration
+🛠️ Messagerie
+<div style="font-size:12px;font-weight:500;color:#7b8794;margin-top:4px;">Administration</div>
 </div>
 
 
@@ -941,12 +1039,21 @@ ${TYPES_UTILISATEURS.map(t=>
 
 <div id="onglets">
 
-<div class="onglet actif" data-vue="vue-message">Message</div>
-<div class="onglet" data-vue="vue-sondage">Créer un sondage</div>
-<div class="onglet" data-vue="vue-resultats">Sondages envoyés</div>
-<div class="onglet" data-vue="vue-historique">Historique des messages</div>
-<div class="onglet" data-vue="vue-demandes-reponse">Réponses reçues</div>
-<div class="onglet" data-vue="vue-comptes-generiques">Comptes génériques</div>
+<div class="onglets-groupe" data-section="composer">
+    <div class="onglet actif" data-vue="vue-message">✉️ Message</div>
+    <div class="onglet" data-vue="vue-sondage">📊 Sondage</div>
+</div>
+
+<div class="onglets-groupe" data-section="suivi">
+    <div class="onglet" data-vue="vue-resultats">📈 Sondages envoyés</div>
+    <div class="onglet" data-vue="vue-historique">🕘 Historique</div>
+    <div class="onglet" data-vue="vue-demandes-reponse">💬 Réponses reçues</div>
+</div>
+
+<div class="onglets-groupe" data-section="admin">
+    <div class="onglet" data-vue="vue-comptes-generiques">👥 Comptes génériques</div>
+    <div class="onglet" data-vue="vue-comptes-admin">🔐 Comptes admin</div>
+</div>
 
 </div>
 
@@ -955,6 +1062,13 @@ ${TYPES_UTILISATEURS.map(t=>
 
 
 <div class="vue actif" id="vue-message">
+
+<div class="carte" style="margin-bottom:20px;">
+    <div class="carte-header">
+        <strong>✉️ Nouveau message</strong>
+        <span class="carte-meta">Choisissez les destinataires à gauche</span>
+    </div>
+</div>
 
 <label>Message à envoyer</label>
 
@@ -985,6 +1099,13 @@ onchange="document.getElementById('options-demande-reponse').style.display=this.
 
 
 <div class="vue" id="vue-sondage">
+
+<div class="carte" style="margin-bottom:20px;">
+    <div class="carte-header">
+        <strong>📊 Nouveau sondage</strong>
+        <span class="carte-meta">Le sondage sera envoyé aux destinataires sélectionnés</span>
+    </div>
+</div>
 
 <label>Type de sondage</label>
 
@@ -1035,6 +1156,12 @@ Choix multiple
 
 <div class="vue" id="vue-resultats">
 
+<div class="carte" style="margin-bottom:20px;">
+    <div class="carte-header">
+        <strong>📈 Sondages envoyés</strong>
+        <span class="carte-meta">Résultats et détail des réponses</span>
+    </div>
+</div>
 <div id="liste-sondages"></div>
 
 </div>
@@ -1043,6 +1170,12 @@ Choix multiple
 
 <div class="vue" id="vue-historique">
 
+<div class="carte" style="margin-bottom:20px;">
+    <div class="carte-header">
+        <strong>🕘 Historique</strong>
+        <span class="carte-meta">Messages et sondages diffusés</span>
+    </div>
+</div>
 <div id="liste-historique"></div>
 
 </div>
@@ -1051,6 +1184,12 @@ Choix multiple
 
 <div class="vue" id="vue-demandes-reponse">
 
+<div class="carte" style="margin-bottom:20px;">
+    <div class="carte-header">
+        <strong>💬 Réponses reçues</strong>
+        <span class="carte-meta">Suivi des demandes de réponse</span>
+    </div>
+</div>
 <div id="liste-demandes-reponse"></div>
 
 </div>
@@ -1091,6 +1230,33 @@ Choix multiple
 
 </div>
 
+<div class="vue" id="vue-comptes-admin">
+
+<div class="carte">
+
+<div class="carte-header">
+<strong>🔐 Comptes administratifs</strong>
+<span class="carte-meta">Attribuez les comptes Système, Administration médicale et RH aux utilisateurs.</span>
+</div>
+
+<label>Compte administratif</label>
+<select id="admin-compte-select" onchange="modifierCompteAdminDepuisSelect()"></select>
+
+<label>Personnes autorisées à utiliser ce compte</label>
+<input id="admin-recherche-membres" placeholder="Rechercher un utilisateur..." style="margin-bottom:8px;">
+<div class="cg-membres" id="admin-liste-membres"></div>
+<div class="cg-info" id="admin-compteur-membres"></div>
+
+<div class="cg-actions">
+<button type="button" onclick="enregistrerMembresCompteAdmin()">Enregistrer les accès</button>
+</div>
+
+</div>
+
+<div id="liste-comptes-admin"></div>
+
+</div>
+
 
 </div>
 
@@ -1111,6 +1277,7 @@ chargerDiffusionsAdmin();
 chargerDemandesReponseAdmin();
 
 initComptesGeneriques();
+initGestionComptesAdmin();
 
 
 }
@@ -1378,6 +1545,10 @@ return snap.docs[0].id;
 
 }
 
+const participants=Array.from(new Set([
+  uid,
+  ...(compte.membres || [])
+]));
 
 const ref=
 await addDoc(
@@ -1386,9 +1557,11 @@ collection(db,"messageries"),
 
 {
 
-participants:[uid],
+type:"compte-administratif",
+participants,
 compteId:compte.id,
-titre:compte.nom,
+compteNom:compte.nom,
+titre:compte.nom+" · "+nomUtilisateur(uid),
 icon:compte.icon,
 lastMessage:"",
 createdAt:serverTimestamp(),
@@ -1470,8 +1643,9 @@ afficherBulle("Sélectionnez au moins un destinataire.", 'error');
 return;
 }
 
-if(compte.length===0){
-    afficherBulle("Sélectionnez un compte d'envoi", 'error')
+if(!compte){
+    afficherBulle("Sélectionnez un compte d'envoi", 'error');
+    return;
 }
 
 
@@ -1576,13 +1750,25 @@ doc(db,"messageries",convId),
 
 lastMessage:texte,
 updatedAt:serverTimestamp(),
-[`nonLus.${uid}`]:increment(1)
+[`nonLus.${uid}`]:increment(1),
+
+...(compte.membres || []).filter(memberUid=>memberUid!==utilisateur.uid && memberUid!==uid)
+  .reduce((acc,memberUid)=>{
+    acc[`nonLus.${memberUid}`]=increment(1);
+    return acc;
+  },{})
 
 }
 
 );
 
  await envoyerNotification(uid, "🔔 Nouveau message", "Ouvrez GestUrg2 pour le consulter !")
+
+ for(const memberUid of (compte.membres || [])){
+   if(memberUid!==utilisateur.uid && memberUid!==uid){
+     await envoyerNotification(memberUid, "🔔 Nouveau message", "Un nouveau message est disponible dans votre compte administratif.");
+   }
+ }
 }
 
 function envoyerNotification(uid, titre, contenu) {
@@ -2391,6 +2577,156 @@ zone.appendChild(div);
 
 
 
+
+/*
+===========================
+GESTION DES COMPTES ADMIN
+===========================
+*/
+
+function initGestionComptesAdmin(){
+  const recherche=document.getElementById("admin-recherche-membres");
+  if(recherche) recherche.addEventListener("input",afficherPickerMembresAdmin);
+  remplirSelectComptesAdmin();
+  afficherComptesAdmin();
+}
+
+function remplirSelectComptesAdmin(){
+  const select=document.getElementById("admin-compte-select");
+  if(!select) return;
+  select.innerHTML=COMPTES_ADMIN.map(c=>
+    `<option value="${c.id}">${cgEsc(c.icon || "🔐")} ${cgEsc(c.nom)}</option>`
+  ).join("");
+  if(compteAdminEnEdition && COMPTES_ADMIN.some(c=>c.id===compteAdminEnEdition)){
+    select.value=compteAdminEnEdition;
+  }
+  modifierCompteAdminDepuisSelect();
+}
+
+window.modifierCompteAdminDepuisSelect=()=>{
+  const select=document.getElementById("admin-compte-select");
+  if(!select) return;
+  compteAdminEnEdition=select.value;
+  membresAdminSelection.clear();
+  const compte=COMPTES_ADMIN.find(c=>c.id===compteAdminEnEdition);
+  (compte?.membres || []).forEach(uid=>membresAdminSelection.add(uid));
+  afficherPickerMembresAdmin();
+};
+
+function majCompteurMembresAdmin(){
+  const el=document.getElementById("admin-compteur-membres");
+  if(el) el.textContent=membresAdminSelection.size+" personne(s) autorisée(s)";
+}
+
+function afficherPickerMembresAdmin(){
+  const zone=document.getElementById("admin-liste-membres");
+  if(!zone) return;
+  const input=document.getElementById("admin-recherche-membres");
+  const filtre=(input?.value || "").toLowerCase();
+  zone.innerHTML="";
+
+  const liste=tousLesUsers.filter(u=>
+    `${u.nom || ""} ${u.email || ""}`.toLowerCase().includes(filtre)
+  );
+
+  if(!liste.length){
+    zone.innerHTML=`<div class="cg-info">Aucun utilisateur.</div>`;
+    majCompteurMembresAdmin();
+    return;
+  }
+
+  liste.forEach(u=>{
+    const typeLabel=typesParId[u.type]?.label || u.type || "";
+    const div=document.createElement("div");
+    div.className="user-ligne";
+    div.innerHTML=`
+      <input type="checkbox" ${membresAdminSelection.has(u.uid)?"checked":""}>
+      <div>
+        <div class="user-nom">${cgEsc(u.nom)}${typeLabel?`<span class="type-badge">${cgEsc(typeLabel)}</span>`:""}</div>
+        <div class="user-email">${cgEsc(u.email)}</div>
+      </div>`;
+    div.querySelector("input").addEventListener("change",e=>{
+      if(e.target.checked) membresAdminSelection.add(u.uid);
+      else membresAdminSelection.delete(u.uid);
+      majCompteurMembresAdmin();
+    });
+    zone.appendChild(div);
+  });
+  majCompteurMembresAdmin();
+}
+
+window.enregistrerMembresCompteAdmin=async()=>{
+  if(!compteAdminEnEdition) return;
+  const compte=COMPTES_ADMIN.find(c=>c.id===compteAdminEnEdition);
+  if(!compte) return;
+  if(membresAdminSelection.size===0){
+    afficherBulle("Désignez au moins une personne pour ce compte.","error");
+    return;
+  }
+
+  const anciens=new Set(compte.membres || []);
+  const nouveaux=Array.from(membresAdminSelection);
+  try{
+    await updateDoc(doc(db,"comptes-administrateurs",compte.id),{
+      membres:nouveaux,
+      updatedAt:serverTimestamp()
+    });
+
+    const ajoutes=nouveaux.filter(uid=>!anciens.has(uid));
+    const retires=Array.from(anciens).filter(uid=>!membresAdminSelection.has(uid));
+
+    const conversations=await getDocs(query(
+      collection(db,"messageries"),
+      where("compteId","==",compte.id)
+    ));
+
+    await Promise.all(conversations.docs.map(d=>{
+      const patch={};
+      if(ajoutes.length) patch.participants=arrayUnion(...ajoutes);
+      if(retires.length) patch.participants=arrayRemove(...retires);
+      return Object.keys(patch).length ? updateDoc(d.ref,patch) : Promise.resolve();
+    }));
+
+    compte.membres=nouveaux;
+    comptesParId[compte.id]=compte;
+    afficherComptesAdmin();
+    afficherBulle("Accès au compte « "+compte.nom+" » mis à jour.","success");
+  }catch(e){
+    console.error("Attribution compte admin :",e);
+    afficherBulle("Impossible d'enregistrer les accès.","error");
+  }
+};
+
+function afficherComptesAdmin(){
+  const zone=document.getElementById("liste-comptes-admin");
+  if(!zone) return;
+  remplirSelectComptesAdmin();
+  zone.innerHTML="";
+  COMPTES_ADMIN.forEach(c=>{
+    const div=document.createElement("div");
+    div.className="carte";
+    div.innerHTML=`
+      <div class="carte-header">
+        <strong>${cgEsc(c.icon || "🔐")} ${cgEsc(c.nom)}</strong>
+        <span class="carte-meta">${(c.membres || []).length} personne(s)</span>
+      </div>
+      <div class="cg-info">${(c.membres || []).map(uid=>cgEsc(nomUtilisateur(uid))).join(", ") || "Aucune personne attribuée"}</div>
+      <div class="cg-actions">
+        <button type="button" class="secondaire" onclick="selectionnerCompteAdmin('${c.id}')">Gérer les accès</button>
+      </div>`;
+    zone.appendChild(div);
+  });
+}
+
+window.selectionnerCompteAdmin=(id)=>{
+  const select=document.getElementById("admin-compte-select");
+  if(!select) return;
+  select.value=id;
+  modifierCompteAdminDepuisSelect();
+  document.getElementById("admin-compte-select")?.scrollIntoView({behavior:"smooth",block:"center"});
+};
+
+
 /*
 ===========================
 ONGLET : COMPTES GÉNÉRIQUES
@@ -2675,6 +3011,23 @@ document
 
 
 
+
+async function synchroniserMembresCompteGenerique(compteId,anciens,membres){
+  const ajoutes=membres.filter(uid=>!anciens.includes(uid));
+  const retires=anciens.filter(uid=>!membres.includes(uid));
+  const conversations=await getDocs(query(
+    collection(db,"messageries"),
+    where("compteGeneriqueId","==",compteId)
+  ));
+  await Promise.all(conversations.docs.map(d=>{
+    const patch={};
+    if(ajoutes.length) patch.participants=arrayUnion(...ajoutes);
+    if(retires.length) patch.participants=arrayRemove(...retires);
+    return Object.keys(patch).length ? updateDoc(d.ref,patch) : Promise.resolve();
+  }));
+}
+
+
 window.enregistrerCompteGenerique=async()=>{
 
 
@@ -2733,6 +3086,9 @@ if(compteEnEdition){
 
 const id=
 compteEnEdition;
+const anciensMembres=Array.isArray(comptesGeneriquesCache.find(x=>x.id===id)?.membres)
+  ? [...(comptesGeneriquesCache.find(x=>x.id===id)?.membres || [])]
+  : [];
 
 await updateDoc(
 
@@ -2771,6 +3127,8 @@ titre:nom+" · "+(x.objet || "")
 )
 
 );
+
+await synchroniserMembresCompteGenerique(id,anciensMembres,data.membres);
 
 
 afficherBulle("Compte modifié.","success");

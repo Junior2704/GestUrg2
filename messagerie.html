@@ -593,6 +593,84 @@ button{
     scrollbar-width: thin;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
+
+
+/* COMPTES PARTAGES / ADMIN */
+#comptes-partages{
+    padding:0 12px 10px;
+    border-bottom:1px solid #eee;
+    max-height:220px;
+    overflow:auto;
+}
+.comptes-partages-titre{
+    font-size:11px;
+    font-weight:700;
+    color:#667085;
+    text-transform:uppercase;
+    padding:10px 3px 7px;
+}
+.compte-partage{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    width:100%;
+    padding:9px 10px;
+    margin:3px 0;
+    border:1px solid #e5eaf0;
+    border-radius:10px;
+    background:#f8fbff;
+    color:#1f2937;
+    cursor:pointer;
+    text-align:left;
+    font-size:13px;
+}
+.compte-partage:hover{background:#eef6ff;}
+.compte-partage .cp-icon{font-size:18px;}
+.compte-partage .cp-text{flex:1;min-width:0;}
+.compte-partage .cp-nom{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.compte-partage .cp-type{font-size:10px;color:#7b8794;margin-top:2px;}
+
+#nouveau-message{
+    display:none;
+    margin:10px 12px;
+    padding:12px;
+    border:1px solid #dbe8f6;
+    border-radius:12px;
+    background:#f7fbff;
+}
+#nouveau-message.actif{display:block;}
+#nouveau-message label{display:block;font-size:11px;font-weight:700;color:#667085;margin:0 0 5px;}
+#nouveau-message select{margin-bottom:8px;}
+#nouveau-message button{width:100%;margin-top:4px;border-radius:10px;padding:9px 12px;}
+#nouveau-message .annuler-nouveau{background:#eef4fb;color:#0078d4;}
+
+#input-zone{
+    background:white;
+    padding:12px 15px;
+    display:flex;
+    gap:10px;
+    border-top:1px solid #ddd;
+    align-items:center;
+}
+#input-zone textarea{
+    flex:1;
+    min-height:44px;
+    max-height:130px;
+    resize:vertical;
+    padding:11px 14px;
+    border-radius:14px;
+    border:1px solid #d5dce5;
+    font-family:Inter,sans-serif;
+    font-size:14px;
+}
+#input-zone button{margin:0;white-space:nowrap;}
+#mode-envoi{
+    font-size:11px;
+    color:#667085;
+    padding:0 15px 8px;
+    background:white;
+}
+
 </style>
 
 </head>
@@ -611,8 +689,18 @@ button{
 </div>
 
 
-<input id="search" placeholder="Rechercher...">
+<input id="search" placeholder="Rechercher une discussion...">
 
+<div id="comptes-partages"></div>
+
+<div id="nouveau-message">
+    <label>Envoyer depuis un compte administratif</label>
+    <select id="nouveau-compte-admin"></select>
+    <label>Destinataire</label>
+    <select id="nouveau-destinataire"></select>
+    <button type="button" onclick="creerNouvelleConversationAdmin()">✉️ Nouvelle discussion</button>
+    <button type="button" class="annuler-nouveau" onclick="fermerNouveauMessage()">Annuler</button>
+</div>
 
 <div id="conversations"></div>
 
@@ -638,17 +726,11 @@ Aucune conversation sélectionnée
 </div>
 
 
-<!--<div id="input-zone">
-
-<input id="message-input"
-placeholder="Votre message...">
-
-<button onclick="envoyerMessage()">
-Envoyer
-</button>
-
+<div id="mode-envoi"></div>
+<div id="input-zone">
+<textarea id="message-input" rows="1" placeholder="Votre message..."></textarea>
+<button onclick="envoyerMessage()">Envoyer</button>
 </div>
--->
 
 </div>
 
@@ -672,6 +754,7 @@ import {
 getFirestore,
 doc,
 getDoc,
+getDocs,
 collection,
 query,
 where,
@@ -723,6 +806,12 @@ let utilisateurNom="";
 
 let conversationActive=null;
 let participantsActifs=[];
+let conversationDataActive=null;
+let compteEnvoiActif=null;
+let comptesAdminAttribues=[];
+let comptesGeneriquesAttribues=[];
+let tousLesUtilisateurs=[];
+
 
 
 /* à adapter : origine exacte de la page parente
@@ -769,6 +858,8 @@ data.nom || "Utilisateur";
 }
 
 
+await chargerComptesPartages();
+await chargerTousLesUtilisateurs();
 chargerConversations();
 
 
@@ -778,11 +869,236 @@ chargerConversations();
 
 
 
+
+/*
+===========================
+COMPTES PARTAGES
+===========================
+*/
+
+async function chargerComptesPartages(){
+  if(!utilisateur) return;
+
+  onSnapshot(
+    query(collection(db,"comptes-administrateurs"),where("membres","array-contains",utilisateur.uid)),
+    snap=>{
+      comptesAdminAttribues=snap.docs.map(d=>({id:d.id,...d.data(),typeCompte:"administratif"}));
+      afficherComptesPartages();
+      remplirNouveauMessage();
+    }
+  );
+
+  onSnapshot(
+    query(collection(db,"comptes-generiques"),where("membres","array-contains",utilisateur.uid)),
+    snap=>{
+      comptesGeneriquesAttribues=snap.docs
+        .map(d=>({id:d.id,...d.data(),typeCompte:"generique"}))
+        .filter(c=>c.actif!==false);
+      afficherComptesPartages();
+    }
+  );
+}
+
+async function chargerTousLesUtilisateurs(){
+  try{
+    const snap=await getDocs(collection(db,"medecins"));
+    tousLesUtilisateurs=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    remplirNouveauMessage();
+  }catch(e){
+    console.error("Chargement destinataires :",e);
+  }
+}
+
+function afficherComptesPartages(){
+  const zone=document.getElementById("comptes-partages");
+  if(!zone) return;
+
+  const comptes=[...comptesAdminAttribues,...comptesGeneriquesAttribues];
+  zone.innerHTML="";
+  if(!comptes.length) return;
+
+  const titre=document.createElement("div");
+  titre.className="comptes-partages-titre";
+  titre.textContent="Mes comptes";
+  zone.appendChild(titre);
+
+  comptes.forEach(c=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="compte-partage";
+    b.innerHTML=`
+      <span class="cp-icon">${c.icon || (c.typeCompte==="administratif"?"🔐":"📬")}</span>
+      <span class="cp-text">
+        <span class="cp-nom">${echapperHTML(c.nom || "Compte")}</span>
+        <span class="cp-type">${c.typeCompte==="administratif"?"Compte administratif":"Compte général"}</span>
+      </span>`;
+    b.onclick=()=>ouvrirDerniereConversationCompte(c);
+    zone.appendChild(b);
+  });
+
+  if(comptesAdminAttribues.length){
+    const nouveau=document.createElement("button");
+    nouveau.type="button";
+    nouveau.className="compte-partage";
+    nouveau.innerHTML=`<span class="cp-icon">✏️</span><span class="cp-text"><span class="cp-nom">Nouveau message</span><span class="cp-type">Depuis un compte administratif</span></span>`;
+    nouveau.onclick=ouvrirNouveauMessage;
+    zone.appendChild(nouveau);
+  }
+}
+
+function remplirNouveauMessage(){
+  const selectCompte=document.getElementById("nouveau-compte-admin");
+  const selectDest=document.getElementById("nouveau-destinataire");
+  if(!selectCompte || !selectDest) return;
+
+  selectCompte.innerHTML=comptesAdminAttribues.map(c=>
+    `<option value="${c.id}">${c.icon || "🔐"} ${echapperHTML(c.nom)}</option>`
+  ).join("");
+
+  selectDest.innerHTML=tousLesUtilisateurs
+    .filter(u=>u.uid!==utilisateur?.uid)
+    .sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"))
+    .map(u=>`<option value="${u.uid}">${echapperHTML(u.nom || u.email || u.uid)}</option>`)
+    .join("");
+}
+
+function ouvrirNouveauMessage(){
+  const zone=document.getElementById("nouveau-message");
+  if(!zone) return;
+  zone.classList.add("actif");
+  remplirNouveauMessage();
+}
+
+window.fermerNouveauMessage=()=>{
+  document.getElementById("nouveau-message")?.classList.remove("actif");
+};
+
+window.creerNouvelleConversationAdmin=async()=>{
+  const compteId=document.getElementById("nouveau-compte-admin")?.value;
+  const destinataireId=document.getElementById("nouveau-destinataire")?.value;
+  const compte=comptesAdminAttribues.find(c=>c.id===compteId);
+  if(!compte || !destinataireId) return;
+
+  try{
+    const q=query(
+      collection(db,"messageries"),
+      where("compteId","==",compte.id),
+      where("participants","array-contains",destinataireId)
+    );
+    const snap=await getDocs(q);
+    if(!snap.empty){
+      ouvrirConversation(snap.docs[0].id,snap.docs[0].data());
+      fermerNouveauMessage();
+      return;
+    }
+
+    const participants=Array.from(new Set([
+      destinataireId,
+      ...(compte.membres || [])
+    ]));
+
+    const ref=await addDoc(collection(db,"messageries"),{
+      type:"compte-administratif",
+      compteId:compte.id,
+      compteNom:compte.nom,
+      icon:compte.icon || "🔐",
+      titre:`${compte.nom} · ${nomUtilisateurLocal(destinataireId)}`,
+      participants,
+      lastMessage:"",
+      createdAt:serverTimestamp(),
+      updatedAt:serverTimestamp()
+    });
+
+    const data={
+      type:"compte-administratif",
+      compteId:compte.id,
+      compteNom:compte.nom,
+      icon:compte.icon || "🔐",
+      titre:`${compte.nom} · ${nomUtilisateurLocal(destinataireId)}`,
+      participants
+    };
+    ouvrirConversation(ref.id,data);
+    fermerNouveauMessage();
+  }catch(e){
+    console.error("Nouvelle conversation administrative :",e);
+    alert("Impossible de créer la discussion.");
+  }
+};
+
+function nomUtilisateurLocal(uid){
+  const u=tousLesUtilisateurs.find(x=>x.uid===uid);
+  return u?.nom || u?.email || uid;
+}
+
+async function ouvrirDerniereConversationCompte(compte){
+  try{
+    const champ=compte.typeCompte==="administratif" ? "compteId" : "compteGeneriqueId";
+    const q=query(
+      collection(db,"messageries"),
+      where(champ,"==",compte.id),
+      where("participants","array-contains",utilisateur.uid)
+    );
+    const snap=await getDocs(q);
+    if(!snap.empty){
+      const docs=snap.docs.map(d=>({id:d.id,data:d.data()}));
+      docs.sort((a,b)=>{
+        const ta=a.data.updatedAt?.toMillis?.() || 0;
+        const tb=b.data.updatedAt?.toMillis?.() || 0;
+        return tb-ta;
+      });
+      ouvrirConversation(docs[0].id,docs[0].data);
+      return;
+    }
+
+    if(compte.typeCompte==="administratif"){
+      ouvrirNouveauMessage();
+      const select=document.getElementById("nouveau-compte-admin");
+      if(select) select.value=compte.id;
+      return;
+    }
+
+    if(compte.typeCompte==="generique"){
+      const participants=Array.from(new Set([utilisateur.uid,...(compte.membres || [])]));
+      const ref=await addDoc(collection(db,"messageries"),{
+        type:"compte-generique",
+        compteGeneriqueId:compte.id,
+        compteNom:compte.nom,
+        icon:compte.icon || "📬",
+        titre:compte.nom,
+        participants,
+        lastMessage:"",
+        statut:"ouvert",
+        createdAt:serverTimestamp(),
+        updatedAt:serverTimestamp()
+      });
+      ouvrirConversation(ref.id,{
+        type:"compte-generique",
+        compteGeneriqueId:compte.id,
+        compteNom:compte.nom,
+        icon:compte.icon || "📬",
+        titre:compte.nom,
+        participants
+      });
+    }
+  }catch(e){
+    console.error("Ouverture compte partagé :",e);
+  }
+}
+
+
 /*
 ===========================
 LISTE CONVERSATIONS
 ===========================
 */
+
+
+document.getElementById("search")?.addEventListener("input",()=>{
+  const terme=(document.getElementById("search")?.value || "").toLowerCase();
+  document.querySelectorAll("#conversations .conversation").forEach(el=>{
+    el.style.display=el.textContent.toLowerCase().includes(terme) ? "" : "none";
+  });
+});
 
 
 function chargerConversations(){
@@ -813,9 +1129,14 @@ zone.innerHTML="";
 
 
 let totalNonLus=0;
+const docsTries=[...snap.docs].sort((a,b)=>{
+  const ta=a.data().updatedAt?.toMillis?.() || 0;
+  const tb=b.data().updatedAt?.toMillis?.() || 0;
+  return tb-ta;
+});
 
 
-snap.forEach(docSnap=>{
+docsTries.forEach(docSnap=>{
 
 
 const c=docSnap.data();
@@ -936,14 +1257,26 @@ function ouvrirConversation(id,data){
 
 
 conversationActive=id;
+conversationDataActive=data;
+participantsActifs=data.participants || [];
 
-participantsActifs=
-data.participants || [];
+compteEnvoiActif=null;
+if(data.type==="compte-administratif" || (data.compteId && comptesAdminAttribues.some(c=>c.id===data.compteId))){
+  compteEnvoiActif=comptesAdminAttribues.find(c=>c.id===data.compteId) || null;
+}
 
+const mode=document.getElementById("mode-envoi");
+if(mode){
+  mode.textContent=compteEnvoiActif
+    ? `Vous écrivez en tant que « ${compteEnvoiActif.nom} »`
+    : (data.type==="compte-generique" || data.compteGeneriqueId
+      ? `Réponse depuis votre identité · ${data.compteNom || data.titre || "Compte général"}`
+      : "");
+}
 
 document.getElementById("chat-header")
 .innerHTML=
-`${data.icon || "💬"} ${data.titre}`;
+`${data.icon || "💬"} ${data.titre || data.compteNom || "Discussion"}`;
 
 
 /* on marque la conversation comme lue dès l'ouverture */
@@ -1086,7 +1419,7 @@ document.createElement("div");
 
 div.className=
 "message "+
-(msg.auteur==utilisateur.uid?"mine":"");
+((msg.auteur==utilisateur.uid || (compteEnvoiActif && msg.auteur==compteEnvoiActif.id))?"mine":"");
 
 
 let contenuHTML="";
@@ -1879,10 +2212,12 @@ conversationActive,
 {
 
 auteur:
-utilisateur.uid,
+(compteEnvoiActif ? compteEnvoiActif.id : utilisateur.uid),
 
 auteurNom:
-utilisateurNom,
+(compteEnvoiActif ? compteEnvoiActif.nom : utilisateurNom),
+
+type:"message",
 
 texte,
 
@@ -1900,10 +2235,7 @@ utilisateur.uid
 
 
 
-const autresParticipants=
-participantsActifs.filter(
-uid=>uid!==utilisateur.uid
-);
+const autresParticipants=participantsActifs.filter(uid=>uid!==utilisateur.uid);
 
 
 const misAJourNonLus={};

@@ -667,6 +667,207 @@ input[type="checkbox"] {
     scrollbar-width: thin;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
+/* ==========================================
+   LOADER CRÉATION UTILISATEUR
+========================================== */
+
+.creation-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.creation-loader.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.creation-loader-card {
+  width: min(440px, calc(100vw - 40px));
+
+  background: #fff;
+  border-radius: 18px;
+
+  padding: 32px;
+
+  text-align: center;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25);
+
+  animation: creationLoaderAppear 0.25s ease;
+}
+
+@keyframes creationLoaderAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+/* ICÔNE */
+
+.creation-loader-icon {
+  width: 64px;
+  height: 64px;
+
+  margin: 0 auto 20px;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* SPINNER */
+
+.loader-spinner {
+  width: 52px;
+  height: 52px;
+
+  border: 5px solid #e5e7eb;
+  border-top-color: #0078d4;
+
+  border-radius: 50%;
+
+  animation: loaderSpin 0.8s linear infinite;
+}
+
+@keyframes loaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* CHECK */
+
+.loader-check {
+  display: none;
+
+  width: 52px;
+  height: 52px;
+
+  border-radius: 50%;
+
+  background: #16a34a;
+  color: white;
+
+  font-size: 30px;
+  font-weight: bold;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ERREUR */
+
+.loader-error {
+  display: none;
+
+  width: 52px;
+  height: 52px;
+
+  border-radius: 50%;
+
+  background: #dc2626;
+  color: white;
+
+  font-size: 30px;
+  font-weight: bold;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* TITRE */
+
+#creationLoaderTitle {
+  margin: 0;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  color: #1f2937;
+}
+
+
+/* TEXTE */
+
+#creationLoaderText {
+  margin: 8px 0 22px;
+
+  font-size: 14px;
+  color: #6b7280;
+
+  min-height: 20px;
+}
+
+
+/* BARRE */
+
+.creation-progress-container {
+  width: 100%;
+  height: 9px;
+
+  background: #e5e7eb;
+
+  border-radius: 999px;
+
+  overflow: hidden;
+}
+
+.creation-progress-bar {
+  width: 0%;
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    #0078d4,
+    #00a8ff
+  );
+
+  border-radius: 999px;
+
+  transition: width 0.35s ease;
+}
+
+
+/* POURCENTAGE */
+
+.creation-loader-percent {
+  margin-top: 10px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #6b7280;
+}
 </style>
 </head>
 <body>
@@ -927,7 +1128,45 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100
     <input type="text" id="badgeInputCache" class="badge-hidden-input" autocomplete="off">
   </div>
 </div>
+<!-- ==========================================
+     LOADER CRÉATION UTILISATEUR
+========================================== -->
 
+<div id="creationUserLoader" class="creation-loader hidden">
+
+  <div class="creation-loader-card">
+
+    <div class="creation-loader-icon">
+      <div class="loader-spinner"></div>
+      <div id="creationLoaderCheck" class="loader-check">✓</div>
+      <div id="creationLoaderError" class="loader-error">!</div>
+    </div>
+
+    <h3 id="creationLoaderTitle">
+      Création du compte
+    </h3>
+
+    <p id="creationLoaderText">
+      Préparation...
+    </p>
+
+    <div class="creation-progress-container">
+      <div
+        id="creationProgressBar"
+        class="creation-progress-bar"
+      ></div>
+    </div>
+
+    <div
+      id="creationLoaderPercent"
+      class="creation-loader-percent"
+    >
+      0 %
+    </div>
+
+  </div>
+
+</div>
 </div><!-- /#content -->
 <div id="columnInfoPopup" class="info-popup"></div>
   <script type="module">
@@ -1570,6 +1809,11 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
   const lieu = newLieu.value.trim();
   const type = newType.value;
 
+
+  // ==========================================
+  // VALIDATION
+  // ==========================================
+
   if (!email || !nom) {
     afficherBulle(
       "Veuillez remplir les champs obligatoires",
@@ -1578,11 +1822,87 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
     return;
   }
 
+
+  // ==========================================
+  // ÉLÉMENTS LOADER
+  // ==========================================
+
+  const loader =
+    document.getElementById("creationUserLoader");
+
+  const loaderTitle =
+    document.getElementById("creationLoaderTitle");
+
+  const loaderText =
+    document.getElementById("creationLoaderText");
+
+  const progressBar =
+    document.getElementById("creationProgressBar");
+
+  const loaderPercent =
+    document.getElementById("creationLoaderPercent");
+
+  const spinner =
+    document.querySelector(".loader-spinner");
+
+  const check =
+    document.getElementById("creationLoaderCheck");
+
+  const errorIcon =
+    document.getElementById("creationLoaderError");
+
+
+  // ==========================================
+  // FONCTION PROGRESSION
+  // ==========================================
+
+  function setProgress(percent, text) {
+
+    progressBar.style.width = `${percent}%`;
+
+    loaderPercent.textContent = `${percent} %`;
+
+    loaderText.textContent = text;
+  }
+
+
+  // ==========================================
+  // OUVERTURE LOADER
+  // ==========================================
+
+  loader.classList.remove("hidden");
+
+  loaderTitle.textContent =
+    "Création du compte";
+
+  spinner.style.display = "block";
+  check.style.display = "none";
+  errorIcon.style.display = "none";
+
+  setProgress(
+    5,
+    "Préparation de la création du compte..."
+  );
+
+
+  // Désactivation bouton
+
+  const createButton =
+    document.getElementById("createUserBtn");
+
+  createButton.disabled = true;
+
+
   try {
 
     // ==========================================
-    // MOT DE PASSE TEMPORAIRE
+    // 1 — MOT DE PASSE TEMPORAIRE
     // ==========================================
+
+    setProgress(
+      10,
+      "Génération du mot de passe temporaire..."
+    );
 
     const motDePasseTemp =
       "Temp" +
@@ -1591,9 +1911,13 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
 
 
     // ==========================================
-    // CRÉATION DU COMPTE
-    // SUR L'INSTANCE FIREBASE SECONDAIRE
+    // 2 — CRÉATION FIREBASE
     // ==========================================
+
+    setProgress(
+      20,
+      "Création du compte utilisateur..."
+    );
 
     const userCredential =
       await createUserWithEmailAndPassword(
@@ -1602,7 +1926,8 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
         motDePasseTemp
       );
 
-    const newUser = userCredential.user;
+    const newUser =
+      userCredential.user;
 
     console.log(
       "✅ Utilisateur créé :",
@@ -1610,8 +1935,14 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
     );
 
 
+    setProgress(
+      40,
+      "Compte utilisateur créé. Enregistrement des informations..."
+    );
+
+
     // ==========================================
-    // FIRESTORE
+    // 3 — FIRESTORE
     // ==========================================
 
     await setDoc(
@@ -1631,9 +1962,20 @@ document.getElementById("createUserBtn").addEventListener("click", async () => {
     );
 
 
+    setProgress(
+      55,
+      "Informations utilisateur enregistrées."
+    );
+
+
     // ==========================================
-    // MESSAGE SYSTÈME
+    // 4 — MESSAGE SYSTÈME
     // ==========================================
+
+    setProgress(
+      65,
+      "Configuration de la messagerie..."
+    );
 
     await envoyerMessageSysteme({
       compteId: "systeme",
@@ -1646,16 +1988,32 @@ Pensez à la consulter régulièrement !`,
     });
 
 
+    setProgress(
+      75,
+      "Messagerie configurée."
+    );
+
+
     // ==========================================
-    // DÉCONNEXION DE L'INSTANCE SECONDAIRE
+    // 5 — DÉCONNEXION FIREBASE SECONDAIRE
     // ==========================================
+
+    setProgress(
+      80,
+      "Finalisation du compte..."
+    );
 
     await secondaryAuth.signOut();
 
 
     // ==========================================
-    // EMAIL
+    // 6 — EMAIL
     // ==========================================
+
+    setProgress(
+      85,
+      "Envoi des identifiants par e-mail..."
+    );
 
     await envoyerMailResetEmailJS(
       email,
@@ -1665,13 +2023,62 @@ Pensez à la consulter régulièrement !`,
 
 
     // ==========================================
-    // FIN
+    // 7 — SUCCÈS
+    // ==========================================
+
+    setProgress(
+      100,
+      "Compte créé et e-mail envoyé."
+    );
+
+    spinner.style.display = "none";
+
+    check.style.display = "flex";
+
+    loaderTitle.textContent =
+      "Compte créé avec succès";
+
+
+    // Petite pause pour laisser voir le 100 %
+
+    await new Promise(resolve =>
+      setTimeout(resolve, 700)
+    );
+
+
+    // ==========================================
+    // 8 — FERMETURE LOADER
+    // ==========================================
+
+    loader.classList.add("hidden");
+
+
+    // ==========================================
+    // 9 — VIDAGE FORMULAIRE
+    // ==========================================
+
+    newEmail.value = "";
+    newNom.value = "";
+    newNom2.value = "";
+    newPrenom.value = "";
+    newSpecialite.value = "";
+    newLieu.value = "";
+    newType.value = "";
+
+
+    // ==========================================
+    // 10 — MESSAGE
     // ==========================================
 
     afficherBulle(
       "Utilisateur créé ✔️ — email envoyé",
       "administratif"
     );
+
+
+    // ==========================================
+    // 11 — RECHARGEMENT LISTE
+    // ==========================================
 
     chargerUtilisateurs();
 
@@ -1683,15 +2090,152 @@ Pensez à la consulter régulièrement !`,
       err
     );
 
+
+    // ==========================================
+    // DÉTERMINATION DU MESSAGE
+    // ==========================================
+
+    let messageErreur =
+      "Une erreur est survenue lors de la création du compte.";
+
+
+    // Firebase Auth
+
+    if (err.code === "auth/email-already-in-use") {
+
+      messageErreur =
+        "Cette adresse e-mail est déjà utilisée.";
+
+    }
+
+    else if (err.code === "auth/invalid-email") {
+
+      messageErreur =
+        "L'adresse e-mail saisie est invalide.";
+
+    }
+
+    else if (err.code === "auth/weak-password") {
+
+      messageErreur =
+        "Le mot de passe généré n'est pas suffisamment sécurisé.";
+
+    }
+
+    else if (err.code === "auth/network-request-failed") {
+
+      messageErreur =
+        "Impossible de contacter Firebase. Vérifiez votre connexion.";
+
+    }
+
+    else if (err.code === "auth/too-many-requests") {
+
+      messageErreur =
+        "Trop de tentatives. Veuillez patienter avant de réessayer.";
+
+    }
+
+    // Firestore
+
+    else if (
+      err.code === "permission-denied" ||
+      err.code === "PERMISSION_DENIED"
+    ) {
+
+      messageErreur =
+        "Vous n'avez pas l'autorisation d'enregistrer cet utilisateur.";
+
+    }
+
+    // Backend mail
+
+    else if (
+      err.message &&
+      err.message.includes("autorisation")
+    ) {
+
+      messageErreur =
+        "Vous n'avez pas l'autorisation d'envoyer des e-mails.";
+
+    }
+
+    else if (
+      err.message &&
+      (
+        err.message.includes("e-mail") ||
+        err.message.includes("email")
+      )
+    ) {
+
+      messageErreur =
+        "Le compte a été créé, mais l'envoi de l'e-mail a échoué.";
+
+    }
+
+    else if (err.message) {
+
+      messageErreur =
+        err.message;
+    }
+
+
+    // ==========================================
+    // AFFICHAGE ERREUR DANS LE LOADER
+    // ==========================================
+
+    spinner.style.display = "none";
+
+    check.style.display = "none";
+
+    errorIcon.style.display = "flex";
+
+
+    loaderTitle.textContent =
+      "Création impossible";
+
+    loaderText.textContent =
+      messageErreur;
+
+
+    progressBar.style.width = "100%";
+
+    loaderPercent.textContent =
+      "Erreur";
+
+
+    // ==========================================
+    // BULLE
+    // ==========================================
+
     afficherBulle(
-      "Erreur : " + (err.message || err),
+      messageErreur,
       "alerte"
     );
+
+
+    // ==========================================
+    // FERMETURE APRÈS ERREUR
+    // ==========================================
+
+    await new Promise(resolve =>
+      setTimeout(resolve, 2500)
+    );
+
+    loader.classList.add("hidden");
+
+
+  } finally {
+
+    // ==========================================
+    // RÉACTIVATION BOUTON
+    // ==========================================
+
+    createButton.disabled = false;
 
   }
 
 });
-
 async function envoyerNotification(userId, title, body) {
 
     try {
@@ -1712,6 +2256,14 @@ async function envoyerNotification(userId, title, body) {
         );
 
         const result = await response.json();
+      
+
+if (!response.ok || result.success !== true) {
+    throw new Error(
+        data.error || "Impossible d'envoyer l'e-mail"
+    );
+}
+
 
         console.log("🔔 Notification :", result);
 

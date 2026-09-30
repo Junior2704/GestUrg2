@@ -1,2260 +1,318 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Messagerie - GestUrg2</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-
-*{
-    box-sizing:border-box;
-    font-family:Inter,sans-serif;
-}
-
-body{
-    margin:0;
-    height:100vh;
-    background:#f4f7fa;
-    color:#222;
-}
-
-
-/* CONTENEUR */
-
-#app{
-    height:100vh;
-    display:flex;
-}
-
-
-/* LISTE DISCUSSIONS */
-
-#sidebar{
-
-    width:330px;
-    background:white;
-    border-right:1px solid #ddd;
-    display:flex;
-    flex-direction:column;
-}
-
-
-.header{
-
-    padding:20px;
-    font-size:22px;
-    font-weight:600;
-    color:#0078d4;
-    border-bottom:1px solid #eee;
-
-}
-
-
-#search{
-
-    margin:15px;
-    padding:12px;
-    border-radius:10px;
-    border:1px solid #ddd;
-}
-
-
-
-/* conversations */
-
-#conversations{
-
-    overflow:auto;
-}
-
-
-.conversation{
-
-    padding:15px;
-    display:flex;
-    gap:12px;
-    cursor:pointer;
-    border-bottom:1px solid #eee;
-}
-
-
-.conversation:hover{
-
-    background:#f0f7ff;
-
-}
-
-
-.conversation.non-lue{
-
-    background:#eaf4ff;
-    border-left:4px solid #0078d4;
-
-}
-
-
-.conversation.non-lue .conv-title{
-
-    font-weight:700;
-    color:#0078d4;
-
-}
-
-
-.conversation.non-lue .conv-last{
-
-    color:#333;
-    font-weight:600;
-
-}
-
-
-.avatar{
-
-    width:45px;
-    height:45px;
-    border-radius:50%;
-    background:#0078d4;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
-
-}
-
-
-.conv-text{
-
-    flex:1;
-
-}
-
-
-.conv-title{
-
-    font-weight:600;
-
-}
-
-
-.conv-last{
-
-    font-size:13px;
-    color:#777;
-    margin-top:4px;
-
-}
-
-
-.badge{
-
-    background:#d93025;
-    color:white;
-    border-radius:20px;
-    padding:2px 8px;
-    font-size:12px;
-    align-self:center;
-    height:fit-content;
-
-}
-
-
-/* CHAT */
-
-
-#chat{
-
-    flex:1;
-    display:flex;
-    flex-direction:column;
-}
-
-
-#chat-header{
-
-    height:70px;
-    background:white;
-    border-bottom:1px solid #ddd;
-    padding:20px;
-    font-size:18px;
-    font-weight:600;
-
-}
-
-
-#messages{
-
-    flex:1;
-    padding:25px;
-    overflow:auto;
-
-}
-
-
-
-.message{
-
-    max-width:70%;
-    margin-bottom:15px;
-    padding:12px 16px;
-    border-radius:15px;
-    background:white;
-    box-shadow:0 2px 8px #0001;
-
-}
-
-
-.message.mine{
-
-    margin-left:auto;
-    background:#0078d4;
-    color:white;
-
-}
-
-
-
-.author{
-
-    font-size:12px;
-    font-weight:bold;
-    margin-bottom:5px;
-
-}
-
-
-.date{
-
-    font-size:11px;
-    opacity:.7;
-    margin-top:5px;
-
-}
-
-
-
-
-#input-zone{
-
-    background:white;
-    padding:15px;
-    display:flex;
-    gap:10px;
-    border-top:1px solid #ddd;
-
-}
-
-
-#message-input{
-
-    flex:1;
-    padding:12px;
-    border-radius:20px;
-    border:1px solid #ccc;
-
-}
-
-
-button{
-
-    border:none;
-    background:#0078d4;
-    color:white;
-    padding:12px 20px;
-    border-radius:20px;
-    cursor:pointer;
-
-}
-
-
-
-.empty{
-
-    margin:auto;
-    color:#777;
-
-}
-
-
-/* SONDAGES */
-
-.sondage{
-
-    margin-top:8px;
-
-}
-
-.sondage-question{
-
-    font-weight:600;
-    margin-bottom:8px;
-
-}
-
-.sondage-option{
-
-    display:block;
-    width:100%;
-    text-align:left;
-    background:#f0f7ff;
-    color:#0078d4;
-    border:1px solid #cfe4fb;
-    border-radius:10px;
-    padding:8px 12px;
-    margin-bottom:6px;
-    cursor:pointer;
-    position:relative;
-    overflow:hidden;
-    font-size:14px;
-
-}
-
-.sondage-option:hover{
-
-    background:#e2f0ff;
-
-}
-
-.sondage-option.voted-option{
-
-    cursor:default;
-
-}
-
-.sondage-bar{
-
-    position:absolute;
-    left:0;
-    top:0;
-    bottom:0;
-    background:#cfe4fb;
-    z-index:0;
-
-}
-
-.sondage-option-label{
-
-    position:relative;
-    z-index:1;
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-
-}
-
-.sondage-note{
-
-    font-size:12px;
-    opacity:.7;
-    margin-top:4px;
-
-}
-
-
-.sondage-tag{
-
-    font-size:11px;
-    font-weight:500;
-    background:#eef4fb;
-    color:#0078d4;
-    padding:2px 8px;
-    border-radius:8px;
-    margin-left:8px;
-    vertical-align:middle;
-
-}
-
-
-.sondage-checkbox-ligne{
-
-    display:flex;
-    align-items:center;
-    gap:8px;
-    background:#f0f7ff;
-    border:1px solid #cfe4fb;
-    border-radius:10px;
-    padding:8px 12px;
-    margin-bottom:6px;
-    font-size:14px;
-    cursor:pointer;
-
-}
-
-
-.sondage-checkbox-ligne input{
-
-    width:auto;
-
-}
-
-
-.sondage-valider{
-
-    margin-top:4px;
-
-}
-
-
-.zone-reponse{
-
-    margin-top:10px;
-
-}
-
-
-.reponse-donnee{
-
-    background:#f0f7ff;
-    border-radius:8px;
-    padding:8px 10px;
-    font-size:13px;
-    margin-bottom:6px;
-
-}
-
-
-.reponse-label{
-
-    font-weight:600;
-    color:#0078d4;
-    margin-right:4px;
-
-}
-
-
-.reponse-note{
-
-    font-size:12px;
-    opacity:.7;
-
-}
-
-
-.lien-reponse{
-
-    background:none;
-    border:none;
-    color:#0078d4;
-    font-size:13px;
-    font-weight:600;
-    padding:0;
-    cursor:pointer;
-    text-decoration:underline;
-
-}
-
-
-.formulaire-reponse{
-
-    margin-top:8px;
-
-}
-
-
-.reponse-textarea{
-
-    width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    resize:vertical;
-    min-height:70px;
-    font-family:Inter,sans-serif;
-    font-size:14px;
-
-}
-
-
-.compteur-caracteres{
-
-    font-size:11px;
-    color:#999;
-    text-align:right;
-    margin-top:2px;
-
-}
-
-
-.formulaire-reponse button{
-
-    margin-top:6px;
-    padding:8px 16px;
-    font-size:13px;
-
-}
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
-
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-
-
-/* COMPTES PARTAGES / ADMIN */
-#comptes-partages{
-    padding:0 12px 10px;
-    border-bottom:1px solid #eee;
-    max-height:220px;
-    overflow:auto;
-}
-.comptes-partages-titre{
-    font-size:11px;
-    font-weight:700;
-    color:#667085;
-    text-transform:uppercase;
-    padding:10px 3px 7px;
-}
-.compte-partage{
-    display:flex;
-    align-items:center;
-    gap:9px;
-    width:100%;
-    padding:9px 10px;
-    margin:3px 0;
-    border:1px solid #e5eaf0;
-    border-radius:10px;
-    background:#f8fbff;
-    color:#1f2937;
-    cursor:pointer;
-    text-align:left;
-    font-size:13px;
-}
-.compte-partage:hover{background:#eef6ff;}
-.compte-partage .cp-icon{font-size:18px;}
-.compte-partage .cp-text{flex:1;min-width:0;}
-.compte-partage .cp-nom{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.compte-partage .cp-type{font-size:10px;color:#7b8794;margin-top:2px;}
-
-#nouveau-message{
-    display:none;
-    margin:10px 12px;
-    padding:12px;
-    border:1px solid #dbe8f6;
-    border-radius:12px;
-    background:#f7fbff;
-}
-#nouveau-message.actif{display:block;}
-#nouveau-message label{display:block;font-size:11px;font-weight:700;color:#667085;margin:0 0 5px;}
-#nouveau-message select{margin-bottom:8px;}
-#nouveau-message button{width:100%;margin-top:4px;border-radius:10px;padding:9px 12px;}
-#nouveau-message .annuler-nouveau{background:#eef4fb;color:#0078d4;}
-
-#input-zone{
-    background:white;
-    padding:12px 15px;
-    display:flex;
-    gap:10px;
-    border-top:1px solid #ddd;
-    align-items:center;
-}
-#input-zone textarea{
-    flex:1;
-    min-height:44px;
-    max-height:130px;
-    resize:vertical;
-    padding:11px 14px;
-    border-radius:14px;
-    border:1px solid #d5dce5;
-    font-family:Inter,sans-serif;
-    font-size:14px;
-}
-#input-zone button{margin:0;white-space:nowrap;}
-#mode-envoi{
-    font-size:11px;
-    color:#667085;
-    padding:0 15px 8px;
-    background:white;
-}
-
-
-.btn-cloturer{
-  margin-left:auto;
-  margin-top:0;
-  padding:8px 12px;
-  border-radius:9px;
-  background:#fff1f0;
-  color:#c5221f;
-  border:1px solid #f3c7c4;
-  font-size:12px;
-  white-space:nowrap;
-}
-.btn-cloturer:hover{background:#fde8e6;}
-#chat-header{display:flex;align-items:center;gap:10px;}
-#chat-header{min-width:0;}
-#chat-header::first-line{overflow:hidden;}
-#input-zone button:disabled{opacity:.55;cursor:not-allowed;}
-#message-input:disabled{background:#f4f6f8;color:#8a94a3;}
-@media(max-width:700px){
-  .btn-cloturer{font-size:11px;padding:7px 9px;}
-}
-
-#filtres-conv{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;}
-#filtres-conv button{margin:0;padding:5px 10px;border-radius:14px;border:1px solid #dbe8f6;background:#fff;color:#0078d4;font-size:12px;cursor:pointer;}
-#filtres-conv button.actif{background:#0078d4;color:#fff;}
-.compte-partage.actif{outline:2px solid #0078d4;}
-.tag-clos{font-size:10px;background:#fdecea;color:#c5221f;padding:1px 6px;border-radius:6px;margin-left:6px;}
-.sans-discussion{padding:20px;text-align:center;color:#7b8794;font-size:13px;}
-#nouveau-message input{margin-bottom:8px;}
+:root{--ink:#14222e;--rail:#12283a;--mut:#5b6878;--line:#dde3ea;--bg:#eef1f4;--card:#fff;--ac:#0b7285;--ac2:#095c6c;--tint:#e3f1f4;--red:#b42318;--grn:#1a7f4b;--r:10px}
+*{box-sizing:border-box;font-family:"Public Sans",system-ui,sans-serif}
+html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font-size:14px}
+button{cursor:pointer;border:0;font-weight:600;font-size:13px}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;color:var(--ink)}
+label{display:block;font-weight:600;font-size:13px;margin:12px 0 5px}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#app{display:grid;grid-template-columns:250px 340px 1fr;height:100%}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;background:var(--ac);color:#fff}.btn:hover{background:var(--ac2)}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.sec:hover{background:var(--bg)}.btn.dng{background:#fff;color:var(--red);border:1px solid #f0c4c0}.btn:disabled{opacity:.5;cursor:not-allowed}
+/* rail */
+#rail{background:var(--rail);color:#cfdbe6;display:flex;flex-direction:column;padding:16px 12px;gap:4px;overflow:auto}
+#rail .brand{color:#fff;font-weight:700;font-size:17px;padding:4px 8px 14px}
+#rail .btn{justify-content:center;margin-bottom:10px;background:#fff;color:var(--rail)}#rail .btn:hover{background:var(--tint)}
+.sect{font-size:12px;color:#8fa5b8;padding:14px 8px 4px;font-weight:600}
+.nav{display:flex;align-items:center;gap:9px;width:100%;padding:8px;border-radius:8px;background:none;color:#cfdbe6;text-align:left;font-weight:500}
+.nav:hover{background:#1c3a52}.nav.on{background:#245073;color:#fff}.nav .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav .em{width:26px;height:26px;border-radius:7px;background:#1c3a52;display:grid;place-items:center;font-size:14px}
+.cnt{background:#e5484d;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px}
+/* liste */
+#list{background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#list .top{padding:16px 16px 10px}#list h2{margin:0 0 10px;font-size:18px}
+.chips{display:flex;gap:6px;margin-top:10px}.chips button{padding:5px 11px;border-radius:14px;background:var(--bg);color:var(--mut)}.chips button.on{background:var(--tint);color:var(--ac2)}
+#convs{overflow:auto;flex:1}
+.conv{display:flex;gap:11px;padding:12px 16px;border-top:1px solid #edf0f3;cursor:pointer;border-left:3px solid transparent}
+.conv:hover{background:#f7f9fb}.conv.sel{background:var(--tint);border-left-color:var(--ac)}.conv.nl .ct{font-weight:700}
+.av{width:38px;height:38px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-size:18px;flex:none}
+.cx{flex:1;min-width:0}.ct,.cl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ct{font-weight:600}.cl{color:var(--mut);font-size:13px;margin-top:2px}
+.tag{font-size:11px;padding:1px 7px;border-radius:6px;background:#f3e3e1;color:var(--red);margin-left:6px;font-weight:600}
+.vide{padding:32px 20px;color:var(--mut);text-align:center}
+/* fil */
+#thread{display:flex;flex-direction:column;min-height:0;min-width:0}
+#th{display:flex;align-items:center;gap:12px;padding:14px 22px;background:var(--card);border-bottom:1px solid var(--line);min-height:68px}
+#th .tt{flex:1;min-width:0}#th b{font-size:16px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#th small{color:var(--mut)}
+#back{display:none;background:none;padding:4px;color:var(--ink)}
+#msgs{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:12px}
+.m{max-width:68%;background:var(--card);border:1px solid var(--line);border-radius:12px 12px 12px 3px;padding:11px 14px}
+.m.me{align-self:flex-end;background:var(--ac);color:#fff;border-color:var(--ac);border-radius:12px 12px 3px 12px}
+.m .au{font-size:12px;font-weight:700;margin-bottom:4px}.m .dt{font-size:11px;opacity:.65;margin-top:6px}.m .tx{white-space:pre-wrap;overflow-wrap:anywhere}
+.m.sys{align-self:center;background:none;border:0;color:var(--mut);font-size:12px}
+#comp{background:var(--card);border-top:1px solid var(--line);padding:12px 22px}#comp .row{display:flex;gap:10px;align-items:flex-end}
+#comp textarea{resize:none;max-height:130px}#mode{font-size:12px;color:var(--mut);margin-bottom:7px}
+/* sondage */
+.opt{position:relative;overflow:hidden;display:block;width:100%;text-align:left;padding:8px 11px;margin-top:6px;border-radius:8px;background:var(--tint);color:var(--ac2);border:1px solid #c3dde3;font-weight:500}
+.opt .bar{position:absolute;inset:0 auto 0 0;background:#b9dbe2}.opt span{position:relative;display:flex;justify-content:space-between;gap:10px}
+.m.me .opt{color:var(--ink)}.q{font-weight:700}.note{font-size:12px;opacity:.75;margin-top:6px}
+.chk{display:flex;gap:8px;align-items:center;padding:7px 10px;margin-top:6px;border-radius:8px;background:var(--tint);color:var(--ink);font-weight:500;margin-bottom:0}.chk input{width:auto}
+.rep{margin-top:10px;padding-top:8px;border-top:1px solid #0001}.rep textarea{margin-top:6px}.lk{background:none;color:var(--ac);padding:0;text-decoration:underline}
+/* modales */
+dialog{border:0;border-radius:14px;padding:0;width:min(640px,94vw);max-height:90vh;box-shadow:0 20px 60px #0a1a2a55;color:var(--ink)}dialog.lg{width:min(860px,96vw)}dialog::backdrop{background:#0a1a2a88}
+dialog[open]{display:flex;flex-direction:column}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line)}.mh h3{margin:0;font-size:17px}
+.mh button{background:none;color:var(--mut);padding:4px}.mb{padding:4px 22px 18px;overflow:auto;flex:1}.mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.tabs{display:flex;gap:4px;padding:0 22px;border-bottom:1px solid var(--line)}.tabs button{background:none;color:var(--mut);padding:11px 12px;border-bottom:2px solid transparent;border-radius:0}.tabs button.on{color:var(--ac2);border-color:var(--ac)}
+.pick{border:1px solid var(--line);border-radius:8px;max-height:210px;overflow:auto;margin-top:6px}.pick label{display:flex;gap:9px;align-items:center;margin:0;padding:7px 10px;font-weight:500;border-bottom:1px solid #f0f2f5}.pick input{width:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ck{display:flex;gap:8px;align-items:center;font-weight:500}.ck input{width:auto}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}.card b{display:block}.card small{color:var(--mut)}.card details{margin-top:8px}.card summary{cursor:pointer;color:var(--ac2);font-weight:600}
+.dl{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #f0f2f5;font-size:13px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:9px;display:none;z-index:99}#toast.err{background:var(--red)}
+@media(max-width:1000px){#app{grid-template-columns:220px 300px 1fr}}
+@media(max-width:760px){#app{grid-template-columns:1fr}#rail,#thread{display:none}#app.vue-thread #list{display:none}#app.vue-thread #thread{display:flex}#app.vue-rail #list{display:none}#app.vue-rail #rail{display:flex}#back{display:block}.m{max-width:90%}.grid2{grid-template-columns:1fr}#list .top .menu{display:inline-flex}}
+.menu{display:none;float:right;background:none;color:var(--ink);padding:0}
+@media(prefers-reduced-motion:no-preference){dialog[open]{animation:pop .15s ease-out}@keyframes pop{from{transform:scale(.97);opacity:0}}}
 </style>
-
 </head>
-
-
 <body>
-
-
 <div id="app">
-
-
-<div id="sidebar">
-
-<div class="header">
-💬 Messagerie
+ <aside id="rail"></aside>
+ <section id="list">
+  <div class="top"><button class="menu" onclick="app.className='vue-rail'" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h2 id="lt">Boîte de réception</h2>
+   <input id="q" placeholder="Rechercher une discussion" aria-label="Rechercher">
+   <div class="chips" id="chips"></div></div>
+  <div id="convs"></div>
+ </section>
+ <main id="thread">
+  <div id="th"><button id="back" onclick="app.className=''" aria-label="Retour"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="tt"><b>Sélectionnez une discussion</b></div></div>
+  <div id="msgs"><div class="vide">Choisissez une discussion dans la liste, ou ouvrez-en une nouvelle.</div></div>
+  <div id="comp" style="display:none"><div id="mode"></div><div class="row"><textarea id="mi" rows="2" placeholder="Votre réponse"></textarea><button class="btn" id="send" onclick="envoyerMessage()">Répondre</button></div></div>
+ </main>
 </div>
 
+<dialog id="dNew"><div class="mh"><h3>Nouvelle discussion</h3><button onclick="dNew.close()" aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+ <div class="mb"><label for="nCompte">Compte à contacter</label><select id="nCompte"></select><div id="nDesc" class="note"></div>
+ <label for="nObjet">Objet (facultatif)</label><input id="nObjet" maxlength="80" placeholder="Ex : Échange de garde du 12"></div>
+ <div class="mf"><button class="btn sec" onclick="dNew.close()">Annuler</button><button class="btn" onclick="creerDiscussion()">Ouvrir la discussion</button></div></dialog>
 
-<input id="search" placeholder="Rechercher une discussion...">
+<dialog id="dComp" class="lg"><div class="mh"><h3>Nouvel envoi</h3><button onclick="dComp.close()" aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+ <div class="tabs" id="cTabs"><button class="on" data-k="message">Message</button><button data-k="sondage">Sondage</button></div>
+ <div class="mb"><div class="grid2"><div><label for="cCompte">Envoyer au nom de</label><select id="cCompte"></select></div><div><label for="cType">Type d'utilisateur</label><select id="cType"></select></div></div>
+  <label>Destinataires <span id="cN" style="font-weight:400;color:var(--mut)"></span></label>
+  <input id="cQ" placeholder="Rechercher un utilisateur"><label class="ck" style="margin:8px 0 0"><input type="checkbox" id="cTous"> Tous les utilisateurs du filtre</label><div class="pick" id="cPick"></div>
+  <div id="pMsg"><label for="cTxt">Message</label><textarea id="cTxt" rows="4"></textarea>
+   <label class="ck"><input type="checkbox" id="cDem"> Demander une réponse</label>
+   <div id="cDemO" style="display:none" class="grid2"><div><label for="cMax">Caractères max (facultatif)</label><input type="number" id="cMax" min="1"></div><label class="ck" style="margin-top:30px"><input type="checkbox" id="cMod" checked> Réponse modifiable</label></div></div>
+  <div id="pSond" style="display:none"><label for="sQ">Question</label><input id="sQ"><label class="ck"><input type="checkbox" id="sMul"> Choix multiple</label><label>Options</label><div id="sOpts"></div><button class="btn sec" style="margin-top:8px" onclick="ajouterOption()">Ajouter une option</button></div>
+ </div>
+ <div class="mf"><button class="btn sec" onclick="dComp.close()">Annuler</button><button class="btn" id="cGo" onclick="envoyerDiffusion()">Envoyer</button></div></dialog>
 
-<div id="comptes-partages"></div>
+<dialog id="dSuivi" class="lg"><div class="mh"><h3>Suivi des envois</h3><button onclick="dSuivi.close()" aria-label="Fermer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+ <div class="tabs" id="sTabs"><button class="on" data-k="hist">Historique</button><button data-k="sond">Sondages</button><button data-k="rep">Réponses reçues</button></div><div class="mb" id="sBody"></div></dialog>
 
-<div id="filtres-conv"></div>
-
-<div id="nouveau-message">
-    <label>Contacter un compte général</label>
-    <select id="nouveau-compte-general"></select>
-    <input id="nouveau-objet" maxlength="80" placeholder="Objet de la discussion (facultatif)">
-    <button type="button" onclick="creerNouvelleConversationGenerique()">✉️ Nouvelle discussion</button>
-    <button type="button" class="annuler-nouveau" onclick="fermerNouveauMessage()">Annuler</button>
-</div>
-
-<div id="conversations"></div>
-
-
-</div>
-
-
-
-<div id="chat">
-
-
-<div id="chat-header">
-Sélectionnez une discussion
-</div>
-
-
-<div id="messages">
-
-<div class="empty">
-Aucune conversation sélectionnée
-</div>
-
-</div>
-
-
-<div id="mode-envoi"></div>
-<div id="input-zone">
-<textarea id="message-input" rows="1" placeholder="Votre message..."></textarea>
-<button onclick="envoyerMessage()">Envoyer</button>
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
+<dialog id="dConf"><div class="mh"><h3 id="cfT"></h3></div><div class="mb" id="cfB"></div><div class="mf"><button class="btn sec" onclick="dConf.close()">Annuler</button><button class="btn dng" id="cfOk">Confirmer</button></div></dialog>
+<div id="toast" role="status"></div>
 
 <script type="module">
+import {initializeApp,getApps,getApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,doc,getDoc,getDocs,collection,query,where,onSnapshot,addDoc,updateDoc,serverTimestamp,arrayUnion,increment,orderBy} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const cfg={apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4",storageBucket:"urgences-a8ed4.firebasestorage.app",messagingSenderId:"392921498200",appId:"1:392921498200:web:7ccce767332c67c697c02d",measurementId:"G-C74MK2KYDL"};
+const fa=getApps().length?getApp():initializeApp(cfg),db=getFirestore(fa),auth=getAuth(fa);
+const $=id=>document.getElementById(id),ORIGINE="*";
+const esc=t=>{const d=document.createElement("div");d.textContent=t==null?"":String(t);return d.innerHTML};
+const I={plus:'<path d="M12 5v14M5 12h14"/>',inbox:'<path d="M4 13l2-8h12l2 8v6H4zM4 13h5l1 2h4l1-2h5"/>',send:'<path d="M21 3L3 10l7 3 3 7z"/>',chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'};
+const ic=k=>`<svg viewBox="0 0 24 24">${I[k]}</svg>`;
+const TYPES={doc:"Médecin",infirmier:"Infirmier",AS:"Aide Soignant",Int:"Interne",Ext:"Externe"};
+let U=null,UN="",convs=[],act=null,actD=null,unsub=null,genAttr=[],genAll=[],admAttr=[],users=[],fCompte=null,fStat="ouvert",MSGS=[],SD={},DR={},diffs=[],sonds=[],dems=[],sel=new Set(),cMode="message",sTab="hist";
+const nom=uid=>users.find(u=>u.uid===uid)?.nom||uid;
+function toast(m,err){const t=$("toast");t.textContent=m;t.className=err?"err":"";t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",3500)}
+function notif(uid){if(window.parent===window)return;try{window.parent.postMessage({type:"NOTIFICATION",userId:uid,titre:"🔔 Nouveau message",contenu:"Ouvrez GestUrg2 pour le consulter !"},"*")}catch(e){}}
+function confirmer(t,b,fn){$("cfT").textContent=t;$("cfB").textContent=b;$("cfOk").onclick=()=>{dConf.close();fn()};dConf.showModal()}
+const isGen=d=>d.type==="compte-generique"||!!d.compteGeneriqueId;
+const membre=d=>genAttr.some(c=>c.id===d.compteGeneriqueId);
+const visible=c=>!(c.type==="compte-administratif"&&c.destinataireUid&&c.destinataireUid!==U.uid);
+const nl=c=>c.nonLus?.[U.uid]||0;
 
-
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-
-import {
-
-getFirestore,
-doc,
-getDoc,
-getDocs,
-collection,
-query,
-where,
-onSnapshot,
-addDoc,
-updateDoc,
-serverTimestamp,
-arrayUnion,
-increment,
-orderBy
-
-}
-
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-
-import {
-
-getAuth,
-onAuthStateChanged
-
-}
-
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-  authDomain: "urgences-a8ed4.firebaseapp.com",
-  projectId: "urgences-a8ed4",
-  storageBucket: "urgences-a8ed4.firebasestorage.app",
-  messagingSenderId: "392921498200",
-  appId: "1:392921498200:web:7ccce767332c67c697c02d",
-  measurementId: "G-C74MK2KYDL"
-};
-
-
-
-const app=initializeApp(firebaseConfig);
-
-const db=getFirestore(app);
-
-const auth=getAuth(app);
-
-
-
-let utilisateur=null;
-let utilisateurNom="";
-
-let conversationActive=null;
-let participantsActifs=[];
-let conversationDataActive=null;
-let comptesGeneriquesAttribues=[];
-let comptesGeneriquesDisponibles=[];
-let tousLesUtilisateurs=[];
-let conversationsCache=[];
-let filtreCompteId=null;
-let filtreStatut="ouvert";
-let unsubMessages=null;
-
-function titreConversationGenerique(nom,x){
-  return nom+(x.demandeurNom?" · "+x.demandeurNom:"")+(x.objet?" — "+x.objet:"");
-}
-
-function envoyerNotification(uid,titre,contenu){
-  if(window.parent===window) return;
-  try{ window.parent.postMessage({type:"NOTIFICATION",userId:uid,titre,contenu},"*"); }catch(e){}
-}
-
-
-
-/* à adapter : origine exacte de la page parente
-   qui iframe messagerie.html (remplacer "*" par
-   ex. "https://mon-domaine.fr" en production) */
-
-const ORIGINE_PARENT="*";
-
-
-
-
-
-/*
-===========================
-CONNEXION
-===========================
-*/
-
-
-onAuthStateChanged(auth,async(user)=>{
-
-
-if(!user)
-return;
-
-
-utilisateur=user;
-
-
-const snap=
-await getDoc(
-doc(db,"medecins",user.uid)
-);
-
-
-if(snap.exists()){
-
-const data=snap.data();
-
-utilisateurNom=
-data.nom || "Utilisateur";
-
-
-}
-
-
-await chargerComptesPartages();
-await chargerTousLesUtilisateurs();
-chargerConversations();
-
-
+onAuthStateChanged(auth,async u=>{
+ if(!u)return;U=u;
+ const s=await getDoc(doc(db,"medecins",u.uid));UN=s.exists()?(s.data().nom||"Utilisateur"):"Utilisateur";
+ try{users=(await getDocs(collection(db,"medecins"))).docs.map(d=>({uid:d.id,...d.data()}))}catch(e){}
+ onSnapshot(query(collection(db,"comptes-generiques"),where("membres","array-contains",u.uid)),s=>{genAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false);rail()});
+ onSnapshot(collection(db,"comptes-generiques"),s=>{genAll=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false).sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"))});
+ onSnapshot(query(collection(db,"comptes-administrateurs"),where("membres","array-contains",u.uid)),s=>{admAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false);rail();suivre()},()=>{});
+ onSnapshot(query(collection(db,"messageries"),where("participants","array-contains",u.uid)),s=>{
+  convs=s.docs.map(d=>({id:d.id,data:d.data()})).sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
+  try{window.parent.postMessage({source:"messagerie",type:"non-lus",nonLus:convs.filter(x=>visible(x.data)).reduce((n,x)=>n+nl(x.data),0)},ORIGINE)}catch(e){}
+  rail();liste()});
 });
 
-
-
-
-
-
-/*
-===========================
-COMPTES GÉNÉRAUX
-===========================
-
-Dans messagerie.html :
-- un utilisateur lambda peut contacter uniquement un compte général actif ;
-- un membre d'un compte général voit les discussions adressées à ce compte ;
-- les membres peuvent répondre et clôturer les discussions ;
-- les comptes d'envoi (Système / RH / Administration médicale) ne sont
-  jamais proposés ici pour l'envoi. Leur émission est gérée depuis
-  administrationmessagerie.html.
-*/
-
-async function chargerComptesPartages(){
-  if(!utilisateur) return;
-
-  onSnapshot(
-    query(collection(db,"comptes-generiques"),where("membres","array-contains",utilisateur.uid)),
-    snap=>{
-      comptesGeneriquesAttribues=snap.docs
-        .map(d=>({id:d.id,...d.data()}))
-        .filter(c=>c.actif!==false);
-      afficherComptesPartages();
-    }
-  );
-
-  onSnapshot(
-    collection(db,"comptes-generiques"),
-    snap=>{
-      comptesGeneriquesDisponibles=snap.docs
-        .map(d=>({id:d.id,...d.data()}))
-        .filter(c=>c.actif!==false)
-        .sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"));
-      remplirNouveauMessage();
-    }
-  );
+/* ---------- rail + liste ---------- */
+function rail(){
+ if(!U)return;const tot=convs.filter(x=>visible(x.data)).reduce((n,x)=>n+nl(x.data),0);
+ let h=`<div class="brand">Messagerie</div><button class="btn" onclick="ouvrirNouvelle()">${ic("plus")}Nouvelle discussion</button>
+ <button class="nav ${fCompte===null?"on":""}" onclick="filtrer(null)">${ic("inbox")}<span class="t">Toutes les discussions</span>${tot?`<span class="cnt">${tot}</span>`:""}</button>`;
+ if(genAttr.length){h+=`<div class="sect">Mes comptes généraux</div>`;
+  genAttr.forEach(c=>{const n=convs.filter(x=>x.data.compteGeneriqueId===c.id&&visible(x.data)).reduce((a,x)=>a+nl(x.data),0);
+   h+=`<button class="nav ${fCompte===c.id?"on":""}" onclick="filtrer('${c.id}')"><span class="em">${esc(c.icon||"📬")}</span><span class="t">${esc(c.nom)}</span>${n?`<span class="cnt">${n}</span>`:""}</button>`})}
+ if(admAttr.length){h+=`<div class="sect">Envois administratifs</div>
+  <button class="nav" onclick="ouvrirComposer('message')">${ic("send")}<span class="t">Nouveau message</span></button>
+  <button class="nav" onclick="ouvrirComposer('sondage')">${ic("chart")}<span class="t">Nouveau sondage</span></button>
+  <button class="nav" onclick="ouvrirSuivi()">${ic("inbox")}<span class="t">Suivi des envois</span></button>
+  <div class="sect" style="padding-top:8px">${admAttr.map(c=>esc((c.icon||"")+" "+c.nom)).join(", ")}</div>`}
+ $("rail").innerHTML=h;
 }
-
-async function chargerTousLesUtilisateurs(){
-  try{
-    const snap=await getDocs(collection(db,"medecins"));
-    tousLesUtilisateurs=snap.docs.map(d=>({uid:d.id,...d.data()}));
-  }catch(e){
-    console.error("Chargement utilisateurs :",e);
-  }
+window.filtrer=id=>{fCompte=id;app.className="";$("lt").textContent=id?(genAttr.find(c=>c.id===id)?.nom||""):"Boîte de réception";rail();liste()};
+function chips(){$("chips").innerHTML=[["ouvert","Ouvertes"],["clos","Clôturées"],["tous","Toutes"]].map(([v,l])=>`<button class="${fStat===v?"on":""}" onclick="setStat('${v}')">${l}</button>`).join("")}
+window.setStat=v=>{fStat=v;chips();liste()};
+function liste(){
+ const z=$("convs"),t=($("q").value||"").toLowerCase();
+ const l=convs.filter(({data:c})=>visible(c)&&(!fCompte||c.compteGeneriqueId===fCompte)&&(fStat==="tous"||(fStat==="clos")===(c.statut==="clos"))&&((c.titre||"")+(c.lastMessage||"")).toLowerCase().includes(t));
+ if(!l.length){z.innerHTML='<div class="vide">Aucune discussion ici.</div>';return}
+ z.innerHTML=l.map(({id,data:c})=>`<div class="conv ${nl(c)?"nl":""} ${id===act?"sel":""}" data-id="${id}"><div class="av">${esc(c.icon||"💬")}</div><div class="cx"><div class="ct">${esc(c.titre||"Discussion")}${c.statut==="clos"?'<span class="tag">clôturée</span>':""}</div><div class="cl">${esc(c.lastMessage||"")}</div></div>${nl(c)?`<span class="cnt" style="align-self:center;background:var(--ac)">${nl(c)}</span>`:""}</div>`).join("");
+ z.querySelectorAll(".conv").forEach(e=>e.onclick=()=>{const x=convs.find(y=>y.id===e.dataset.id);ouvrir(x.id,x.data)});
 }
+$("q").oninput=liste;chips();
 
-function afficherComptesPartages(){
-  const zone=document.getElementById("comptes-partages");
-  if(!zone) return;
-
-  zone.innerHTML="";
-  if(!comptesGeneriquesAttribues.length) return;
-
-  const titre=document.createElement("div");
-  titre.className="comptes-partages-titre";
-  titre.textContent="Mes comptes généraux";
-  zone.appendChild(titre);
-
-  comptesGeneriquesAttribues.forEach(c=>{
-    const b=document.createElement("button");
-    b.type="button";
-    b.className="compte-partage";
-    b.innerHTML=`
-      <span class="cp-icon">${c.icon || "📬"}</span>
-      <span class="cp-text">
-        <span class="cp-nom">${echapperHTML(c.nom || "Compte général")}</span>
-        <span class="cp-type">Compte général · accès membre</span>
-      </span>`;
-    if(filtreCompteId===c.id) b.classList.add("actif");
-    b.onclick=()=>basculerFiltreCompte(c.id);
-    zone.appendChild(b);
-  });
-
-  const nouveau=document.createElement("button");
-  nouveau.type="button";
-  nouveau.className="compte-partage";
-  nouveau.innerHTML=`
-    <span class="cp-icon">✉️</span>
-    <span class="cp-text">
-      <span class="cp-nom">Contacter un compte général</span>
-      <span class="cp-type">Ouvrir une nouvelle discussion</span>
-    </span>`;
-  nouveau.onclick=ouvrirNouveauMessage;
-  zone.appendChild(nouveau);
+/* ---------- fil ---------- */
+function ouvrir(id,d){
+ act=id;actD=d;const g=isGen(d),m=g&&membre(d),clos=d.statut==="clos";
+ $("th").innerHTML=`<button id="back" onclick="app.className=''" aria-label="Retour"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="av">${esc(d.icon||"💬")}</div><div class="tt"><b>${esc(d.titre||d.compteNom||"Discussion")}</b><small>${g?(m?"Vous répondez au nom de "+esc(d.compteNom||""):"Discussion avec "+esc(d.compteNom||"")):"Message d'un compte d'envoi, lecture seule"}</small></div>${m&&!clos?'<button class="btn dng" onclick="cloturer()">Clôturer</button>':""}`;
+ $("comp").style.display=g?"block":"none";$("mode").textContent=clos?"Discussion clôturée":"";$("mi").disabled=clos;$("send").disabled=clos;
+ app.className="vue-thread";
+ updateDoc(doc(db,"messageries",id),{[`nonLus.${U.uid}`]:0}).catch(()=>{});liste();
+ if(unsub)unsub();
+ unsub=onSnapshot(query(collection(db,"messageries",id,"messages"),orderBy("date","asc")),async s=>{
+  MSGS=s.docs.map(x=>({id:x.id,...x.data()}));
+  await Promise.all([...new Set(MSGS.filter(x=>x.sondageId).map(x=>x.sondageId))].map(async i=>{const r=await getDoc(doc(db,"sondages",i));if(r.exists())SD[i]=r.data()}));
+  await Promise.all([...new Set(MSGS.filter(x=>x.demandeReponseId).map(x=>x.demandeReponseId))].map(async i=>{const r=await getDoc(doc(db,"demandes-reponse",i));if(r.exists())DR[i]=r.data()}));
+  rendu();
+  MSGS.forEach(x=>{if(x.luPar&&!x.luPar.includes(U.uid)){
+   updateDoc(doc(db,"messageries",id,"messages",x.id),{luPar:arrayUnion(U.uid)}).catch(()=>{});
+   const st={[`statuts.${U.uid}.lu`]:true,[`statuts.${U.uid}.luLe`]:serverTimestamp()};
+   if(x.diffusionId)updateDoc(doc(db,"diffusions",x.diffusionId),st).catch(()=>{});
+   if(x.sondageId)updateDoc(doc(db,"sondages",x.sondageId),st).catch(()=>{})}});
+ });
 }
-
-function remplirNouveauMessage(){
-  const select=document.getElementById("nouveau-compte-general");
-  if(!select) return;
-  select.innerHTML=comptesGeneriquesDisponibles.map(c=>
-    `<option value="${c.id}">${c.icon || "📬"} ${echapperHTML(c.nom || "Compte général")}</option>`
-  ).join("");
+function rendu(){
+ const z=$("msgs"),bas=z.scrollHeight-z.scrollTop-z.clientHeight<80;
+ z.innerHTML=MSGS.map(x=>{
+  if(x.auteur==="systeme")return `<div class="m sys">${esc(x.texte)}</div>`;
+  const body=x.type==="sondage"&&SD[x.sondageId]?sondHTML(SD[x.sondageId],x.sondageId):`<div class="tx">${esc(x.texte)}</div>`;
+  const r=x.demandeReponseId&&DR[x.demandeReponseId]?repHTML(DR[x.demandeReponseId],x.demandeReponseId):"";
+  return `<div class="m ${x.auteur===U.uid?"me":""}"><div class="au">${esc(x.auteurNom)}</div>${body}${r}<div class="dt">${x.date?.toDate?x.date.toDate().toLocaleString("fr-FR"):""}</div></div>`}).join("")||'<div class="vide">Aucun message.</div>';
+ if(bas)z.scrollTop=z.scrollHeight;
 }
-
-function ouvrirNouveauMessage(){
-  const zone=document.getElementById("nouveau-message");
-  if(!zone) return;
-  remplirNouveauMessage();
-  if(!document.getElementById("nouveau-compte-general")?.value){
-    alert("Aucun compte général actif n'est disponible.");
-    return;
-  }
-  zone.classList.add("actif");
-}
-
-window.fermerNouveauMessage=()=>{
-  document.getElementById("nouveau-message")?.classList.remove("actif");
-};
-
-window.creerNouvelleConversationGenerique=async()=>{
-  const compteId=document.getElementById("nouveau-compte-general")?.value;
-  const compte=comptesGeneriquesDisponibles.find(c=>c.id===compteId);
-  if(!compte || compte.actif===false || !utilisateur) return;
-  const objet=(document.getElementById("nouveau-objet")?.value || "").trim();
-
-  try{
-    /* une seule discussion OUVERTE par demandeur et par compte ;
-       une discussion clôturée n'empêche pas d'en ouvrir une nouvelle */
-    const snap=await getDocs(query(
-      collection(db,"messageries"),
-      where("compteGeneriqueId","==",compte.id),
-      where("demandeurUid","==",utilisateur.uid)
-    ));
-    const ouvertes=snap.docs
-      .map(d=>({id:d.id,data:d.data()}))
-      .filter(x=>x.data.statut!=="clos")
-      .sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
-
-    if(ouvertes.length){
-      ouvrirConversation(ouvertes[0].id,ouvertes[0].data);
-      fermerNouveauMessage();
-      return;
-    }
-
-    const participants=Array.from(new Set([utilisateur.uid,...(compte.membres || [])]));
-    const data={
-      type:"compte-generique",
-      compteGeneriqueId:compte.id,
-      compteNom:compte.nom,
-      icon:compte.icon || "📬",
-      demandeurUid:utilisateur.uid,
-      demandeurNom:utilisateurNom,
-      objet,
-      participants,
-      statut:"ouvert"
-    };
-    data.titre=titreConversationGenerique(compte.nom,data);
-
-    const ref=await addDoc(collection(db,"messageries"),{
-      ...data,
-      lastMessage:"",
-      createdAt:serverTimestamp(),
-      updatedAt:serverTimestamp()
-    });
-
-    const champObjet=document.getElementById("nouveau-objet");
-    if(champObjet) champObjet.value="";
-    ouvrirConversation(ref.id,data);
-    fermerNouveauMessage();
-  }catch(e){
-    console.error("Création discussion compte général :",e);
-    alert("Impossible de créer la discussion.");
-  }
-};
-
-function basculerFiltreCompte(id){
-  filtreCompteId=(filtreCompteId===id) ? null : id;
-  afficherComptesPartages();
-  afficherListeConversations();
-}
-
-function estMembreCompteGeneral(data){
-  const compte=comptesGeneriquesAttribues.find(c=>c.id===data.compteGeneriqueId);
-  return !!compte && (compte.membres || []).includes(utilisateur.uid);
-}
-
-function compteGeneralActif(data){
-  return comptesGeneriquesDisponibles.find(c=>c.id===data.compteGeneriqueId) ||
-         comptesGeneriquesAttribues.find(c=>c.id===data.compteGeneriqueId);
-}
-
-/*
-===========================
-LISTE CONVERSATIONS
-===========================
-*/
-
-
-document.getElementById("search")?.addEventListener("input",()=>{
-  const terme=(document.getElementById("search")?.value || "").toLowerCase();
-  document.querySelectorAll("#conversations .conversation").forEach(el=>{
-    el.style.display=el.textContent.toLowerCase().includes(terme) ? "" : "none";
-  });
-});
-
-
-function conversationVisible(c){
-  /* un message d'un compte d'envoi n'est visible que par son destinataire */
-  return !(c.type==="compte-administratif" && c.destinataireUid && c.destinataireUid!==utilisateur.uid);
-}
-
-function afficherFiltresStatut(){
-  const zone=document.getElementById("filtres-conv");
-  if(!zone) return;
-  zone.innerHTML="";
-  [["ouvert","Ouvertes"],["clos","Clôturées"],["tous","Toutes"]].forEach(([val,label])=>{
-    const b=document.createElement("button");
-    b.type="button";
-    b.textContent=label;
-    if(filtreStatut===val) b.classList.add("actif");
-    b.onclick=()=>{ filtreStatut=val; afficherFiltresStatut(); afficherListeConversations(); };
-    zone.appendChild(b);
-  });
-}
-
-function afficherListeConversations(){
-  const zone=document.getElementById("conversations");
-  if(!zone || !utilisateur) return;
-  zone.innerHTML="";
-
-  const liste=conversationsCache.filter(x=>{
-    const c=x.data;
-    if(!conversationVisible(c)) return false;
-    if(filtreCompteId && c.compteGeneriqueId!==filtreCompteId) return false;
-    const clos=c.statut==="clos";
-    if(filtreStatut==="ouvert" && clos) return false;
-    if(filtreStatut==="clos" && !clos) return false;
-    return true;
-  });
-
-  if(!liste.length){
-    zone.innerHTML='<div class="sans-discussion">Aucune discussion.</div>';
-    return;
-  }
-
-  liste.forEach(({id,data:c})=>{
-    const nonLus=(c.nonLus && c.nonLus[utilisateur.uid]) ? c.nonLus[utilisateur.uid] : 0;
-    const div=document.createElement("div");
-    div.className="conversation"+(nonLus>0 ? " non-lue" : "");
-    div.innerHTML=`
-<div class="avatar">${echapperHTML(c.icon || "💬")}</div>
-<div class="conv-text">
-<div class="conv-title">${echapperHTML(c.titre || "Discussion")}${c.statut==="clos" ? '<span class="tag-clos">🔒 clôturée</span>' : ""}</div>
-<div class="conv-last">${echapperHTML(c.lastMessage || "")}</div>
-</div>
-${nonLus>0 ? `<div class="badge">${nonLus}</div>` : ""}
-`;
-    div.onclick=()=>ouvrirConversation(id,c);
-    zone.appendChild(div);
-  });
-
-  document.getElementById("search")?.dispatchEvent(new Event("input"));
-}
-
-function chargerConversations(){
-  afficherFiltresStatut();
-
-  onSnapshot(
-    query(collection(db,"messageries"),where("participants","array-contains",utilisateur.uid)),
-    (snap)=>{
-      conversationsCache=snap.docs
-        .map(d=>({id:d.id,data:d.data()}))
-        .sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
-
-      let totalNonLus=0;
-      conversationsCache.forEach(({data:c})=>{
-        if(!conversationVisible(c)) return;
-        totalNonLus+=(c.nonLus && c.nonLus[utilisateur.uid]) ? c.nonLus[utilisateur.uid] : 0;
-      });
-
-      afficherListeConversations();
-      envoyerNonLusAuParent(totalNonLus);
-    }
-  );
-}
-
-function envoyerNonLusAuParent(total){
-
-
-try{
-
-window.parent.postMessage(
-
-{
-
-source:"messagerie",
-type:"non-lus",
-nonLus:total
-
-},
-
-ORIGINE_PARENT
-
-);
-
-}catch(e){
-
-/* pas de fenêtre parente, ou postMessage indisponible :
-   on ignore silencieusement */
-
-}
-
-
-}
-
-
-
-
-
-
-/*
-===========================
-OUVERTURE CHAT
-===========================
-*/
-
-
-function ouvrirConversation(id,data){
-
-conversationActive=id;
-conversationDataActive=data;
-participantsActifs=data.participants || [];
-
-const compteGeneral=!!(data.type==="compte-generique" || data.compteGeneriqueId);
-const membreCompte=compteGeneral && estMembreCompteGeneral(data);
-const closee=data.statut==="clos";
-
-const titre=data.titre || data.compteNom || "Discussion";
-document.getElementById("chat-header").innerHTML=`${data.icon || "💬"} ${echapperHTML(titre)}`;
-
-const mode=document.getElementById("mode-envoi");
-if(mode){
-  if(compteGeneral){
-    mode.innerHTML=membreCompte
-      ? `Compte général · <strong>${echapperHTML(data.compteNom || titre)}</strong> · vous pouvez répondre et clôturer`
-      : `Discussion avec <strong>${echapperHTML(data.compteNom || titre)}</strong>`;
-  }else{
-    mode.textContent="Message d'un compte d'envoi · lecture seule";
-  }
-}
-
-const inputZone=document.getElementById("input-zone");
-const input=document.getElementById("message-input");
-const bouton=inputZone?.querySelector("button");
-if(input){
-  input.disabled=closee || !compteGeneral;
-  input.placeholder=closee ? "Discussion clôturée" : (compteGeneral ? "Votre réponse..." : "Message d'un compte d'envoi : réponse impossible");
-}
-if(bouton){
-  bouton.disabled=closee || !compteGeneral;
-  bouton.textContent=closee ? "Clôturée" : "Répondre";
-}
-
-let action=document.getElementById("action-cloture");
-if(action) action.remove();
-if(compteGeneral && membreCompte && !closee){
-  action=document.createElement("button");
-  action.id="action-cloture";
-  action.type="button";
-  action.className="btn-cloturer";
-  action.textContent="🔒 Clôturer la discussion";
-  action.onclick=()=>cloturerDiscussion(conversationActive);
-  document.getElementById("chat-header").appendChild(action);
-}
-
-updateDoc(doc(db,"messageries",id),{[`nonLus.${utilisateur.uid}`]:0}).catch(()=>{});
-chargerMessages();
-}
-
-async function cloturerDiscussion(id){
-  if(!id || !conversationDataActive || !estMembreCompteGeneral(conversationDataActive)) return;
-  if(conversationDataActive.statut==="clos") return;
-  if(!confirm("Clôturer cette discussion ? Elle ne pourra plus recevoir de réponse.")) return;
-  try{
-    const texte="🔒 Discussion clôturée par "+utilisateurNom;
-    await addDoc(collection(db,"messageries",id,"messages"),{
-      auteur:"systeme",
-      auteurNom:"Système",
-      type:"message",
-      texte,
-      date:serverTimestamp(),
-      luPar:[utilisateur.uid]
-    });
-
-    const nonLus={};
-    (conversationDataActive.participants || []).filter(uid=>uid!==utilisateur.uid)
-      .forEach(uid=>{ nonLus[`nonLus.${uid}`]=increment(1); });
-
-    await updateDoc(doc(db,"messageries",id),{
-      statut:"clos",
-      closedBy:utilisateur.uid,
-      closedAt:serverTimestamp(),
-      lastMessage:texte,
-      updatedAt:serverTimestamp(),
-      ...nonLus
-    });
-    conversationDataActive={...conversationDataActive,statut:"clos"};
-    ouvrirConversation(id,conversationDataActive);
-  }catch(e){
-    console.error("Clôture discussion :",e);
-    alert("Impossible de clôturer la discussion.");
-  }
-}
-
-function chargerMessages(){
-
-
-const zone=
-document.getElementById("messages");
-
-
-zone.innerHTML="";
-
-
-const q=query(
-
-collection(
-db,
-"messageries",
-conversationActive,
-"messages"
-),
-
-orderBy("date","asc")
-
-);
-
-
-
-if(unsubMessages) unsubMessages();
-unsubMessages=onSnapshot(q,async(snap)=>{
-
-
-zone.innerHTML="";
-
-
-/* on repère d'abord les messages de type "sondage",
-   ou portant une demande de réponse, pour charger les
-   documents correspondants */
-
-const idsSondages=[];
-const idsDemandesReponse=[];
-
-snap.forEach(m=>{
-
-const msg=m.data();
-
-if(msg.type==="sondage" && msg.sondageId){
-
-idsSondages.push(msg.sondageId);
-
-}
-
-if(msg.demandeReponseId){
-
-idsDemandesReponse.push(msg.demandeReponseId);
-
-}
-
-});
-
-
-const sondagesData={};
-
-await Promise.all(
-
-idsSondages.map(async(id)=>{
-
-const s=
-await getDoc(
-doc(db,"sondages",id)
-);
-
-if(s.exists()){
-
-sondagesData[id]=s.data();
-
-}
-
-})
-
-);
-
-
-const demandesReponseData={};
-
-await Promise.all(
-
-idsDemandesReponse.map(async(id)=>{
-
-const d=
-await getDoc(
-doc(db,"demandes-reponse",id)
-);
-
-if(d.exists()){
-
-demandesReponseData[id]=d.data();
-
-}
-
-})
-
-);
-
-
-
-snap.forEach(m=>{
-
-
-const msg=m.data();
-
-
-const div=
-document.createElement("div");
-
-
-div.className=
-"message "+
-((msg.auteur==utilisateur.uid)?"mine":"");
-
-
-let contenuHTML="";
-
-
-if(
-msg.type==="sondage" &&
-msg.sondageId &&
-sondagesData[msg.sondageId]
-){
-
-contenuHTML=
-creerSondageHTML(
-sondagesData[msg.sondageId],
-msg.sondageId
-);
-
-}else{
-
-contenuHTML=
-`<div>${echapperHTML(msg.texte)}</div>`;
-
-}
-
-
-
-let zoneReponseHTML="";
-
-if(
-msg.demandeReponseId &&
-demandesReponseData[msg.demandeReponseId]
-){
-
-zoneReponseHTML=
-creerZoneReponseHTML(
-demandesReponseData[msg.demandeReponseId],
-msg.demandeReponseId
-);
-
-}
-
-
-
-div.innerHTML=`
-
-<div class="author">
-
-${echapperHTML(msg.auteurNom)}
-
-</div>
-
-
-${contenuHTML}
-
-${zoneReponseHTML}
-
-
-<div class="date">
-
-${msg.date?.toDate?
-msg.date.toDate().toLocaleString():
-""}
-
-</div>
-
-`;
-
-
-
-zone.appendChild(div);
-
-
-
-if(
-msg.luPar &&
-!msg.luPar.includes(utilisateur.uid)
-){
-
-
-updateDoc(
-doc(
-db,
-"messageries",
-conversationActive,
-"messages",
-m.id
-),
-{
-
-luPar:
-arrayUnion(utilisateur.uid)
-
-}
-
-);
-
-
-if(msg.diffusionId){
-
-updateDoc(
-
-doc(db,"diffusions",msg.diffusionId),
-
-{
-
-[`statuts.${utilisateur.uid}.lu`]:
-true,
-
-[`statuts.${utilisateur.uid}.luLe`]:
-serverTimestamp()
-
-}
-
-).catch(()=>{});
-
-}
-
-
-if(msg.type==="sondage" && msg.sondageId){
-
-updateDoc(
-
-doc(db,"sondages",msg.sondageId),
-
-{
-
-[`statuts.${utilisateur.uid}.lu`]:
-true,
-
-[`statuts.${utilisateur.uid}.luLe`]:
-serverTimestamp()
-
-}
-
-).catch(()=>{});
-
-}
-
-
-}
-
-
-
-});
-
-
-zone.scrollTop=
-zone.scrollHeight;
-
-
-
-});
-
-
-}
-
-
-
-
-
-/*
-===========================
-AFFICHAGE / VOTE SONDAGES
-===========================
-*/
-
-
-function optionEstChoisie(monChoix,optionIndex){
-
-if(Array.isArray(monChoix)){
-return monChoix.includes(optionIndex);
-}
-
-return monChoix===optionIndex;
-
-}
-
-
-
-function nbVoixPourOption(reponses,optionIndex){
-
-return Object.values(reponses)
-.filter(v=>{
-
-if(Array.isArray(v)){
-return v.includes(optionIndex);
-}
-
-return v===optionIndex;
-
-}).length;
-
-}
-
-
-
-function creerOptionSondageHTML(sondageId,optionIndex,optionTexte,dejaVote,monChoix,pourcentage,nbVoix){
-
-
-if(dejaVote){
-
-const estMonChoix=
-optionEstChoisie(monChoix,optionIndex);
-
-return `
-
-<div class="sondage-option voted-option">
-
-<div class="sondage-bar" style="width:${pourcentage}%;"></div>
-
-<div class="sondage-option-label">
-<span>${optionTexte}${estMonChoix?" ✓":""}</span>
-<span>${pourcentage}% (${nbVoix})</span>
-</div>
-
-</div>
-
-`;
-
-}
-
-
-return `
-
-<button type="button" class="sondage-option"
-onclick="voterSondage('${sondageId}',${optionIndex})">
-
-${optionTexte}
-
-</button>
-
-`;
-
-
-}
-
-
-
-function creerSondageHTML(sondage,sondageId){
-
-
-const reponses=
-sondage.reponses || {};
-
-
-const estMultiple=
-sondage.type==="multiple";
-
-
-const dejaVote=
-!!utilisateur &&
-Object.prototype.hasOwnProperty.call(
-reponses,
-utilisateur.uid
-);
-
-
-const monChoix=
-dejaVote ? reponses[utilisateur.uid] : null;
-
-
-const totalReponses=
-Object.keys(reponses).length;
-
-
-let optionsHTML;
-
-
-if(dejaVote || !estMultiple){
-
-/* résultats déjà votés (simple ou multiple),
-   ou vote à choix simple (clic direct) */
-
-optionsHTML=
-(sondage.options || [])
-.map((opt,i)=>{
-
-const nbVoix=
-nbVoixPourOption(reponses,i);
-
-const pourcentage=
-totalReponses>0 ?
-Math.round((nbVoix/totalReponses)*100) :
-0;
-
-return creerOptionSondageHTML(
-sondageId,
-i,
-opt,
-dejaVote,
-monChoix,
-pourcentage,
-nbVoix
-);
-
-})
-.join("");
-
-
-}else{
-
-/* vote à choix multiple, pas encore répondu :
-   cases à cocher + bouton de validation */
-
-const casesHTML=
-(sondage.options || [])
-.map((opt,i)=>`
-
-<label class="sondage-checkbox-ligne">
-<input type="checkbox" class="sondage-checkbox" value="${i}">
-<span>${opt}</span>
-</label>
-
-`)
-.join("");
-
-
-optionsHTML=`
-
-<div class="sondage-choix-multiple">
-
-${casesHTML}
-
-<button type="button" class="sondage-valider"
-onclick="voterSondageMultiple('${sondageId}')">
-
-Valider mes réponses
-
-</button>
-
-</div>
-
-`;
-
-
-}
-
-
-
-return `
-
-<div class="sondage" data-sondage-id="${sondageId}">
-
-<div class="sondage-question">
-📊 ${sondage.question || ""}
-${estMultiple?
-`<span class="sondage-tag">choix multiple</span>`:
-""}
-</div>
-
-${optionsHTML}
-
-<div class="sondage-note">
-${dejaVote ?
-"Vous avez déjà répondu à ce sondage." :
-(estMultiple ?
-"Cochez une ou plusieurs options puis validez." :
-"Cliquez sur une option pour répondre.")}
-</div>
-
-</div>
-
-`;
-
-
-}
-
-
-
-window.voterSondage=async(sondageId,optionIndex)=>{
-
-
-if(!utilisateur)
-return;
-
-
-await updateDoc(
-
-doc(db,"sondages",sondageId),
-
-{
-
-[`reponses.${utilisateur.uid}`]:
-optionIndex
-
-}
-
-);
-
-
-await rafraichirSondage(sondageId);
-
-
-};
-
-
-
-window.voterSondageMultiple=async(sondageId)=>{
-
-
-if(!utilisateur)
-return;
-
-
-const container=
-document.querySelector(
-`.sondage[data-sondage-id="${sondageId}"]`
-);
-
-
-if(!container)
-return;
-
-
-const indices=
-Array.from(
-container.querySelectorAll(".sondage-checkbox:checked")
-)
-.map(c=>parseInt(c.value,10));
-
-
-if(indices.length===0){
-alert("Veuillez cocher au moins une option.");
-return;
-}
-
-
-await updateDoc(
-
-doc(db,"sondages",sondageId),
-
-{
-
-[`reponses.${utilisateur.uid}`]:
-indices
-
-}
-
-);
-
-
-await rafraichirSondage(sondageId);
-
-
-};
-
-
-
-async function rafraichirSondage(sondageId){
-
-
-const snap=
-await getDoc(
-doc(db,"sondages",sondageId)
-);
-
-
-if(!snap.exists())
-return;
-
-
-const sondage=
-snap.data();
-
-
-document
-.querySelectorAll(`[data-sondage-id="${sondageId}"]`)
-.forEach(el=>{
-
-el.outerHTML=
-creerSondageHTML(sondage,sondageId);
-
-});
-
-
-}
-
-
-
-/*
-===========================
-DEMANDES DE RÉPONSE
-===========================
-*/
-
-
-function echapperHTML(texte){
-
-
-const div=
-document.createElement("div");
-
-div.textContent=
-texte || "";
-
-return div.innerHTML;
-
-
-}
-
-
-
-function creerZoneReponseHTML(demande,demandeId){
-
-
-const reponses=
-demande.reponses || {};
-
-
-const dejaRepondu=
-!!utilisateur &&
-Object.prototype.hasOwnProperty.call(
-reponses,
-utilisateur.uid
-);
-
-
-const monTexte=
-dejaRepondu ?
-(reponses[utilisateur.uid].texte || "") :
-"";
-
-
-const maxAttr=
-demande.maxCaracteres ?
-`maxlength="${demande.maxCaracteres}"` :
-"";
-
-
-const compteurHTML=
-demande.maxCaracteres ?
-`<div class="compteur-caracteres" data-max="${demande.maxCaracteres}">${monTexte.length}/${demande.maxCaracteres}</div>` :
-"";
-
-
-const formulaireHTML=`
-
-<div class="formulaire-reponse" style="display:none;">
-
-<textarea class="reponse-textarea" ${maxAttr}
-oninput="miseAJourCompteurReponse(this)">${echapperHTML(monTexte)}</textarea>
-
-${compteurHTML}
-
-<button type="button"
-onclick="envoyerReponse('${demandeId}')">
-Envoyer la réponse
-</button>
-
-</div>
-
-`;
-
-
-
-if(dejaRepondu){
-
-
-const peutModifier=
-demande.modifiable===true;
-
-
-return `
-
-<div class="zone-reponse" data-demande-id="${demandeId}">
-
-<div class="reponse-donnee">
-<span class="reponse-label">Votre réponse :</span>
-${echapperHTML(monTexte)}
-</div>
-
-${peutModifier ?
-`<button type="button" class="lien-reponse"
-onclick="basculerFormulaireReponse('${demandeId}')">
-Modifier ma réponse
-</button>` :
-`<div class="reponse-note">Réponse enregistrée, non modifiable.</div>`
-}
-
-${formulaireHTML}
-
-</div>
-
-`;
-
-
-}
-
-
-
-return `
-
-<div class="zone-reponse" data-demande-id="${demandeId}">
-
-<button type="button" class="lien-reponse"
-onclick="basculerFormulaireReponse('${demandeId}')">
-Répondre
-</button>
-
-${formulaireHTML}
-
-</div>
-
-`;
-
-
-}
-
-
-
-window.miseAJourCompteurReponse=(textarea)=>{
-
-
-const zone=
-textarea.parentElement.querySelector(".compteur-caracteres");
-
-
-if(!zone)
-return;
-
-
-const max=
-zone.dataset.max;
-
-
-zone.textContent=
-`${textarea.value.length}/${max}`;
-
-
-};
-
-
-
-window.basculerFormulaireReponse=(demandeId)=>{
-
-
-const container=
-document.querySelector(
-`.zone-reponse[data-demande-id="${demandeId}"]`
-);
-
-
-if(!container)
-return;
-
-
-const formulaire=
-container.querySelector(".formulaire-reponse");
-
-
-formulaire.style.display=
-(formulaire.style.display==="none") ?
-"block" :
-"none";
-
-
-};
-
-
-
-window.envoyerReponse=async(demandeId)=>{
-
-
-if(!utilisateur)
-return;
-
-
-const container=
-document.querySelector(
-`.zone-reponse[data-demande-id="${demandeId}"]`
-);
-
-
-if(!container)
-return;
-
-
-const textarea=
-container.querySelector(".reponse-textarea");
-
-
-const texte=
-textarea.value.trim();
-
-
-if(!texte){
-alert("Veuillez saisir une réponse avant d'envoyer.");
-return;
-}
-
-
-await updateDoc(
-
-doc(db,"demandes-reponse",demandeId),
-
-{
-
-[`reponses.${utilisateur.uid}`]:
-{
-
-texte,
-date:
-serverTimestamp()
-
-}
-
-}
-
-);
-
-
-await rafraichirZoneReponse(demandeId);
-
-
-};
-
-
-
-async function rafraichirZoneReponse(demandeId){
-
-
-const snap=
-await getDoc(
-doc(db,"demandes-reponse",demandeId)
-);
-
-
-if(!snap.exists())
-return;
-
-
-const demande=
-snap.data();
-
-
-document
-.querySelectorAll(`.zone-reponse[data-demande-id="${demandeId}"]`)
-.forEach(el=>{
-
-el.outerHTML=
-creerZoneReponseHTML(demande,demandeId);
-
-});
-
-
-}
-
-
-
-
-
-
-/*
-===========================
-ENVOI MESSAGE
-===========================
-*/
-
-
+window.cloturer=()=>{if(!act||!membre(actD)||actD.statut==="clos")return;
+ confirmer("Clôturer cette discussion ?","Elle ne pourra plus recevoir de réponse.",async()=>{try{
+  const t="Discussion clôturée par "+UN;
+  await addDoc(collection(db,"messageries",act,"messages"),{auteur:"systeme",auteurNom:"Système",type:"message",texte:t,date:serverTimestamp(),luPar:[U.uid]});
+  const n={};(actD.participants||[]).filter(u=>u!==U.uid).forEach(u=>n[`nonLus.${u}`]=increment(1));
+  await updateDoc(doc(db,"messageries",act),{statut:"clos",closedBy:U.uid,closedAt:serverTimestamp(),lastMessage:t,updatedAt:serverTimestamp(),...n});
+  actD={...actD,statut:"clos"};ouvrir(act,actD)}catch(e){toast("Impossible de clôturer la discussion.",1)}})};
 window.envoyerMessage=async()=>{
-  if(!conversationActive || !conversationDataActive || !utilisateur) return;
+ const t=$("mi").value.trim();if(!act||!actD||!t||actD.statut==="clos"||!isGen(actD))return;
+ const n=membre(actD)?UN+" · "+(actD.compteNom||""):UN,p=(actD.participants||[]).filter(u=>u!==U.uid),nn={};p.forEach(u=>nn[`nonLus.${u}`]=increment(1));
+ try{await addDoc(collection(db,"messageries",act,"messages"),{auteur:U.uid,auteurNom:n,type:"message",texte:t,date:serverTimestamp(),luPar:[U.uid]});
+  await updateDoc(doc(db,"messageries",act),{lastMessage:t,updatedAt:serverTimestamp(),...nn});p.forEach(notif);$("mi").value=""}catch(e){toast("Impossible d'envoyer la réponse.",1)}};
+$("mi").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))envoyerMessage()});
 
-  if(conversationDataActive.statut==="clos"){
-    alert("Cette discussion est clôturée.");
-    return;
-  }
+/* sondages / réponses côté destinataire */
+const voixOpt=(r,i)=>Object.values(r).filter(v=>Array.isArray(v)?v.includes(i):v===i).length;
+function sondHTML(s,id){
+ const r=s.reponses||{},dv=Object.prototype.hasOwnProperty.call(r,U.uid),tot=Object.keys(r).length,mul=s.type==="multiple",mc=r[U.uid];
+ let o;
+ if(dv||!mul)o=(s.options||[]).map((t,i)=>{const n=voixOpt(r,i),p=tot?Math.round(n/tot*100):0,ch=Array.isArray(mc)?mc.includes(i):mc===i;
+  return dv?`<div class="opt"><div class="bar" style="width:${p}%"></div><span><b>${esc(t)}${ch?" ✓":""}</b><b>${p}% (${n})</b></span></div>`:`<button class="opt" onclick="voter('${id}',${i})"><span>${esc(t)}</span></button>`}).join("");
+ else o=`<div data-s="${id}">`+(s.options||[]).map((t,i)=>`<label class="chk"><input type="checkbox" value="${i}">${esc(t)}</label>`).join("")+`<button class="btn sec" style="margin-top:8px" onclick="voterMul('${id}',this)">Valider mes réponses</button></div>`;
+ return `<div class="q">${esc(s.question)}${mul?" (choix multiple)":""}</div>${o}<div class="note">${dv?"Vous avez répondu à ce sondage.":mul?"Cochez une ou plusieurs options.":"Touchez une option pour répondre."}</div>`}
+async function majDoc(col,id,c){const r=await getDoc(doc(db,col,id));if(r.exists())c[id]=r.data();rendu()}
+window.voter=async(id,i)=>{await updateDoc(doc(db,"sondages",id),{[`reponses.${U.uid}`]:i});majDoc("sondages",id,SD)};
+window.voterMul=async(id,b)=>{const v=[...b.parentElement.querySelectorAll("input:checked")].map(c=>+c.value);if(!v.length)return toast("Cochez au moins une option.",1);
+ await updateDoc(doc(db,"sondages",id),{[`reponses.${U.uid}`]:v});majDoc("sondages",id,SD)};
+function repHTML(d,id){
+ const r=d.reponses||{},dr=Object.prototype.hasOwnProperty.call(r,U.uid),t=dr?r[U.uid].texte||"":"",mx=d.maxCaracteres?`maxlength="${d.maxCaracteres}"`:"";
+ const f=`<div class="rf" style="display:${dr?"none":"block"}"><textarea rows="3" ${mx}>${esc(t)}</textarea><button class="btn" style="margin-top:6px" onclick="repondre('${id}',this)">Envoyer la réponse</button></div>`;
+ return `<div class="rep">${dr?`<div><b>Votre réponse :</b> ${esc(t)}</div>`+(d.modifiable?`<button class="lk" onclick="this.nextElementSibling.style.display='block'">Modifier ma réponse</button>`:'<div class="note">Réponse enregistrée, non modifiable.</div>'):""}${f}</div>`}
+window.repondre=async(id,b)=>{const t=b.parentElement.querySelector("textarea").value.trim();if(!t)return toast("Saisissez une réponse avant d'envoyer.",1);
+ await updateDoc(doc(db,"demandes-reponse",id),{[`reponses.${U.uid}`]:{texte:t,date:serverTimestamp()}});majDoc("demandes-reponse",id,DR)};
 
-  const compteGeneral=!!(conversationDataActive.type==="compte-generique" || conversationDataActive.compteGeneriqueId);
-  if(!compteGeneral){
-    alert("Cette discussion ne peut pas recevoir de réponse depuis cette messagerie.");
-    return;
-  }
+/* ---------- modale : nouvelle discussion ---------- */
+window.ouvrirNouvelle=()=>{if(!genAll.length)return toast("Aucun compte général actif n'est disponible.",1);
+ $("nCompte").innerHTML=genAll.map(c=>`<option value="${c.id}">${esc((c.icon||"📬")+" "+c.nom)}</option>`).join("");majDesc();dNew.showModal()};
+const majDesc=()=>{$("nDesc").textContent=genAll.find(c=>c.id===$("nCompte").value)?.description||""};$("nCompte").onchange=majDesc;
+window.creerDiscussion=async()=>{
+ const c=genAll.find(x=>x.id===$("nCompte").value);if(!c)return;const objet=$("nObjet").value.trim();
+ try{const s=await getDocs(query(collection(db,"messageries"),where("compteGeneriqueId","==",c.id),where("demandeurUid","==",U.uid)));
+  const o=s.docs.map(d=>({id:d.id,data:d.data()})).filter(x=>x.data.statut!=="clos").sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
+  if(o.length){dNew.close();fCompte=null;ouvrir(o[0].id,o[0].data);return toast("Une discussion est déjà ouverte avec ce compte.")}
+  const d={type:"compte-generique",compteGeneriqueId:c.id,compteNom:c.nom,icon:c.icon||"📬",demandeurUid:U.uid,demandeurNom:UN,objet,participants:[...new Set([U.uid,...(c.membres||[])])],statut:"ouvert"};
+  d.titre=c.nom+" · "+UN+(objet?" — "+objet:"");
+  const r=await addDoc(collection(db,"messageries"),{...d,lastMessage:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  $("nObjet").value="";dNew.close();ouvrir(r.id,d)}catch(e){toast("Impossible de créer la discussion.",1)}};
 
-  const input=document.getElementById("message-input");
-  const texte=input.value.trim();
-  if(!texte) return;
+/* ---------- modale : composer (comptes d'envoi) ---------- */
+window.ouvrirComposer=k=>{$("cCompte").innerHTML=admAttr.map(c=>`<option value="${c.id}">${esc((c.icon||"🔐")+" "+c.nom)}</option>`).join("");
+ $("cType").innerHTML='<option value="">Tous les types</option>'+Object.entries(TYPES).map(([i,l])=>`<option value="${i}">${l}</option>`).join("");
+ sel.clear();$("sOpts").innerHTML="";ajouterOption();ajouterOption();modeC(k);pick();dComp.showModal()};
+function modeC(k){cMode=k;$("pMsg").style.display=k==="message"?"block":"none";$("pSond").style.display=k==="sondage"?"block":"none";
+ $("cTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.k===k));$("cGo").textContent=k==="message"?"Envoyer le message":"Envoyer le sondage"}
+$("cTabs").onclick=e=>{if(e.target.dataset.k)modeC(e.target.dataset.k)};
+const filtres=()=>{const q=$("cQ").value.toLowerCase(),t=$("cType").value;return users.filter(u=>(!t||u.type===t)&&`${u.nom||""} ${u.email||""}`.toLowerCase().includes(q))};
+function pick(){const l=filtres(),tous=$("cTous").checked;
+ $("cPick").innerHTML=l.map(u=>`<label><input type="checkbox" value="${u.uid}" ${sel.has(u.uid)||tous?"checked":""} ${tous?"disabled":""}><span>${esc(u.nom)} <small style="color:var(--mut)">${esc(TYPES[u.type]||u.type||"")}</small></span></label>`).join("")||'<div class="vide">Aucun utilisateur.</div>';
+ $("cN").textContent=`(${tous?l.length:sel.size} sélectionné${(tous?l.length:sel.size)>1?"s":""})`}
+["cQ","cType","cTous"].forEach(i=>$(i).addEventListener("input",pick));
+$("cPick").onchange=e=>{e.target.checked?sel.add(e.target.value):sel.delete(e.target.value);pick()};
+$("cDem").onchange=e=>$("cDemO").style.display=e.target.checked?"grid":"none";
+window.ajouterOption=()=>{const d=document.createElement("div");d.style.cssText="display:flex;gap:6px;margin-top:6px";d.innerHTML=`<input class="so" placeholder="Option"><button class="btn sec" onclick="this.parentElement.remove()" aria-label="Retirer">✕</button>`;$("sOpts").appendChild(d)};
+async function conv(uid,c){
+ const s=await getDocs(query(collection(db,"messageries"),where("compteId","==",c.id),where("destinataireUid","==",uid)));if(!s.empty)return s.docs[0].id;
+ const t=c.nom+" · "+nom(uid),a=await getDocs(query(collection(db,"messageries"),where("compteId","==",c.id),where("participants","array-contains",uid))),old=a.docs.find(d=>!d.data().destinataireUid&&d.data().titre===t);
+ if(old){await updateDoc(old.ref,{destinataireUid:uid,participants:[uid]});return old.id}
+ return (await addDoc(collection(db,"messageries"),{type:"compte-administratif",participants:[uid],destinataireUid:uid,compteId:c.id,compteNom:c.nom,titre:t,icon:c.icon,lastMessage:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()})).id}
+window.envoyerDiffusion=async()=>{
+ const c=admAttr.find(x=>x.id===$("cCompte").value),dest=$("cTous").checked?filtres().map(u=>u.uid):[...sel];
+ if(!c)return toast("Choisissez un compte d'envoi.",1);if(!dest.length)return toast("Sélectionnez au moins un destinataire.",1);
+ const st={};dest.forEach(u=>st[u]={distribue:true,lu:false,luLe:null});let last,extra={},ms;
+ const msg=cMode==="message",txt=$("cTxt").value.trim(),q=$("sQ").value.trim(),opts=[...document.querySelectorAll(".so")].map(i=>i.value.trim()).filter(Boolean);
+ if(msg&&!txt)return toast("Saisissez un message.",1);if(!msg&&(!q||opts.length<2))return toast("Une question et au moins 2 options sont nécessaires.",1);
+ $("cGo").disabled=true;
+ try{
+  if(msg){
+   if($("cDem").checked){const mx=$("cMax").value;extra.demandeReponseId=(await addDoc(collection(db,"demandes-reponse"),{texteConsigne:txt,compteId:c.id,compteNom:c.nom,maxCaracteres:mx?+mx:null,modifiable:$("cMod").checked,destinataires:dest,reponses:{},createdAt:serverTimestamp()})).id}
+   extra.diffusionId=(await addDoc(collection(db,"diffusions"),{type:"message",texte:txt,compteId:c.id,compteNom:c.nom,destinataires:dest,statuts:st,createdAt:serverTimestamp()})).id;
+   ms={type:"message",texte:txt};last=txt}
+  else{extra.sondageId=(await addDoc(collection(db,"sondages"),{question:q,options:opts,type:$("sMul").checked?"multiple":"simple",compteId:c.id,compteNom:c.nom,destinataires:dest,reponses:{},statuts:st,createdAt:serverTimestamp()})).id;ms={type:"sondage"};last="📊 Sondage : "+q}
+  for(const u of dest){const id=await conv(u,c);
+   await addDoc(collection(db,"messageries",id,"messages"),{auteur:c.id,auteurNom:c.nom,...ms,...extra,date:serverTimestamp(),luPar:[]});
+   await updateDoc(doc(db,"messageries",id),{lastMessage:last,updatedAt:serverTimestamp(),[`nonLus.${u}`]:increment(1)});notif(u)}
+  toast((msg?"Message":"Sondage")+" envoyé à "+dest.length+" utilisateur(s).");
+  ["cTxt","sQ","cMax"].forEach(i=>$(i).value="");$("cDem").checked=false;$("cDemO").style.display="none";dComp.close()
+ }catch(e){console.error(e);toast("Échec de l'envoi.",1)}$("cGo").disabled=false};
 
-  /* un membre du compte signe au nom du compte */
-  const membre=estMembreCompteGeneral(conversationDataActive);
-  const auteurNom=membre
-    ? utilisateurNom+" · "+(conversationDataActive.compteNom || "")
-    : utilisateurNom;
-
-  try{
-    await addDoc(
-      collection(db,"messageries",conversationActive,"messages"),
-      {
-        auteur:utilisateur.uid,
-        auteurNom,
-        type:"message",
-        texte,
-        date:serverTimestamp(),
-        luPar:[utilisateur.uid]
-      }
-    );
-
-    const autresParticipants=participantsActifs.filter(uid=>uid!==utilisateur.uid);
-    const misAJourNonLus={};
-    autresParticipants.forEach(uid=>{
-      misAJourNonLus[`nonLus.${uid}`]=increment(1);
-    });
-
-    await updateDoc(doc(db,"messageries",conversationActive),{
-      lastMessage:texte,
-      updatedAt:serverTimestamp(),
-      ...misAJourNonLus
-    });
-
-    autresParticipants.forEach(uid=>envoyerNotification(uid,"🔔 Nouveau message","Ouvrez GestUrg2 pour le consulter !"));
-
-    input.value="";
-  }catch(e){
-    console.error("Envoi réponse :",e);
-    alert("Impossible d'envoyer la réponse.");
-  }
-};
-
-
-
+/* ---------- modale : suivi ---------- */
+function suivre(){
+ const ids=admAttr.map(c=>c.id);if(!ids.length)return;
+ [["diffusions",v=>diffs=v],["sondages",v=>sonds=v],["demandes-reponse",v=>dems=v]].forEach(([n,set])=>
+  onSnapshot(query(collection(db,n),where("compteId","in",ids)),s=>{set(s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)));if(dSuivi.open)suiviRendu()},()=>{}))}
+window.ouvrirSuivi=()=>{suiviRendu();dSuivi.showModal()};
+$("sTabs").onclick=e=>{if(e.target.dataset.k){sTab=e.target.dataset.k;suiviRendu()}};
+const repTxt=(s,u)=>{const r=(s.reponses||{})[u];return r===undefined?"":Array.isArray(r)?r.map(i=>s.options[i]).filter(Boolean).join(", "):(s.options[r]||"")};
+const dte=x=>x?.toDate?x.toDate().toLocaleString("fr-FR"):"";
+function suiviRendu(){
+ $("sTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.k===sTab));
+ const card=(t,meta,det)=>`<div class="card"><b>${esc(t)}</b><small>${meta}</small><details><summary>Voir le détail</summary>${det}</details></div>`;
+ let h="";
+ if(sTab==="hist"){const it=[...diffs.map(d=>({...d,_s:0})),...sonds.map(d=>({...d,_s:1}))].sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+  h=it.map(d=>{const dest=d.destinataires||[],lu=Object.values(d.statuts||{}).filter(s=>s.lu).length;
+   return card((d._s?"Sondage : "+d.question:d.texte),`${esc(d.compteNom||"")}, ${dte(d.createdAt)}, ${lu}/${dest.length} lus`,dest.map(u=>{const s=(d.statuts||{})[u]||{};return `<div class="dl"><span>${esc(nom(u))}</span><span>${s.lu?"Lu":"Non lu"}${d._s&&repTxt(d,u)?", "+esc(repTxt(d,u)):""}</span></div>`}).join(""))}).join("")}
+ if(sTab==="sond")h=sonds.map(s=>{const r=s.reponses||{},t=Object.keys(r).length;
+  return card(s.question,`${esc(s.compteNom||"")}, ${s.type==="multiple"?"choix multiple":"choix simple"}, ${t}/${(s.destinataires||[]).length} réponses`,
+   (s.options||[]).map((o,i)=>{const n=voixOpt(r,i);return `<div class="dl"><span>${esc(o)}</span><span>${t?Math.round(n/t*100):0}% (${n})</span></div>`}).join("")+`<div style="margin-top:8px"><b>Par personne</b></div>`+(s.destinataires||[]).map(u=>`<div class="dl"><span>${esc(nom(u))}</span><span>${esc(repTxt(s,u))||"Pas encore répondu"}</span></div>`).join(""))}).join("");
+ if(sTab==="rep")h=dems.map(d=>{const r=d.reponses||{};
+  return card(d.texteConsigne,`${esc(d.compteNom||"")}, ${d.maxCaracteres?d.maxCaracteres+" car. max":"sans limite"}, ${d.modifiable?"modifiable":"non modifiable"}, ${Object.keys(r).length}/${(d.destinataires||[]).length} réponses`,
+   (d.destinataires||[]).map(u=>`<div class="dl"><span>${esc(nom(u))}</span><span>${r[u]?esc(r[u].texte)+" ("+dte(r[u].date)+")":"En attente"}</span></div>`).join(""))}).join("");
+ $("sBody").innerHTML=h||'<div class="vide">Rien à afficher pour le moment.</div>';
+}
+window.app=$("app");window.dNew=$("dNew");window.dComp=$("dComp");window.dSuivi=$("dSuivi");window.dConf=$("dConf");
 </script>
-
-
 </body>
 </html>

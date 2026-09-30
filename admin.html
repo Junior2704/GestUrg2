@@ -964,7 +964,8 @@ const app = getApps().length
   : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
+const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+const secondaryAuth = getAuth(secondaryApp);
 // ==============================
 // 🔐 CONTRÔLE D'ACCÈS À LA PAGE (auth + droits Firestore)
 // ==============================
@@ -1252,29 +1253,55 @@ async function envoyerMailResetEmailJS(email, nom, motDePasseTemp) {
 </html>`;
   
 
-  const comptesEmailJS = [
-    { serviceID: "service_o07vuso", templateID: "template_vj03i4u", publicKey: "CZapZCcxYfJ8-acLS" },
-    { serviceID: "service_o3i8ac9", templateID: "template_0wbzbwe", publicKey: "j5G-06rjQm0P6wriE" },
-    { serviceID: "service_qij0y5a", templateID: "template_3qdes3p", publicKey: "nh2zkdRVJcGcE-Jwe" }
-  ];
+ try {
 
-  for (const compte of comptesEmailJS) {
-    try {
-      await emailjs.send(compte.serviceID, compte.templateID, {
-        to_email: email,
+  const response = await fetch(
+    "https://gesturg2-server.onrender.com/api/mail/send",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        to: email,
         subject: "Votre compte GestUrg2 est prêt !",
-        html_message: htmlMessage,
-        from_email: "no-reply@gesturg2.com"
-      }, compte.publicKey);
-      afficherBulle(`📨 Email envoyé à ${email}`, "administratif");
-      break; // Stop après envoi réussi
-    } catch (err) {
-      console.warn(`⚠ Échec ${compte.serviceID} -> ${err.text || err}`);
-      // si erreur de quota, essayer le compte suivant
-      if ((err.text || "").toLowerCase().includes("quota")) continue;
-      else break;
+        html: htmlMessage
+      })
     }
+  );
+
+
+  const result = await response.json();
+
+
+  if (!response.ok || !result.success) {
+
+    throw new Error(
+      result.error || "Erreur lors de l'envoi de l'e-mail"
+    );
+
   }
+
+
+  afficherBulle(
+    `📨 Email envoyé à ${email}`,
+    "administratif"
+  );
+
+  
+
+
+} catch (err) {
+
+  console.warn(
+    `⚠ Échec envoi mail -> ${err.message || err}`
+  );
+
+
+
+}
 }
 window.marquerSuppression = async (uid, email) => {
   const confirmation = confirm(`Voulez-vous marquer le compte de ${email} comme supprimé ?`);
@@ -1539,57 +1566,137 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 document.getElementById("createUserBtn").addEventListener("click", async () => {
+
   const email = newEmail.value.trim();
   const nom = newNom.value.trim();
-   const nom2 = newNom2.value.trim();
- const prenom = newPrenom.value.trim();
-   const specialite = newSpecialite.value.trim();
+  const nom2 = newNom2.value.trim();
+  const prenom = newPrenom.value.trim();
+  const specialite = newSpecialite.value.trim();
   const lieu = newLieu.value.trim();
   const type = newType.value;
 
   if (!email || !nom) {
-    afficherBulle("Veuillez remplir les champs obligatoires", "alerte");
+    afficherBulle(
+      "Veuillez remplir les champs obligatoires",
+      "alerte"
+    );
     return;
   }
 
   try {
-    // --- Mot de passe temporaire aléatoire
-    const motDePasseTemp = "Temp" + Math.floor(Math.random() * 9000 + 1000) + "!";
 
-    // --- Création utilisateur Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, email, motDePasseTemp);
+    // ==========================================
+    // MOT DE PASSE TEMPORAIRE
+    // ==========================================
+
+    const motDePasseTemp =
+      "Temp" +
+      Math.floor(Math.random() * 9000 + 1000) +
+      "!";
+
+
+    // ==========================================
+    // CRÉATION DU COMPTE
+    // SUR L'INSTANCE FIREBASE SECONDAIRE
+    // ==========================================
+
+    const userCredential =
+      await createUserWithEmailAndPassword(
+        secondaryAuth,
+        email,
+        motDePasseTemp
+      );
+
     const newUser = userCredential.user;
-    console.log("✅ Utilisateur créé :", newUser.uid);
 
-    // --- Enregistrement Firestore
-    await setDoc(doc(db, "medecins", newUser.uid), {
-      nom,
-      nom2,
-      prenom,
-      email,
-      specialite,
-      lieu,
-      type,
-      préférenceConnexion:"mdp",
-      pages: {},
-      doitChangerMDP: true
+    console.log(
+      "✅ Utilisateur créé :",
+      newUser.uid
+    );
+
+
+    // ==========================================
+    // FIRESTORE
+    // ==========================================
+
+    await setDoc(
+      doc(db, "medecins", newUser.uid),
+      {
+        nom,
+        nom2,
+        prenom,
+        email,
+        specialite,
+        lieu,
+        type,
+        préférenceConnexion: "mdp",
+        pages: {},
+        doitChangerMDP: true
+      }
+    );
+
+
+    // ==========================================
+    // MESSAGE SYSTÈME
+    // ==========================================
+
+    await envoyerMessageSysteme({
+      compteId: "systeme",
+
+      texte:
+        `Bienvenue dans GestUrg2 ! Vous êtes actuellement dans votre messagerie. Ici les administrateurs des différents services de l'hôpital peuvent vous envoyer des messages.
+Pensez à la consulter régulièrement !`,
+
+      destinataires: [newUser.uid]
     });
-await envoyerMessageSysteme({
-    compteId: "systeme",
-    texte: `Bienvenue dans GestUrg2 ! Vous êtes actuellement dans votre messagerie. Ici les administrateurs des différents services de l'hôpital peuvent vous envoyer des messages.
-     Pensez à la consulter régulièrement !`,
-    destinataires: [uid]
-  });
-    // --- Envoi email via EmailJS
-    await envoyerMailResetEmailJS(email, nom, motDePasseTemp);
 
-    afficherBulle("Utilisateur créé ✔️ — email de réinitialisation envoyé", "administratif");
+
+    // ==========================================
+    // DÉCONNEXION DE L'INSTANCE SECONDAIRE
+    // ==========================================
+
+    await secondaryAuth.signOut();
+
+
+    // ==========================================
+    // EMAIL
+    // ==========================================
+
+    await envoyerMailResetEmailJS(
+      email,
+      nom,
+      motDePasseTemp
+    );
+
+
+    // ==========================================
+    // FIN
+    // ==========================================
+
+    afficherBulle(
+      "Utilisateur créé ✔️ — email envoyé",
+      "administratif"
+    );
+
     chargerUtilisateurs();
+
+
   } catch (err) {
-    console.error("❌ ERREUR:", err);
-    afficherBulle("Erreur : " + err.message, "alerte");
+
+    console.error(
+      "❌ ERREUR création utilisateur :",
+      err
+    );
+
+    afficherBulle(
+      "Erreur : " + (err.message || err),
+      "alerte"
+    );
+
   }
+
 });
+
 async function envoyerNotification(userId, title, body) {
 
     try {

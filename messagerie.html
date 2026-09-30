@@ -194,7 +194,12 @@ function ouvrir(id,d){
 function rendu(){
  const z=$("msgs"),bas=z.scrollHeight-z.scrollTop-z.clientHeight<80;
  z.innerHTML=MSGS.map(x=>{
-  if(x.auteur==="systeme")return `<div class="m sys">${esc(x.texte)}</div>`;
+if(
+    x.auteur === "systeme" &&
+    x.type === "systeme"
+){
+    return `<div class="m sys">${esc(x.texte)}</div>`;
+}
   const body=x.type==="sondage"&&SD[x.sondageId]?sondHTML(SD[x.sondageId],x.sondageId):`<div class="tx">${esc(x.texte)}</div>`;
   const r=x.demandeReponseId&&DR[x.demandeReponseId]?repHTML(DR[x.demandeReponseId],x.demandeReponseId):"";
   return `<div class="m ${x.auteur===U.uid?"me":""}"><div class="au">${esc(x.auteurNom)}</div>${body}${r}<div class="dt">${x.date?.toDate?x.date.toDate().toLocaleString("fr-FR"):""}</div></div>`}).join("")||'<div class="vide">Aucun message.</div>';
@@ -203,7 +208,17 @@ function rendu(){
 window.cloturer=()=>{if(!act||!membre(actD)||actD.statut==="clos")return;
  confirmer("Clôturer cette discussion ?","Elle ne pourra plus recevoir de réponse.",async()=>{try{
   const t="Discussion clôturée par "+UN;
-  await addDoc(collection(db,"messageries",act,"messages"),{auteur:"systeme",auteurNom:"Système",type:"message",texte:t,date:serverTimestamp(),luPar:[U.uid]});
+await addDoc(
+    collection(db,"messageries",act,"messages"),
+    {
+        auteur:"systeme",
+        auteurNom:"Système",
+        type:"systeme",
+        texte:t,
+        date:serverTimestamp(),
+        luPar:[U.uid]
+    }
+);
   const n={};(actD.participants||[]).filter(u=>u!==U.uid).forEach(u=>n[`nonLus.${u}`]=increment(1));
   await updateDoc(doc(db,"messageries",act),{statut:"clos",closedBy:U.uid,closedAt:serverTimestamp(),lastMessage:t,updatedAt:serverTimestamp(),...n});
   actD={...actD,statut:"clos"};ouvrir(act,actD)}catch(e){toast("Impossible de clôturer la discussion.",1)}})};

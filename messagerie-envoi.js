@@ -280,7 +280,7 @@ export async function envoyerMessageSysteme({ compteId, texte, destinataires }){
       }
 
     );
- await envoyerNotifcation(uid, "🔔 Nouveau message", "Ouvrez GestUrg2 pour le consulter !")
+ await envoyerNotification(uid, "🔔 Nouveau message", "Ouvrez GestUrg2 pour le consulter !")
 
   }
 

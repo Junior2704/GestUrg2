@@ -838,6 +838,27 @@ async function chargerComptesAdmin(){
 
 const comptesParId={};
 
+/* un utilisateur ne peut envoyer qu'au nom des comptes d'envoi dont il est membre */
+function comptesEnvoiAutorises(){
+  if(!utilisateur) return [];
+  return COMPTES_ADMIN.filter(c=>(c.membres || []).includes(utilisateur.uid));
+}
+
+function remplirSelectEnvoi(){
+  const select=document.getElementById("compte-select");
+  if(!select) return;
+  const precedent=select.value;
+  const comptes=comptesEnvoiAutorises();
+  if(!comptes.length){
+    select.innerHTML='<option value="">Aucun compte d\'envoi attribué</option>';
+    return;
+  }
+  select.innerHTML=comptes.map(c=>
+    `<option value="${c.id}">${cgEsc(c.icon || "🔐")} ${cgEsc(c.nom)}</option>`
+  ).join("");
+  if(comptes.some(c=>c.id===precedent)) select.value=precedent;
+}
+
 /*
 ===========================
 TYPES D'UTILISATEURS
@@ -996,13 +1017,7 @@ document.getElementById("app").innerHTML=`
 
 <div class="bloc-titre">Compte expéditeur</div>
 
-<select id="compte-select">
-
-${COMPTES_ADMIN.map(c=>
-`<option value="${c.id}">${c.icon} ${c.nom}</option>`
-).join("")}
-
-</select>
+<select id="compte-select"></select>
 
 </div>
 
@@ -1524,60 +1539,42 @@ CONVERSATION (créer si besoin)
 
 async function trouverOuCreerConversation(uid,compte){
 
+  const snap=await getDocs(query(
+    collection(db,"messageries"),
+    where("compteId","==",compte.id),
+    where("destinataireUid","==",uid)
+  ));
 
-const q=query(
+  if(!snap.empty) return snap.docs[0].id;
 
-collection(db,"messageries"),
+  /* anciennes conversations (sans destinataireUid) : retrouvées par leur titre */
+  const titre=compte.nom+" · "+nomUtilisateur(uid);
+  const ancien=await getDocs(query(
+    collection(db,"messageries"),
+    where("compteId","==",compte.id),
+    where("participants","array-contains",uid)
+  ));
+  const legacy=ancien.docs.find(d=>!d.data().destinataireUid && d.data().titre===titre);
+  if(legacy){
+    await updateDoc(legacy.ref,{destinataireUid:uid,participants:[uid]});
+    return legacy.id;
+  }
 
-where("participants","array-contains",uid),
-where("compteId","==",compte.id)
+  const ref=await addDoc(collection(db,"messageries"),{
+    type:"compte-administratif",
+    participants:[uid],
+    destinataireUid:uid,
+    compteId:compte.id,
+    compteNom:compte.nom,
+    titre,
+    icon:compte.icon,
+    lastMessage:"",
+    createdAt:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  });
 
-);
-
-
-const snap=
-await getDocs(q);
-
-
-if(!snap.empty){
-
-return snap.docs[0].id;
-
+  return ref.id;
 }
-
-const participants=Array.from(new Set([
-  uid,
-  ...(compte.membres || [])
-]));
-
-const ref=
-await addDoc(
-
-collection(db,"messageries"),
-
-{
-
-type:"compte-administratif",
-participants,
-compteId:compte.id,
-compteNom:compte.nom,
-titre:compte.nom+" · "+nomUtilisateur(uid),
-icon:compte.icon,
-lastMessage:"",
-createdAt:serverTimestamp(),
-updatedAt:serverTimestamp()
-
-}
-
-);
-
-
-return ref.id;
-
-
-}
-
-
 
 function creerStatutsInitiaux(destinataires){
 
@@ -1643,8 +1640,8 @@ afficherBulle("Sélectionnez au moins un destinataire.", 'error');
 return;
 }
 
-if(!compte){
-    afficherBulle("Sélectionnez un compte d'envoi", 'error');
+if(!compte || !(compte.membres || []).includes(utilisateur.uid)){
+    afficherBulle("Sélectionnez un compte d'envoi dont vous êtes membre.", 'error');
     return;
 }
 
@@ -1750,13 +1747,7 @@ doc(db,"messageries",convId),
 
 lastMessage:texte,
 updatedAt:serverTimestamp(),
-[`nonLus.${uid}`]:increment(1),
-
-...(compte.membres || []).filter(memberUid=>memberUid!==utilisateur.uid && memberUid!==uid)
-  .reduce((acc,memberUid)=>{
-    acc[`nonLus.${memberUid}`]=increment(1);
-    return acc;
-  },{})
+[`nonLus.${uid}`]:increment(1)
 
 }
 
@@ -1764,11 +1755,6 @@ updatedAt:serverTimestamp(),
 
  await envoyerNotification(uid, "🔔 Nouveau message", "Ouvrez GestUrg2 pour le consulter !")
 
- for(const memberUid of (compte.membres || [])){
-   if(memberUid!==utilisateur.uid && memberUid!==uid){
-     await envoyerNotification(memberUid, "🔔 Nouveau message", "Un nouveau message est disponible dans votre compte administratif.");
-   }
- }
 }
 
 function envoyerNotification(uid, titre, contenu) {
@@ -1896,6 +1882,11 @@ comptesParId[
 document.getElementById("compte-select").value
 ];
 
+
+if(!compte || !(compte.membres || []).includes(utilisateur.uid)){
+afficherBulle("Sélectionnez un compte d'envoi dont vous êtes membre.", 'error');
+return;
+}
 
 const typeSondage=
 document.querySelector('input[name="type-sondage"]:checked').value;
@@ -2672,20 +2663,6 @@ window.enregistrerMembresCompteAdmin=async()=>{
       updatedAt:serverTimestamp()
     });
 
-    const ajoutes=nouveaux.filter(uid=>!anciens.has(uid));
-    const retires=Array.from(anciens).filter(uid=>!membresAdminSelection.has(uid));
-
-    const conversations=await getDocs(query(
-      collection(db,"messageries"),
-      where("compteId","==",compte.id)
-    ));
-
-    await Promise.all(conversations.docs.map(d=>{
-      const patch={};
-      if(ajoutes.length) patch.participants=arrayUnion(...ajoutes);
-      if(retires.length) patch.participants=arrayRemove(...retires);
-      return Object.keys(patch).length ? updateDoc(d.ref,patch) : Promise.resolve();
-    }));
 
     compte.membres=nouveaux;
     comptesParId[compte.id]=compte;
@@ -2700,6 +2677,7 @@ window.enregistrerMembresCompteAdmin=async()=>{
 function afficherComptesAdmin(){
   const zone=document.getElementById("liste-comptes-admin");
   if(!zone) return;
+  remplirSelectEnvoi();
   remplirSelectComptesAdmin();
   zone.innerHTML="";
   COMPTES_ADMIN.forEach(c=>{
@@ -2749,6 +2727,10 @@ const membresSelection=new Set();
 
 let compteEnEdition=null;
 
+
+function titreConversationGenerique(nom,x){
+  return nom+(x.demandeurNom?" · "+x.demandeurNom:"")+(x.objet?" — "+x.objet:"");
+}
 
 function cgEsc(texte){
 
@@ -3119,7 +3101,7 @@ doc(db,"messageries",x.id),
 {
 compteNom:nom,
 icon,
-titre:nom+" · "+(x.objet || "")
+titre:titreConversationGenerique(nom,x)
 }
 
 )

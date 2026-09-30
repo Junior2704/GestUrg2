@@ -692,6 +692,14 @@ button{
 @media(max-width:700px){
   .btn-cloturer{font-size:11px;padding:7px 9px;}
 }
+
+#filtres-conv{display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;}
+#filtres-conv button{margin:0;padding:5px 10px;border-radius:14px;border:1px solid #dbe8f6;background:#fff;color:#0078d4;font-size:12px;cursor:pointer;}
+#filtres-conv button.actif{background:#0078d4;color:#fff;}
+.compte-partage.actif{outline:2px solid #0078d4;}
+.tag-clos{font-size:10px;background:#fdecea;color:#c5221f;padding:1px 6px;border-radius:6px;margin-left:6px;}
+.sans-discussion{padding:20px;text-align:center;color:#7b8794;font-size:13px;}
+#nouveau-message input{margin-bottom:8px;}
 </style>
 
 </head>
@@ -714,9 +722,12 @@ button{
 
 <div id="comptes-partages"></div>
 
+<div id="filtres-conv"></div>
+
 <div id="nouveau-message">
     <label>Contacter un compte général</label>
     <select id="nouveau-compte-general"></select>
+    <input id="nouveau-objet" maxlength="80" placeholder="Objet de la discussion (facultatif)">
     <button type="button" onclick="creerNouvelleConversationGenerique()">✉️ Nouvelle discussion</button>
     <button type="button" class="annuler-nouveau" onclick="fermerNouveauMessage()">Annuler</button>
 </div>
@@ -829,6 +840,19 @@ let conversationDataActive=null;
 let comptesGeneriquesAttribues=[];
 let comptesGeneriquesDisponibles=[];
 let tousLesUtilisateurs=[];
+let conversationsCache=[];
+let filtreCompteId=null;
+let filtreStatut="ouvert";
+let unsubMessages=null;
+
+function titreConversationGenerique(nom,x){
+  return nom+(x.demandeurNom?" · "+x.demandeurNom:"")+(x.objet?" — "+x.objet:"");
+}
+
+function envoyerNotification(uid,titre,contenu){
+  if(window.parent===window) return;
+  try{ window.parent.postMessage({type:"NOTIFICATION",userId:uid,titre,contenu},"*"); }catch(e){}
+}
 
 
 
@@ -958,7 +982,8 @@ function afficherComptesPartages(){
         <span class="cp-nom">${echapperHTML(c.nom || "Compte général")}</span>
         <span class="cp-type">Compte général · accès membre</span>
       </span>`;
-    b.onclick=()=>ouvrirDerniereConversationCompteGeneral(c);
+    if(filtreCompteId===c.id) b.classList.add("actif");
+    b.onclick=()=>basculerFiltreCompte(c.id);
     zone.appendChild(b);
   });
 
@@ -1002,37 +1027,40 @@ window.creerNouvelleConversationGenerique=async()=>{
   const compteId=document.getElementById("nouveau-compte-general")?.value;
   const compte=comptesGeneriquesDisponibles.find(c=>c.id===compteId);
   if(!compte || compte.actif===false || !utilisateur) return;
+  const objet=(document.getElementById("nouveau-objet")?.value || "").trim();
 
   try{
-    const q=query(
+    /* une seule discussion OUVERTE par demandeur et par compte ;
+       une discussion clôturée n'empêche pas d'en ouvrir une nouvelle */
+    const snap=await getDocs(query(
       collection(db,"messageries"),
       where("compteGeneriqueId","==",compte.id),
-      where("participants","array-contains",utilisateur.uid)
-    );
-    const snap=await getDocs(q);
+      where("demandeurUid","==",utilisateur.uid)
+    ));
+    const ouvertes=snap.docs
+      .map(d=>({id:d.id,data:d.data()}))
+      .filter(x=>x.data.statut!=="clos")
+      .sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
 
-    if(!snap.empty){
-      const docs=snap.docs.map(d=>({id:d.id,data:d.data()}));
-      docs.sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
-      ouvrirConversation(docs[0].id,docs[0].data);
+    if(ouvertes.length){
+      ouvrirConversation(ouvertes[0].id,ouvertes[0].data);
       fermerNouveauMessage();
       return;
     }
 
-    const participants=Array.from(new Set([
-      utilisateur.uid,
-      ...(compte.membres || [])
-    ]));
-
+    const participants=Array.from(new Set([utilisateur.uid,...(compte.membres || [])]));
     const data={
       type:"compte-generique",
       compteGeneriqueId:compte.id,
       compteNom:compte.nom,
       icon:compte.icon || "📬",
-      titre:compte.nom,
+      demandeurUid:utilisateur.uid,
+      demandeurNom:utilisateurNom,
+      objet,
       participants,
       statut:"ouvert"
     };
+    data.titre=titreConversationGenerique(compte.nom,data);
 
     const ref=await addDoc(collection(db,"messageries"),{
       ...data,
@@ -1041,6 +1069,8 @@ window.creerNouvelleConversationGenerique=async()=>{
       updatedAt:serverTimestamp()
     });
 
+    const champObjet=document.getElementById("nouveau-objet");
+    if(champObjet) champObjet.value="";
     ouvrirConversation(ref.id,data);
     fermerNouveauMessage();
   }catch(e){
@@ -1049,22 +1079,10 @@ window.creerNouvelleConversationGenerique=async()=>{
   }
 };
 
-async function ouvrirDerniereConversationCompteGeneral(compte){
-  try{
-    const q=query(
-      collection(db,"messageries"),
-      where("compteGeneriqueId","==",compte.id),
-      where("participants","array-contains",utilisateur.uid)
-    );
-    const snap=await getDocs(q);
-    if(!snap.empty){
-      const docs=snap.docs.map(d=>({id:d.id,data:d.data()}));
-      docs.sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
-      ouvrirConversation(docs[0].id,docs[0].data);
-    }
-  }catch(e){
-    console.error("Ouverture compte général :",e);
-  }
+function basculerFiltreCompte(id){
+  filtreCompteId=(filtreCompteId===id) ? null : id;
+  afficherComptesPartages();
+  afficherListeConversations();
 }
 
 function estMembreCompteGeneral(data){
@@ -1092,116 +1110,85 @@ document.getElementById("search")?.addEventListener("input",()=>{
 });
 
 
-function chargerConversations(){
-
-
-const q=query(
-
-collection(db,"messageries"),
-
-where(
-"participants",
-"array-contains",
-utilisateur.uid
-)
-
-);
-
-
-
-onSnapshot(q,(snap)=>{
-
-
-const zone=
-document.getElementById("conversations");
-
-
-zone.innerHTML="";
-
-
-let totalNonLus=0;
-const docsTries=[...snap.docs].sort((a,b)=>{
-  const ta=a.data().updatedAt?.toMillis?.() || 0;
-  const tb=b.data().updatedAt?.toMillis?.() || 0;
-  return tb-ta;
-});
-
-
-docsTries.forEach(docSnap=>{
-
-
-const c=docSnap.data();
-
-
-const nonLus=
-(c.nonLus && c.nonLus[utilisateur.uid]) ?
-c.nonLus[utilisateur.uid] :
-0;
-
-
-totalNonLus+=nonLus;
-
-
-const div=
-document.createElement("div");
-
-
-div.className=
-"conversation"+
-(nonLus>0 ? " non-lue" : "");
-
-
-div.innerHTML=`
-
-<div class="avatar">
-${c.icon || "💬"}
-</div>
-
-<div class="conv-text">
-
-<div class="conv-title">
-${c.titre || "Discussion"}
-</div>
-
-
-<div class="conv-last">
-${c.lastMessage || ""}
-</div>
-
-
-</div>
-
-${nonLus>0 ?
-`<div class="badge">${nonLus}</div>` :
-""}
-
-`;
-
-
-
-div.onclick=()=>ouvrirConversation(
-docSnap.id,
-c
-);
-
-
-
-zone.appendChild(div);
-
-
-
-});
-
-
-envoyerNonLusAuParent(totalNonLus);
-
-
-});
-
-
+function conversationVisible(c){
+  /* un message d'un compte d'envoi n'est visible que par son destinataire */
+  return !(c.type==="compte-administratif" && c.destinataireUid && c.destinataireUid!==utilisateur.uid);
 }
 
+function afficherFiltresStatut(){
+  const zone=document.getElementById("filtres-conv");
+  if(!zone) return;
+  zone.innerHTML="";
+  [["ouvert","Ouvertes"],["clos","Clôturées"],["tous","Toutes"]].forEach(([val,label])=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.textContent=label;
+    if(filtreStatut===val) b.classList.add("actif");
+    b.onclick=()=>{ filtreStatut=val; afficherFiltresStatut(); afficherListeConversations(); };
+    zone.appendChild(b);
+  });
+}
 
+function afficherListeConversations(){
+  const zone=document.getElementById("conversations");
+  if(!zone || !utilisateur) return;
+  zone.innerHTML="";
+
+  const liste=conversationsCache.filter(x=>{
+    const c=x.data;
+    if(!conversationVisible(c)) return false;
+    if(filtreCompteId && c.compteGeneriqueId!==filtreCompteId) return false;
+    const clos=c.statut==="clos";
+    if(filtreStatut==="ouvert" && clos) return false;
+    if(filtreStatut==="clos" && !clos) return false;
+    return true;
+  });
+
+  if(!liste.length){
+    zone.innerHTML='<div class="sans-discussion">Aucune discussion.</div>';
+    return;
+  }
+
+  liste.forEach(({id,data:c})=>{
+    const nonLus=(c.nonLus && c.nonLus[utilisateur.uid]) ? c.nonLus[utilisateur.uid] : 0;
+    const div=document.createElement("div");
+    div.className="conversation"+(nonLus>0 ? " non-lue" : "");
+    div.innerHTML=`
+<div class="avatar">${echapperHTML(c.icon || "💬")}</div>
+<div class="conv-text">
+<div class="conv-title">${echapperHTML(c.titre || "Discussion")}${c.statut==="clos" ? '<span class="tag-clos">🔒 clôturée</span>' : ""}</div>
+<div class="conv-last">${echapperHTML(c.lastMessage || "")}</div>
+</div>
+${nonLus>0 ? `<div class="badge">${nonLus}</div>` : ""}
+`;
+    div.onclick=()=>ouvrirConversation(id,c);
+    zone.appendChild(div);
+  });
+
+  document.getElementById("search")?.dispatchEvent(new Event("input"));
+}
+
+function chargerConversations(){
+  afficherFiltresStatut();
+
+  onSnapshot(
+    query(collection(db,"messageries"),where("participants","array-contains",utilisateur.uid)),
+    (snap)=>{
+      conversationsCache=snap.docs
+        .map(d=>({id:d.id,data:d.data()}))
+        .sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
+
+      let totalNonLus=0;
+      conversationsCache.forEach(({data:c})=>{
+        if(!conversationVisible(c)) return;
+        totalNonLus+=(c.nonLus && c.nonLus[utilisateur.uid]) ? c.nonLus[utilisateur.uid] : 0;
+      });
+
+      afficherListeConversations();
+      envoyerNonLusAuParent(totalNonLus);
+    }
+  );
+}
 
 function envoyerNonLusAuParent(total){
 
@@ -1264,7 +1251,7 @@ if(mode){
       ? `Compte général · <strong>${echapperHTML(data.compteNom || titre)}</strong> · vous pouvez répondre et clôturer`
       : `Discussion avec <strong>${echapperHTML(data.compteNom || titre)}</strong>`;
   }else{
-    mode.textContent="";
+    mode.textContent="Message d'un compte d'envoi · lecture seule";
   }
 }
 
@@ -1272,11 +1259,11 @@ const inputZone=document.getElementById("input-zone");
 const input=document.getElementById("message-input");
 const bouton=inputZone?.querySelector("button");
 if(input){
-  input.disabled=closee;
-  input.placeholder=closee ? "Discussion clôturée" : "Votre réponse...";
+  input.disabled=closee || !compteGeneral;
+  input.placeholder=closee ? "Discussion clôturée" : (compteGeneral ? "Votre réponse..." : "Message d'un compte d'envoi : réponse impossible");
 }
 if(bouton){
-  bouton.disabled=closee;
+  bouton.disabled=closee || !compteGeneral;
   bouton.textContent=closee ? "Clôturée" : "Répondre";
 }
 
@@ -1301,11 +1288,27 @@ async function cloturerDiscussion(id){
   if(conversationDataActive.statut==="clos") return;
   if(!confirm("Clôturer cette discussion ? Elle ne pourra plus recevoir de réponse.")) return;
   try{
+    const texte="🔒 Discussion clôturée par "+utilisateurNom;
+    await addDoc(collection(db,"messageries",id,"messages"),{
+      auteur:"systeme",
+      auteurNom:"Système",
+      type:"message",
+      texte,
+      date:serverTimestamp(),
+      luPar:[utilisateur.uid]
+    });
+
+    const nonLus={};
+    (conversationDataActive.participants || []).filter(uid=>uid!==utilisateur.uid)
+      .forEach(uid=>{ nonLus[`nonLus.${uid}`]=increment(1); });
+
     await updateDoc(doc(db,"messageries",id),{
       statut:"clos",
       closedBy:utilisateur.uid,
       closedAt:serverTimestamp(),
-      updatedAt:serverTimestamp()
+      lastMessage:texte,
+      updatedAt:serverTimestamp(),
+      ...nonLus
     });
     conversationDataActive={...conversationDataActive,statut:"clos"};
     ouvrirConversation(id,conversationDataActive);
@@ -1340,7 +1343,8 @@ orderBy("date","asc")
 
 
 
-onSnapshot(q,async(snap)=>{
+if(unsubMessages) unsubMessages();
+unsubMessages=onSnapshot(q,async(snap)=>{
 
 
 zone.innerHTML="";
@@ -1450,7 +1454,7 @@ msg.sondageId
 }else{
 
 contenuHTML=
-`<div>${msg.texte || ""}</div>`;
+`<div>${echapperHTML(msg.texte)}</div>`;
 
 }
 
@@ -1477,7 +1481,7 @@ div.innerHTML=`
 
 <div class="author">
 
-${msg.auteurNom || ""}
+${echapperHTML(msg.auteurNom)}
 
 </div>
 
@@ -2207,12 +2211,18 @@ window.envoyerMessage=async()=>{
   const texte=input.value.trim();
   if(!texte) return;
 
+  /* un membre du compte signe au nom du compte */
+  const membre=estMembreCompteGeneral(conversationDataActive);
+  const auteurNom=membre
+    ? utilisateurNom+" · "+(conversationDataActive.compteNom || "")
+    : utilisateurNom;
+
   try{
     await addDoc(
       collection(db,"messageries",conversationActive,"messages"),
       {
         auteur:utilisateur.uid,
-        auteurNom:utilisateurNom,
+        auteurNom,
         type:"message",
         texte,
         date:serverTimestamp(),
@@ -2231,6 +2241,8 @@ window.envoyerMessage=async()=>{
       updatedAt:serverTimestamp(),
       ...misAJourNonLus
     });
+
+    autresParticipants.forEach(uid=>envoyerNotification(uid,"🔔 Nouveau message","Ouvrez GestUrg2 pour le consulter !"));
 
     input.value="";
   }catch(e){

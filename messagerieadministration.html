@@ -109,12 +109,104 @@ window.enregistrerGen=async()=>{
   if(eg){const id=eg,anc=gens.find(x=>x.id===id)?.membres||[];
    await updateDoc(doc(db,"comptes-generiques",id),{...data,updatedAt:serverTimestamp()});
    await Promise.all(convs.filter(x=>x.compteGeneriqueId===id).map(x=>updateDoc(doc(db,"messageries",x.id),{compteNom:nomC,icon,titre:nomC+(x.demandeurNom?" · "+x.demandeurNom:"")+(x.objet?" — "+x.objet:"")})));
-   const aj=data.membres.filter(u=>!anc.includes(u)),re=anc.filter(u=>!data.membres.includes(u));
-   await Promise.all(convs.filter(x=>x.compteGeneriqueId===id).map(async x=>{
-    if(aj.length)await updateDoc(doc(db,"messageries",x.id),{participants:arrayUnion(...aj)});
-    if(re.length)await updateDoc(doc(db,"messageries",x.id),{participants:arrayRemove(...re)})}));
+const aj = data.membres.filter(u => !anc.includes(u));
+const re = anc.filter(u => !data.membres.includes(u));
+
+
+// Ajouter les nouveaux membres aux conversations existantes
+await Promise.all(
+  convs
+    .filter(x => x.compteGeneriqueId === id)
+    .map(async x => {
+
+      if (aj.length) {
+        await updateDoc(
+          doc(db, "messageries", x.id),
+          {
+            participants: arrayUnion(...aj)
+          }
+        );
+      }
+
+      if (re.length) {
+        await updateDoc(
+          doc(db, "messageries", x.id),
+          {
+            participants: arrayRemove(...re)
+          }
+        );
+      }
+
+    })
+);
+
+
+// Notification uniquement des nouveaux membres
+await Promise.all(
+  aj.map(async uid => {
+
+    const utilisateur = users.find(u => u.uid === uid);
+
+    const nomUtilisateur =
+      utilisateur?.prenom ||
+      utilisateur?.nom ||
+      "Bonjour";
+
+    await envoyerMessageSysteme({
+      compteId: "systeme",
+
+      texte:
+        `Bonjour ${nomUtilisateur},\n\n` +
+        `Vous avez été ajouté(e) au compte général « ${nomC} » dans GestUrg2.\n\n` +
+        `Vous pouvez désormais accéder aux discussions de ce compte depuis votre messagerie et, selon vos droits, y répondre ou les clôturer.\n\n` +
+        `Cette affectation a été effectuée par l'administration.`,
+
+      destinataires: [uid]
+    });
+
+  })
+);
    toast("Compte modifié.")}
-  else{await addDoc(collection(db,"comptes-generiques"),{...data,creePar:U.uid,createdAt:serverTimestamp()});toast("Compte général créé.")}
+  else {
+
+  // Création du compte
+  const ref = await addDoc(
+    collection(db, "comptes-generiques"),
+    {
+      ...data,
+      creePar: U.uid,
+      createdAt: serverTimestamp()
+    }
+  );
+
+  // Notification des personnes affectées
+  await Promise.all(
+    data.membres.map(async uid => {
+
+      const utilisateur = users.find(u => u.uid === uid);
+
+      const nomUtilisateur =
+        utilisateur?.prenom ||
+        utilisateur?.nom ||
+        "Bonjour";
+
+      await envoyerMessageSysteme({
+        compteId: "systeme",
+
+        texte:
+          `Bonjour ${nomUtilisateur},\n\n` +
+          `Vous avez été affecté(e) au compte général « ${nomC} » dans GestUrg2.\n\n` +
+          `Vous pouvez désormais consulter les discussions associées à ce compte et, selon vos droits, y répondre ou les clôturer.\n\n` +
+          `Vous pouvez retrouver ce compte directement dans votre messagerie.`,
+
+        destinataires: [uid]
+      });
+
+    })
+  );
+
+  toast("Compte général créé.");
+}
   resetGen()}catch(e){console.error(e);toast("Erreur lors de l'enregistrement du compte.",1)}};
 window.basculerGen=async id=>{const c=gens.find(x=>x.id===id);if(!c)return;
  try{await updateDoc(doc(db,"comptes-generiques",id),{actif:c.actif===false,updatedAt:serverTimestamp()})}catch(e){toast("Impossible de modifier le compte.",1)}};

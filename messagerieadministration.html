@@ -218,9 +218,149 @@ function listeGen(){const z=$("gList");if(!z)return;
   <div class="row"><button class="btn sec" onclick="modifierGen('${c.id}')">Modifier</button><button class="btn sec" onclick="basculerGen('${c.id}')">${a?"Désactiver":"Réactiver"}</button></div></div>`}).join("")||'<div class="vide">Aucun compte général pour le moment.</div>'}
 
 /* comptes d'envoi */
-window.enregistrerAdm=async()=>{const c=adm.find(x=>x.id===ea);if(!c)return;if(!sa.size)return toast("Désignez au moins une personne pour ce compte.",1);
- try{await updateDoc(doc(db,"comptes-administrateurs",c.id),{membres:[...sa],updatedAt:serverTimestamp()});c.membres=[...sa];listeAdm();toast("Accès au compte « "+c.nom+" » mis à jour.")}
- catch(e){console.error(e);toast("Impossible d'enregistrer les accès.",1)}};
+window.enregistrerAdm = async () => {
+
+    const c = adm.find(x => x.id === ea);
+
+    if (!c) return;
+
+    if (!sa.size) {
+        return toast(
+            "Désignez au moins une personne pour ce compte.",
+            1
+        );
+    }
+
+    try {
+
+        // ==========================================
+        // ANCIENS / NOUVEAUX MEMBRES
+        // ==========================================
+
+        const anciensMembres = c.membres || [];
+        const nouveauxMembres = [...sa].filter(
+            uid => !anciensMembres.includes(uid)
+        );
+
+        const membresRetires = anciensMembres.filter(
+            uid => !sa.has(uid)
+        );
+
+
+        // ==========================================
+        // MISE À JOUR FIRESTORE
+        // ==========================================
+
+        await updateDoc(
+            doc(db, "comptes-administrateurs", c.id),
+            {
+                membres: [...sa],
+                updatedAt: serverTimestamp()
+            }
+        );
+
+
+        // ==========================================
+        // MISE À JOUR LOCALE
+        // ==========================================
+
+        c.membres = [...sa];
+
+
+        // ==========================================
+        // NOTIFICATIONS — AJOUTS
+        // ==========================================
+
+        await Promise.all(
+
+            nouveauxMembres.map(async uid => {
+
+                const utilisateur =
+                    users.find(u => u.uid === uid);
+
+                const nomUtilisateur =
+                    utilisateur?.prenom ||
+                    utilisateur?.nom ||
+                    "Bonjour";
+
+                await envoyerMessageSysteme({
+
+                    compteId: "systeme",
+
+                    texte:
+                        `Bonjour ${nomUtilisateur},\n\n` +
+                        `Vous avez été ajouté(e) au compte d'envoi « ${c.nom} » dans GestUrg2.\n\n` +
+                        `Vous pouvez désormais envoyer des messages et des sondages au nom de ce compte depuis votre messagerie.\n\n` +
+                        `Cette autorisation a été attribuée par l'administration.`,
+
+                    destinataires: [uid]
+
+                });
+
+            })
+
+        );
+
+
+        // ==========================================
+        // NOTIFICATIONS — RETRAITS
+        // ==========================================
+
+        await Promise.all(
+
+            membresRetires.map(async uid => {
+
+                const utilisateur =
+                    users.find(u => u.uid === uid);
+
+                const nomUtilisateur =
+                    utilisateur?.prenom ||
+                    utilisateur?.nom ||
+                    "Bonjour";
+
+                await envoyerMessageSysteme({
+
+                    compteId: "systeme",
+
+                    texte:
+                        `Bonjour ${nomUtilisateur},\n\n` +
+                        `Votre autorisation d'utiliser le compte d'envoi « ${c.nom} » dans GestUrg2 a été retirée.\n\n` +
+                        `Vous ne pouvez désormais plus envoyer de messages ou de sondages au nom de ce compte.\n\n` +
+                        `Cette modification a été effectuée par l'administration.`,
+
+                    destinataires: [uid]
+
+                });
+
+            })
+
+        );
+
+
+        // ==========================================
+        // RAFRAÎCHISSEMENT
+        // ==========================================
+
+        listeAdm();
+
+        toast(
+            "Accès au compte « " + c.nom + " » mis à jour."
+        );
+
+
+    } catch (e) {
+
+        console.error(
+            "Erreur attribution compte d'envoi :",
+            e
+        );
+
+        toast(
+            "Impossible d'enregistrer les accès.",
+            1
+        );
+    }
+};
 function listeAdm(){$("aList").innerHTML=adm.map(c=>`<div class="card"><div class="head"><h3>${esc(c.icon+" "+c.nom)}</h3><small>${c.membres.length} personne(s)</small></div><div class="info">${c.membres.map(u=>esc(nom(u))).join(", ")||"Aucune personne attribuée"}</div></div>`).join("")}
 </script>
 </body>

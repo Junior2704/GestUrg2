@@ -553,6 +553,50 @@ button.secondaire{
     scrollbar-width: thin;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
+
+/* COMPTES GENERIQUES */
+
+.cg-membres{
+    max-height:260px;
+    overflow:auto;
+    border:1px solid #eee;
+    border-radius:10px;
+    padding:5px 12px;
+    background:white;
+}
+
+.cg-info{
+    font-size:13px;
+    color:#555;
+    margin-top:6px;
+}
+
+.cg-tag{
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:8px;
+    margin-left:8px;
+    background:#e6f4ea;
+    color:#188038;
+    vertical-align:middle;
+}
+
+.cg-tag.inactif{
+    background:#fdecea;
+    color:#c5221f;
+}
+
+.cg-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+}
+
+.cg-actions button{
+    margin-top:12px;
+}
+
 </style>
 
 </head>
@@ -902,6 +946,7 @@ ${TYPES_UTILISATEURS.map(t=>
 <div class="onglet" data-vue="vue-resultats">Sondages envoyés</div>
 <div class="onglet" data-vue="vue-historique">Historique des messages</div>
 <div class="onglet" data-vue="vue-demandes-reponse">Réponses reçues</div>
+<div class="onglet" data-vue="vue-comptes-generiques">Comptes génériques</div>
 
 </div>
 
@@ -1010,6 +1055,42 @@ Choix multiple
 
 </div>
 
+<div class="vue" id="vue-comptes-generiques">
+
+<div class="carte">
+
+<strong id="cg-form-titre">Nouveau compte générique</strong>
+
+<label>Nom du compte</label>
+<input id="cg-nom" maxlength="60" placeholder="Ex : Secrétariat, Planning, Informatique...">
+
+<label>Icône (emoji)</label>
+<input id="cg-icon" maxlength="4" placeholder="📬">
+
+<label>Description (facultatif, visible par tous les utilisateurs)</label>
+<input id="cg-description" maxlength="150" placeholder="Ex : Questions sur les plannings et les congés">
+
+<label>Personnes ayant accès à ce compte (voir, répondre, clôturer)</label>
+<input id="cg-recherche-membres" placeholder="Rechercher un utilisateur..." style="margin-bottom:8px;">
+<div class="cg-membres" id="cg-liste-membres"></div>
+<div class="cg-info" id="cg-compteur-membres"></div>
+
+<div class="checkbox-row">
+<input type="checkbox" id="cg-actif" checked>
+<label for="cg-actif">Compte actif (les utilisateurs peuvent ouvrir de nouvelles discussions)</label>
+</div>
+
+<div class="cg-actions">
+<button type="button" id="cg-btn-enregistrer" onclick="enregistrerCompteGenerique()">Créer le compte</button>
+<button type="button" class="secondaire" id="cg-btn-annuler" style="display:none;" onclick="annulerEditionCompteGenerique()">Annuler la modification</button>
+</div>
+
+</div>
+
+<div id="liste-comptes-generiques"></div>
+
+</div>
+
 
 </div>
 
@@ -1028,6 +1109,8 @@ chargerSondagesAdmin();
 chargerDiffusionsAdmin();
 
 chargerDemandesReponseAdmin();
+
+initComptesGeneriques();
 
 
 }
@@ -1103,6 +1186,10 @@ uid:docSnap.id,
 });
 
 afficherUtilisateurs();
+
+afficherPickerMembres();
+
+afficherComptesGeneriques();
 
 }
 
@@ -2301,6 +2388,570 @@ zone.appendChild(div);
 
 
 }
+
+
+
+/*
+===========================
+ONGLET : COMPTES GÉNÉRIQUES
+===========================
+Collection "comptes-generiques" :
+{ nom, icon, description, actif, membres:[uid], createdAt }
+
+Tous les utilisateurs peuvent écrire à un compte actif.
+Seuls les "membres" voient les discussions, y répondent
+et peuvent les clôturer (panneau "Comptes partagés" de
+messagerie.html).
+*/
+
+
+let comptesGeneriquesCache=[];
+
+let conversationsGeneriquesCache=[];
+
+const membresSelection=new Set();
+
+let compteEnEdition=null;
+
+
+function cgEsc(texte){
+
+const div=
+document.createElement("div");
+
+div.textContent=
+(texte===null || texte===undefined) ? "" : String(texte);
+
+return div.innerHTML;
+
+}
+
+
+
+function initComptesGeneriques(){
+
+
+document
+.getElementById("cg-recherche-membres")
+.addEventListener("input",afficherPickerMembres);
+
+
+onSnapshot(
+
+collection(db,"comptes-generiques"),
+
+(snap)=>{
+
+comptesGeneriquesCache=
+snap.docs.map(d=>({id:d.id,...d.data()}));
+
+comptesGeneriquesCache.sort((a,b)=>
+(a.nom || "").localeCompare(b.nom || "","fr")
+);
+
+afficherComptesGeneriques();
+
+}
+
+);
+
+
+onSnapshot(
+
+query(
+collection(db,"messageries"),
+where("type","==","compte-generique")
+),
+
+(snap)=>{
+
+conversationsGeneriquesCache=
+snap.docs.map(d=>({id:d.id,...d.data()}));
+
+afficherComptesGeneriques();
+
+}
+
+);
+
+
+afficherPickerMembres();
+
+
+}
+
+
+
+function majCompteurMembres(){
+
+const el=
+document.getElementById("cg-compteur-membres");
+
+if(!el)
+return;
+
+el.textContent=
+membresSelection.size+" personne(s) sélectionnée(s)";
+
+}
+
+
+
+function afficherPickerMembres(){
+
+
+const zone=
+document.getElementById("cg-liste-membres");
+
+if(!zone)
+return;
+
+
+const filtre=
+(document.getElementById("cg-recherche-membres").value || "")
+.toLowerCase();
+
+
+zone.innerHTML="";
+
+
+const liste=
+tousLesUsers.filter(u=>
+`${u.nom || ""} ${u.email || ""}`
+.toLowerCase()
+.includes(filtre)
+);
+
+
+if(liste.length===0){
+
+zone.innerHTML=
+`<div class="cg-info">Aucun utilisateur.</div>`;
+
+}
+
+
+liste.forEach(u=>{
+
+
+const typeLabel=
+typesParId[u.type] ?
+typesParId[u.type].label :
+(u.type || "");
+
+
+const div=
+document.createElement("div");
+
+div.className="user-ligne";
+
+div.innerHTML=`
+
+<input type="checkbox" ${membresSelection.has(u.uid) ? "checked" : ""}>
+
+<div>
+
+<div class="user-nom">
+${cgEsc(u.nom)}
+${typeLabel ? `<span class="type-badge">${cgEsc(typeLabel)}</span>` : ""}
+</div>
+
+<div class="user-email">${cgEsc(u.email)}</div>
+
+</div>
+
+`;
+
+
+div
+.querySelector("input")
+.addEventListener("change",(e)=>{
+
+if(e.target.checked){
+membresSelection.add(u.uid);
+}else{
+membresSelection.delete(u.uid);
+}
+
+majCompteurMembres();
+
+});
+
+
+zone.appendChild(div);
+
+
+});
+
+
+majCompteurMembres();
+
+
+}
+
+
+
+function reinitialiserFormulaireCompte(){
+
+
+compteEnEdition=null;
+
+membresSelection.clear();
+
+
+document.getElementById("cg-nom").value="";
+document.getElementById("cg-icon").value="";
+document.getElementById("cg-description").value="";
+document.getElementById("cg-actif").checked=true;
+document.getElementById("cg-recherche-membres").value="";
+
+document.getElementById("cg-form-titre").textContent=
+"Nouveau compte générique";
+
+document.getElementById("cg-btn-enregistrer").textContent=
+"Créer le compte";
+
+document.getElementById("cg-btn-annuler").style.display=
+"none";
+
+
+afficherPickerMembres();
+
+
+}
+
+
+
+window.annulerEditionCompteGenerique=()=>{
+
+reinitialiserFormulaireCompte();
+
+};
+
+
+
+window.modifierCompteGenerique=(id)=>{
+
+
+const c=
+comptesGeneriquesCache.find(x=>x.id===id);
+
+if(!c)
+return;
+
+
+compteEnEdition=id;
+
+membresSelection.clear();
+
+(c.membres || []).forEach(uid=>membresSelection.add(uid));
+
+
+document.getElementById("cg-nom").value=c.nom || "";
+document.getElementById("cg-icon").value=c.icon || "";
+document.getElementById("cg-description").value=c.description || "";
+document.getElementById("cg-actif").checked=c.actif!==false;
+document.getElementById("cg-recherche-membres").value="";
+
+document.getElementById("cg-form-titre").textContent=
+"Modifier le compte « "+(c.nom || "")+" »";
+
+document.getElementById("cg-btn-enregistrer").textContent=
+"Enregistrer les modifications";
+
+document.getElementById("cg-btn-annuler").style.display=
+"inline-block";
+
+
+afficherPickerMembres();
+
+
+document
+.getElementById("cg-nom")
+.scrollIntoView({behavior:"smooth",block:"center"});
+
+
+};
+
+
+
+window.enregistrerCompteGenerique=async()=>{
+
+
+const nom=
+document.getElementById("cg-nom").value.trim();
+
+const icon=
+document.getElementById("cg-icon").value.trim() || "📬";
+
+const description=
+document.getElementById("cg-description").value.trim();
+
+const actif=
+document.getElementById("cg-actif").checked;
+
+
+if(!nom){
+afficherBulle("Veuillez saisir un nom pour le compte.","error");
+return;
+}
+
+
+if(membresSelection.size===0){
+afficherBulle("Désignez au moins une personne ayant accès à ce compte.","error");
+return;
+}
+
+
+const doublon=
+comptesGeneriquesCache.some(c=>
+c.id!==compteEnEdition &&
+(c.nom || "").trim().toLowerCase()===nom.toLowerCase()
+);
+
+if(doublon){
+afficherBulle("Un compte générique porte déjà ce nom.","error");
+return;
+}
+
+
+const data={
+
+nom,
+icon,
+description,
+actif,
+membres:Array.from(membresSelection)
+
+};
+
+
+try{
+
+
+if(compteEnEdition){
+
+const id=
+compteEnEdition;
+
+await updateDoc(
+
+doc(db,"comptes-generiques",id),
+
+{
+...data,
+updatedAt:serverTimestamp()
+}
+
+);
+
+
+/* le titre et l'icône sont recopiés dans les discussions
+   existantes : on les met à jour si le nom a changé */
+
+const aMettreAJour=
+conversationsGeneriquesCache.filter(x=>x.compteGeneriqueId===id);
+
+await Promise.all(
+
+aMettreAJour.map(x=>
+
+updateDoc(
+
+doc(db,"messageries",x.id),
+
+{
+compteNom:nom,
+icon,
+titre:nom+" · "+(x.objet || "")
+}
+
+)
+
+)
+
+);
+
+
+afficherBulle("Compte modifié.","success");
+
+
+}else{
+
+
+await addDoc(
+
+collection(db,"comptes-generiques"),
+
+{
+...data,
+creePar:utilisateur.uid,
+createdAt:serverTimestamp()
+}
+
+);
+
+
+afficherBulle("Compte générique créé.","success");
+
+
+}
+
+
+reinitialiserFormulaireCompte();
+
+
+}catch(e){
+
+console.error("Compte générique :",e);
+
+afficherBulle("Erreur lors de l'enregistrement du compte.","error");
+
+}
+
+
+};
+
+
+
+window.basculerActifCompteGenerique=async(id)=>{
+
+
+const c=
+comptesGeneriquesCache.find(x=>x.id===id);
+
+if(!c)
+return;
+
+
+try{
+
+await updateDoc(
+
+doc(db,"comptes-generiques",id),
+
+{
+actif:c.actif===false,
+updatedAt:serverTimestamp()
+}
+
+);
+
+}catch(e){
+
+console.error("Compte générique :",e);
+
+afficherBulle("Impossible de modifier le compte.","error");
+
+}
+
+
+};
+
+
+
+function afficherComptesGeneriques(){
+
+
+const zone=
+document.getElementById("liste-comptes-generiques");
+
+if(!zone)
+return;
+
+
+zone.innerHTML="";
+
+
+if(comptesGeneriquesCache.length===0){
+
+zone.innerHTML=
+`<div class="empty">Aucun compte générique pour le moment.</div>`;
+
+return;
+
+}
+
+
+comptesGeneriquesCache.forEach(c=>{
+
+
+const convs=
+conversationsGeneriquesCache.filter(x=>
+x.compteGeneriqueId===c.id
+);
+
+const nbOuvertes=
+convs.filter(x=>x.statut!=="clos").length;
+
+const nbClosesTotal=
+convs.length-nbOuvertes;
+
+
+const noms=
+(c.membres || [])
+.map(uid=>cgEsc(nomUtilisateur(uid)))
+.join(", ");
+
+
+const actif=
+c.actif!==false;
+
+
+const div=
+document.createElement("div");
+
+div.className="carte";
+
+div.innerHTML=`
+
+<div class="carte-header">
+
+<strong>
+${cgEsc(c.icon || "📬")} ${cgEsc(c.nom)}
+<span class="cg-tag ${actif ? "" : "inactif"}">${actif ? "actif" : "désactivé"}</span>
+</strong>
+
+<span class="carte-meta">
+${nbOuvertes} ouverte(s) · ${nbClosesTotal} clôturée(s)
+</span>
+
+</div>
+
+${c.description ?
+`<div class="cg-info">${cgEsc(c.description)}</div>` :
+""}
+
+<div class="cg-info">
+<strong>Accès (${(c.membres || []).length}) :</strong>
+${noms || "aucun"}
+</div>
+
+<div class="cg-actions">
+
+<button type="button" class="secondaire"
+onclick="modifierCompteGenerique('${c.id}')">
+Modifier
+</button>
+
+<button type="button" class="secondaire"
+onclick="basculerActifCompteGenerique('${c.id}')">
+${actif ? "Désactiver" : "Réactiver"}
+</button>
+
+</div>
+
+`;
+
+
+zone.appendChild(div);
+
+
+});
+
+
+}
+
 
 
 </script>

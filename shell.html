@@ -3086,21 +3086,19 @@ window.lockSession = async function() {
             ? "badge"
             : "password";
 
-    await attendreAnimation(animationType);
+// Sélection du panneau
+switchLockTab(animationType);
 
-    // --------------------------------------------------
-    // Sélection du panneau
-    // --------------------------------------------------
+// Affichage de la modale
+document.body.classList.add("locked");
+overlay.classList.add("active");
 
-    switchLockTab(animationType);
-
-    // --------------------------------------------------
-    // Affichage de la modale SEULEMENT maintenant
-    // --------------------------------------------------
-
-    document.body.classList.add("locked");
-
-    overlay.classList.add("active");
+// Laisse le navigateur effectuer le rendu
+requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+        signalerPanelVisible(animationType);
+    });
+});
 
     // --------------------------------------------------
     // Verrouillage des iframes
@@ -3140,11 +3138,11 @@ window.switchLockTab = function(tab) {
 
     const isBadge = tab === "badge";
 
-    const badgePanel = document.getElementById("lockPanelBadge");
-    const passwordPanel = document.getElementById("lockPanelPassword");
+    const badgePanel =
+        document.getElementById("lockPanelBadge");
 
-    const badgeFrame = document.querySelector(".login-badge-anim");
-    const passwordFrame = document.querySelector(".login-password-anim");
+    const passwordPanel =
+        document.getElementById("lockPanelPassword");
 
     document.getElementById("lockTabBadge")
         .classList.toggle("active", isBadge);
@@ -3158,26 +3156,14 @@ window.switchLockTab = function(tab) {
     document.getElementById("lockError").textContent = "";
 
     // --------------------------------------------------
-    // Informe l'animation qu'elle est maintenant visible
+    // IMPORTANT :
+    // On laisse le navigateur afficher le panneau,
+    // PUIS on signale à l'iframe qu'elle est visible.
     // --------------------------------------------------
 
-    if (isBadge && animationReady.badge) {
-
-        badgeFrame.contentWindow.postMessage(
-            { type: "PANEL_VISIBLE" },
-            "*"
-        );
-
-    }
-
-    if (!isBadge && animationReady.password) {
-
-        passwordFrame.contentWindow.postMessage(
-            { type: "PANEL_VISIBLE" },
-            "*"
-        );
-
-    }
+    signalerPanelVisible(
+        isBadge ? "badge" : "password"
+    );
 
     // --------------------------------------------------
     // Focus
@@ -3194,6 +3180,7 @@ window.switchLockTab = function(tab) {
         setTimeout(() => {
             document.getElementById("unlockPassword").focus();
         }, 50);
+
     }
 };
 window.focusBadgeInput = function() {
@@ -3550,7 +3537,7 @@ if(premierChargement){
 
 }
 // ======================================================
-// GESTION DU CHARGEMENT DES ANIMATIONS DE VERROUILLAGE
+// GESTION ROBUSTE DU CHARGEMENT DES ANIMATIONS DE VERROUILLAGE
 // ======================================================
 
 const animationFrames = {
@@ -3563,6 +3550,30 @@ const animationReady = {
     password: false
 };
 
+// Envoie un signal à l'animation seulement après
+// que le navigateur ait eu le temps de rendre le panneau.
+function signalerPanelVisible(type) {
+
+    const iframe = animationFrames[type];
+
+    if (!iframe || !iframe.contentWindow) return;
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+
+            iframe.contentWindow.postMessage(
+                { type: "PANEL_VISIBLE" },
+                "*"
+            );
+
+            console.log(`👁️ PANEL_VISIBLE envoyé à ${type}`);
+
+        });
+    });
+}
+
+
+// Chargement des deux animations
 Object.entries(animationFrames).forEach(([type, iframe]) => {
 
     if (!iframe) return;
@@ -3573,20 +3584,36 @@ Object.entries(animationFrames).forEach(([type, iframe]) => {
 
         console.log(`✅ Animation ${type} chargée`);
 
-        // Informe éventuellement l'animation que l'application est prête
-        iframe.contentWindow.postMessage(
+        // Informe l'animation que l'application est prête
+        iframe.contentWindow?.postMessage(
             { type: "APP_READY" },
             "*"
         );
+
+        // IMPORTANT :
+        // si le panneau correspondant est déjà affiché,
+        // on renvoie immédiatement PANEL_VISIBLE.
+        const panel =
+            type === "badge"
+                ? document.getElementById("lockPanelBadge")
+                : document.getElementById("lockPanelPassword");
+
+        if (panel?.classList.contains("active")) {
+            signalerPanelVisible(type);
+        }
+
     });
 
 });
+
+
+// Attend le chargement de l'iframe
 function attendreAnimation(type, timeout = 5000) {
 
     return new Promise(resolve => {
 
         if (animationReady[type]) {
-            resolve();
+            resolve(true);
             return;
         }
 
@@ -3595,15 +3622,20 @@ function attendreAnimation(type, timeout = 5000) {
         const verifier = () => {
 
             if (animationReady[type]) {
-                resolve();
+                resolve(true);
                 return;
             }
 
             if (Date.now() - debut >= timeout) {
+
                 console.warn(
                     `⚠️ Timeout chargement animation ${type}`
                 );
-                resolve();
+
+                // On ne bloque pas l'application,
+                // mais on indique clairement que l'animation
+                // n'est pas prête.
+                resolve(false);
                 return;
             }
 

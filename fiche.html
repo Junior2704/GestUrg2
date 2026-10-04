@@ -2656,6 +2656,700 @@ z-index: 3000;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
 </style>
+
+<style id="gesturg-modern-panels">
+/* ==========================================================
+   GestUrg2 — Refonte visuelle des 5 onglets principaux
+   Identité / Équipe / Admission / Dossier / Sortie
+   Aucun ID fonctionnel ni comportement JS n'est modifié.
+   ========================================================== */
+
+:root{
+  --gu-blue:#0078d4;
+  --gu-blue-dark:#005ea2;
+  --gu-blue-soft:#eef7ff;
+  --gu-blue-pale:#f7fbff;
+  --gu-text:#172033;
+  --gu-muted:#64748b;
+  --gu-border:#dfe7f0;
+  --gu-bg:#f4f7fb;
+  --gu-card:#ffffff;
+  --gu-shadow:0 10px 30px rgba(15, 35, 60, .07);
+  --gu-shadow-hover:0 16px 38px rgba(15, 35, 60, .11);
+  --gu-radius:18px;
+  --gu-transition:220ms cubic-bezier(.2,.7,.2,1);
+}
+
+/* ---------- navigation principale ---------- */
+
+nav{
+  background:rgba(255,255,255,.96) !important;
+  border-right:1px solid var(--gu-border) !important;
+  box-shadow:8px 0 28px rgba(20,40,70,.045);
+}
+
+.nav-title{
+  color:var(--gu-blue) !important;
+  letter-spacing:.01em;
+}
+
+.nav-item{
+  position:relative;
+  min-height:44px;
+  box-sizing:border-box;
+  margin:5px 8px 6px !important;
+  padding:11px 13px !important;
+  border:1px solid transparent;
+  border-radius:13px !important;
+  color:#475569 !important;
+  transition:
+    background var(--gu-transition),
+    border-color var(--gu-transition),
+    color var(--gu-transition),
+    transform var(--gu-transition),
+    box-shadow var(--gu-transition) !important;
+}
+
+.nav-item:hover{
+  background:#f5f9fe !important;
+  border-color:#e3edf7;
+  color:var(--gu-blue-dark) !important;
+  transform:translateX(2px) !important;
+  box-shadow:0 5px 14px rgba(0,120,212,.06);
+}
+
+.nav-item.active{
+  background:linear-gradient(135deg,#eef7ff 0%,#f8fbff 100%) !important;
+  border:1px solid #cfe5f8 !important;
+  border-left:1px solid #cfe5f8 !important;
+  color:var(--gu-blue-dark) !important;
+  font-weight:700;
+  box-shadow:0 7px 18px rgba(0,120,212,.08);
+  transform:none !important;
+}
+
+.nav-item.active::before{
+  content:"";
+  position:absolute;
+  left:-1px;
+  top:9px;
+  bottom:9px;
+  width:3px;
+  border-radius:0 4px 4px 0;
+  background:linear-gradient(180deg,#168be8,#006bc0);
+}
+
+.nav-item > span{
+  transition:opacity var(--gu-transition);
+}
+
+/* ---------- surface commune des cinq onglets ---------- */
+
+#panel-patient,
+#panel-equipe,
+#panel-admission,
+#panel-dossier,
+#panel-sortie{
+  position:relative;
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  padding:4px 4px 36px;
+  box-sizing:border-box;
+  color:var(--gu-text);
+}
+
+#panel-patient.active,
+#panel-equipe.active,
+#panel-admission.active,
+#panel-dossier.active,
+#panel-sortie.active{
+  animation:guPanelIn .32s cubic-bezier(.2,.75,.2,1);
+}
+
+@keyframes guPanelIn{
+  from{opacity:0;transform:translateY(8px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ---------- titres ---------- */
+
+#panel-patient > h3,
+#panel-equipe > h3,
+#panel-admission > h3,
+#panel-dossier > h3,
+#panel-sortie > h3{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:0 0 22px !important;
+  padding:0 0 15px !important;
+  color:#172033 !important;
+  font-size:1.25rem;
+  font-weight:750;
+  letter-spacing:-.015em;
+  border-bottom:1px solid var(--gu-border);
+}
+
+#panel-patient > h3::after,
+#panel-equipe > h3::after,
+#panel-admission > h3::after,
+#panel-dossier > h3::after,
+#panel-sortie > h3::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-1px;
+  width:58px;
+  height:3px;
+  border-radius:4px;
+  background:linear-gradient(90deg,var(--gu-blue),#48a8ef);
+}
+
+/* ---------- champs généraux ---------- */
+
+#panel-patient label,
+#panel-equipe label,
+#panel-admission label,
+#panel-dossier label,
+#panel-sortie label{
+  color:#475569;
+  font-size:.88rem;
+  font-weight:650;
+  letter-spacing:.005em;
+}
+
+#panel-patient input,
+#panel-patient textarea,
+#panel-admission input,
+#panel-admission select,
+#panel-dossier textarea,
+#panel-sortie textarea,
+#panel-equipe input{
+  transition:
+    border-color var(--gu-transition),
+    box-shadow var(--gu-transition),
+    background var(--gu-transition),
+    transform var(--gu-transition);
+}
+
+#panel-patient input:not([type="checkbox"]):not([type="radio"]),
+#panel-patient textarea,
+#panel-admission input,
+#panel-admission select,
+#panel-dossier textarea,
+#panel-sortie textarea,
+#panel-equipe input{
+  border:1px solid #d8e1eb !important;
+  border-radius:12px !important;
+  background:#fff !important;
+  color:var(--gu-text);
+  box-shadow:0 2px 8px rgba(15,35,60,.025);
+}
+
+#panel-patient input:not([type="checkbox"]):not([type="radio"]):hover,
+#panel-patient textarea:hover,
+#panel-admission input:hover,
+#panel-admission select:hover,
+#panel-dossier textarea:hover,
+#panel-sortie textarea:hover,
+#panel-equipe input:hover{
+  border-color:#b9cee1 !important;
+}
+
+#panel-patient input:not([type="checkbox"]):not([type="radio"]):focus,
+#panel-patient textarea:focus,
+#panel-admission input:focus,
+#panel-admission select:focus,
+#panel-dossier textarea:focus,
+#panel-sortie textarea:focus,
+#panel-equipe input:focus{
+  outline:none !important;
+  border-color:#65afe3 !important;
+  background:#fff !important;
+  box-shadow:0 0 0 4px rgba(0,120,212,.10),0 5px 15px rgba(15,35,60,.05) !important;
+}
+
+/* ---------- IDENTITÉ ---------- */
+
+#panel-patient{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+
+#panel-patient > div:not(:has(.switch)){
+  position:relative;
+  box-sizing:border-box;
+  min-height:72px;
+  margin-bottom:11px;
+  padding:13px 16px;
+  background:var(--gu-card);
+  border:1px solid var(--gu-border);
+  border-radius:15px;
+  box-shadow:0 5px 18px rgba(15,35,60,.035);
+  transition:transform var(--gu-transition),box-shadow var(--gu-transition),border-color var(--gu-transition);
+}
+
+#panel-patient > div:not(:has(.switch)):hover{
+  transform:translateY(-1px);
+  border-color:#cddfed;
+  box-shadow:var(--gu-shadow);
+}
+
+#panel-patient > div > label{
+  display:block;
+  margin:0 0 5px !important;
+  color:#718096 !important;
+  font-size:.76rem !important;
+  font-weight:650 !important;
+  text-transform:uppercase;
+  letter-spacing:.055em;
+}
+
+#panel-patient > div > span{
+  display:block;
+  min-height:24px;
+  color:#172033;
+  font-size:1rem;
+  font-weight:650;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+#panel-patient #medtraitant,
+#panel-patient #vigilances,
+#panel-patient #allergies{
+  margin-top:2px !important;
+  min-height:44px;
+}
+
+#panel-patient > div:has(#importanceAllergies){
+  padding-bottom:15px;
+}
+
+#panel-patient > div:has(#importanceAllergies) > label:first-child{
+  margin-bottom:7px !important;
+}
+
+#panel-patient > div:has(#importanceAllergies) > div{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between;
+  padding-top:10px;
+  border-top:1px solid #edf1f5;
+}
+
+#panel-patient > div:has(#importanceAllergies) > div > label{
+  text-transform:none !important;
+  letter-spacing:0 !important;
+  font-size:.86rem !important;
+  color:#475569 !important;
+}
+
+#panel-patient > br{
+  display:none;
+}
+
+#panel-patient #btnAdmin{
+  align-self:flex-start;
+  margin-top:5px;
+}
+
+/* ---------- ÉQUIPE ---------- */
+
+#panel-equipe .equipe-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:16px !important;
+}
+
+#panel-equipe .field-group{
+  position:relative;
+  min-width:0;
+  margin:0 !important;
+  padding:18px;
+  background:#fff;
+  border:1px solid var(--gu-border);
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(15,35,60,.035);
+  transition:transform var(--gu-transition),box-shadow var(--gu-transition),border-color var(--gu-transition);
+}
+
+#panel-equipe .field-group:hover{
+  transform:translateY(-2px);
+  border-color:#cddfed;
+  box-shadow:var(--gu-shadow);
+}
+
+#panel-equipe .field-group > label{
+  margin:0 0 10px !important;
+  color:#334155 !important;
+  font-size:.9rem !important;
+}
+
+#panel-equipe .input-wrapper{
+  position:relative;
+}
+
+#panel-equipe .input-wrapper input{
+  min-height:46px;
+  padding:11px 42px 11px 13px !important;
+  box-sizing:border-box;
+}
+
+#panel-equipe .clear-btn{
+  right:9px !important;
+  color:#94a3b8 !important;
+  transition:color var(--gu-transition),background var(--gu-transition),transform var(--gu-transition);
+}
+
+#panel-equipe .clear-btn:hover{
+  color:#dc3b3b !important;
+  background:#fff2f2 !important;
+  transform:translateY(-50%) scale(1.05);
+}
+
+#panel-equipe .alerte-orange{
+  margin-top:8px !important;
+  padding:7px 9px;
+  border-radius:8px;
+  background:#fff8eb;
+  font-size:.78rem;
+}
+
+#panel-equipe .suggestions{
+  margin-top:7px;
+  border:1px solid #dbe5ef;
+  border-radius:11px;
+  box-shadow:0 12px 25px rgba(15,35,60,.10);
+}
+
+/* ---------- ADMISSION ---------- */
+
+#panel-admission{
+  display:block;
+}
+
+#panel-admission > label{
+  display:block;
+  margin:17px 0 7px !important;
+}
+
+#panel-admission > label:first-of-type{
+  margin-top:0 !important;
+}
+
+#panel-admission > input,
+#panel-admission > select,
+#panel-admission > div[style*="width:300px"]{
+  width:min(100%,560px) !important;
+  max-width:560px;
+}
+
+#panel-admission > input,
+#panel-admission > select{
+  min-height:46px;
+}
+
+#panel-admission > div[style*="width:300px"]{
+  width:min(100%,560px) !important;
+}
+
+#panel-admission > div[style*="width:300px"] input{
+  width:100% !important;
+  min-height:46px;
+  box-sizing:border-box;
+}
+
+#panel-admission #positionPatient{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px !important;
+  max-width:760px;
+  margin-top:9px;
+}
+
+#panel-admission .radio-card{
+  position:relative;
+  justify-content:center;
+  min-height:58px;
+  box-sizing:border-box;
+  padding:12px 15px !important;
+  background:#fff !important;
+  border:1px solid var(--gu-border) !important;
+  border-radius:14px !important;
+  box-shadow:0 4px 14px rgba(15,35,60,.03);
+  transition:all var(--gu-transition) !important;
+}
+
+#panel-admission .radio-card:hover{
+  transform:translateY(-2px);
+  border-color:#9bc9e9 !important;
+  background:#f7fbff !important;
+  box-shadow:0 8px 20px rgba(0,120,212,.08);
+}
+
+#panel-admission .radio-card:has(input:checked){
+  border-color:#78b9e5 !important;
+  background:linear-gradient(135deg,#eef8ff,#fbfdff) !important;
+  box-shadow:0 7px 20px rgba(0,120,212,.09);
+}
+
+#panel-admission .radio-card input{
+  accent-color:var(--gu-blue);
+}
+
+#panel-admission .radio-card input:checked + span{
+  color:var(--gu-blue-dark) !important;
+}
+
+#panel-admission #pdcSuggestions{
+  width:100% !important;
+  box-sizing:border-box;
+  border:1px solid #dbe5ef !important;
+  box-shadow:0 12px 25px rgba(15,35,60,.10);
+}
+
+/* ---------- DOSSIER MÉDICAL ---------- */
+
+#panel-dossier > label{
+  display:flex !important;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:2px;
+  margin:19px 0 7px !important;
+}
+
+#panel-dossier > label:first-of-type{
+  margin-top:0 !important;
+}
+
+#panel-dossier textarea{
+  display:block;
+  min-height:115px;
+  padding:13px 14px !important;
+  line-height:1.55;
+  font-size:.92rem !important;
+  resize:vertical;
+}
+
+#panel-dossier #questionnaire,
+#panel-dossier #antecedents,
+#panel-dossier #traitements{
+  min-height:145px;
+}
+
+#panel-dossier #histoire,
+#panel-dossier #auscultation{
+  min-height:260px;
+}
+
+#panel-dossier #evolutionTexte{
+  min-height:380px;
+}
+
+#panel-dossier .bouton-horloge,
+#panel-dossier .bouton-ancienne{
+  margin-left:4px;
+}
+
+#panel-dossier > hr{
+  height:1px !important;
+  margin:28px 0 !important;
+  background:#e2e8f0 !important;
+  border:0 !important;
+}
+
+#panel-dossier > h3:not(:first-child){
+  margin-top:4px !important;
+  margin-bottom:12px !important;
+  padding-bottom:11px !important;
+  font-size:1.05rem;
+  border-bottom:0;
+}
+
+#panel-dossier > h3:not(:first-child)::after{
+  display:none;
+}
+
+#panel-dossier > br{
+  display:none;
+}
+
+#panel-dossier > .btn-id{
+  margin-top:11px;
+}
+
+/* ---------- SORTIE ---------- */
+
+#panel-sortie{
+  padding-bottom:45px;
+}
+
+#panel-sortie > h3:not(:first-child){
+  margin:26px 0 12px !important;
+  padding:12px 15px !important;
+  border:1px solid #e2e8f0;
+  border-radius:13px;
+  background:#f8fafc;
+  color:#334155 !important;
+  font-size:.98rem !important;
+}
+
+#panel-sortie > h3:not(:first-child)::after{
+  display:none;
+}
+
+#panel-sortie > label{
+  display:flex !important;
+  align-items:center;
+  gap:9px;
+  box-sizing:border-box;
+  min-height:50px;
+  margin:7px 0 !important;
+  padding:10px 13px;
+  border:1px solid var(--gu-border);
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer;
+  transition:all var(--gu-transition);
+}
+
+#panel-sortie > label:hover{
+  border-color:#b9d7ec;
+  background:#f8fcff;
+  transform:translateX(2px);
+}
+
+#panel-sortie > label:has(input[type="radio"]:checked),
+#panel-sortie > label:has(input[type="checkbox"]:checked){
+  border-color:#9ac8e8;
+  background:#f1f9ff;
+  box-shadow:0 5px 16px rgba(0,120,212,.07);
+  color:#005ea2;
+}
+
+#panel-sortie input[type="radio"],
+#panel-sortie input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  margin:0;
+  flex:0 0 auto;
+  accent-color:var(--gu-blue);
+}
+
+#panel-sortie label input[type="text"]{
+  flex:1;
+  min-width:170px;
+  margin:0 0 0 5px !important;
+  padding:9px 11px !important;
+}
+
+#panel-sortie #champTraitementSortie{
+  min-height:150px;
+  margin-top:5px !important;
+}
+
+#panel-sortie > br{
+  display:none;
+}
+
+#panel-sortie .modal-buttons{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:18px;
+  padding-top:17px;
+  border-top:1px solid #e8edf3;
+}
+
+#panel-sortie .modal-buttons .btn-id{
+  margin:0;
+}
+
+/* ---------- boutons : on laisse .btn-id maître ---------- */
+/* Petite harmonisation uniquement : le système .btn-id existant
+   reste intact et garde ses couleurs / états. */
+#panel-patient .btn-id,
+#panel-equipe .btn-id,
+#panel-admission .btn-id,
+#panel-dossier .btn-id,
+#panel-sortie .btn-id{
+  font-family:inherit;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width:900px){
+  #panel-patient,
+  #panel-equipe,
+  #panel-admission,
+  #panel-dossier,
+  #panel-sortie{
+    padding:2px 0 30px;
+  }
+
+  #panel-equipe .equipe-grid{
+    grid-template-columns:1fr !important;
+  }
+
+  #panel-admission #positionPatient{
+    grid-template-columns:1fr;
+  }
+
+  #panel-patient > div:not(:has(.switch)){
+    margin-bottom:9px;
+  }
+}
+
+@media (max-width:560px){
+  #panel-patient > h3,
+  #panel-equipe > h3,
+  #panel-admission > h3,
+  #panel-dossier > h3,
+  #panel-sortie > h3{
+    font-size:1.08rem;
+  }
+
+  #panel-patient > div:not(:has(.switch)),
+  #panel-equipe .field-group{
+    padding:14px;
+    border-radius:13px;
+  }
+
+  #panel-sortie > label{
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+
+  #panel-sortie label input[type="text"]{
+    flex-basis:100%;
+    margin:4px 0 0 27px !important;
+  }
+}
+
+/* Réduction des animations si le système de l'utilisateur le demande */
+@media (prefers-reduced-motion:reduce){
+  #panel-patient.active,
+  #panel-equipe.active,
+  #panel-admission.active,
+  #panel-dossier.active,
+  #panel-sortie.active{
+    animation:none;
+  }
+
+  #panel-patient *,
+  #panel-equipe *,
+  #panel-admission *,
+  #panel-dossier *,
+  #panel-sortie *{
+    transition-duration:0.01ms !important;
+  }
+}
+</style>
+
 </head>
 <body>
 

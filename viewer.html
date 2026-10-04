@@ -819,6 +819,19 @@ let rotation =
 
 
 /* =====================================================
+   ETAT DE CHARGEMENT / ATTENTE POSTMESSAGE
+===================================================== */
+
+let authResolue = false;          // Firebase Auth a répondu
+let chargementLance = false;      // chargerDocument() déjà exécuté
+let documentCharge = false;       // un PDF est affiché
+let messagePdfEnAttente = null;   // message "charger-pdf" reçu AVANT la fin de l'auth
+let timerAttente = null;
+
+const DELAI_ATTENTE_MS = 20000;
+
+
+/* =====================================================
    DETECTION ELECTRON
 ===================================================== */
 
@@ -1262,6 +1275,10 @@ async function chargerDonneesPDF(
     await rendrePDF();
 
 
+    documentCharge = true;
+
+    clearTimeout(timerAttente);
+
     masquerLoader();
 
 }
@@ -1516,6 +1533,8 @@ onAuthStateChanged(
     auth,
     async (user) => {
 
+        authResolue = true;
+
         /*
          * Aucun accès Firestore
          * avant cet événement.
@@ -1543,6 +1562,21 @@ onAuthStateChanged(
 
         documentStatus.textContent =
             "Utilisateur authentifié";
+
+
+        /*
+         * onAuthStateChanged peut se redéclencher :
+         * on ne relance jamais le chargement
+         * si un document est déjà affiché ou en cours.
+         */
+
+        if (chargementLance || documentCharge) {
+
+            return;
+
+        }
+
+        chargementLance = true;
 
 
         await chargerDocument();
@@ -1749,9 +1783,80 @@ if (fileUrl) {
          * =============================================
          */
 
+        if (messagePdfEnAttente) {
+
+            /*
+             * Le document est arrivé par postMessage
+             * pendant la vérification de la connexion :
+             * on le traite maintenant.
+             */
+
+            const msg = messagePdfEnAttente;
+
+            messagePdfEnAttente = null;
+
+            await traiterMessagePdf(msg);
+
+            return;
+
+        }
+
+
+        if (documentCharge) {
+
+            return;
+
+        }
+
+
         afficherLoader(
             "En attente du document..."
         );
+
+
+        /*
+         * On prévient l'ouvreur que le viewer est prêt
+         * (il peut alors envoyer / renvoyer son message).
+         */
+
+        try {
+
+            const cible =
+                window.opener ||
+                (window.parent !== window ? window.parent : null);
+
+            if (cible) {
+
+                cible.postMessage(
+                    { type: "viewer-pret" },
+                    "*"
+                );
+
+            }
+
+        }
+
+        catch (_) {}
+
+
+        /*
+         * Plus de spinner infini : au bout de 20 s
+         * on affiche un vrai message.
+         */
+
+        clearTimeout(timerAttente);
+
+        timerAttente = setTimeout(() => {
+
+            if (!documentCharge) {
+
+                afficherErreur(
+                    "Aucun document reçu. Fermez cet onglet et relancez l'ouverture du document."
+                );
+
+            }
+
+        }, DELAI_ATTENTE_MS);
 
     }
 
@@ -1791,25 +1896,51 @@ if (fileUrl) {
    POSTMESSAGE
    ===================================================== */
 
+async function traiterMessagePdf(data) {
+
+    try {
+
+        afficherLoader(
+            "Chargement du document..."
+        );
+
+        const blob =
+            new Blob(
+                [
+                    data.data
+                ],
+                {
+                    type:
+                        "application/pdf"
+                }
+            );
+
+        await chargerBlob(
+            blob,
+            data.nom ||
+            "Document.pdf"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        afficherErreur(
+            "Impossible de charger le document."
+        );
+
+    }
+
+}
+
+
 window.addEventListener(
     "message",
     async (event) => {
-
-        /*
-         * On accepte uniquement
-         * les messages provenant
-         * de la même origine.
-         */
-
-        if (
-            event.origin !==
-            window.location.origin
-        ) {
-
-            return;
-
-        }
-
 
         if (
             !event.data ||
@@ -1823,9 +1954,44 @@ window.addEventListener(
 
 
         /*
-         * Le viewer doit également
-         * avoir un utilisateur connecté.
+         * On accepte uniquement
+         * les messages de la même origine.
+         * (on le signale en console au lieu
+         * d'attendre indéfiniment en silence)
          */
+
+        if (
+            event.origin !==
+            window.location.origin
+        ) {
+
+            console.warn(
+                "Message charger-pdf ignoré (origine différente) :",
+                event.origin,
+                "attendu :",
+                window.location.origin
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Si Firebase Auth n'a pas encore répondu,
+         * on garde le message au lieu de le perdre :
+         * il sera traité dès que la connexion est confirmée.
+         */
+
+        if (!authResolue) {
+
+            messagePdfEnAttente =
+                event.data;
+
+            return;
+
+        }
+
 
         if (!utilisateurConnecte) {
 
@@ -1838,40 +2004,11 @@ window.addEventListener(
         }
 
 
-        try {
+        clearTimeout(timerAttente);
 
-            const blob =
-                new Blob(
-                    [
-                        event.data.data
-                    ],
-                    {
-                        type:
-                            "application/pdf"
-                    }
-                );
-
-
-            await chargerBlob(
-                blob,
-                event.data.nom ||
-                "Document.pdf"
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            afficherErreur(
-                "Impossible de charger le document."
-            );
-
-        }
+        await traiterMessagePdf(
+            event.data
+        );
 
     }
 );

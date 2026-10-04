@@ -6547,188 +6547,150 @@ window.openTab = function(tabName, evt) {
 
 
 // --- Fonction pour charger et afficher les examens ---
-
 window.remplirDepuisAncienneHospi = async function(champ) {
   try {
     const patientId = new URLSearchParams(window.location.search).get("id");
 
     if (!patientId) {
-      alert("ID patient manquant");
+      afficherBulle("ID patient manquant", "error");
       return;
     }
 
-    // ============================================================
-    // 1. Récupération du patient
-    // ============================================================
-
+    // Patient
     const patientRef = doc(db, "patients", patientId);
     const patientSnap = await getDoc(patientRef);
 
     if (!patientSnap.exists()) {
-      alert("Patient introuvable");
+      afficherBulle("Patient introuvable", "error");
       return;
     }
 
     const patientData = patientSnap.data();
 
-    // ============================================================
-    // 2. Liste des hospitalisations
-    //    patients.hospitalisations = ["ID1", "ID2", "ID3"]
-    // ============================================================
-
+    // IDs des hospitalisations
     const hospitalisations = Array.isArray(patientData.hospitalisations)
-      ? patientData.hospitalisations.filter(Boolean)
+      ? patientData.hospitalisations
       : [];
 
-    // Hospitalisation actuellement active
     const hospiEnCours = patientData.hospitalisationActiveId;
 
-    // On exclut l'hospitalisation active
+    // On exclut l'hospitalisation actuelle
     const anciennes = hospitalisations.filter(
       id => id !== hospiEnCours
     );
 
     if (anciennes.length === 0) {
+      afficherBulle("Aucune hospitalisation antérieure", "default");
+      return;
+    }
+
+    // On cherche de la plus récente à la plus ancienne
+    for (let i = anciennes.length - 1; i >= 0; i--) {
+
+      const hospiId = anciennes[i];
+
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
+
+      if (!hospiSnap.exists()) {
+        console.warn("Hospitalisation introuvable :", hospiId);
+        continue;
+      }
+
+      const hospiData = hospiSnap.data();
+
+      const dossierMedical = hospiData.dossierMedical;
+
+      if (!dossierMedical) {
+        continue;
+      }
+
+      let valeur = dossierMedical[champ];
+
+      if (
+        valeur === undefined ||
+        valeur === null ||
+        valeur === ""
+      ) {
+        continue;
+      }
+
+      // 🔥 Si Firestore contient un objet, on le transforme en texte
+      if (typeof valeur === "object") {
+
+        if (Array.isArray(valeur)) {
+          valeur = valeur
+            .map(item =>
+              typeof item === "object"
+                ? JSON.stringify(item, null, 2)
+                : String(item)
+            )
+            .join("\n");
+        } else {
+          valeur = Object.entries(valeur)
+            .map(([cle, contenu]) => {
+
+              if (typeof contenu === "object") {
+                contenu = JSON.stringify(contenu, null, 2);
+              }
+
+              return `${cle} : ${contenu}`;
+            })
+            .join("\n");
+        }
+      }
+
+      valeur = String(valeur).trim();
+
+      if (!valeur) {
+        continue;
+      }
+
+      // Champ de destination
+      const textarea = document.getElementById(champ);
+
+      if (!textarea) {
+        afficherBulle(`Champ introuvable : ${champ}`, "error");
+        return;
+      }
+
+      // Position du curseur
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? start;
+
+      const avant = textarea.value.substring(0, start);
+      const apres = textarea.value.substring(end);
+
+      const insertion = valeur + "\n";
+
+      textarea.value = avant + insertion + apres;
+
+      const nouvellePosition = start + insertion.length;
+
+      textarea.selectionStart = nouvellePosition;
+      textarea.selectionEnd = nouvellePosition;
+
+      textarea.focus();
+
+      textarea.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+
+      textarea.dispatchEvent(
+        new Event("change", { bubbles: true })
+      );
+
       afficherBulle(
-        "Aucune hospitalisation antérieure",
+        `📁 Ancien ${champ} inséré`,
         "default"
       );
-      return;
-    }
-
-    // ============================================================
-    // 3. On part de la dernière hospitalisation enregistrée
-    // ============================================================
-
-    const derniereHospiId = anciennes[anciennes.length - 1];
-
-    console.log(
-      "Recherche ancienne hospitalisation :",
-      derniereHospiId
-    );
-
-    // ============================================================
-    // 4. Récupération du document hospitalisation
-    // ============================================================
-
-    const hospiRef = doc(
-      db,
-      "hospitalisations",
-      derniereHospiId
-    );
-
-    const hospiSnap = await getDoc(hospiRef);
-
-    if (!hospiSnap.exists()) {
-      console.warn(
-        "Hospitalisation introuvable :",
-        derniereHospiId
-      );
-
-      afficherBulle(
-        "Hospitalisation antérieure introuvable",
-        "warning"
-      );
 
       return;
     }
-
-    const hospiData = hospiSnap.data();
-
-    console.log(
-      "Ancienne hospitalisation récupérée :",
-      hospiData
-    );
-
-    // ============================================================
-    // 5. Compatibilité avec les deux structures
-    // ============================================================
-
-    let ancienne;
-
-    // Ancienne structure :
-    // hospitalisations/{id}.dossierMedical.champ
-    if (
-      hospiData.dossierMedical &&
-      typeof hospiData.dossierMedical === "object"
-    ) {
-      ancienne = hospiData.dossierMedical;
-    }
-
-    // Nouvelle structure :
-    // hospitalisations/{id}.champ
-    else {
-      ancienne = hospiData;
-    }
-
-    // ============================================================
-    // 6. Vérification du champ demandé
-    // ============================================================
-
-    if (
-      !ancienne ||
-      ancienne[champ] === undefined ||
-      ancienne[champ] === null ||
-      String(ancienne[champ]).trim() === ""
-    ) {
-      afficherBulle(
-        `❌ Pas d'ancien contenu pour ${champ}`,
-        "warning"
-      );
-
-      return;
-    }
-
-    const contenu = String(ancienne[champ]).trim();
-
-    // ============================================================
-    // 7. Récupération du textarea
-    // ============================================================
-
-    const textarea = document.getElementById(champ);
-
-    if (!textarea) {
-      console.warn(
-        `Textarea #${champ} introuvable`
-      );
-
-      return;
-    }
-
-    // ============================================================
-    // 8. Insertion à la position du curseur
-    // ============================================================
-
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? textarea.value.length;
-
-    const avant = textarea.value.substring(0, start);
-    const apres = textarea.value.substring(end);
-
-    const insertion = contenu + "\n";
-
-    textarea.value =
-      avant +
-      insertion +
-      apres;
-
-    // Repositionnement du curseur
-    const nouvellePosition =
-      start + insertion.length;
-
-    textarea.selectionStart =
-      textarea.selectionEnd =
-        nouvellePosition;
-
-    textarea.focus();
-
-    // ============================================================
-    // 9. Information utilisateur
-    // ============================================================
 
     afficherBulle(
-      `📁 Ancien ${champ} inséré`,
-      "default"
+      `Aucun ancien contenu trouvé pour ${champ}`,
+      "warning"
     );
 
   } catch (err) {
@@ -6743,6 +6705,8 @@ window.remplirDepuisAncienneHospi = async function(champ) {
     );
   }
 };
+
+
 window.afficherLoader = function() {
   let loader = document.getElementById("loadingScreen");
   

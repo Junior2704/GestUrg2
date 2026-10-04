@@ -6,6 +6,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <title>Constantes patient</title>
   <style>
     :root {
@@ -314,6 +315,97 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
+
+/* ===== Graphe des constantes ===== */
+.table-header .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-id-g:hover {
+  background: rgba(124, 58, 237, 0.10);
+  border-color: rgba(124, 58, 237, 0.6);
+  color: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(124, 58, 237, 0.15);
+}
+.gmodal {
+  width: min(1100px, 100%);
+  padding: 0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
+}
+.gmodal-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.gmodal-head h3 { margin: 0; font-size: 18px; }
+.gmodal-head .gsub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.gclose {
+  all: unset; cursor: pointer; width: 34px; height: 34px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 18px; transition: background .2s;
+}
+.gclose:hover { background: #f3f4f6; color: #111827; }
+.gcontrols {
+  padding: 14px 22px;
+  background: #f9fafb;
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.grow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.glabel {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); min-width: 92px;
+}
+.gchip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1.5px solid var(--border); background: #fff;
+  font-size: 13px; color: var(--txt); cursor: pointer; user-select: none;
+  transition: all .2s ease;
+}
+.gchip input { display: none; }
+.gchip .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c); opacity: .35; transition: opacity .2s, box-shadow .2s;
+}
+.gchip:hover { border-color: var(--c); transform: translateY(-1px); }
+.gchip.on {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 10%, #fff);
+  font-weight: 600;
+}
+.gchip.on .dot { opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent); }
+.gseg {
+  display: inline-flex; background: #e5e7eb; border-radius: 10px; padding: 3px; gap: 2px;
+}
+.gseg button {
+  all: unset; cursor: pointer; padding: 6px 12px; border-radius: 8px;
+  font-size: 13px; color: #374151; transition: all .2s;
+}
+.gseg button.on { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.gtoolbtn {
+  all: unset; cursor: pointer; font-size: 12px; color: var(--primary);
+  padding: 4px 8px; border-radius: 6px;
+}
+.gtoolbtn:hover { background: rgba(29, 78, 216, .08); }
+.gbody { padding: 16px 22px 22px; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+.gcard {
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 8px;
+  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.03);
+}
+.gcard-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 6px; }
+.gcard-title { font-weight: 700; font-size: 14px; }
+.gcard-title small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+.glast { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.glast b { color: var(--txt); font-size: 13px; }
+.glast i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.gcanvas { position: relative; height: 200px; }
+.gcanvas.tall { height: 400px; }
+.gempty { text-align: center; color: var(--muted); padding: 50px 10px; font-size: 14px; }
+@media (max-width: 700px) {
+  .glabel { min-width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -330,7 +422,7 @@ body {
     </div>
     
     <div class="anthro-box">
-      <h3 style="margin:0 0 8px 0;">📏 Poids / Taille (saisie unique par hospitalisation)</h3>
+      <h3 style="margin:0 0 8px 0;">📏 Poids / Taille</h3>
       <div class="anthro-grid">
         <div class="field">
           <label for="poidsHosp">Poids (kg)</label>
@@ -353,7 +445,10 @@ body {
     <div class="table-wrap">
   <div class="table-header">
   <h3>Relevé des Constantes</h3>
-  <button class="btn-id" id="btnAdd">➕ Ajouter une ligne</button>
+  <div class="header-actions">
+    <button class="btn-id btn-id-g" id="btnGraph">📈 Graphe</button>
+    <button class="btn-id" id="btnAdd">➕ Ajouter une ligne</button>
+  </div>
   
 </div>
       <table>
@@ -381,6 +476,41 @@ body {
       <button class="btn-id" onclick="generatePdf()">
   📄 Suivi des constantes PDF
 </button>
+    </div>
+  </div>
+
+  <div id="modalGraphBackdrop" class="modal-backdrop">
+    <div class="modal gmodal">
+      <div class="gmodal-head">
+        <div>
+          <h3>📈 Évolution des constantes</h3>
+          <div class="gsub" id="graphSub"></div>
+        </div>
+        <button class="gclose" id="btnCloseGraph" title="Fermer">✕</button>
+      </div>
+      <div class="gcontrols">
+        <div class="grow">
+          <span class="glabel">Constantes</span>
+          <span id="graphChips" style="display:contents;"></span>
+          <button class="gtoolbtn" id="graphAll">Tout</button>
+          <button class="gtoolbtn" id="graphNone">Aucun</button>
+        </div>
+        <div class="grow">
+          <span class="glabel">Période</span>
+          <div class="gseg" id="graphPeriod">
+            <button data-h="0" class="on">Tout</button>
+            <button data-h="24">24 h</button>
+            <button data-h="48">48 h</button>
+            <button data-h="168">7 j</button>
+          </div>
+          <span class="glabel" style="min-width:auto;margin-left:14px;">Affichage</span>
+          <div class="gseg" id="graphMode">
+            <button data-m="split" class="on">Un graphe par constante</button>
+            <button data-m="overlay">Superposé</button>
+          </div>
+        </div>
+      </div>
+      <div class="gbody" id="graphZone"></div>
     </div>
   </div>
 
@@ -1001,6 +1131,262 @@ document.addEventListener("keydown", (e) => {
     }
   }
 });
+    // ======================= GRAPHE DES CONSTANTES =======================
+    const toNum = (v) => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(String(v).replace(",", "."));
+      return Number.isFinite(n) ? n : null;
+    };
+    const parseTA = (v) => {
+      const m = String(v || "").match(/(\d{2,3})\s*[\/\-]\s*(\d{2,3})/);
+      return m ? { sys: Number(m[1]), dia: Number(m[2]) } : null;
+    };
+
+    const GRAPH_GROUPS = {
+      temperature: { title: "Température", unit: "°C" },
+      fc:          { title: "Fréquence cardiaque", unit: "bpm" },
+      ta:          { title: "Tension artérielle", unit: "mmHg" },
+      saturation:  { title: "Saturation O₂", unit: "%" },
+      fr:          { title: "Fréquence respiratoire", unit: "/min" },
+      douleur:     { title: "Douleur", unit: "/10" },
+      gcs:         { title: "Score de Glasgow", unit: "" }
+    };
+    const GRAPH_SERIES = [
+      { key: "temperature",   group: "temperature", label: "Température",      unit: "°C",   color: "#ef4444", def: true,  get: r => toNum(r.temperature) },
+      { key: "fc",            group: "fc",          label: "Pouls (FC)",       unit: "bpm",  color: "#ec4899", def: true,  get: r => toNum(r.fc) },
+      { key: "taSys",         group: "ta",          label: "TA systolique",    unit: "mmHg", color: "#2563eb", def: true,  get: r => parseTA(r.ta)?.sys ?? null },
+      { key: "taDia",         group: "ta",          label: "TA diastolique",   unit: "mmHg", color: "#38bdf8", def: true,  get: r => parseTA(r.ta)?.dia ?? null },
+      { key: "saturation",    group: "saturation",  label: "Saturation O₂",    unit: "%",    color: "#0891b2", def: true,  get: r => toNum(r.saturation) },
+      { key: "fr",            group: "fr",          label: "FR",               unit: "/min", color: "#10b981", def: false, get: r => toNum(r.fr) },
+      { key: "douleur",       group: "douleur",     label: "Douleur",          unit: "/10",  color: "#f59e0b", def: false, get: r => toNum(r.douleur) },
+      { key: "glasgowTotal",  group: "gcs",         label: "GCS total",        unit: "/15",  color: "#7c3aed", def: false, get: r => toNum(r.glasgowTotal) },
+      { key: "glasgowYeux",   group: "gcs",         label: "GCS yeux",         unit: "/4",   color: "#a78bfa", def: false, get: r => toNum(r.glasgowYeux) },
+      { key: "glasgowVerbal", group: "gcs",         label: "GCS verbal",       unit: "/5",   color: "#c084fc", def: false, get: r => toNum(r.glasgowVerbal) },
+      { key: "glasgowMoteur", group: "gcs",         label: "GCS moteur",       unit: "/6",   color: "#6d28d9", def: false, get: r => toNum(r.glasgowMoteur) }
+    ];
+
+    const graphState = {
+      selected: new Set(GRAPH_SERIES.filter(s => s.def).map(s => s.key)),
+      periodH: 0,
+      mode: "split"
+    };
+    let graphCharts = [];
+
+    const modalGraphBackdrop = document.getElementById("modalGraphBackdrop");
+    const graphZone = document.getElementById("graphZone");
+
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const fmtShort = (t) => { const d = new Date(t); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+    const fmtLong = (t) => new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    const fmtVal = (v) => (Math.round(v * 10) / 10).toString().replace(".", ",");
+
+    function buildChips() {
+      const wrap = document.getElementById("graphChips");
+      wrap.innerHTML = "";
+      GRAPH_SERIES.forEach(s => {
+        const lab = document.createElement("label");
+        lab.className = "gchip" + (graphState.selected.has(s.key) ? " on" : "");
+        lab.style.setProperty("--c", s.color);
+        lab.innerHTML = `<input type="checkbox" ${graphState.selected.has(s.key) ? "checked" : ""}><span class="dot"></span>${s.label}`;
+        lab.querySelector("input").addEventListener("change", (e) => {
+          if (e.target.checked) graphState.selected.add(s.key); else graphState.selected.delete(s.key);
+          lab.classList.toggle("on", e.target.checked);
+          renderGraph();
+        });
+        wrap.appendChild(lab);
+      });
+    }
+
+    function getGraphRows() {
+      let rows = constantesReleves
+        .map(r => ({ r, t: new Date(`${r.date}T${r.heure || "00:00"}`).getTime() }))
+        .filter(x => Number.isFinite(x.t))
+        .sort((a, b) => a.t - b.t);
+      if (graphState.periodH > 0 && rows.length) {
+        const tmax = rows[rows.length - 1].t;
+        const tmin = tmax - graphState.periodH * 3600 * 1000;
+        rows = rows.filter(x => x.t >= tmin);
+      }
+      return rows;
+    }
+
+    function destroyCharts() {
+      graphCharts.forEach(c => c.destroy());
+      graphCharts = [];
+    }
+
+    function baseOptions(tMin, tMax) {
+      const span = Math.max(tMax - tMin, 1);
+      const padT = tMax === tMin ? 3600 * 1000 : span * 0.03;
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        animation: { duration: 350 },
+        interaction: { mode: "nearest", axis: "x", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "rgba(17,24,39,.92)",
+            padding: 10, cornerRadius: 8, boxPadding: 4,
+            callbacks: {
+              title: (items) => items.length ? fmtLong(items[0].parsed.x) : "",
+              label: (ctx) => ` ${ctx.dataset.label} : ${fmtVal(ctx.parsed.y)} ${ctx.dataset._unit || ""}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: "linear",
+            min: tMin - padT, max: tMax + padT,
+            grid: { color: "rgba(0,0,0,.05)" },
+            ticks: { color: "#6b7280", font: { size: 11 }, maxRotation: 0, callback: (v) => fmtShort(v) },
+            afterBuildTicks: (scale) => {
+              const n = Math.min(7, Math.max(2, Math.floor(scale.chart.width / 120)));
+              const step = (scale.max - scale.min) / (n - 1);
+              scale.ticks = Array.from({ length: n }, (_, i) => ({ value: scale.min + step * i }));
+            }
+          }
+        }
+      };
+    }
+
+    function makeDataset(s, points) {
+      return {
+        label: s.label, _unit: s.unit, data: points,
+        borderColor: s.color, backgroundColor: s.color + "26",
+        pointBackgroundColor: "#fff", pointBorderColor: s.color, pointBorderWidth: 2,
+        pointRadius: 3.5, pointHoverRadius: 6,
+        borderWidth: 2.2, tension: 0.28, spanGaps: true
+      };
+    }
+
+    function renderGraph() {
+      destroyCharts();
+      graphZone.innerHTML = "";
+
+      if (typeof Chart === "undefined") {
+        graphZone.innerHTML = `<div class="gempty">⚠️ La bibliothèque de graphiques n'a pas pu être chargée (connexion ?).</div>`;
+        return;
+      }
+
+      const rows = getGraphRows();
+      const sub = document.getElementById("graphSub");
+      sub.textContent = `${patientInfoEl.textContent.split("•")[0].trim()} • ${rows.length} relevé${rows.length > 1 ? "s" : ""}`;
+
+      if (!rows.length) {
+        graphZone.innerHTML = `<div class="gempty">Aucune constante enregistrée pour cette hospitalisation.</div>`;
+        return;
+      }
+
+      const active = GRAPH_SERIES.filter(s => graphState.selected.has(s.key)).map(s => ({
+        s, points: rows.map(x => ({ x: x.t, y: s.get(x.r) })).filter(p => p.y !== null)
+      })).filter(a => a.points.length);
+
+      if (!active.length) {
+        graphZone.innerHTML = `<div class="gempty">Sélectionnez au moins une constante renseignée pour afficher le graphe.</div>`;
+        return;
+      }
+
+      const allT = active.flatMap(a => a.points.map(p => p.x));
+      const tMin = Math.min(...allT), tMax = Math.max(...allT);
+
+      const lastHtml = (items) => items.map(a => {
+        const last = a.points[a.points.length - 1].y;
+        return `<span><i style="background:${a.s.color}"></i>${a.s.label} <b>${fmtVal(last)}</b> ${a.s.unit}</span>`;
+      }).join("");
+
+      if (graphState.mode === "overlay") {
+        const card = document.createElement("div");
+        card.className = "gcard";
+        card.innerHTML = `<div class="gcard-head"><div class="gcard-title">Constantes superposées</div><div class="glast">${lastHtml(active)}</div></div><div class="gcanvas tall"><canvas></canvas></div>`;
+        graphZone.appendChild(card);
+
+        const opts = baseOptions(tMin, tMax);
+        opts.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 8, color: "#374151" } };
+        active.forEach((a, i) => {
+          opts.scales["y_" + a.s.key] = {
+            position: i % 2 === 0 ? "left" : "right",
+            display: i < 2,
+            grace: "8%",
+            grid: { drawOnChartArea: i === 0, color: "rgba(0,0,0,.05)" },
+            ticks: { color: a.s.color, font: { size: 11 } },
+            title: { display: i < 2, text: a.s.label + (a.s.unit ? ` (${a.s.unit})` : ""), color: a.s.color, font: { size: 11, weight: "600" } }
+          };
+        });
+        const ds = active.map(a => ({ ...makeDataset(a.s, a.points), yAxisID: "y_" + a.s.key }));
+        graphCharts.push(new Chart(card.querySelector("canvas"), { type: "line", data: { datasets: ds }, options: opts }));
+        if (active.length > 2) {
+          const note = document.createElement("div");
+          note.className = "gempty";
+          note.style.padding = "0 0 6px";
+          note.style.fontSize = "12px";
+          note.textContent = "Seuls les deux premiers axes sont affichés ; survolez les points pour lire les valeurs réelles.";
+          graphZone.appendChild(note);
+        }
+        return;
+      }
+
+      // Mode "un graphe par constante" (les séries d'un même groupe, ex. TA, partagent le graphe)
+      Object.keys(GRAPH_GROUPS).forEach(g => {
+        const items = active.filter(a => a.s.group === g);
+        if (!items.length) return;
+        const meta = GRAPH_GROUPS[g];
+        const card = document.createElement("div");
+        card.className = "gcard";
+        card.innerHTML = `<div class="gcard-head"><div class="gcard-title">${meta.title}${meta.unit ? `<small>${meta.unit}</small>` : ""}</div><div class="glast">${lastHtml(items)}</div></div><div class="gcanvas"><canvas></canvas></div>`;
+        graphZone.appendChild(card);
+
+        const opts = baseOptions(tMin, tMax);
+        opts.scales.y = {
+          grace: "10%",
+          grid: { color: "rgba(0,0,0,.05)" },
+          ticks: { color: "#6b7280", font: { size: 11 } }
+        };
+        if (g === "saturation") opts.scales.y.max = 100;
+        if (items.length > 1) opts.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 8, color: "#374151" } };
+        graphCharts.push(new Chart(card.querySelector("canvas"), {
+          type: "line",
+          data: { datasets: items.map(a => makeDataset(a.s, a.points)) },
+          options: opts
+        }));
+      });
+    }
+
+    function openGraphModal() {
+      buildChips();
+      modalGraphBackdrop.style.display = "flex";
+      renderGraph();
+    }
+    function closeGraphModal() {
+      modalGraphBackdrop.style.display = "none";
+      destroyCharts();
+    }
+
+    document.getElementById("btnGraph").addEventListener("click", openGraphModal);
+    document.getElementById("btnCloseGraph").addEventListener("click", closeGraphModal);
+    modalGraphBackdrop.addEventListener("click", (e) => { if (e.target === modalGraphBackdrop) closeGraphModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modalGraphBackdrop.style.display === "flex") closeGraphModal(); });
+    document.getElementById("graphAll").addEventListener("click", () => {
+      GRAPH_SERIES.forEach(s => graphState.selected.add(s.key)); buildChips(); renderGraph();
+    });
+    document.getElementById("graphNone").addEventListener("click", () => {
+      graphState.selected.clear(); buildChips(); renderGraph();
+    });
+    document.getElementById("graphPeriod").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-h]"); if (!b) return;
+      graphState.periodH = Number(b.dataset.h);
+      document.querySelectorAll("#graphPeriod button").forEach(x => x.classList.toggle("on", x === b));
+      renderGraph();
+    });
+    document.getElementById("graphMode").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-m]"); if (!b) return;
+      graphState.mode = b.dataset.m;
+      document.querySelectorAll("#graphMode button").forEach(x => x.classList.toggle("on", x === b));
+      renderGraph();
+    });
+    // ===================== FIN GRAPHE DES CONSTANTES =====================
+
     loadData().catch((err) => {
       console.error(err);
       statusEl.textContent = "❌ Erreur de chargement.";

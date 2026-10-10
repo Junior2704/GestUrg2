@@ -9,10 +9,18 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    setPersistence,
+    browserSessionPersistence,
+    browserLocalPersistence,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  
+
   // --- Config Firebase ---
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
@@ -27,9 +35,13 @@ window.allerAdmin = async function () {
   }
 
 const DERNIER_EMAIL_KEY = "gu2_dernierEmail";
+const SESSION_EXPIRE_KEY = "gu2_sessionExpire";
+const DUREE_SESSION_MS = 7 * 24 * 3600 * 1000; // 7 jours
+
 let systemeBloque = false;
 let badgeLoginEmail = null;
 let badgeLoginUid = null;
+let connexionManuelleEnCours = false; // évite le double appel de finaliserConnexion
 
 // ➡️ Redirige vers la page principale
 // (mobile → urgences_mobile, ordinateur → urgences)
@@ -99,11 +111,10 @@ function traduireErreurConnexion(error) {
 window.seConnecter = async function () {
   if (systemeBloque) return;
 
-  await setPersistence(auth, browserSessionPersistence);
-
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   const message = document.getElementById("message");
+  const rester = document.getElementById("resterConnecte").checked;
 
   message.textContent = "";
   message.style.color = "red";
@@ -111,13 +122,25 @@ window.seConnecter = async function () {
   // Réinitialise l'animation
   const animation = document.querySelector(".login-mdp-anim");
 
+  connexionManuelleEnCours = true;
+
   try {
+    // 🔐 Choix de la persistance AVANT la connexion
+    await setPersistence(auth, rester ? browserLocalPersistence : browserSessionPersistence);
+
     // 🔐 Connexion utilisateur
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
       password
     );
+
+    // ✅ Date d'expiration enregistrée seulement si la connexion a réussi
+    if (rester) {
+      localStorage.setItem(SESSION_EXPIRE_KEY, String(Date.now() + DUREE_SESSION_MS));
+    } else {
+      localStorage.removeItem(SESSION_EXPIRE_KEY);
+    }
 
     // ✅ Animation de succès
     animation?.contentWindow.postMessage("Valide", "*");
@@ -130,6 +153,7 @@ window.seConnecter = async function () {
     }, 1500);
 
   } catch (error) {
+    connexionManuelleEnCours = false;
 
     // ❌ Animation d'échec
     animation?.contentWindow.postMessage("Invalide", "*");
@@ -201,7 +225,7 @@ window.seConnecter = async function () {
 document.querySelector('.login-badge-anim')
   .contentWindow
   .postMessage("Valide", "*");
-        setTimeout(() =>{ 
+        setTimeout(() =>{
       document.getElementById("usbUserText").textContent = `Utilisateur : ${data.nom || data.email || ""}`;
       document.getElementById("usbPassword").value = "";
       document.getElementById("usbLoginError").textContent = "";
@@ -220,9 +244,9 @@ document.querySelector('.login-badge-anim')
   };
 
   // ✔ Validation de la modale mot de passe (déclenchée après reconnaissance du badge)
+  // 🔒 Mode badge = postes partagés : session classique uniquement (pas de "rester connecté")
   window.validerUSBLogin = async function () {
     if (!badgeLoginEmail) return;
-    await setPersistence(auth, browserSessionPersistence);
 
     const password = document.getElementById("usbPassword").value;
     const errorDiv = document.getElementById("usbLoginError");
@@ -233,12 +257,17 @@ document.querySelector('.login-badge-anim')
       return;
     }
 
+    connexionManuelleEnCours = true;
+
     try {
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, badgeLoginEmail, password);
+      localStorage.removeItem(SESSION_EXPIRE_KEY);
       localStorage.setItem(DERNIER_EMAIL_KEY, badgeLoginEmail);
       document.getElementById("usbLoginModal").style.display = "none";
       await finaliserConnexion(userCredential.user);
     } catch (error) {
+      connexionManuelleEnCours = false;
       errorDiv.textContent = traduireErreurConnexion(error);
       document.getElementById("usbPassword").value = "";
       document.getElementById("usbPassword").focus();
@@ -374,6 +403,7 @@ window.showSystemModal = function(title, text) {
 
   modal.style.display = "flex";
 };
+
 window.addEventListener("DOMContentLoaded", async () => {
   await appliquerOngletParDefaut();
 
@@ -390,7 +420,23 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     });
     document.getElementById("badgeLoginInput").disabled = true;
+    return;
   }
+
+  // 🔁 Reconnexion automatique (session déjà ouverte : "rester connecté" ou onglet encore actif)
+  onAuthStateChanged(auth, async (user) => {
+    if (!user || systemeBloque || connexionManuelleEnCours) return;
+
+    // Durée maximale de la session persistante (contrôle côté navigateur)
+    const exp = Number(localStorage.getItem(SESSION_EXPIRE_KEY) || 0);
+    if (exp && Date.now() > exp) {
+      localStorage.removeItem(SESSION_EXPIRE_KEY);
+      await signOut(auth);
+      return;
+    }
+
+    await finaliserConnexion(user);
+  });
 });
 </script>
 
@@ -539,6 +585,24 @@ input::placeholder {
   min-height: 16px;
 }
 
+/* ===== CASE "RESTER CONNECTÉ" ===== */
+.rester-connecte {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+  margin: 6px 0 10px;
+  cursor: pointer;
+}
+
+.rester-connecte input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
 /* ===== MODALE MOT DE PASSE (badge reconnu) ===== */
 .usb-modal-actions {
   margin-top: 18px;
@@ -677,8 +741,8 @@ width:90%
 
 
 .btn-id-o:hover {
-  background: rgba(255, 152, 0, 0.10);  
-  border-color: #ff9800;                
+  background: rgba(255, 152, 0, 0.10);
+  border-color: #ff9800;
   color: #ff9800;
   transform: translateY(-1px);
   box-shadow: 0 6px 15px rgba(255, 152, 0, 0.25);
@@ -978,7 +1042,7 @@ img {
 
   <!-- Heure + boutons Electron à droite -->
   <div id="topbar-right">
-    
+
     <span id="datetime"></span>
   </div>
 </div>
@@ -995,38 +1059,42 @@ img {
   <div class="login-panel-container">
 
   <!-- Volet MOT DE PASSE -->
-<!-- Volet MOT DE PASSE -->
-<div id="loginPanelPassword" class="login-panel">
+  <div id="loginPanelPassword" class="login-panel">
 
-  <div class="login-mdp-iframe-wrapper">
-    <iframe
-      src="animation-mdp.html"
-      class="login-mdp-anim"
-      scrolling="no"
-      frameborder="0"
-      title="Animation de connexion par mot de passe">
-    </iframe>
+    <div class="login-mdp-iframe-wrapper">
+      <iframe
+        src="animation-mdp.html"
+        class="login-mdp-anim"
+        scrolling="no"
+        frameborder="0"
+        title="Animation de connexion par mot de passe">
+      </iframe>
+    </div>
+
+    <input
+      type="email"
+      id="email"
+      placeholder="Email"
+      style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Mot de passe"
+      style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
+
+    <!-- ✅ Rester connecté (décochée par défaut) -->
+    <label class="rester-connecte">
+      <input type="checkbox" id="resterConnecte">
+      Rester connecté (appareil personnel uniquement)
+    </label>
+
+    <button onclick="seConnecter()" class="btn-id">
+      🔑 Se connecter
+    </button>
+
   </div>
 
-  <input
-    type="email"
-    id="email"
-    placeholder="Email"
-    style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
-
-  <input
-    type="password"
-    id="password"
-    placeholder="Mot de passe"
-    style="width:90%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;">
-
-  <br><br>
-
-  <button onclick="seConnecter()" class="btn-id">
-    🔑 Se connecter
-  </button>
-
-</div>
   <!-- Volet BADGE -->
   <div id="loginPanelBadge" class="login-panel" onclick="focusBadgeLoginInput()">
 
@@ -1056,8 +1124,8 @@ img {
 
 </div>
 
-  <!-- 
-  <button onclick="allerAdmin()" 
+  <!--
+  <button onclick="allerAdmin()"
           class="btn-id btn-id-o">
     🛠️ Portail Admin
   </button>
@@ -1066,7 +1134,7 @@ img {
 </div>
 
 
-<div id="usbLoginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+<div id="usbLoginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
 background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
 
   <div style="background:white; padding:25px; border-radius:12px; width:320px; text-align:center;">
@@ -1089,7 +1157,7 @@ background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:
         ✔ Connexion
       </button>
 
-      
+
     </div>
 
   </div>
@@ -1097,7 +1165,7 @@ background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:
 
 
 
-<div id="qrModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+<div id="qrModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
                         background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:2000;">
   <div style="background:white; padding:20px; border-radius:12px; text-align:center; width:300px; position:relative;">
     <h3>📷 Scannez avec votre téléphone</h3>
@@ -1175,6 +1243,7 @@ function spawnVehicle() {
 
     lastSpawn = now;
     const lane = document.getElementById("emergency-lane");
+    if (!lane) return; // la voie est commentée dans le HTML
 
     const wrapper = document.createElement("div");
     wrapper.className = "emergency-vehicle";

@@ -2376,6 +2376,141 @@ z-index: 3000;
     scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
 }
 </style>
+<style id="ipad-fixes">
+/* ===== iPAD / TABLETTES ===== */
+
+/* Hauteur réelle visible (évite que le bas soit masqué par la barre Safari) */
+.app{
+  height:calc(100vh - 90px);
+  height:calc(100dvh - 90px);
+}
+
+/* Menu latéral : ascenseur vertical quand la hauteur ne suffit pas */
+nav{
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  box-sizing:border-box;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Écrans tactiles : plus d'ouverture au survol (le :hover reste "collé" sur iPad)
+   -> ouverture / fermeture par un tap (classe .expanded gérée en JS) */
+@media (hover:none){
+  nav:hover{width:65px}
+  nav:hover .nav-item span{opacity:0}
+
+  nav.expanded{width:260px}
+  nav.expanded .nav-item span{opacity:1}
+
+  /* mode tiroir (largeur <= 900px) : menu ouvert = menu entièrement déployé */
+  nav.open{width:260px}
+  nav.open .nav-item span{opacity:1}
+}
+/* ===== MODE TÉLÉPHONE / TIROIR (<= 900px) ===== */
+@media (max-width:900px){
+
+  /* Bouton hamburger : fini le gros rectangle bleu */
+  .menu-toggle{
+    position:relative;
+    display:inline-flex;
+    flex-shrink:0;
+    box-sizing:border-box;
+    width:42px;
+    min-width:42px;
+    max-width:42px;
+    height:42px;
+    min-height:42px;
+    padding:0;
+    font-size:0;
+    color:transparent;
+    background:#fff;
+    border:1px solid rgba(0,120,212,.22);
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    -webkit-tap-highlight-color:transparent;
+    transition:background .2s ease, box-shadow .2s ease, transform .1s ease;
+  }
+  .menu-toggle::before{
+    content:"";
+    position:absolute;
+    left:12px; right:12px; top:50%;
+    height:2px; margin-top:-1px;
+    border-radius:2px;
+    background:#0078d4;
+    box-shadow:0 -7px 0 #0078d4, 0 7px 0 #0078d4;
+  }
+  .menu-toggle,
+  .menu-toggle:hover,
+  .menu-toggle:focus{
+    margin-right:0;
+    background:#fff;
+    outline:none;
+  }
+  .menu-toggle:active{
+    background:#eaf4ff;
+    transform:scale(.94);
+  }
+
+  /* Tiroir : plus large, coins arrondis, ombre douce */
+  nav,
+  nav:hover,
+  nav.open{
+    width:min(320px, 86vw);
+  }
+  nav{
+    left:calc(-1 * min(320px, 86vw) - 30px);
+    padding:calc(18px + env(safe-area-inset-top, 0px)) 14px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-right:none;
+    border-radius:0 22px 22px 0;
+    box-shadow:none;
+    transition:left .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+  }
+  nav.open{
+    left:0;
+    box-shadow:6px 0 30px rgba(15,30,60,.25);
+  }
+  nav .nav-item span{opacity:1}
+
+  .nav-title{
+    font-size:1.15rem;
+    letter-spacing:.3px;
+    padding:4px 10px 14px;
+    margin-bottom:10px;
+    border-bottom:1px solid #e6eef8;
+  }
+  .nav-item{
+    padding:13px 14px;
+    margin-bottom:4px;
+    border-radius:12px;
+    font-size:1rem;
+  }
+  .nav-item:hover{transform:none}
+  .nav-item:active{background:#eaf4ff}
+
+  /* Voile derrière le tiroir */
+  .nav-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:1999;
+    background:rgba(15,30,60,.38);
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s ease;
+  }
+  .nav-backdrop.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+}
+@media (min-width:901px){
+  .nav-backdrop{display:none}
+}
+
+</style>
 </head>
 <body>
 
@@ -3882,6 +4017,54 @@ navItems.forEach(item => {
     }
   });
 });
+
+// --- Voile derrière le tiroir (mode téléphone) ---
+(function () {
+  const nav = document.querySelector("nav");
+  if (!nav) return;
+  const voile = document.createElement("div");
+  voile.className = "nav-backdrop";
+  document.body.appendChild(voile);
+
+  const sync = () => voile.classList.toggle("show", nav.classList.contains("open"));
+  new MutationObserver(sync).observe(nav, { attributes: true, attributeFilter: ["class"] });
+  voile.addEventListener("click", () => nav.classList.remove("open"));
+  sync();
+})();
+
+// --- Tablette tactile (iPad) : le menu compact se déploie/se replie par tap ---
+(function () {
+  const tactile = window.matchMedia("(hover: none)");
+  const nav = document.querySelector("nav");
+  if (!nav) return;
+
+  // 1er tap sur le menu replié : on le déploie sans déclencher l'item touché
+  nav.addEventListener("click", (e) => {
+    if (!tactile.matches || window.innerWidth <= 900) return;   // <=900px : mode tiroir déjà géré
+
+    if (!nav.classList.contains("expanded")) {
+      e.stopPropagation();
+      e.preventDefault();
+      nav.classList.add("expanded");
+      return;
+    }
+
+    // menu déployé : tap sur un item = navigation, puis on referme
+    if (e.target.closest(".nav-item")) {
+      requestAnimationFrame(() => nav.classList.remove("expanded"));
+    }
+  }, true);
+
+  // tap en dehors du menu : on le referme
+  document.addEventListener("click", (e) => {
+    if (nav.classList.contains("expanded") && !nav.contains(e.target)) {
+      nav.classList.remove("expanded");
+    }
+  });
+
+  // changement d'orientation : on repart d'un menu replié
+  window.addEventListener("orientationchange", () => nav.classList.remove("expanded"));
+})();
 
 // Ferme le menu si on clique à l’extérieur (mobile)
 document.addEventListener("click", e => {

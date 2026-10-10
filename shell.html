@@ -1525,6 +1525,73 @@ transform:none;
   font-weight: 700;
   cursor: pointer;
 }
+
+/* =====================================================
+   ADAPTATION iPAD / TABLETTES
+   ===================================================== */
+
+/* Hauteur réelle visible (Safari iPad : 100vh inclut les barres du navigateur) */
+html{height:100%}
+body{height:100vh;height:100dvh}
+
+/* ---- Barre d'actions : jamais de retour à la ligne, libellés masqués si place insuffisante ---- */
+#app-title{white-space:nowrap}
+#actions{flex-wrap:nowrap;min-width:0}
+#actions > .btn-id,
+#actions > .dropdown{flex-shrink:0}
+#actions .btn-id{white-space:nowrap}
+.btn-ico{line-height:1}
+
+#topbar-main.compact .btn-label{display:none}
+#topbar-main.compact #actions{gap:6px}
+#topbar-main.compact .btn-id{padding:10px 12px;gap:0;font-size:18px}
+
+/* Écrans tactiles : pas d'infobulle au survol (collée et hors écran) */
+@media (hover:none){
+  .dropdown-item::after{display:none}
+  .dropdown-content{max-width:calc(100vw - 24px)}
+}
+
+/* ---- Écran de bienvenue : proportions liées à la taille de l'écran ---- */
+#home{
+  --av-h:clamp(110px, min(22vh, 40vw), 300px);
+  --clock-s:clamp(110px, min(26vh, 40vw), 220px);
+}
+#home-center{
+  transform:none;
+  flex:1;
+  min-height:0;
+  width:100%;
+  box-sizing:border-box;
+  padding-bottom:clamp(150px, 18vh, 170px); /* place réservée au carrousel de messages */
+  gap:clamp(2px, 1vh, 8px);
+  justify-content:center;
+}
+#welcome-container{transform:none;max-width:100%;padding:0 8px;box-sizing:border-box}
+#welcome-avatar{
+  height:var(--av-h);
+  width:calc(var(--av-h) * 0.667);
+}
+#welcome-text{
+  font-size:clamp(22px, min(4.6vh, 5vw), 42px);
+  margin-top:calc(-1 * clamp(10px, 4vh, 50px));
+  min-width:0;
+}
+#clockCanvas{
+  width:var(--clock-s);
+  height:var(--clock-s);
+  margin-bottom:clamp(10px, 3vh, 30px);
+}
+#digitalClock{font-size:clamp(24px, 5vh, 40px)}
+#currentDate{font-size:clamp(13px, 2vh, 18px);text-align:center}
+.home-message{padding:clamp(12px, 2vh, 22px)}
+.home-message h3{font-size:clamp(16px, 2.2vh, 20px)}
+
+/* Écran très peu haut (tablette en paysage, fenêtre réduite) : on retire le robot */
+@media (max-height:520px){
+  #welcome-avatar{display:none}
+  #home-center{padding-bottom:140px}
+}
 </style>
 </head>
 <body>
@@ -1536,17 +1603,19 @@ transform:none;
     <div id="actions">
       <button class="btn-id"
         data-page="urgences"
+        title="Urgences" aria-label="Urgences"
         onclick="openTab('Urgences','urgences.html')">
-    🚑 Urgences
+    <span class="btn-ico">🚑</span><span class="btn-label">Urgences</span>
 </button>
 
 <button class="btn-id"
         data-page="regulation"
+        title="Tableau" aria-label="Tableau"
         onclick="openTab('Tableau','regulation.html')">
-    📊 Tableau
+    <span class="btn-ico">📊</span><span class="btn-label">Tableau</span>
 </button>
 <div class="dropdown" id="dropdownOutils">
-  <button class="btn-id" id="btnOutils">🧰 Outils ▾</button>
+  <button class="btn-id" id="btnOutils" title="Outils" aria-label="Outils"><span class="btn-ico">🧰</span><span class="btn-label">Outils ▾</span></button>
 
   <div class="dropdown-content" id="menuOutils">
 
@@ -1617,9 +1686,9 @@ transform:none;
 
   </div>
 </div>
-	  <button class="btn-id" onclick="closeAllTabs()">🧹 Tout Fermer</button>
-<button class="btn-id" onclick="lockSession()">🔐 Vérrouiller</button>
-      <button class ="btn-id" id="btnLogout">→] Se déconnecter</button>
+	  <button class="btn-id" title="Tout fermer" aria-label="Tout fermer" onclick="closeAllTabs()"><span class="btn-ico">🧹</span><span class="btn-label">Tout Fermer</span></button>
+<button class="btn-id" title="Verrouiller" aria-label="Verrouiller" onclick="lockSession()"><span class="btn-ico">🔐</span><span class="btn-label">Vérrouiller</span></button>
+      <button class="btn-id" id="btnLogout" title="Se déconnecter" aria-label="Se déconnecter"><span class="btn-ico">→]</span><span class="btn-label">Se déconnecter</span></button>
 
     </div>
 
@@ -3650,5 +3719,45 @@ surveillerMessagesNonLus();
 
 </script>
 
+
+<script>
+/* Barre d'actions : si la largeur ne suffit pas pour icône + libellé, on n'affiche que les icônes */
+(function () {
+  const bar = document.getElementById("topbar-main");
+  const actions = document.getElementById("actions");
+  if (!bar || !actions) return;
+
+  let busy = false;
+  function ajusterBarreActions() {
+    if (busy) return;
+    busy = true;
+
+    bar.classList.remove("compact");               // on teste avec les libellés
+    const items = Array.from(actions.children)
+      .filter(el => getComputedStyle(el).display !== "none");
+    const gap = parseFloat(getComputedStyle(actions).columnGap) || 10;
+    const besoin = items.reduce((t, el) => t + el.getBoundingClientRect().width, 0)
+                 + gap * Math.max(0, items.length - 1);
+
+    if (besoin > actions.clientWidth + 1) bar.classList.add("compact");
+    busy = false;
+  }
+
+  let raf = 0;
+  const planifier = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(ajusterBarreActions); };
+
+  window.addEventListener("resize", planifier);
+  window.addEventListener("orientationchange", () => setTimeout(planifier, 200));
+  window.addEventListener("load", planifier);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(planifier);
+
+  if ("ResizeObserver" in window) new ResizeObserver(planifier).observe(bar);
+
+  // les droits d'accès masquent certains boutons (style.display) après le chargement
+  new MutationObserver(planifier).observe(actions, { subtree: true, attributes: true, attributeFilter: ["style", "hidden"] });
+
+  planifier();
+})();
+</script>
 </body>
 </html>

@@ -81,9 +81,20 @@
   <iframe src="loader.html"></iframe>
 
   <script>
-    function isMobileDevice() {
+    // iPad (y compris iPadOS 13+ qui se présente comme un Mac) => version PC
+    function isIPad() {
       return (
-        /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent)
+        /iPad/i.test(navigator.userAgent)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+      );
+    }
+
+    function isMobileDevice() {
+      // L'iPad doit toujours aller vers la version PC, quelle que soit sa largeur
+      if (isIPad()) return false;
+
+      return (
+        /Android|iPhone|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent)
         || window.matchMedia("(max-width: 850px)").matches
       );
     }

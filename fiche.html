@@ -2790,6 +2790,74 @@ nav{
 @media (min-width:901px){
   .nav-backdrop{display:none}
 }
+
+/* ===== Modale "Ouvrir sur cet appareil" (signature) ===== */
+.sig-device-overlay{
+  position:fixed;
+  inset:0;
+  z-index:3100;                       /* au-dessus de modalSignaturePatient (3000) */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  box-sizing:border-box;
+  background:rgba(15,30,60,.55);
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+.sig-device-box{
+  display:flex;
+  flex-direction:column;
+  width:min(640px, 100%);
+  height:min(92vh, 860px);
+  height:min(92dvh, 860px);
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.sig-device-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px 10px 18px;
+  border-bottom:1px solid #e6eef8;
+  flex-shrink:0;
+}
+.sig-device-title{
+  font-weight:700;
+  color:#0078d4;
+  font-size:1.05rem;
+}
+.sig-device-close{
+  all:unset;
+  box-sizing:border-box;
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-size:18px;
+  line-height:1;
+  color:#475569;
+  background:#f1f5f9;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .2s ease, color .2s ease;
+}
+.sig-device-close:hover,
+.sig-device-close:active{
+  background:#fee2e2;
+  color:#dc2626;
+}
+.sig-device-frame{
+  flex:1;
+  width:100%;
+  border:none;
+  background:#fff;
+}
 </style>
 </head>
 <body>
@@ -3648,6 +3716,9 @@ nav{
 <p>
       Ou scannez le via l'App Mobile GestUrg2.
     </p>
+    <button id="btnSignerCetAppareil" class="btn-id" style="margin:6px 0 12px;">
+      📲 Ouvrir sur cet appareil
+    </button>
     <div id="etatSignature">
       ⏳ En attente de signature...
     </div>
@@ -3672,6 +3743,15 @@ nav{
 </button>
   </div>
 
+</div>
+<div id="modalSignatureAppareil" class="sig-device-overlay" style="display:none;">
+  <div class="sig-device-box" role="dialog" aria-modal="true" aria-label="Signature du patient">
+    <div class="sig-device-header">
+      <span class="sig-device-title">✍️ Signature du patient</span>
+      <button id="btnFermerSignatureAppareil" class="sig-device-close" type="button" aria-label="Fermer">✕</button>
+    </div>
+    <iframe id="frameSignatureAppareil" class="sig-device-frame" title="Signature du patient"></iframe>
+  </div>
 </div>
 <div id="vitaleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
@@ -5133,6 +5213,7 @@ async function ouvrirModalSignature(url, signatureId){
     document.getElementById("qrcodeSignature");
 
   qrDiv.innerHTML = "";
+  window.signatureUrl = url;
 
   new QRCode(qrDiv,{
       text: url,
@@ -5165,6 +5246,8 @@ if (data.statut === "signature") {
 }
    if (data.signee) {
 
+  fermerSignatureAppareil();
+
   if (data.refusSignature) {
     document.getElementById("etatSignature")
       .innerHTML = "⚠️ Refus de signer";
@@ -5181,6 +5264,40 @@ if (data.statut === "signature") {
   });
 
 }
+
+// ==============================
+// 📲 Signature : ouvrir le lien du QR code sur cet appareil
+// ==============================
+function ouvrirSignatureAppareil() {
+  if (!window.signatureUrl) {
+    afficherBulle("Lien de signature introuvable", "error");
+    return;
+  }
+  document.getElementById("frameSignatureAppareil").src = window.signatureUrl;
+  document.getElementById("modalSignatureAppareil").style.display = "flex";
+}
+
+function fermerSignatureAppareil() {
+  const modal = document.getElementById("modalSignatureAppareil");
+  if (!modal || modal.style.display === "none") return;
+  modal.style.display = "none";
+  document.getElementById("frameSignatureAppareil").src = "about:blank";
+}
+
+document.getElementById("btnSignerCetAppareil")
+  .addEventListener("click", ouvrirSignatureAppareil);
+
+document.getElementById("btnFermerSignatureAppareil")
+  .addEventListener("click", fermerSignatureAppareil);
+
+// fermer aussi en touchant le fond sombre ou avec Échap
+document.getElementById("modalSignatureAppareil")
+  .addEventListener("click", (e) => {
+    if (e.target.id === "modalSignatureAppareil") fermerSignatureAppareil();
+  });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") fermerSignatureAppareil();
+});
 
 document
 .getElementById("btnContinuerCloture")

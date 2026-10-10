@@ -244,7 +244,7 @@ document.querySelector('.login-badge-anim')
   };
 
   // ✔ Validation de la modale mot de passe (déclenchée après reconnaissance du badge)
-  // 🔒 Mode badge = postes partagés : session classique uniquement (pas de "rester connecté")
+  // 🔁 La case "Rester connecté" du badge est synchronisée avec celle du mot de passe
   window.validerUSBLogin = async function () {
     if (!badgeLoginEmail) return;
 
@@ -260,9 +260,14 @@ document.querySelector('.login-badge-anim')
     connexionManuelleEnCours = true;
 
     try {
-      await setPersistence(auth, browserSessionPersistence);
+      const rester = document.getElementById("resterConnecteBadge").checked;
+      await setPersistence(auth, rester ? browserLocalPersistence : browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, badgeLoginEmail, password);
-      localStorage.removeItem(SESSION_EXPIRE_KEY);
+      if (rester) {
+        localStorage.setItem(SESSION_EXPIRE_KEY, String(Date.now() + DUREE_SESSION_MS));
+      } else {
+        localStorage.removeItem(SESSION_EXPIRE_KEY);
+      }
       localStorage.setItem(DERNIER_EMAIL_KEY, badgeLoginEmail);
       document.getElementById("usbLoginModal").style.display = "none";
       await finaliserConnexion(userCredential.user);
@@ -385,6 +390,15 @@ document.getElementById("usbPassword").addEventListener("keydown", function(e) {
   }
 });
 
+
+// 🔄 Synchronise les cases "Rester connecté" (badge + mot de passe)
+document.querySelectorAll(".js-rester").forEach(cb => {
+  cb.addEventListener("change", () => {
+    document.querySelectorAll(".js-rester").forEach(autre => {
+      autre.checked = cb.checked;
+    });
+  });
+});
 
 window.showSystemModal = function(title, text) {
   const modal = document.getElementById("systemModal");
@@ -1085,8 +1099,8 @@ img {
 
     <!-- ✅ Rester connecté (décochée par défaut) -->
     <label class="rester-connecte">
-      <input type="checkbox" id="resterConnecte">
-      Rester connecté (appareil personnel uniquement)
+      <input type="checkbox" id="resterConnecte" class="js-rester">
+      Rester connecté (déconseillé sur support partagé)
     </label>
 
     <button onclick="seConnecter()" class="btn-id">
@@ -1111,6 +1125,12 @@ img {
     <p class="login-badge-hint">
       Approchez votre badge du lecteur…
     </p>
+
+    <!-- ✅ Rester connecté (synchronisée avec la case du volet mot de passe) -->
+    <label class="rester-connecte" onclick="event.stopPropagation()">
+      <input type="checkbox" id="resterConnecteBadge" class="js-rester">
+      Rester connecté (appareil personnel uniquement)
+    </label>
 
     <input
       type="text"

@@ -47,10 +47,21 @@ let connexionManuelleEnCours = false; // évite le double appel de finaliserConn
 // (mobile → urgences_mobile, ordinateur → urgences)
 // ➡️ Sauf si un paramètre ?page=... est présent dans l'URL : dans ce cas, priorité à cette page
 function isMobileDevice() {
-  return /Android|iPhone|iPod|webOS|BlackBerry|Windows Phone|Mobile/i.test(navigator.userAgent)
-      || (window.innerWidth < 850);
-}
+  const ua = navigator.userAgent;
 
+  // iPad : ancien UA ("iPad") ou iPadOS 13+ (se présente comme "Macintosh" mais est tactile)
+  const isIPad = /iPad/i.test(ua)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  // Les tablettes Android n'ont pas "Mobile" dans leur UA (les téléphones l'ont)
+  const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
+
+  // Tablettes → version bureau (shell.html)
+  if (isIPad || isAndroidTablet) return false;
+
+  // Téléphones uniquement
+  return /iPhone|iPod|Android|webOS|BlackBerry|Windows Phone|Mobile/i.test(ua);
+}
 // 🔎 Logique commune post-authentification (mot de passe ET badge)
 async function finaliserConnexion(user) {
   const ref = doc(db, "medecins", user.uid);

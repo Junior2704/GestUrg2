@@ -1332,7 +1332,7 @@ button:hover{transform:none;box-shadow:none}
   width:140px;min-height:84px;padding:10px 12px;
   background:#fff;border:1px solid var(--line);border-left-width:6px;border-radius:12px;
   box-shadow:var(--shadow-sm);
-  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
 }
 .patient-card:hover{transform:none;box-shadow:0 6px 16px rgba(17,35,54,.12)}
 .patient-card.dragging{opacity:.45}
@@ -2042,6 +2042,19 @@ function activerAppuiLong(card, id) {
   }, { passive: false });
   card.addEventListener("touchcancel", annuler);
 
+  // Filet de sécurité : deux "clics" rapprochés sur la même carte = double clic
+  let dernierClic = 0, clicX = 0, clicY = 0;
+  card.addEventListener("click", (e) => {
+    const maintenant = Date.now();
+    if (maintenant - dernierClic < 450 &&
+        Math.abs(e.clientX - clicX) < 30 && Math.abs(e.clientY - clicY) < 30) {
+      dernierClic = 0;
+      if (typeof card.ondblclick === "function") card.ondblclick(e);
+    } else {
+      dernierClic = maintenant; clicX = e.clientX; clicY = e.clientY;
+    }
+  });
+
   // Sur iPad, l'appui long déclenche aussi le "glisser-déposer" natif : on l'empêche
   card.addEventListener("dragstart", (e) => {
     if (Date.now() - window.__appuiLongTs < 1500) e.preventDefault();
@@ -2413,6 +2426,8 @@ card.innerHTML = `
 
   // double clic
   card.ondblclick = () => {
+    if (Date.now() - (window.__dernierOuvert || 0) < 800) return;
+    window.__dernierOuvert = Date.now();
     window.parent.postMessage(
       {
         type: "OPEN_TAB",
@@ -2852,6 +2867,8 @@ salleOuverteId = salleId;
 
     // double clic fiche patient
     card.ondblclick = () => {
+    if (Date.now() - (window.__dernierOuvert || 0) < 800) return;
+    window.__dernierOuvert = Date.now();
       window.parent.postMessage(
         {
           type: "OPEN_TAB",

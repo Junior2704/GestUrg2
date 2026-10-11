@@ -2007,7 +2007,9 @@ function activerAppuiLong(card, id) {
       if (navigator.vibrate) navigator.vibrate(30);
       card.classList.add("appui-long");
       setTimeout(() => card.classList.remove("appui-long"), 350);
+      card.classList.remove("dragging");
       afficherMenuSalles(startX, startY, id);
+      setTimeout(() => card.classList.remove("dragging"), 400);
     }, DELAI_APPUI_LONG);
   }, { passive: true });
 
@@ -2024,7 +2026,11 @@ function activerAppuiLong(card, id) {
 
   // Sur iPad, l'appui long déclenche aussi le "glisser-déposer" natif : on l'empêche
   card.addEventListener("dragstart", (e) => {
-    if (Date.now() - window.__appuiLongTs < 1500) e.preventDefault();
+    if (Date.now() - window.__appuiLongTs < 1500) {
+      e.preventDefault();
+      e.stopImmediatePropagation(); // empêche l'autre écouteur de griser la carte (classe "dragging")
+      card.classList.remove("dragging");
+    }
   });
 }
 

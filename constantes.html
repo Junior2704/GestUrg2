@@ -2,1395 +2,1504 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Constantes</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <title>Constantes patient</title>
-  <style>
-    :root {
-      --bg: #ffffff;
-      --card: #ffffff;
-      --txt: #1f2937;
-      --muted: #6b7280;
-      --primary: #1d4ed8;
-      --danger: #dc2626;
-      --border: #e5e7eb;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--txt);
-      padding: 20px;
-    }
-    .container {
-      max-width: 1300px;
-      margin: 0 auto;
-      background: var(--card);
-      border-radius: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.08);
-      overflow: hidden;
-    }
-    .header {
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .subtitle { color: var(--muted); font-size: 14px; }
-    .btn {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-muted { background: #f3f4f6; color: #111827; }
-    .btn-danger { background: var(--danger); color: #fff; }
+<style>
+/* =====================================================================
+   CONSTANTES — même identité que la fiche patient
+   Fond blanc · bleu clinique · cartes à bordure fine · cibles tactiles 44 px+
+   ===================================================================== */
 
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 1200px;
-      padding: 12px;
-    }
-    thead th {
-      position: sticky;
-      top: 0;
-      background: #f9fafb;
-      z-index: 1;
-      white-space: nowrap;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      padding: 10px;
-      font-size: 14px;
-    }
-    tbody tr:hover {
-      background: #eff6ff;
-      cursor: context-menu;
-    }
-    .empty {
-      padding: 28px;
-      text-align: center;
-      color: var(--muted);
-    }
+/* ---------- TOKENS (identiques à fiche.html) ---------- */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-      padding: 16px;
-    }
-    .modal {
-      width: min(880px, 100%);
-      max-height: 90vh;
-      overflow: auto;
-      background: white;
-      border-radius: 12px;
-      padding: 18px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(140px, 1fr));
-      gap: 10px;
-    }
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    label { font-size: 13px; color: var(--muted); }
-    input {
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      padding: 9px;
-      font-size: 14px;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
+  --bg:#ffffff;
+  --ink:#112336;
+  --muted:#586a7e;
+  --line:#d8e1ea;
+  --line-soft:#e9eff5;
+  --field:#f6f9fc;
 
-    #contextMenu {
-      position: fixed;
-      z-index: 120;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 8px 18px rgba(0,0,0,.12);
-      display: none;
-      overflow: hidden;
-      min-width: 180px;
-    }
-    #contextMenu button {
-      width: 100%;
-      border: none;
-      background: #fff;
-      padding: 10px 12px;
-      text-align: left;
-      cursor: pointer;
-    }
-    #contextMenu button:hover { background: #f3f4f6; }
-    #contextMenu .danger { color: var(--danger); }
+  --primary:#0b6fa4;
+  --primary-d:#085a86;
+  --primary-soft:#e3f1f9;
 
-    .status {
-      padding: 10px 16px;
-      font-size: 14px;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-    }
-    .anthro-box {
-      margin: 14px 16px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      background: #f9fafb;
-    }
-    .anthro-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(120px, 1fr));
-      gap: 10px;
-      align-items: end;
-    }
-    .anthro-note {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
+  --ok:#16784a;    --ok-soft:#e1f4e9;
+  --late:#b92a30;  --late-soft:#fdecec;  --late-line:#f0c3c5;
+  --warn:#7a4f00;  --warn-soft:#fff5da;  --warn-line:#f0d98f;
 
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-      .anthro-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-    }
-    .hidden-element {
-  display: none !important;
-}
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 12px;
-}
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --gutter:clamp(16px,3vw,32px);
 }
 
-body {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0;padding:0}
+body{
+  display:flex;flex-direction:column;overflow:hidden;
+  font-family:var(--font);font-size:16px;line-height:1.45;
+  color:var(--ink);background:var(--bg);
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;
 }
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
 
-.container, .hidden-element {
-  flex: 1 1 auto; /* occupe la hauteur disponible */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* pour éviter scroll inutile */
+/* ---------- STRUCTURE ---------- */
+.page{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;gap:16px;
+  padding:20px calc(var(--gutter) + var(--safe-r)) calc(24px + var(--safe-b)) calc(var(--gutter) + var(--safe-l));
+  -webkit-overflow-scrolling:touch;
 }
+.card-sec{
+  padding:20px;background:#fff;
+  border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.card-title{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-bottom:16px;white-space:nowrap;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+.card-title .push{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-left:auto;white-space:normal;text-transform:none;letter-spacing:0;font-weight:600;font-size:14px}
+.hint{margin-top:12px;font-size:13px;color:var(--muted)}
 
-.table-wrap {
-  flex: 1 1 auto; /* occupe l'espace restant */
-  overflow-y: auto; /* scroll seulement si nécessaire */
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
+.top{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:1400px){.top{grid-template-columns:minmax(0,1fr) 360px}}
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+/* ---------- BANDEAU D'ÉTAT ---------- */
+.notice{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;font-size:15px;font-weight:600;
+  border:1px solid var(--warn-line);border-radius:12px;background:var(--warn-soft);color:var(--warn);
 }
+.notice.error{border-color:var(--late-line);background:var(--late-soft);color:var(--late)}
 
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+/* ---------- DERNIER RELEVÉ ---------- */
+.vitals{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+.vital{padding:12px;background:var(--field);border:1px solid var(--line);border-radius:12px;min-width:0}
+.vital-label{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;font-size:13px;font-weight:500;color:var(--muted)}
+.vital-value{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vital-value small{display:block;margin-top:2px;font-size:13px;font-weight:500;color:var(--muted)}
+.vital.nil .vital-value{color:#9aa9ba;font-weight:600}
+.vital.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.vital.warn .vital-label,.vital.warn .vital-value{color:var(--warn)}
+.vital.crit{background:var(--late-soft);border-color:var(--late-line)}
+.vital.crit .vital-label,.vital.crit .vital-value{color:var(--late)}
+.flag-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 11px;
+  font-size:13px;font-weight:700;line-height:1;white-space:nowrap;
+  border-radius:999px;border:1px solid var(--warn-line);background:var(--warn-soft);color:var(--warn);
 }
+.flag-pill.crit{border-color:var(--late-line);background:var(--late-soft);color:var(--late)}
 
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
+/* ---------- POIDS / TAILLE ---------- */
+.anthro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.anthro-grid .full{grid-column:1/-1}
+@media (min-width:701px) and (max-width:1399px){
+  .anthro-grid{grid-template-columns:repeat(4,minmax(0,1fr));align-items:end}
+  .anthro-grid .full{grid-column:auto}
 }
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
+.imc-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.imc-label{font-size:13px;font-weight:600;color:var(--muted)}
 
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+/* ---------- TABLEAU ---------- */
+.card-table{flex:1 0 340px;display:flex;flex-direction:column;min-height:0}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.table-head .card-title{margin:0}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.table-wrap{flex:1;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0}
+thead th{
+  position:sticky;top:0;z-index:2;
+  padding:12px 14px;text-align:left;white-space:nowrap;
+  font-size:13px;font-weight:700;color:var(--muted);
+  background:var(--field);border-bottom:1px solid var(--line);
 }
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+tbody td{
+  padding:11px 14px;vertical-align:middle;
+  font-size:15px;font-variant-numeric:tabular-nums;
+  border-bottom:1px solid var(--line-soft);background:#fff;
 }
+tbody tr:last-child td{border-bottom:0}
+@media (hover:hover){tbody tr:hover td{background:var(--primary-soft)}}
+tbody tr.selected td{background:var(--primary-soft)}
+.dt b{display:block;font-weight:600}
+.dt span{font-size:13px;color:var(--muted)}
+.val{
+  display:inline-block;min-width:2.6em;padding:3px 10px;
+  font-weight:700;text-align:center;border-radius:999px;
+}
+.val.warn{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn-line)}
+.val.crit{background:var(--late-soft);color:var(--late);box-shadow:inset 0 0 0 1px var(--late-line)}
+.nil{color:#9aa9ba}
+.gcs-detail{display:block;font-size:12px;color:var(--muted)}
+td.obs{max-width:360px;overflow-wrap:anywhere}
+th.act,td.act{position:sticky;right:0;width:1%;white-space:nowrap;box-shadow:-8px 0 8px -8px rgba(17,35,54,.12)}
+thead th.act{z-index:3}
+.row-btn{
+  appearance:none;width:38px;height:38px;display:inline-grid;place-items:center;padding:0;margin-left:4px;
+  color:var(--muted);background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,color .15s,border-color .15s;
+}
+.row-btn:first-child{margin-left:0}
+@media (hover:hover){
+  .row-btn:hover{color:var(--primary);background:#fff;border-color:#b5d6ea}
+  .row-btn.danger:hover{color:var(--late);background:var(--late-soft);border-color:var(--late-line)}
+}
+.row-btn:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:1px}
+.empty-state{padding:40px 16px;text-align:center;color:var(--muted)}
+.empty-state .i{width:28px;height:28px;color:var(--primary);margin-bottom:8px}
+.empty-state p{margin-bottom:14px}
 
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+/* ---------- CHAMPS ---------- */
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],input[type=date],input[type=time]{
+  width:100%;min-height:48px;margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
 }
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
+input::placeholder{color:#8a9bad}
+input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+input:disabled,input[readonly]{color:var(--muted);background:var(--line-soft);cursor:not-allowed}
+input[readonly]:focus{box-shadow:none;border-color:var(--line)}
+input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(.45);cursor:pointer}
+.field{min-width:0}
+.field .unit{font-weight:500;color:var(--muted)}
 
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
+/* ---------- BOUTONS ---------- */
+.btn-id,.btn{
+  appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;white-space:nowrap;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s;
 }
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible,.btn:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.btn-id:disabled{opacity:.5;cursor:not-allowed}
+@media (hover:hover){.btn-id:not(:disabled):hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:not(:disabled):hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-id-c{color:var(--late);border-color:var(--late-line)}
+@media (hover:hover){.btn-id-c:not(:disabled):hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}}
+.btn-danger{background:var(--late);border-color:var(--late);color:#fff}
+.btn-danger:active{background:#98222a}
+@media (hover:hover){.btn-danger:hover{background:#98222a;border-color:#98222a}}
+.btn-block{width:100%}
+.icon-button{
+  appearance:none;width:44px;height:44px;flex:none;display:inline-grid;place-items:center;padding:0;
+  color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;touch-action:manipulation;
+}
+.icon-button:hover{background:var(--line-soft);color:var(--ink)}
+.icon-button:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
 
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
+/* ---------- MODALES ---------- */
+.modal-overlay{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+  background:rgba(10,25,41,.5);
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  z-index:1000;animation:fade .15s ease-out;
 }
+.modal{
+  width:min(720px,100%);max-height:100%;overflow-y:auto;overflow-x:hidden;
+  padding:22px 24px 24px;background:#fff;border-radius:18px;
+  box-shadow:0 20px 50px rgba(10,25,41,.3);
+  animation:rise .2s ease-out;-webkit-overflow-scrolling:touch;
+}
+.modal h3{
+  display:flex;align-items:center;gap:10px;margin:0 0 16px;padding-bottom:14px;
+  font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  border-bottom:1px solid var(--line);
+}
+.modal h3 .i{color:var(--primary)}
+.modal h4{
+  margin:20px 0 10px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.modal-actions{
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
+}
+.form-error{
+  margin-top:16px;padding:10px 14px;font-size:14px;font-weight:600;
+  color:var(--late);background:var(--late-soft);border:1px solid var(--late-line);border-radius:10px;
+}
+.vitals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 16px}
+.vitals-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
+/* Confirmation */
+.modal-box{
+  width:min(450px,100%);padding:30px 28px 26px;text-align:center;
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+  animation:rise .2s ease-out;max-height:100%;overflow:auto;
 }
+.modal-box h3{display:block;margin:0 0 10px;padding:0;border:0;font-size:21px}
+.modal-box p{margin:0;color:var(--muted);line-height:1.5}
+.modal-box .modal-actions{justify-content:center;border-top:0;padding-top:0;margin-top:24px}
+.modal-icon{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%}
+.modal-icon .i{width:28px;height:28px}
+.modal-icon.warning{background:var(--warn-soft);color:var(--warn)}
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* ---------- GRAPHIQUE ---------- */
+.gmodal{width:min(1100px,100%);height:min(92dvh,900px);padding:0;display:flex;flex-direction:column;overflow:hidden}
+.gmodal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 22px 14px;border-bottom:1px solid var(--line);flex:none}
+.gmodal-head h3{margin:0;padding:0;border:0}
+.gsub{margin-top:2px;font-size:14px;color:var(--muted)}
+.gcontrols{flex:none;padding:14px 22px;display:flex;flex-direction:column;gap:12px;background:var(--field);border-bottom:1px solid var(--line)}
+.grow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.glabel{min-width:92px;font-size:13px;font-weight:600;color:var(--muted)}
+.gchip{
+  display:inline-flex;align-items:center;gap:8px;margin:0;
+  min-height:38px;padding:0 14px;border-radius:999px;
+  font-size:14px;font-weight:600;color:var(--ink);
+  background:#fff;border:1px solid var(--line);
+  cursor:pointer;user-select:none;touch-action:manipulation;
+  transition:background .15s,border-color .15s;
 }
+.gchip input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.gchip .dot{width:10px;height:10px;border-radius:50%;background:var(--c);opacity:.35;transition:opacity .15s,box-shadow .15s}
+@media (hover:hover){.gchip:hover{border-color:var(--c)}}
+.gchip.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff)}
+.gchip.on .dot{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.gchip:has(input:focus-visible){outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.gseg{display:inline-flex;padding:4px;gap:4px;background:var(--line-soft);border-radius:14px}
+.gseg button{
+  appearance:none;min-height:38px;padding:0 14px;font:600 14px/1 var(--font);
+  color:var(--muted);background:transparent;border:0;border-radius:10px;cursor:pointer;touch-action:manipulation;
+}
+.gseg button.on{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(17,35,54,.15)}
+.gtoolbtn{appearance:none;min-height:38px;padding:0 10px;font:600 14px/1 var(--font);color:var(--primary);background:transparent;border:0;border-radius:10px;cursor:pointer}
+.gtoolbtn:hover{background:var(--primary-soft)}
+.gbody{flex:1;min-height:0;overflow:auto;padding:16px 22px 22px;display:flex;flex-direction:column;gap:14px}
+.gcard{padding:14px 16px 8px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.gcard-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px}
+.gcard-title{font-weight:700;font-size:15px}
+.gcard-title small{margin-left:6px;font-weight:500;color:var(--muted)}
+.glast{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.glast b{color:var(--ink);font-size:14px}
+.glast i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.gcanvas{position:relative;height:200px}
+.gcanvas.tall{height:400px}
+.gempty{padding:50px 10px;text-align:center;font-size:15px;color:var(--muted)}
 
-::-webkit-scrollbar-track {
-    background: transparent;
+/* ---------- MENU CONTEXTUEL ---------- */
+#contextMenu{
+  position:fixed;z-index:1200;display:none;min-width:190px;padding:6px;
+  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(17,35,54,.18);
 }
+#contextMenu button{width:100%;justify-content:flex-start;min-height:44px;border:0;background:transparent}
+#contextMenu .btn-id-c:hover{background:var(--late-soft)}
 
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
+/* ---------- NOTIFICATION ---------- */
+#toast{
+  position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translate(-50%,16px);
+  display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);
+  padding:12px 18px;font-size:15px;font-weight:600;color:#fff;background:var(--ink);
+  border-radius:12px;box-shadow:0 12px 32px rgba(17,35,54,.3);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1300;
 }
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.error{background:var(--late)}
+#toast .i{width:18px;height:18px}
 
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
+/* ---------- ANIMATIONS / BARRES DE DÉFILEMENT ---------- */
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .modal-overlay,.modal,.modal-box,#toast{animation:none !important;transition:none !important}
 }
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:700px){
+  .card-sec{padding:16px;border-radius:14px}
+  .glabel{min-width:100%}
+  .vitals-grid.two{grid-template-columns:1fr 1fr}
+  .vitals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .header-actions{width:100%}
+  .header-actions .btn-id{flex:1 1 auto}
 }
-
-/* ===== Graphe des constantes ===== */
-.table-header .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn-id-g:hover {
-  background: rgba(124, 58, 237, 0.10);
-  border-color: rgba(124, 58, 237, 0.6);
-  color: #7c3aed;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(124, 58, 237, 0.15);
-}
-.gmodal {
-  width: min(1100px, 100%);
-  padding: 0;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
-}
-.gmodal-head {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-  padding: 18px 22px 12px;
-  border-bottom: 1px solid var(--border);
-}
-.gmodal-head h3 { margin: 0; font-size: 18px; }
-.gmodal-head .gsub { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.gclose {
-  all: unset; cursor: pointer; width: 34px; height: 34px; border-radius: 10px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--muted); font-size: 18px; transition: background .2s;
-}
-.gclose:hover { background: #f3f4f6; color: #111827; }
-.gcontrols {
-  padding: 14px 22px;
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 12px;
-}
-.grow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.glabel {
-  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); min-width: 92px;
-}
-.gchip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: 999px;
-  border: 1.5px solid var(--border); background: #fff;
-  font-size: 13px; color: var(--txt); cursor: pointer; user-select: none;
-  transition: all .2s ease;
-}
-.gchip input { display: none; }
-.gchip .dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--c); opacity: .35; transition: opacity .2s, box-shadow .2s;
-}
-.gchip:hover { border-color: var(--c); transform: translateY(-1px); }
-.gchip.on {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 10%, #fff);
-  font-weight: 600;
-}
-.gchip.on .dot { opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent); }
-.gseg {
-  display: inline-flex; background: #e5e7eb; border-radius: 10px; padding: 3px; gap: 2px;
-}
-.gseg button {
-  all: unset; cursor: pointer; padding: 6px 12px; border-radius: 8px;
-  font-size: 13px; color: #374151; transition: all .2s;
-}
-.gseg button.on { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.gtoolbtn {
-  all: unset; cursor: pointer; font-size: 12px; color: var(--primary);
-  padding: 4px 8px; border-radius: 6px;
-}
-.gtoolbtn:hover { background: rgba(29, 78, 216, .08); }
-.gbody { padding: 16px 22px 22px; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
-.gcard {
-  border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 8px;
-  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.03);
-}
-.gcard-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 6px; }
-.gcard-title { font-weight: 700; font-size: 14px; }
-.gcard-title small { color: var(--muted); font-weight: 500; margin-left: 4px; }
-.glast { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.glast b { color: var(--txt); font-size: 13px; }
-.glast i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
-.gcanvas { position: relative; height: 200px; }
-.gcanvas.tall { height: 400px; }
-.gempty { text-align: center; color: var(--muted); padding: 50px 10px; font-size: 14px; }
-@media (max-width: 700px) {
-  .glabel { min-width: 100%; }
+@media (max-width:640px){
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{width:100%;max-height:92dvh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + var(--safe-b))}
+  .gmodal{height:94dvh}
+  #modalDeleteBackdrop{align-items:center;padding:16px}
+  #modalDeleteBackdrop .modal-box{border-radius:20px}
+  .modal-actions .btn-id,.modal-actions .btn{flex:1 1 auto}
 }
 </style>
 </head>
 <body>
- <!--<div class="container">!-->
-    <div class="hidden-element">
-    <div class="header">
-        
-      <div>
-        <h2 style="margin:0;">🩺 Relevé des constantes</h2>
-        <div class="subtitle" id="patientInfo">Chargement...</div>
-      </div>
-      </div>
-      <div class="status" id="status">Initialisation...</div>
-    </div>
-    
-    <div class="anthro-box">
-      <h3 style="margin:0 0 8px 0;">📏 Poids / Taille</h3>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M5 21h14M5 7h14M5 7l-3 8a3 3 0 0 0 6 0zM19 7l-3 8a3 3 0 0 0 6 0z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
+<main class="page">
+
+  <div id="notice" class="notice" role="status" hidden></div>
+
+  <div class="top">
+    <!-- Dernier relevé -->
+    <section class="card-sec" aria-labelledby="titreDernier">
+      <h2 class="card-title" id="titreDernier" style="font-size:13px">
+        <svg class="i" aria-hidden="true"><use href="#i-activity"/></svg>Dernier relevé
+        <span class="push" id="dernierMeta"></span>
+      </h2>
+      <div class="vitals" id="vitalsStrip"></div>
+      <p class="hint">Les valeurs colorées sortent des repères adulte. Elles ne remplacent pas l'évaluation clinique.</p>
+    </section>
+
+    <!-- Poids / taille -->
+    <section class="card-sec" aria-labelledby="titreAnthro">
+      <h2 class="card-title" id="titreAnthro" style="font-size:13px">
+        <svg class="i" aria-hidden="true"><use href="#i-scale"/></svg>Poids et taille
+      </h2>
       <div class="anthro-grid">
         <div class="field">
-          <label for="poidsHosp">Poids (kg)</label>
-          <input type="number" step="0.1" id="poidsHosp" />
+          <label for="poidsHosp">Poids <span class="unit">(kg)</span></label>
+          <input type="number" step="0.1" min="0" inputmode="decimal" id="poidsHosp" />
         </div>
         <div class="field">
-          <label for="tailleHosp">Taille (cm)</label>
-          <input type="number" step="1" id="tailleHosp" />
+          <label for="tailleHosp">Taille <span class="unit">(cm)</span></label>
+          <input type="number" step="1" min="0" inputmode="numeric" id="tailleHosp" />
         </div>
-        <div class="field">
-          <label for="imcHosp">IMC</label>
-          <input type="text" id="imcHosp" readonly />
+        <div class="field full">
+          <label for="imcHosp">IMC <span class="unit">(kg/m²)</span></label>
+          <div class="imc-line">
+            <input type="text" id="imcHosp" readonly style="flex:0 0 110px;width:110px" />
+            <span class="imc-label" id="imcLabel"></span>
+          </div>
         </div>
-        <div class="field">
-          <button class="btn-id btn-id-v" id="btnSaveAnthro">💾 Enregistrer</button>
+        <div class="full">
+          <button class="btn-id btn-id-v btn-block" id="btnSaveAnthro" type="button"></button>
         </div>
       </div>
-      <div class="anthro-note" id="anthroNote">Ces valeurs peuvent être modifiées via le bouton « Modifier » après un premier enregistrement.</div>
-    </div>
-    <div class="table-wrap">
-  <div class="table-header">
-  <h3>Relevé des Constantes</h3>
-  <div class="header-actions">
-    <button class="btn-id btn-id-g" id="btnGraph">📈 Graphe</button>
-    <button class="btn-id" id="btnAdd">➕ Ajouter une ligne</button>
+      <p class="hint" id="anthroNote"></p>
+    </section>
   </div>
-  
-</div>
+
+  <!-- Tableau -->
+  <section class="card-sec card-table" aria-labelledby="titreTable">
+    <div class="table-head">
+      <h2 class="card-title" id="titreTable" style="font-size:13px">
+        <svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg>Relevés
+        <span class="push" id="countMeta"></span>
+      </h2>
+      <div class="header-actions">
+        <button class="btn-id" id="btnGraph" type="button"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg>Courbes</button>
+        <button class="btn-id" id="btnPdf" type="button"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg>Exporter en PDF</button>
+        <button class="btn-id btn-id-v" id="btnAdd" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau relevé</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Heure</th>
-            <th>Temp (°C)</th>
-            <th>FC</th>
-            <th>TA</th>
-            <th>Sat (%)</th>
-            <th>FR</th>
-            <th>Douleur/10</th>
-            <th>GCS Yeux</th>
-            <th>GCS Verbal</th>
-            <th>GCS Moteur</th>
-            <th>GCS Total</th>
-            <th>Observations</th>
+            <th scope="col">Date et heure</th>
+            <th scope="col">Temp. (°C)</th>
+            <th scope="col">FC (/min)</th>
+            <th scope="col">TA (mmHg)</th>
+            <th scope="col">Sat. (%)</th>
+            <th scope="col">FR (/min)</th>
+            <th scope="col">Douleur (/10)</th>
+            <th scope="col">GCS (/15)</th>
+            <th scope="col">Observations</th>
+            <th scope="col" class="act"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Actions</span></th>
           </tr>
         </thead>
         <tbody id="tbodyConstantes"></tbody>
       </table>
-      <div id="emptyState" class="empty" style="display:none;">Aucune constante enregistrée.</div>
-      <br>
-      <button class="btn-id" onclick="generatePdf()">
-  📄 Suivi des constantes PDF
-</button>
+      <div id="emptyState" class="empty-state" hidden>
+        <svg class="i" aria-hidden="true"><use href="#i-activity"/></svg>
+        <p>Aucun relevé enregistré pour cette hospitalisation.</p>
+        <button class="btn-id btn-id-v" id="btnAddEmpty" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Saisir le premier relevé</button>
+      </div>
     </div>
-  </div>
+  </section>
+</main>
 
-  <div id="modalGraphBackdrop" class="modal-backdrop">
-    <div class="modal gmodal">
-      <div class="gmodal-head">
-        <div>
-          <h3>📈 Évolution des constantes</h3>
-          <div class="gsub" id="graphSub"></div>
+<!-- Modale : courbes -->
+<div id="modalGraphBackdrop" class="modal-overlay">
+  <div class="modal gmodal" role="dialog" aria-modal="true" aria-labelledby="graphTitle">
+    <div class="gmodal-head">
+      <div>
+        <h3 id="graphTitle"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg>Évolution des constantes</h3>
+        <div class="gsub" id="graphSub"></div>
+      </div>
+      <button class="icon-button" id="btnCloseGraph" type="button" aria-label="Fermer"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="gcontrols">
+      <div class="grow">
+        <span class="glabel">Constantes</span>
+        <span id="graphChips" style="display:contents;"></span>
+        <button class="gtoolbtn" id="graphAll" type="button">Tout</button>
+        <button class="gtoolbtn" id="graphNone" type="button">Aucun</button>
+      </div>
+      <div class="grow">
+        <span class="glabel">Période</span>
+        <div class="gseg" id="graphPeriod">
+          <button type="button" data-h="0" class="on">Tout</button>
+          <button type="button" data-h="24">24 h</button>
+          <button type="button" data-h="48">48 h</button>
+          <button type="button" data-h="168">7 j</button>
         </div>
-        <button class="gclose" id="btnCloseGraph" title="Fermer">✕</button>
-      </div>
-      <div class="gcontrols">
-        <div class="grow">
-          <span class="glabel">Constantes</span>
-          <span id="graphChips" style="display:contents;"></span>
-          <button class="gtoolbtn" id="graphAll">Tout</button>
-          <button class="gtoolbtn" id="graphNone">Aucun</button>
-        </div>
-        <div class="grow">
-          <span class="glabel">Période</span>
-          <div class="gseg" id="graphPeriod">
-            <button data-h="0" class="on">Tout</button>
-            <button data-h="24">24 h</button>
-            <button data-h="48">48 h</button>
-            <button data-h="168">7 j</button>
-          </div>
-          <span class="glabel" style="min-width:auto;margin-left:14px;">Affichage</span>
-          <div class="gseg" id="graphMode">
-            <button data-m="split" class="on">Un graphe par constante</button>
-            <button data-m="overlay">Superposé</button>
-          </div>
+        <span class="glabel" style="min-width:auto;margin-left:14px;">Affichage</span>
+        <div class="gseg" id="graphMode">
+          <button type="button" data-m="split" class="on">Un graphe par constante</button>
+          <button type="button" data-m="overlay">Superposé</button>
         </div>
       </div>
-      <div class="gbody" id="graphZone"></div>
+    </div>
+    <div class="gbody" id="graphZone"></div>
+  </div>
+</div>
+
+<!-- Modale : saisie / modification -->
+<div id="modalFormBackdrop" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle"><svg class="i" aria-hidden="true"><use href="#i-activity"/></svg><span id="modalTitleText">Nouveau relevé</span></h3>
+
+    <div class="vitals-grid two" style="max-width:420px">
+      <div class="field"><label for="date">Date</label><input type="date" id="date" /></div>
+      <div class="field"><label for="heure">Heure</label><input type="time" id="heure" /></div>
+    </div>
+
+    <h4>Signes vitaux</h4>
+    <div class="vitals-grid">
+      <div class="field"><label for="temperature">Température <span class="unit">(°C)</span></label><input type="number" step="0.1" inputmode="decimal" id="temperature" /></div>
+      <div class="field"><label for="fc">FC <span class="unit">(/min)</span></label><input type="number" inputmode="numeric" id="fc" /></div>
+      <div class="field"><label for="ta">TA <span class="unit">(mmHg)</span></label><input type="text" inputmode="numeric" id="ta" placeholder="ex : 120/70" autocomplete="off" /></div>
+      <div class="field"><label for="saturation">Saturation <span class="unit">(%)</span></label><input type="number" inputmode="numeric" id="saturation" min="0" max="100" /></div>
+      <div class="field"><label for="fr">FR <span class="unit">(/min)</span></label><input type="number" inputmode="numeric" id="fr" /></div>
+      <div class="field"><label for="douleur">Douleur <span class="unit">(/10)</span></label><input type="number" inputmode="numeric" id="douleur" min="0" max="10" /></div>
+    </div>
+
+    <h4>Score de Glasgow</h4>
+    <div class="vitals-grid">
+      <div class="field"><label for="glasgowYeux">Yeux <span class="unit">(1 à 4)</span></label><input type="number" inputmode="numeric" id="glasgowYeux" min="1" max="4" /></div>
+      <div class="field"><label for="glasgowVerbal">Verbal <span class="unit">(1 à 5)</span></label><input type="number" inputmode="numeric" id="glasgowVerbal" min="1" max="5" /></div>
+      <div class="field"><label for="glasgowMoteur">Moteur <span class="unit">(1 à 6)</span></label><input type="number" inputmode="numeric" id="glasgowMoteur" min="1" max="6" /></div>
+      <div class="field"><label for="glasgowTotal">Total <span class="unit">(/15)</span></label><input type="number" id="glasgowTotal" readonly tabindex="-1" /></div>
+    </div>
+
+    <h4>Observations</h4>
+    <div class="field"><input type="text" id="observation" placeholder="Facultatif" autocomplete="off" aria-label="Observations" /></div>
+
+    <div id="formError" class="form-error" role="alert" hidden></div>
+
+    <div class="modal-actions">
+      <button class="btn-id btn-id-c" id="btnCancelForm" type="button">Annuler</button>
+      <button class="btn-id btn-id-v" id="btnSaveForm" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Enregistrer</button>
     </div>
   </div>
+</div>
 
-  <div id="modalFormBackdrop" class="modal-backdrop">
-    <div class="modal">
-      <h3 id="modalTitle">Nouvelle ligne de constantes</h3>
-      <div class="grid">
-        <div class="field"><label for="date">Date</label><input type="date" id="date" /></div>
-        <div class="field"><label for="heure">Heure</label><input type="time" id="heure" /></div>
-        <div class="field"><label for="temperature">Température (°C)</label><input type="number" step="0.1" id="temperature" /></div>
-        <div class="field"><label for="fc">FC</label><input type="number" id="fc" /></div>
-        <div class="field"><label for="ta">TA</label><input type="text" id="ta" placeholder="ex: 120/70" /></div>
-        <div class="field"><label for="saturation">Saturation (%)</label><input type="number" id="saturation" min="0" max="100" /></div>
-        <div class="field"><label for="fr">FR</label><input type="number" id="fr" /></div>
-        <div class="field"><label for="douleur">Douleur /10</label><input type="number" id="douleur" min="0" max="10" /></div>
-        <div class="field"><label for="glasgowYeux">GCS Yeux</label><input type="number" id="glasgowYeux" min="1" max="4" /></div>
-        <div class="field"><label for="glasgowVerbal">GCS Verbal</label><input type="number" id="glasgowVerbal" min="1" max="5" /></div>
-        <div class="field"><label for="glasgowMoteur">GCS Moteur</label><input type="number" id="glasgowMoteur" min="1" max="6" /></div>
-        <div class="field"><label for="glasgowTotal">GCS Total</label><input type="number" id="glasgowTotal" readonly /></div>
-      </div>
-      <div class="field" style="margin-top:10px;"><label for="observation">Observations</label><input type="text" id="observation" placeholder="Optionnel" /></div>
-      <div class="modal-actions">
-        <button class="btn-id btn-id-c" id="btnCancelForm">Annuler</button>
-        <button class="btn-id btn-id-v" id="btnSaveForm">Enregistrer</button>
-      </div>
+<!-- Modale : suppression -->
+<div id="modalDeleteBackdrop" class="modal-overlay">
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteText">
+    <div class="modal-icon warning"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
+    <h3 id="deleteTitle">Supprimer ce relevé ?</h3>
+    <p id="deleteText">Cette action est définitive.</p>
+    <div class="modal-actions">
+      <button class="btn-id" id="btnCancelDelete" type="button">Annuler</button>
+      <button class="btn-id btn-danger" id="btnConfirmDelete" type="button"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer</button>
     </div>
   </div>
+</div>
 
-  <div id="modalDeleteBackdrop" class="modal-backdrop">
-    <div class="modal" style="max-width:460px;">
-      <h3>Confirmer la suppression</h3>
-      <p>Voulez-vous supprimer cette ligne de constantes ?</p>
-      <div class="modal-actions">
-        <button class="btn btn-muted" id="btnCancelDelete">Annuler</button>
-        <button class="btn btn-danger" id="btnConfirmDelete">Supprimer</button>
-      </div>
-    </div>
-  </div>
+<div id="contextMenu" role="menu">
+  <button id="ctxEdit" class="btn-id" type="button" role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg>Modifier</button>
+  <button id="ctxDelete" class="btn-id btn-id-c" type="button" role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer</button>
+</div>
 
-  <div id="contextMenu">
-    <button id="ctxEdit" class="btn-id">✏️ Modifier</button>
-    <button id="ctxDelete" class="btn-id btn-id-c">🗑️ Supprimer</button>
-  </div>
+<div id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, arrayUnion, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, arrayUnion, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-      authDomain: "urgences-a8ed4.firebaseapp.com",
-      projectId: "urgences-a8ed4"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const qs = new URLSearchParams(window.location.search);
-    const patientId = qs.get("id");
+  const qs = new URLSearchParams(window.location.search);
+  const patientId = qs.get("id");
 
-    /**
-     * ajouterEntreeHistorique : fonction autonome (voir fiche.html) qui trace
-     * une action dans le champ "historique" de l'hospitalisation active.
-     */
-    async function ajouterEntreeHistorique(action, options = {}) {
-      try {
-        if (!action) return null;
-        const pid = options.patientId || (typeof patientId !== "undefined" ? patientId : null);
-        if (!pid) return null;
+  /* ------------------------------------------------------------------
+     Historique de l'hospitalisation (inchangé)
+     ------------------------------------------------------------------ */
+  async function ajouterEntreeHistorique(action, options = {}) {
+    try {
+      if (!action) return null;
+      const pid = options.patientId || (typeof patientId !== "undefined" ? patientId : null);
+      if (!pid) return null;
 
-        let hospId = options.hospitalisationId || null;
-        if (!hospId) {
-          const pSnap = await getDoc(doc(db, "patients", pid));
-          if (!pSnap.exists()) return null;
-          const pData = pSnap.data();
-          hospId = pData.hospitalisationActiveId ||
-            (Array.isArray(pData.hospitalisations) ? pData.hospitalisations.slice(-1)[0] : null);
-        }
-        if (!hospId) return null;
-
-        const maintenant = new Date();
-        const utilisateur = auth.currentUser;
-        const entree = {
-          horodatage: Timestamp.now(),
-          date: maintenant.toLocaleDateString("fr-FR"),
-          heure: maintenant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          action: action,
-          auteurNom: window.medecinNom || "Utilisateur inconnu",
-          auteurType: window.medecinType || "Non renseigné",
-          auteurSpecialite: window.medecinSpecialite || "",
-          auteurId: (utilisateur && utilisateur.uid) || ""
-        };
-
-        await updateDoc(doc(db, "hospitalisations", hospId), {
-          historique: arrayUnion(entree)
-        });
-        return entree;
-      } catch (err) {
-        console.error("Erreur ajout historique :", err);
-        return null;
+      let hospId = options.hospitalisationId || null;
+      if (!hospId) {
+        const pSnap = await getDoc(doc(db, "patients", pid));
+        if (!pSnap.exists()) return null;
+        const pData = pSnap.data();
+        hospId = pData.hospitalisationActiveId ||
+          (Array.isArray(pData.hospitalisations) ? pData.hospitalisations.slice(-1)[0] : null);
       }
-    }
-    window.ajouterEntreeHistorique = ajouterEntreeHistorique;
+      if (!hospId) return null;
 
-    // Récupération de l'identité de l'utilisateur connecté (nom / spécialité / rôle),
-    // utilisée comme "auteur" dans les entrées d'historique.
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
-      try {
-        const docSnap = await getDoc(doc(db, "medecins", user.uid));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          window.medecinNom = data.nom || "";
-          window.medecinSpecialite = data.specialite || "";
-          window.medecinType = data.type || "";
-        }
-      } catch (e) {
-        console.error("Erreur chargement médecin :", e);
+      const maintenant = new Date();
+      const utilisateur = auth.currentUser;
+      const entree = {
+        horodatage: Timestamp.now(),
+        date: maintenant.toLocaleDateString("fr-FR"),
+        heure: maintenant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        action: action,
+        auteurNom: window.medecinNom || "Utilisateur inconnu",
+        auteurType: window.medecinType || "Non renseigné",
+        auteurSpecialite: window.medecinSpecialite || "",
+        auteurId: (utilisateur && utilisateur.uid) || ""
+      };
+
+      await updateDoc(doc(db, "hospitalisations", hospId), { historique: arrayUnion(entree) });
+      return entree;
+    } catch (err) {
+      console.error("Erreur ajout historique :", err);
+      return null;
+    }
+  }
+  window.ajouterEntreeHistorique = ajouterEntreeHistorique;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    try {
+      const docSnap = await getDoc(doc(db, "medecins", user.uid));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        window.medecinNom = data.nom || "";
+        window.medecinSpecialite = data.specialite || "";
+        window.medecinType = data.type || "";
       }
-    });
-
-    const statusEl = document.getElementById("status");
-    const patientInfoEl = document.getElementById("patientInfo");
-    const tbody = document.getElementById("tbodyConstantes");
-    const emptyState = document.getElementById("emptyState");
-    const contextMenu = document.getElementById("contextMenu");
-
-    const modalFormBackdrop = document.getElementById("modalFormBackdrop");
-    const modalDeleteBackdrop = document.getElementById("modalDeleteBackdrop");
-    const modalTitle = document.getElementById("modalTitle");
-
-    let hospitalisationId = null;
-    let constantesReleves = [];
-    let selectedLineId = null;
-    let editingLineId = null;
-    let anthropometrieVerrouillee = false;
-    let anthropometrieExiste = false;
-
-    function nowDateAndTime() {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mi = String(now.getMinutes()).padStart(2, "0");
-      return { date: `${yyyy}-${mm}-${dd}`, heure: `${hh}:${mi}` };
-    }
-
-    function sortRows(rows) {
-      return [...rows].sort((a, b) => `${b.date || ""} ${b.heure || ""}`.localeCompare(`${a.date || ""} ${a.heure || ""}`));
-    }
-
-    function calcGlasgowTotal() {
-      const y = Number(document.getElementById("glasgowYeux").value || 0);
-      const v = Number(document.getElementById("glasgowVerbal").value || 0);
-      const m = Number(document.getElementById("glasgowMoteur").value || 0);
-      const total = y + v + m;
-      document.getElementById("glasgowTotal").value = total > 0 ? String(total) : "";
-    }
-
-    function calcImc() {
-      const poids = Number(document.getElementById("poidsHosp").value || 0);
-      const tailleCm = Number(document.getElementById("tailleHosp").value || 0);
-      if (!poids || !tailleCm) {
-        document.getElementById("imcHosp").value = "";
-        return;
-      }
-      const tailleM = tailleCm / 100;
-      const imc = poids / (tailleM * tailleM);
-      document.getElementById("imcHosp").value = Number.isFinite(imc) ? imc.toFixed(1) : "";
-    }
-
-    function setAnthroLockState(isLocked) {
-      anthropometrieVerrouillee = isLocked;
-      const poidsInput = document.getElementById("poidsHosp");
-      const tailleInput = document.getElementById("tailleHosp");
-      const btn = document.getElementById("btnSaveAnthro");
-      const note = document.getElementById("anthroNote");
-
-      poidsInput.disabled = isLocked;
-      tailleInput.disabled = isLocked;
-      btn.disabled = false;
-      btn.classList.remove("btn-muted", "btn-id");
-
-      if (isLocked) {
-        btn.textContent = "✏️ Modifier";
-        btn.classList.add("btn-id");
-        note.textContent = "✅ Poids/taille enregistrés. Cliquez sur « Modifier » pour corriger.";
-      } else {
-        btn.textContent = anthropometrieExiste ? "💾 Mettre à jour" : "💾 Enregistrer";
-        btn.classList.add("btn-id");
-        note.textContent = anthropometrieExiste
-          ? "Mode édition actif : vous pouvez corriger puis sauvegarder."
-          : "Saisissez le poids et la taille puis enregistrez.";
-      }
-    }
-window.generatePdf = async function () {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  // =========================
-  // 🧾 INFOS PATIENT
-  // =========================
-  const patientNom = document.getElementById("patientInfo").textContent;
-  const dateExport = new Date().toLocaleString();
-
-  doc.setFontSize(16);
-  doc.text("Relevé des constantes", 14, 15);
-
-  doc.setFontSize(10);
-  doc.text(patientNom, 14, 22);
-  doc.text("Date d'export : " + dateExport, 14, 28);
-
-  // =========================
-  // 📊 TABLEAU
-  // =========================
-  const rows = constantesReleves.map(r => [
-    r.date || "",
-    r.heure || "",
-    r.temperature || "",
-    r.fc || "",
-    r.ta || "",
-    r.saturation || "",
-    r.fr || "",
-    r.douleur || "",
-    r.glasgowTotal || "",
-    r.observation || ""
-  ]);
-
-  doc.autoTable({
-    startY: 35,
-    head: [[
-      "Date", "Heure", "Temp", "FC", "TA", "Sat", "FR", "Douleur", "GCS", "Obs"
-    ]],
-    body: rows,
-
-    styles: {
-      fontSize: 8,
-      cellPadding: 2
-    },
-
-    headStyles: {
-      fillColor: [29, 78, 216] // bleu
-    },
-
-    alternateRowStyles: {
-      fillColor: [245, 247, 250]
+    } catch (e) {
+      console.error("Erreur chargement médecin :", e);
     }
   });
 
-  // =========================
-  // 📄 EXPORT BLOB
-  // =========================
-  const pdfBlob = doc.output("blob");
-  const pdfUrl = URL.createObjectURL(pdfBlob);
+  /* ------------------------------------------------------------------
+     Éléments et état
+     ------------------------------------------------------------------ */
+  const $ = (id) => document.getElementById(id);
+  const tbody = $("tbodyConstantes");
+  const emptyState = $("emptyState");
+  const contextMenu = $("contextMenu");
+  const modalFormBackdrop = $("modalFormBackdrop");
+  const modalDeleteBackdrop = $("modalDeleteBackdrop");
+  const modalGraphBackdrop = $("modalGraphBackdrop");
+  const btnSaveForm = $("btnSaveForm");
+  const formError = $("formError");
 
-  // =========================
-  // 🚀 OUVERTURE DANS TON VIEWER
-  // =========================
-  window.parent.postMessage(
-    {
-      type: "OPEN_TAB",
-      title: "Constantes PDF",
-      url: `viewer.html?file=${encodeURIComponent(pdfUrl)}`
-    },
-    "*"
-  );
-}
+  let hospitalisationId = null;
+  let constantesReleves = [];
+  let selectedLineId = null;
+  let editingLineId = null;
+  let anthropometrieVerrouillee = false;
+  let anthropometrieExiste = false;
+  let patientNomComplet = "";
+  let patientEntete = "";
 
-    function getFormValues() {
-      return {
-        date: document.getElementById("date").value,
-        heure: document.getElementById("heure").value,
-        temperature: document.getElementById("temperature").value || "",
-        fc: document.getElementById("fc").value || "",
-        ta: document.getElementById("ta").value.trim(),
-        saturation: document.getElementById("saturation").value || "",
-        fr: document.getElementById("fr").value || "",
-        douleur: document.getElementById("douleur").value || "",
-        glasgowYeux: document.getElementById("glasgowYeux").value || "",
-        glasgowVerbal: document.getElementById("glasgowVerbal").value || "",
-        glasgowMoteur: document.getElementById("glasgowMoteur").value || "",
-        glasgowTotal: document.getElementById("glasgowTotal").value || "",
-        observation: document.getElementById("observation").value.trim()
-      };
-    }
+  /* ------------------------------------------------------------------
+     Utilitaires
+     ------------------------------------------------------------------ */
+  const ICON = (id, cls = "") => `<svg class="i ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+  const pad2 = (n) => String(n).padStart(2, "0");
 
-    function fillForm(row = null) {
-      const initial = row || { ...nowDateAndTime() };
-      document.getElementById("date").value = initial.date || "";
-      document.getElementById("heure").value = initial.heure || "";
-      document.getElementById("temperature").value = initial.temperature || "";
-      document.getElementById("fc").value = initial.fc || "";
-      document.getElementById("ta").value = initial.ta || "";
-      document.getElementById("saturation").value = initial.saturation || "";
-      document.getElementById("fr").value = initial.fr || "";
-      document.getElementById("douleur").value = initial.douleur || "";
-      document.getElementById("glasgowYeux").value = initial.glasgowYeux || "";
-      document.getElementById("glasgowVerbal").value = initial.glasgowVerbal || "";
-      document.getElementById("glasgowMoteur").value = initial.glasgowMoteur || "";
-      document.getElementById("glasgowTotal").value = initial.glasgowTotal || "";
-      document.getElementById("observation").value = initial.observation || "";
-      calcGlasgowTotal();
-    }
-
-    function openFormModal(editId = null) {
-      editingLineId = editId;
-      const row = editId ? constantesReleves.find(x => x.id === editId) : null;
-      modalTitle.textContent = editId ? "Modifier une ligne de constantes" : "Nouvelle ligne de constantes";
-      fillForm(row);
-      modalFormBackdrop.style.display = "flex";
-      setTimeout(() => {
-   const inputs = modalFormBackdrop.querySelectorAll("input");
-
-  if (inputs[2]) {
-    inputs[2].focus();
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
-  }, 50);
-}
-      
-    
+  const toNum = (v) => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  };
+  const parseTA = (v) => {
+    const m = String(v || "").match(/(\d{2,3})\s*[\/\-]\s*(\d{2,3})/);
+    return m ? { sys: Number(m[1]), dia: Number(m[2]) } : null;
+  };
+  const fmtNum = (v) => String(v).replace(".", ",");
+  const fmtDateFR = (iso) => (iso ? String(iso).split("-").reverse().join("/") : "");
 
-    function closeFormModal() {
-      modalFormBackdrop.style.display = "none";
-      editingLineId = null;
+  function nowDateAndTime() {
+    const now = new Date();
+    return {
+      date: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+      heure: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`
+    };
+  }
+  function sortRows(rows) {
+    return [...rows].sort((a, b) => `${b.date || ""} ${b.heure || ""}`.localeCompare(`${a.date || ""} ${a.heure || ""}`));
+  }
+
+  let toastTimer = null;
+  function toast(message, type = "ok") {
+    const el = $("toast");
+    el.className = type === "error" ? "error" : "";
+    el.innerHTML = `${ICON(type === "error" ? "i-alert" : "i-check")}<span>${escapeHtml(message)}</span>`;
+    void el.offsetWidth;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), type === "error" ? 5000 : 2800);
+  }
+
+  function setNotice(message, type = "warn") {
+    const el = $("notice");
+    if (!message) { el.hidden = true; return; }
+    el.className = "notice" + (type === "error" ? " error" : "");
+    el.innerHTML = `${ICON(type === "error" ? "i-alert" : "i-warn")}<span>${escapeHtml(message)}</span>`;
+    el.hidden = false;
+  }
+
+  /* ------------------------------------------------------------------
+     Repères de valeurs hors norme (adulte, indicatifs)
+     niveau 0 = dans la norme · 1 = à surveiller · 2 = critique
+     À ajuster ici selon le protocole du service.
+     ------------------------------------------------------------------ */
+  const SEUILS = {
+    temperature: { critMin: 35,  warnMin: 36,  warnMax: 37.9, critMax: 38.9 },
+    fc:          { critMin: 40,  warnMin: 50,  warnMax: 100,  critMax: 130 },
+    sys:         { critMin: 90,  warnMin: 100, warnMax: 159,  critMax: 179 },
+    dia:         { critMin: 40,  warnMin: 50,  warnMax: 99,   critMax: 109 },
+    saturation:  { critMin: 90,  warnMin: 94 },
+    fr:          { critMin: 8,   warnMin: 12,  warnMax: 20,   critMax: 29 },
+    douleur:     { warnMax: 3,   critMax: 6 },
+    gcs:         { critMin: 9,   warnMin: 15 }
+  };
+  const NIVEAU_CLASSE = ["", "warn", "crit"];
+  const NIVEAU_TITRE = ["", "Hors repères : à surveiller", "Hors repères : valeur critique"];
+
+  function niveau(cle, brut) {
+    const s = SEUILS[cle]; const v = toNum(brut);
+    if (!s || v === null) return 0;
+    if (s.critMin !== undefined && v < s.critMin) return 2;
+    if (s.critMax !== undefined && v > s.critMax) return 2;
+    if (s.warnMin !== undefined && v < s.warnMin) return 1;
+    if (s.warnMax !== undefined && v > s.warnMax) return 1;
+    return 0;
+  }
+  function niveauTA(ta) {
+    const p = parseTA(ta);
+    if (!p) return 0;
+    return Math.max(niveau("sys", p.sys), niveau("dia", p.dia));
+  }
+  function niveauLigne(row, cle) {
+    if (cle === "ta") return niveauTA(row.ta);
+    if (cle === "glasgowTotal") return niveau("gcs", row.glasgowTotal);
+    return niveau(cle, row[cle]);
+  }
+
+  function valHtml(v, lvl, numerique = true) {
+    if (v === "" || v === null || v === undefined) return `<span class="nil" aria-label="non renseigné">–</span>`;
+    const txt = escapeHtml(numerique ? fmtNum(v) : v);
+    return lvl ? `<span class="val ${NIVEAU_CLASSE[lvl]}" title="${NIVEAU_TITRE[lvl]}">${txt}</span>` : txt;
+  }
+
+  /* ------------------------------------------------------------------
+     Dernier relevé (synthèse)
+     ------------------------------------------------------------------ */
+  const VITALS = [
+    { key: "temperature",  label: "Température", unit: "°C" },
+    { key: "fc",           label: "FC",          unit: "/min" },
+    { key: "ta",           label: "TA",          unit: "mmHg" },
+    { key: "saturation",   label: "Saturation",  unit: "%" },
+    { key: "fr",           label: "FR",          unit: "/min" },
+    { key: "douleur",      label: "Douleur",     unit: "/10" },
+    { key: "glasgowTotal", label: "Glasgow",     unit: "/15" }
+  ];
+
+  function renderLatest() {
+    const strip = $("vitalsStrip");
+    const meta = $("dernierMeta");
+    const last = sortRows(constantesReleves)[0] || null;
+
+    let pire = 0; let nbHors = 0;
+    strip.innerHTML = VITALS.map(v => {
+      const raw = last ? last[v.key] : "";
+      const vide = raw === "" || raw === undefined || raw === null;
+      const lvl = vide ? 0 : niveauLigne(last, v.key);
+      if (lvl) { nbHors++; pire = Math.max(pire, lvl); }
+      const cls = vide ? "nil" : NIVEAU_CLASSE[lvl];
+      const flag = lvl ? ICON("i-alert", "sm") : "";
+      const valeur = vide ? "–" : `${escapeHtml(v.key === "ta" ? raw : fmtNum(raw))}<small>${v.unit}</small>`;
+      return `<div class="vital ${cls}"${lvl ? ` title="${NIVEAU_TITRE[lvl]}"` : ""}>
+        <span class="vital-label">${v.label}${flag}</span>
+        <span class="vital-value">${valeur}</span></div>`;
+    }).join("");
+
+    if (!last) { meta.innerHTML = `<span style="color:var(--muted)">Aucun relevé</span>`; return; }
+    const horodatage = `${fmtDateFR(last.date)} à ${last.heure || ""}`;
+    const pill = nbHors
+      ? `<span class="flag-pill ${pire === 2 ? "crit" : ""}">${ICON("i-alert", "sm")}${nbHors} valeur${nbHors > 1 ? "s" : ""} hors repères</span>`
+      : "";
+    meta.innerHTML = `${pill}<span style="color:var(--muted)">${horodatage}</span>`;
+  }
+
+  /* ------------------------------------------------------------------
+     Poids / taille / IMC
+     ------------------------------------------------------------------ */
+  function categorieImc(imc) {
+    if (!imc) return "";
+    if (imc < 18.5) return "Insuffisance pondérale";
+    if (imc < 25) return "Corpulence normale";
+    if (imc < 30) return "Surpoids";
+    return "Obésité";
+  }
+
+  function calcImc() {
+    const poids = Number($("poidsHosp").value || 0);
+    const tailleCm = Number($("tailleHosp").value || 0);
+    if (!poids || !tailleCm) {
+      $("imcHosp").value = "";
+      $("imcLabel").textContent = "";
+      return;
+    }
+    const tailleM = tailleCm / 100;
+    const imc = poids / (tailleM * tailleM);
+    $("imcHosp").value = Number.isFinite(imc) ? imc.toFixed(1) : "";
+    $("imcLabel").textContent = Number.isFinite(imc) ? categorieImc(imc) : "";
+  }
+
+  function setAnthroLockState(isLocked) {
+    anthropometrieVerrouillee = isLocked;
+    const btn = $("btnSaveAnthro");
+    const note = $("anthroNote");
+    $("poidsHosp").disabled = isLocked;
+    $("tailleHosp").disabled = isLocked;
+    btn.disabled = !hospitalisationId;
+
+    if (isLocked) {
+      btn.className = "btn-id btn-block";
+      btn.innerHTML = `${ICON("i-pen")}Modifier`;
+      note.textContent = "Poids et taille enregistrés.";
+    } else {
+      btn.className = "btn-id btn-id-v btn-block";
+      btn.innerHTML = `${ICON("i-save")}${anthropometrieExiste ? "Mettre à jour" : "Enregistrer"}`;
+      note.textContent = anthropometrieExiste
+        ? "Corrigez les valeurs puis mettez à jour."
+        : "Saisissez le poids et la taille, puis enregistrez.";
+    }
+    calcImc();
+  }
+
+  /* ------------------------------------------------------------------
+     Tableau
+     ------------------------------------------------------------------ */
+  function renderTable() {
+    tbody.innerHTML = "";
+    const sorted = sortRows(constantesReleves);
+    $("countMeta").textContent = sorted.length ? `${sorted.length} relevé${sorted.length > 1 ? "s" : ""}` : "";
+    emptyState.hidden = sorted.length > 0;
+    $("btnAddEmpty").disabled = !hospitalisationId;
+    renderLatest();
+    if (!sorted.length) return;
+
+    tbody.innerHTML = sorted.map(row => {
+      const quand = `${fmtDateFR(row.date)} à ${row.heure || ""}`;
+      const detailGcs = (row.glasgowYeux && row.glasgowVerbal && row.glasgowMoteur)
+        ? `<span class="gcs-detail">Y${escapeHtml(row.glasgowYeux)} V${escapeHtml(row.glasgowVerbal)} M${escapeHtml(row.glasgowMoteur)}</span>` : "";
+      return `<tr data-id="${escapeHtml(row.id)}">
+        <td class="dt"><b>${escapeHtml(fmtDateFR(row.date))}</b><span>${escapeHtml(row.heure || "")}</span></td>
+        <td>${valHtml(row.temperature, niveauLigne(row, "temperature"))}</td>
+        <td>${valHtml(row.fc, niveauLigne(row, "fc"))}</td>
+        <td>${valHtml(row.ta, niveauLigne(row, "ta"), false)}</td>
+        <td>${valHtml(row.saturation, niveauLigne(row, "saturation"))}</td>
+        <td>${valHtml(row.fr, niveauLigne(row, "fr"))}</td>
+        <td>${valHtml(row.douleur, niveauLigne(row, "douleur"))}</td>
+        <td>${valHtml(row.glasgowTotal, niveauLigne(row, "glasgowTotal"))}${detailGcs}</td>
+        <td class="obs">${escapeHtml(row.observation || "")}</td>
+        <td class="act">
+          <button class="row-btn" type="button" data-act="edit" aria-label="Modifier le relevé du ${escapeHtml(quand)}" title="Modifier">${ICON("i-pen")}</button>
+          <button class="row-btn danger" type="button" data-act="delete" aria-label="Supprimer le relevé du ${escapeHtml(quand)}" title="Supprimer">${ICON("i-trash")}</button>
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  tbody.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const id = btn.closest("tr").dataset.id;
+    if (btn.dataset.act === "edit") openFormModal(id);
+    else openDeleteModal(id);
+  });
+
+  tbody.addEventListener("contextmenu", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+    e.preventDefault();
+    selectedLineId = tr.dataset.id;
+    tbody.querySelectorAll("tr.selected").forEach(r => r.classList.remove("selected"));
+    tr.classList.add("selected");
+    contextMenu.style.display = "block";
+    const w = contextMenu.offsetWidth, h = contextMenu.offsetHeight;
+    contextMenu.style.left = `${Math.max(8, Math.min(e.clientX, window.innerWidth - w - 8))}px`;
+    contextMenu.style.top = `${Math.max(8, Math.min(e.clientY, window.innerHeight - h - 8))}px`;
+  });
+
+  function hideContextMenu() {
+    contextMenu.style.display = "none";
+    tbody.querySelectorAll("tr.selected").forEach(r => r.classList.remove("selected"));
+  }
+
+  /* ------------------------------------------------------------------
+     Formulaire de saisie
+     ------------------------------------------------------------------ */
+  const CHAMPS = ["date", "heure", "temperature", "fc", "ta", "saturation", "fr", "douleur", "glasgowYeux", "glasgowVerbal", "glasgowMoteur", "glasgowTotal", "observation"];
+
+  function calcGlasgowTotal() {
+    const y = Number($("glasgowYeux").value || 0);
+    const v = Number($("glasgowVerbal").value || 0);
+    const m = Number($("glasgowMoteur").value || 0);
+    const total = y + v + m;
+    $("glasgowTotal").value = total > 0 ? String(total) : "";
+  }
+
+  function getFormValues() {
+    const out = {};
+    CHAMPS.forEach(id => { out[id] = $(id).value; });
+    out.ta = out.ta.trim();
+    out.observation = out.observation.trim();
+    return out;
+  }
+
+  function fillForm(row = null) {
+    const initial = row || { ...nowDateAndTime() };
+    CHAMPS.forEach(id => { $(id).value = initial[id] || ""; });
+    calcGlasgowTotal();
+    showFormError("");
+  }
+
+  function showFormError(msg) {
+    formError.textContent = msg;
+    formError.hidden = !msg;
+  }
+
+  const BORNES = [
+    ["temperature", 25, 45, "Température"],
+    ["fc", 0, 300, "FC"],
+    ["saturation", 0, 100, "Saturation"],
+    ["fr", 0, 80, "FR"],
+    ["douleur", 0, 10, "Douleur"],
+    ["glasgowYeux", 1, 4, "Glasgow yeux"],
+    ["glasgowVerbal", 1, 5, "Glasgow verbal"],
+    ["glasgowMoteur", 1, 6, "Glasgow moteur"]
+  ];
+
+  function validerFormulaire(p) {
+    if (!p.date || !p.heure) return "La date et l'heure sont obligatoires.";
+    for (const [cle, min, max, label] of BORNES) {
+      if (p[cle] === "") continue;
+      const n = toNum(p[cle]);
+      if (n === null || n < min || n > max) return `${label} : valeur attendue entre ${min} et ${max}.`;
+    }
+    if (p.ta && !parseTA(p.ta)) return "TA : format attendu, par exemple 120/70.";
+    const auMoinsUne = ["temperature", "fc", "ta", "saturation", "fr", "douleur", "glasgowTotal", "observation"].some(k => p[k] !== "");
+    if (!auMoinsUne) return "Renseignez au moins une constante ou une observation.";
+    return "";
+  }
+
+  function openFormModal(editId = null) {
+    if (!hospitalisationId) { toast("Aucune hospitalisation active.", "error"); return; }
+    hideContextMenu();
+    editingLineId = editId;
+    const row = editId ? constantesReleves.find(x => x.id === editId) : null;
+    $("modalTitleText").textContent = editId ? "Modifier le relevé" : "Nouveau relevé";
+    fillForm(row);
+    modalFormBackdrop.style.display = "flex";
+    setTimeout(() => $("temperature").focus(), 50);
+  }
+  function closeFormModal() {
+    modalFormBackdrop.style.display = "none";
+    editingLineId = null;
+  }
+
+  function openDeleteModal(lineId) {
+    hideContextMenu();
+    selectedLineId = lineId;
+    const row = constantesReleves.find(x => x.id === lineId);
+    $("deleteText").textContent = row
+      ? `Le relevé du ${fmtDateFR(row.date)} à ${row.heure || ""} sera supprimé définitivement.`
+      : "Cette action est définitive.";
+    modalDeleteBackdrop.style.display = "flex";
+    setTimeout(() => $("btnCancelDelete").focus(), 50);
+  }
+  function closeDeleteModal() {
+    modalDeleteBackdrop.style.display = "none";
+    selectedLineId = null;
+  }
+
+  async function persistRows() {
+    if (!hospitalisationId) return;
+    await updateDoc(doc(db, "hospitalisations", hospitalisationId), {
+      constantesReleves,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  /* ------------------------------------------------------------------
+     Chargement des données
+     ------------------------------------------------------------------ */
+  function bloquerSaisie(raison, type) {
+    setNotice(raison, type);
+    ["btnAdd", "btnAddEmpty", "btnSaveAnthro"].forEach(id => { $(id).disabled = true; });
+    $("poidsHosp").disabled = true;
+    $("tailleHosp").disabled = true;
+    renderTable();
+  }
+
+  async function loadData() {
+    setAnthroLockState(false);
+    if (!patientId) {
+      bloquerSaisie("Patient non identifié : l'adresse de la page doit contenir ?id=…", "error");
+      return;
     }
 
-    function openDeleteModal(lineId) {
-      selectedLineId = lineId;
-      modalDeleteBackdrop.style.display = "flex";
+    const patientSnap = await getDoc(doc(db, "patients", patientId));
+    if (!patientSnap.exists()) {
+      bloquerSaisie("Patient introuvable.", "error");
+      return;
     }
 
-    function closeDeleteModal() {
-      modalDeleteBackdrop.style.display = "none";
-      selectedLineId = null;
+    const patient = patientSnap.data();
+    patientNomComplet = `${patient.nom || ""} ${patient.prenom || ""}`.trim();
+    patientEntete = `${patientNomComplet} • ID patient: ${patientId}`.trim();
+
+    hospitalisationId = patient.hospitalisationActiveId ||
+      (Array.isArray(patient.hospitalisations) && patient.hospitalisations.length
+        ? patient.hospitalisations[patient.hospitalisations.length - 1] : null);
+
+    if (!hospitalisationId) {
+      bloquerSaisie("Aucune hospitalisation active pour ce patient : la saisie est désactivée.", "warn");
+      return;
     }
 
-    function renderTable() {
-      tbody.innerHTML = "";
-      const sorted = sortRows(constantesReleves);
-
-      if (!sorted.length) {
-        emptyState.style.display = "block";
-        return;
-      }
-
-      emptyState.style.display = "none";
-
-      sorted.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = row.id;
-        tr.innerHTML = `
-          <td>${row.date || ""}</td>
-          <td>${row.heure || ""}</td>
-          <td>${row.temperature || ""}</td>
-          <td>${row.fc || ""}</td>
-          <td>${row.ta || ""}</td>
-          <td>${row.saturation || ""}</td>
-          <td>${row.fr || ""}</td>
-          <td>${row.douleur || ""}</td>
-          <td>${row.glasgowYeux || ""}</td>
-          <td>${row.glasgowVerbal || ""}</td>
-          <td>${row.glasgowMoteur || ""}</td>
-          <td>${row.glasgowTotal || ""}</td>
-          <td>${row.observation || ""}</td>
-        `;
-
-        tr.addEventListener("contextmenu", (e) => {
-          e.preventDefault();
-          selectedLineId = row.id;
-          contextMenu.style.display = "block";
-          contextMenu.style.left = `${e.clientX}px`;
-          contextMenu.style.top = `${e.clientY}px`;
-        });
-
-        tbody.appendChild(tr);
-      });
+    const hospiSnap = await getDoc(doc(db, "hospitalisations", hospitalisationId));
+    if (!hospiSnap.exists()) {
+      hospitalisationId = null;
+      bloquerSaisie("Hospitalisation introuvable : la saisie est désactivée.", "error");
+      return;
     }
 
-    async function persistRows() {
-      if (!hospitalisationId) return;
-      const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-      await updateDoc(hospiRef, {
-        constantesReleves,
+    const hospi = hospiSnap.data();
+    constantesReleves = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
+    if (hospi.anthropometrie && typeof hospi.anthropometrie === "object") {
+      anthropometrieExiste = true;
+      $("poidsHosp").value = hospi.anthropometrie.poids ?? "";
+      $("tailleHosp").value = hospi.anthropometrie.taille ?? "";
+      $("imcHosp").value = hospi.anthropometrie.imc ?? "";
+      setAnthroLockState(true);
+    } else {
+      anthropometrieExiste = false;
+      setAnthroLockState(false);
+    }
+    setNotice("");
+    renderTable();
+  }
+
+  /* ------------------------------------------------------------------
+     Événements : saisie, suppression, poids/taille
+     ------------------------------------------------------------------ */
+  $("btnAdd").addEventListener("click", () => openFormModal());
+  $("btnAddEmpty").addEventListener("click", () => openFormModal());
+  $("btnCancelForm").addEventListener("click", closeFormModal);
+  $("btnCancelDelete").addEventListener("click", closeDeleteModal);
+
+  ["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => $(id).addEventListener("input", calcGlasgowTotal));
+  ["poidsHosp", "tailleHosp"].forEach(id => $(id).addEventListener("input", calcImc));
+  modalFormBackdrop.addEventListener("input", () => { if (!formError.hidden) showFormError(""); });
+
+  $("btnSaveAnthro").addEventListener("click", async () => {
+    const btn = $("btnSaveAnthro");
+    try {
+      if (!hospitalisationId) { toast("Aucune hospitalisation active.", "error"); return; }
+      if (anthropometrieVerrouillee) { setAnthroLockState(false); $("poidsHosp").focus(); return; }
+
+      const poids = Number($("poidsHosp").value || 0);
+      const taille = Number($("tailleHosp").value || 0);
+      calcImc();
+      const imc = Number($("imcHosp").value || 0);
+
+      if (!poids || !taille || !imc) { toast("Saisissez un poids et une taille valides.", "error"); return; }
+      if (poids > 500 || taille < 30 || taille > 250) { toast("Poids ou taille hors limites vraisemblables.", "error"); return; }
+
+      btn.disabled = true;
+      await updateDoc(doc(db, "hospitalisations", hospitalisationId), {
+        anthropometrie: { poids, taille, imc, dateEnregistrement: new Date().toISOString() },
         updatedAt: serverTimestamp()
       });
-    }
 
-    async function loadData() {
-      if (!patientId) {
-        statusEl.textContent = "❌ Paramètre manquant : ?id=<patientId>";
-        return;
-      }
+      ajouterEntreeHistorique(
+        `Enregistrement poids/taille (Poids : ${poids} kg, Taille : ${taille} cm, IMC : ${imc})`,
+        { hospitalisationId, silencieux: true }
+      );
 
-      statusEl.textContent = "Chargement du patient...";
-
-      const patientRef = doc(db, "patients", patientId);
-      const patientSnap = await getDoc(patientRef);
-      if (!patientSnap.exists()) {
-        statusEl.textContent = `❌ Patient introuvable: ${patientId}`;
-        return;
-      }
-
-      const patient = patientSnap.data();
-      hospitalisationId = patient.hospitalisationActiveId || (Array.isArray(patient.hospitalisations) && patient.hospitalisations.length ? patient.hospitalisations[patient.hospitalisations.length - 1] : null);
-
-      patientInfoEl.textContent = `${patient.nom || ""} ${patient.prenom || ""} • ID patient: ${patientId}`.trim();
-
-      if (!hospitalisationId) {
-        statusEl.textContent = "🚨 Aucune hospitalisation active trouvée pour ce patient.";
-        renderTable();
-        return;
-      }
-
-      const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-      const hospiSnap = await getDoc(hospiRef);
-
-      if (!hospiSnap.exists()) {
-        statusEl.textContent = `❌ Hospitalisation introuvable: ${hospitalisationId}`;
-        renderTable();
-        return;
-      }
-
-      const hospi = hospiSnap.data();
-      constantesReleves = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
-      if (hospi.anthropometrie && typeof hospi.anthropometrie === "object") {
-        anthropometrieExiste = true;
-        document.getElementById("poidsHosp").value = hospi.anthropometrie.poids ?? "";
-        document.getElementById("tailleHosp").value = hospi.anthropometrie.taille ?? "";
-        document.getElementById("imcHosp").value = hospi.anthropometrie.imc ?? "";
-        setAnthroLockState(true);
-      } else {
-        anthropometrieExiste = false;
-        setAnthroLockState(false);
-      }
-      statusEl.textContent = `Hospitalisation active: ${hospitalisationId}`;
-      renderTable();
-    }
-
-    document.getElementById("btnAdd").addEventListener("click", () => openFormModal());
-    document.getElementById("btnCancelForm").addEventListener("click", closeFormModal);
-    document.getElementById("btnCancelDelete").addEventListener("click", closeDeleteModal);
-
-    ["glasgowYeux", "glasgowVerbal", "glasgowMoteur"].forEach(id => {
-      document.getElementById(id).addEventListener("input", calcGlasgowTotal);
-    });
-    ["poidsHosp", "tailleHosp"].forEach(id => {
-      document.getElementById(id).addEventListener("input", calcImc);
-    });
-
-    document.getElementById("btnSaveAnthro").addEventListener("click", async () => {
-      try {
-        if (!hospitalisationId) {
-          alert("Aucune hospitalisation active.");
-          return;
-        }
-        if (anthropometrieVerrouillee) {
-          setAnthroLockState(false);
-          return;
-        }
-
-        const poids = Number(document.getElementById("poidsHosp").value || 0);
-        const taille = Number(document.getElementById("tailleHosp").value || 0);
-        calcImc();
-        const imc = Number(document.getElementById("imcHosp").value || 0);
-
-        if (!poids || !taille || !imc) {
-          alert("Veuillez saisir un poids et une taille valides.");
-          return;
-        }
-
-        const hospiRef = doc(db, "hospitalisations", hospitalisationId);
-        await updateDoc(hospiRef, {
-          anthropometrie: {
-            poids,
-            taille,
-            imc,
-            dateEnregistrement: new Date().toISOString()
-          },
-          updatedAt: serverTimestamp()
-        });
-
-        ajouterEntreeHistorique(
-          `Enregistrement poids/taille (Poids : ${poids} kg, Taille : ${taille} cm, IMC : ${imc})`,
-          { hospitalisationId, silencieux: true }
-        );
-
-        anthropometrieExiste = true;
-        setAnthroLockState(true);
-      } catch (err) {
-        console.error(err);
-        alert("Erreur lors de l'enregistrement poids/taille.");
-      }
-    });
-
-    document.getElementById("btnSaveForm").addEventListener("click", async () => {
-      try {
-        if (!hospitalisationId) {
-          alert("Aucune hospitalisation active.");
-          return;
-        }
-
-        const payload = getFormValues();
-        if (!payload.date || !payload.heure) {
-          alert("La date et l'heure sont obligatoires.");
-          return;
-        }
-
-        const modeEdition = !!editingLineId;
-        if (editingLineId) {
-          constantesReleves = constantesReleves.map(row => row.id === editingLineId ? { ...row, ...payload } : row);
-        } else {
-          const id = (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-          constantesReleves.push({ id, ...payload, createdAtIso: new Date().toISOString() });
-        }
-
-        await persistRows();
-
-        ajouterEntreeHistorique(
-          `${modeEdition ? "Modification" : "Ajout"} d'un relevé de constantes (${payload.date || ""} ${payload.heure || ""})`,
-          { hospitalisationId, silencieux: true }
-        );
-
-        closeFormModal();
-        renderTable();
-      } catch (err) {
-        console.error(err);
-        alert("Erreur lors de l'enregistrement.");
-      }
-    });
-
-    document.getElementById("ctxEdit").addEventListener("click", () => {
-      contextMenu.style.display = "none";
-      if (!selectedLineId) return;
-      openFormModal(selectedLineId);
-    });
-
-    document.getElementById("ctxDelete").addEventListener("click", () => {
-      contextMenu.style.display = "none";
-      if (!selectedLineId) return;
-      openDeleteModal(selectedLineId);
-    });
-
-    document.getElementById("btnConfirmDelete").addEventListener("click", async () => {
-      try {
-        if (!selectedLineId) return;
-        const ligneSupprimee = constantesReleves.find(row => row.id === selectedLineId);
-        constantesReleves = constantesReleves.filter(row => row.id !== selectedLineId);
-        await persistRows();
-
-        ajouterEntreeHistorique(
-          `Suppression d'un relevé de constantes (${ligneSupprimee?.date || ""} ${ligneSupprimee?.heure || ""})`,
-          { hospitalisationId, silencieux: true }
-        );
-
-        closeDeleteModal();
-        renderTable();
-      } catch (err) {
-        console.error(err);
-        alert("Erreur lors de la suppression.");
-      }
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!contextMenu.contains(e.target)) {
-        contextMenu.style.display = "none";
-      }
-    });
-
-    modalFormBackdrop.addEventListener("click", (e) => {
-      if (e.target === modalFormBackdrop) closeFormModal();
-    });
-
-    modalDeleteBackdrop.addEventListener("click", (e) => {
-      if (e.target === modalDeleteBackdrop) closeDeleteModal();
-    });
-let enterNavInitialized = false;
-
-function setupEnterNavigation() {
-  if (enterNavInitialized) return;
-  enterNavInitialized = true;
-
-  const focusables = modalFormBackdrop.querySelectorAll(
-    "input, select, textarea"
-  );
-
-  focusables.forEach((el, index) => {
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
-        e.preventDefault();
-
-        let next = focusables[index + 1];
-
-        if (next) {
-          next.focus();
-        } else {
-          const saveBtn = modalFormBackdrop.querySelector("#btnSaveForm");
-          if (saveBtn) saveBtn.click();
-        }
-      }
-    });
-  });
-}
-setupEnterNavigation();
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-
-    // Si la modale de formulaire est ouverte
-    if (modalFormBackdrop.style.display === "flex") {
-      closeFormModal();
-    }
-
-    // Si la modale de suppression est ouverte
-    if (modalDeleteBackdrop.style.display === "flex") {
-      closeDeleteModal();
-    }
-  }
-});
-    // ======================= GRAPHE DES CONSTANTES =======================
-    const toNum = (v) => {
-      if (v === null || v === undefined || v === "") return null;
-      const n = Number(String(v).replace(",", "."));
-      return Number.isFinite(n) ? n : null;
-    };
-    const parseTA = (v) => {
-      const m = String(v || "").match(/(\d{2,3})\s*[\/\-]\s*(\d{2,3})/);
-      return m ? { sys: Number(m[1]), dia: Number(m[2]) } : null;
-    };
-
-    const GRAPH_GROUPS = {
-      temperature: { title: "Température", unit: "°C" },
-      fc:          { title: "Fréquence cardiaque", unit: "bpm" },
-      ta:          { title: "Tension artérielle", unit: "mmHg" },
-      saturation:  { title: "Saturation O₂", unit: "%" },
-      fr:          { title: "Fréquence respiratoire", unit: "/min" },
-      douleur:     { title: "Douleur", unit: "/10" },
-      gcs:         { title: "Score de Glasgow", unit: "" }
-    };
-    const GRAPH_SERIES = [
-      { key: "temperature",   group: "temperature", label: "Température",      unit: "°C",   color: "#ef4444", def: true,  get: r => toNum(r.temperature) },
-      { key: "fc",            group: "fc",          label: "Pouls (FC)",       unit: "bpm",  color: "#ec4899", def: true,  get: r => toNum(r.fc) },
-      { key: "taSys",         group: "ta",          label: "TA systolique",    unit: "mmHg", color: "#2563eb", def: true,  get: r => parseTA(r.ta)?.sys ?? null },
-      { key: "taDia",         group: "ta",          label: "TA diastolique",   unit: "mmHg", color: "#38bdf8", def: true,  get: r => parseTA(r.ta)?.dia ?? null },
-      { key: "saturation",    group: "saturation",  label: "Saturation O₂",    unit: "%",    color: "#0891b2", def: true,  get: r => toNum(r.saturation) },
-      { key: "fr",            group: "fr",          label: "FR",               unit: "/min", color: "#10b981", def: false, get: r => toNum(r.fr) },
-      { key: "douleur",       group: "douleur",     label: "Douleur",          unit: "/10",  color: "#f59e0b", def: false, get: r => toNum(r.douleur) },
-      { key: "glasgowTotal",  group: "gcs",         label: "GCS total",        unit: "/15",  color: "#7c3aed", def: false, get: r => toNum(r.glasgowTotal) },
-      { key: "glasgowYeux",   group: "gcs",         label: "GCS yeux",         unit: "/4",   color: "#a78bfa", def: false, get: r => toNum(r.glasgowYeux) },
-      { key: "glasgowVerbal", group: "gcs",         label: "GCS verbal",       unit: "/5",   color: "#c084fc", def: false, get: r => toNum(r.glasgowVerbal) },
-      { key: "glasgowMoteur", group: "gcs",         label: "GCS moteur",       unit: "/6",   color: "#6d28d9", def: false, get: r => toNum(r.glasgowMoteur) }
-    ];
-
-    const graphState = {
-      selected: new Set(GRAPH_SERIES.filter(s => s.def).map(s => s.key)),
-      periodH: 0,
-      mode: "split"
-    };
-    let graphCharts = [];
-
-    const modalGraphBackdrop = document.getElementById("modalGraphBackdrop");
-    const graphZone = document.getElementById("graphZone");
-
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const fmtShort = (t) => { const d = new Date(t); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
-    const fmtLong = (t) => new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-    const fmtVal = (v) => (Math.round(v * 10) / 10).toString().replace(".", ",");
-
-    function buildChips() {
-      const wrap = document.getElementById("graphChips");
-      wrap.innerHTML = "";
-      GRAPH_SERIES.forEach(s => {
-        const lab = document.createElement("label");
-        lab.className = "gchip" + (graphState.selected.has(s.key) ? " on" : "");
-        lab.style.setProperty("--c", s.color);
-        lab.innerHTML = `<input type="checkbox" ${graphState.selected.has(s.key) ? "checked" : ""}><span class="dot"></span>${s.label}`;
-        lab.querySelector("input").addEventListener("change", (e) => {
-          if (e.target.checked) graphState.selected.add(s.key); else graphState.selected.delete(s.key);
-          lab.classList.toggle("on", e.target.checked);
-          renderGraph();
-        });
-        wrap.appendChild(lab);
-      });
-    }
-
-    function getGraphRows() {
-      let rows = constantesReleves
-        .map(r => ({ r, t: new Date(`${r.date}T${r.heure || "00:00"}`).getTime() }))
-        .filter(x => Number.isFinite(x.t))
-        .sort((a, b) => a.t - b.t);
-      if (graphState.periodH > 0 && rows.length) {
-        const tmax = rows[rows.length - 1].t;
-        const tmin = tmax - graphState.periodH * 3600 * 1000;
-        rows = rows.filter(x => x.t >= tmin);
-      }
-      return rows;
-    }
-
-    function destroyCharts() {
-      graphCharts.forEach(c => c.destroy());
-      graphCharts = [];
-    }
-
-    function baseOptions(tMin, tMax) {
-      const span = Math.max(tMax - tMin, 1);
-      const padT = tMax === tMin ? 3600 * 1000 : span * 0.03;
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        parsing: false,
-        animation: { duration: 350 },
-        interaction: { mode: "nearest", axis: "x", intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "rgba(17,24,39,.92)",
-            padding: 10, cornerRadius: 8, boxPadding: 4,
-            callbacks: {
-              title: (items) => items.length ? fmtLong(items[0].parsed.x) : "",
-              label: (ctx) => ` ${ctx.dataset.label} : ${fmtVal(ctx.parsed.y)} ${ctx.dataset._unit || ""}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: "linear",
-            min: tMin - padT, max: tMax + padT,
-            grid: { color: "rgba(0,0,0,.05)" },
-            ticks: { color: "#6b7280", font: { size: 11 }, maxRotation: 0, callback: (v) => fmtShort(v) },
-            afterBuildTicks: (scale) => {
-              const n = Math.min(7, Math.max(2, Math.floor(scale.chart.width / 120)));
-              const step = (scale.max - scale.min) / (n - 1);
-              scale.ticks = Array.from({ length: n }, (_, i) => ({ value: scale.min + step * i }));
-            }
-          }
-        }
-      };
-    }
-
-    function makeDataset(s, points) {
-      return {
-        label: s.label, _unit: s.unit, data: points,
-        borderColor: s.color, backgroundColor: s.color + "26",
-        pointBackgroundColor: "#fff", pointBorderColor: s.color, pointBorderWidth: 2,
-        pointRadius: 3.5, pointHoverRadius: 6,
-        borderWidth: 2.2, tension: 0.28, spanGaps: true
-      };
-    }
-
-    function renderGraph() {
-      destroyCharts();
-      graphZone.innerHTML = "";
-
-      if (typeof Chart === "undefined") {
-        graphZone.innerHTML = `<div class="gempty">⚠️ La bibliothèque de graphiques n'a pas pu être chargée (connexion ?).</div>`;
-        return;
-      }
-
-      const rows = getGraphRows();
-      const sub = document.getElementById("graphSub");
-      sub.textContent = `${patientInfoEl.textContent.split("•")[0].trim()} • ${rows.length} relevé${rows.length > 1 ? "s" : ""}`;
-
-      if (!rows.length) {
-        graphZone.innerHTML = `<div class="gempty">Aucune constante enregistrée pour cette hospitalisation.</div>`;
-        return;
-      }
-
-      const active = GRAPH_SERIES.filter(s => graphState.selected.has(s.key)).map(s => ({
-        s, points: rows.map(x => ({ x: x.t, y: s.get(x.r) })).filter(p => p.y !== null)
-      })).filter(a => a.points.length);
-
-      if (!active.length) {
-        graphZone.innerHTML = `<div class="gempty">Sélectionnez au moins une constante renseignée pour afficher le graphe.</div>`;
-        return;
-      }
-
-      const allT = active.flatMap(a => a.points.map(p => p.x));
-      const tMin = Math.min(...allT), tMax = Math.max(...allT);
-
-      const lastHtml = (items) => items.map(a => {
-        const last = a.points[a.points.length - 1].y;
-        return `<span><i style="background:${a.s.color}"></i>${a.s.label} <b>${fmtVal(last)}</b> ${a.s.unit}</span>`;
-      }).join("");
-
-      if (graphState.mode === "overlay") {
-        const card = document.createElement("div");
-        card.className = "gcard";
-        card.innerHTML = `<div class="gcard-head"><div class="gcard-title">Constantes superposées</div><div class="glast">${lastHtml(active)}</div></div><div class="gcanvas tall"><canvas></canvas></div>`;
-        graphZone.appendChild(card);
-
-        const opts = baseOptions(tMin, tMax);
-        opts.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 8, color: "#374151" } };
-        active.forEach((a, i) => {
-          opts.scales["y_" + a.s.key] = {
-            position: i % 2 === 0 ? "left" : "right",
-            display: i < 2,
-            grace: "8%",
-            grid: { drawOnChartArea: i === 0, color: "rgba(0,0,0,.05)" },
-            ticks: { color: a.s.color, font: { size: 11 } },
-            title: { display: i < 2, text: a.s.label + (a.s.unit ? ` (${a.s.unit})` : ""), color: a.s.color, font: { size: 11, weight: "600" } }
-          };
-        });
-        const ds = active.map(a => ({ ...makeDataset(a.s, a.points), yAxisID: "y_" + a.s.key }));
-        graphCharts.push(new Chart(card.querySelector("canvas"), { type: "line", data: { datasets: ds }, options: opts }));
-        if (active.length > 2) {
-          const note = document.createElement("div");
-          note.className = "gempty";
-          note.style.padding = "0 0 6px";
-          note.style.fontSize = "12px";
-          note.textContent = "Seuls les deux premiers axes sont affichés ; survolez les points pour lire les valeurs réelles.";
-          graphZone.appendChild(note);
-        }
-        return;
-      }
-
-      // Mode "un graphe par constante" (les séries d'un même groupe, ex. TA, partagent le graphe)
-      Object.keys(GRAPH_GROUPS).forEach(g => {
-        const items = active.filter(a => a.s.group === g);
-        if (!items.length) return;
-        const meta = GRAPH_GROUPS[g];
-        const card = document.createElement("div");
-        card.className = "gcard";
-        card.innerHTML = `<div class="gcard-head"><div class="gcard-title">${meta.title}${meta.unit ? `<small>${meta.unit}</small>` : ""}</div><div class="glast">${lastHtml(items)}</div></div><div class="gcanvas"><canvas></canvas></div>`;
-        graphZone.appendChild(card);
-
-        const opts = baseOptions(tMin, tMax);
-        opts.scales.y = {
-          grace: "10%",
-          grid: { color: "rgba(0,0,0,.05)" },
-          ticks: { color: "#6b7280", font: { size: 11 } }
-        };
-        if (g === "saturation") opts.scales.y.max = 100;
-        if (items.length > 1) opts.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 8, color: "#374151" } };
-        graphCharts.push(new Chart(card.querySelector("canvas"), {
-          type: "line",
-          data: { datasets: items.map(a => makeDataset(a.s, a.points)) },
-          options: opts
-        }));
-      });
-    }
-
-    function openGraphModal() {
-      buildChips();
-      modalGraphBackdrop.style.display = "flex";
-      renderGraph();
-    }
-    function closeGraphModal() {
-      modalGraphBackdrop.style.display = "none";
-      destroyCharts();
-    }
-
-    document.getElementById("btnGraph").addEventListener("click", openGraphModal);
-    document.getElementById("btnCloseGraph").addEventListener("click", closeGraphModal);
-    modalGraphBackdrop.addEventListener("click", (e) => { if (e.target === modalGraphBackdrop) closeGraphModal(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modalGraphBackdrop.style.display === "flex") closeGraphModal(); });
-    document.getElementById("graphAll").addEventListener("click", () => {
-      GRAPH_SERIES.forEach(s => graphState.selected.add(s.key)); buildChips(); renderGraph();
-    });
-    document.getElementById("graphNone").addEventListener("click", () => {
-      graphState.selected.clear(); buildChips(); renderGraph();
-    });
-    document.getElementById("graphPeriod").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-h]"); if (!b) return;
-      graphState.periodH = Number(b.dataset.h);
-      document.querySelectorAll("#graphPeriod button").forEach(x => x.classList.toggle("on", x === b));
-      renderGraph();
-    });
-    document.getElementById("graphMode").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-m]"); if (!b) return;
-      graphState.mode = b.dataset.m;
-      document.querySelectorAll("#graphMode button").forEach(x => x.classList.toggle("on", x === b));
-      renderGraph();
-    });
-    // ===================== FIN GRAPHE DES CONSTANTES =====================
-
-    loadData().catch((err) => {
+      anthropometrieExiste = true;
+      setAnthroLockState(true);
+      toast("Poids et taille enregistrés");
+    } catch (err) {
       console.error(err);
-      statusEl.textContent = "❌ Erreur de chargement.";
+      btn.disabled = false;
+      toast("Erreur lors de l'enregistrement du poids et de la taille.", "error");
+    }
+  });
+
+  btnSaveForm.addEventListener("click", async () => {
+    try {
+      if (!hospitalisationId) { showFormError("Aucune hospitalisation active."); return; }
+
+      const payload = getFormValues();
+      const erreur = validerFormulaire(payload);
+      if (erreur) { showFormError(erreur); return; }
+
+      btnSaveForm.disabled = true;
+      const modeEdition = !!editingLineId;
+      if (editingLineId) {
+        constantesReleves = constantesReleves.map(row => row.id === editingLineId ? { ...row, ...payload } : row);
+      } else {
+        const id = (crypto.randomUUID && crypto.randomUUID()) || `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        constantesReleves.push({ id, ...payload, createdAtIso: new Date().toISOString() });
+      }
+
+      await persistRows();
+
+      ajouterEntreeHistorique(
+        `${modeEdition ? "Modification" : "Ajout"} d'un relevé de constantes (${payload.date || ""} ${payload.heure || ""})`,
+        { hospitalisationId, silencieux: true }
+      );
+
+      closeFormModal();
+      renderTable();
+      toast(modeEdition ? "Relevé modifié" : "Relevé enregistré");
+    } catch (err) {
+      console.error(err);
+      showFormError("L'enregistrement a échoué. Vérifiez la connexion et réessayez.");
+    } finally {
+      btnSaveForm.disabled = false;
+    }
+  });
+
+  $("ctxEdit").addEventListener("click", () => {
+    const id = selectedLineId;
+    hideContextMenu();
+    if (id) openFormModal(id);
+  });
+  $("ctxDelete").addEventListener("click", () => {
+    const id = selectedLineId;
+    hideContextMenu();
+    if (id) openDeleteModal(id);
+  });
+
+  $("btnConfirmDelete").addEventListener("click", async () => {
+    const btn = $("btnConfirmDelete");
+    try {
+      if (!selectedLineId) return;
+      btn.disabled = true;
+      const ligneSupprimee = constantesReleves.find(row => row.id === selectedLineId);
+      constantesReleves = constantesReleves.filter(row => row.id !== selectedLineId);
+      await persistRows();
+
+      ajouterEntreeHistorique(
+        `Suppression d'un relevé de constantes (${ligneSupprimee?.date || ""} ${ligneSupprimee?.heure || ""})`,
+        { hospitalisationId, silencieux: true }
+      );
+
+      closeDeleteModal();
+      renderTable();
+      toast("Relevé supprimé");
+    } catch (err) {
+      console.error(err);
+      toast("Erreur lors de la suppression.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!contextMenu.contains(e.target)) hideContextMenu();
+  });
+  window.addEventListener("scroll", hideContextMenu, true);
+  window.addEventListener("resize", hideContextMenu);
+
+  // La saisie en cours n'est volontairement pas fermée par un clic à côté (risque de perte de données).
+  modalDeleteBackdrop.addEventListener("click", (e) => { if (e.target === modalDeleteBackdrop) closeDeleteModal(); });
+  modalGraphBackdrop.addEventListener("click", (e) => { if (e.target === modalGraphBackdrop) closeGraphModal(); });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (contextMenu.style.display === "block") hideContextMenu();
+    else if (modalDeleteBackdrop.style.display === "flex") closeDeleteModal();
+    else if (modalGraphBackdrop.style.display === "flex") closeGraphModal();
+    else if (modalFormBackdrop.style.display === "flex") closeFormModal();
+  });
+
+  // Entrée = champ suivant ; sur le dernier champ = enregistrer
+  (function setupEnterNavigation() {
+    const focusables = [...modalFormBackdrop.querySelectorAll("input")].filter(el => !el.readOnly);
+    focusables.forEach((el, index) => {
+      el.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const next = focusables[index + 1];
+        if (next) next.focus(); else btnSaveForm.click();
+      });
     });
-  </script>
+  })();
+
+  /* ------------------------------------------------------------------
+     Export PDF
+     ------------------------------------------------------------------ */
+  window.generatePdf = async function () {
+    if (!window.jspdf) { toast("La bibliothèque PDF n'a pas pu être chargée.", "error"); return; }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    pdf.setFontSize(16);
+    pdf.text("Relevé des constantes", 14, 15);
+    pdf.setFontSize(10);
+    pdf.text(patientEntete || "", 14, 22);
+    pdf.text("Date d'export : " + new Date().toLocaleString("fr-FR"), 14, 28);
+
+    const sorted = sortRows(constantesReleves);
+    const CLES = [null, null, "temperature", "fc", "ta", "saturation", "fr", "douleur", "glasgowTotal", null];
+    const rows = sorted.map(r => [
+      fmtDateFR(r.date),
+      r.heure || "",
+      r.temperature ? fmtNum(r.temperature) : "",
+      r.fc || "",
+      r.ta || "",
+      r.saturation || "",
+      r.fr || "",
+      r.douleur || "",
+      r.glasgowTotal ? `${r.glasgowTotal}${(r.glasgowYeux && r.glasgowVerbal && r.glasgowMoteur) ? ` (Y${r.glasgowYeux} V${r.glasgowVerbal} M${r.glasgowMoteur})` : ""}` : "",
+      r.observation || ""
+    ]);
+
+    pdf.autoTable({
+      startY: 35,
+      head: [["Date", "Heure", "Temp (°C)", "FC", "TA", "Sat (%)", "FR", "Douleur", "GCS", "Observations"]],
+      body: rows,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [11, 111, 164] },
+      alternateRowStyles: { fillColor: [246, 249, 252] },
+      didParseCell: (data) => {
+        if (data.section !== "body") return;
+        const cle = CLES[data.column.index];
+        if (!cle) return;
+        const lvl = niveauLigne(sorted[data.row.index], cle);
+        if (lvl === 2) { data.cell.styles.textColor = [185, 42, 48]; data.cell.styles.fontStyle = "bold"; }
+        else if (lvl === 1) { data.cell.styles.textColor = [122, 79, 0]; data.cell.styles.fontStyle = "bold"; }
+      }
+    });
+
+    const pdfBlob = pdf.output("blob");
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    window.parent.postMessage(
+      { type: "OPEN_TAB", title: "Constantes PDF", url: `viewer.html?file=${encodeURIComponent(pdfUrl)}` },
+      "*"
+    );
+  };
+  $("btnPdf").addEventListener("click", () => window.generatePdf());
+
+  /* ------------------------------------------------------------------
+     Courbes
+     ------------------------------------------------------------------ */
+  const GRAPH_GROUPS = {
+    temperature: { title: "Température", unit: "°C" },
+    fc:          { title: "Fréquence cardiaque", unit: "bpm" },
+    ta:          { title: "Tension artérielle", unit: "mmHg" },
+    saturation:  { title: "Saturation O₂", unit: "%" },
+    fr:          { title: "Fréquence respiratoire", unit: "/min" },
+    douleur:     { title: "Douleur", unit: "/10" },
+    gcs:         { title: "Score de Glasgow", unit: "" }
+  };
+  const GRAPH_SERIES = [
+    { key: "temperature",   group: "temperature", label: "Température",    unit: "°C",   color: "#ef4444", def: true,  get: r => toNum(r.temperature) },
+    { key: "fc",            group: "fc",          label: "Pouls (FC)",     unit: "bpm",  color: "#ec4899", def: true,  get: r => toNum(r.fc) },
+    { key: "taSys",         group: "ta",          label: "TA systolique",  unit: "mmHg", color: "#2563eb", def: true,  get: r => parseTA(r.ta)?.sys ?? null },
+    { key: "taDia",         group: "ta",          label: "TA diastolique", unit: "mmHg", color: "#38bdf8", def: true,  get: r => parseTA(r.ta)?.dia ?? null },
+    { key: "saturation",    group: "saturation",  label: "Saturation O₂",  unit: "%",    color: "#0891b2", def: true,  get: r => toNum(r.saturation) },
+    { key: "fr",            group: "fr",          label: "FR",             unit: "/min", color: "#10b981", def: false, get: r => toNum(r.fr) },
+    { key: "douleur",       group: "douleur",     label: "Douleur",        unit: "/10",  color: "#f59e0b", def: false, get: r => toNum(r.douleur) },
+    { key: "glasgowTotal",  group: "gcs",         label: "GCS total",      unit: "/15",  color: "#7c3aed", def: false, get: r => toNum(r.glasgowTotal) },
+    { key: "glasgowYeux",   group: "gcs",         label: "GCS yeux",       unit: "/4",   color: "#a78bfa", def: false, get: r => toNum(r.glasgowYeux) },
+    { key: "glasgowVerbal", group: "gcs",         label: "GCS verbal",     unit: "/5",   color: "#c084fc", def: false, get: r => toNum(r.glasgowVerbal) },
+    { key: "glasgowMoteur", group: "gcs",         label: "GCS moteur",     unit: "/6",   color: "#6d28d9", def: false, get: r => toNum(r.glasgowMoteur) }
+  ];
+
+  const graphState = {
+    selected: new Set(GRAPH_SERIES.filter(s => s.def).map(s => s.key)),
+    periodH: 0,
+    mode: "split"
+  };
+  let graphCharts = [];
+  const graphZone = $("graphZone");
+
+  if (typeof Chart !== "undefined") {
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  }
+
+  const fmtShort = (t) => { const d = new Date(t); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+  const fmtLong = (t) => new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const fmtVal = (v) => (Math.round(v * 10) / 10).toString().replace(".", ",");
+
+  function buildChips() {
+    const wrap = $("graphChips");
+    wrap.innerHTML = "";
+    GRAPH_SERIES.forEach(s => {
+      const lab = document.createElement("label");
+      lab.className = "gchip" + (graphState.selected.has(s.key) ? " on" : "");
+      lab.style.setProperty("--c", s.color);
+      lab.innerHTML = `<input type="checkbox" ${graphState.selected.has(s.key) ? "checked" : ""}><span class="dot"></span>${s.label}`;
+      lab.querySelector("input").addEventListener("change", (e) => {
+        if (e.target.checked) graphState.selected.add(s.key); else graphState.selected.delete(s.key);
+        lab.classList.toggle("on", e.target.checked);
+        renderGraph();
+      });
+      wrap.appendChild(lab);
+    });
+  }
+
+  function getGraphRows() {
+    let rows = constantesReleves
+      .map(r => ({ r, t: new Date(`${r.date}T${r.heure || "00:00"}`).getTime() }))
+      .filter(x => Number.isFinite(x.t))
+      .sort((a, b) => a.t - b.t);
+    if (graphState.periodH > 0 && rows.length) {
+      const tmax = rows[rows.length - 1].t;
+      const tmin = tmax - graphState.periodH * 3600 * 1000;
+      rows = rows.filter(x => x.t >= tmin);
+    }
+    return rows;
+  }
+
+  function destroyCharts() {
+    graphCharts.forEach(c => c.destroy());
+    graphCharts = [];
+  }
+
+  function baseOptions(tMin, tMax) {
+    const span = Math.max(tMax - tMin, 1);
+    const padT = tMax === tMin ? 3600 * 1000 : span * 0.03;
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      parsing: false,
+      animation: { duration: 350 },
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(17,35,54,.94)",
+          padding: 10, cornerRadius: 8, boxPadding: 4,
+          callbacks: {
+            title: (items) => items.length ? fmtLong(items[0].parsed.x) : "",
+            label: (ctx) => ` ${ctx.dataset.label} : ${fmtVal(ctx.parsed.y)} ${ctx.dataset._unit || ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          min: tMin - padT, max: tMax + padT,
+          grid: { color: "rgba(17,35,54,.06)" },
+          ticks: { color: "#586a7e", font: { size: 11 }, maxRotation: 0, callback: (v) => fmtShort(v) },
+          afterBuildTicks: (scale) => {
+            const n = Math.min(7, Math.max(2, Math.floor(scale.chart.width / 120)));
+            const step = (scale.max - scale.min) / (n - 1);
+            scale.ticks = Array.from({ length: n }, (_, i) => ({ value: scale.min + step * i }));
+          }
+        }
+      }
+    };
+  }
+
+  function makeDataset(s, points) {
+    return {
+      label: s.label, _unit: s.unit, data: points,
+      borderColor: s.color, backgroundColor: s.color + "26",
+      pointBackgroundColor: "#fff", pointBorderColor: s.color, pointBorderWidth: 2,
+      pointRadius: 3.5, pointHoverRadius: 6,
+      borderWidth: 2.2, tension: 0.28, spanGaps: true
+    };
+  }
+
+  function renderGraph() {
+    destroyCharts();
+    graphZone.innerHTML = "";
+
+    if (typeof Chart === "undefined") {
+      graphZone.innerHTML = `<div class="gempty">La bibliothèque de graphiques n'a pas pu être chargée. Vérifiez la connexion.</div>`;
+      return;
+    }
+
+    const rows = getGraphRows();
+    $("graphSub").textContent = `${patientNomComplet} • ${rows.length} relevé${rows.length > 1 ? "s" : ""}`;
+
+    if (!rows.length) {
+      graphZone.innerHTML = `<div class="gempty">Aucune constante enregistrée pour cette hospitalisation.</div>`;
+      return;
+    }
+
+    const active = GRAPH_SERIES.filter(s => graphState.selected.has(s.key)).map(s => ({
+      s, points: rows.map(x => ({ x: x.t, y: s.get(x.r) })).filter(p => p.y !== null)
+    })).filter(a => a.points.length);
+
+    if (!active.length) {
+      graphZone.innerHTML = `<div class="gempty">Sélectionnez au moins une constante renseignée pour afficher la courbe.</div>`;
+      return;
+    }
+
+    const allT = active.flatMap(a => a.points.map(p => p.x));
+    const tMin = Math.min(...allT), tMax = Math.max(...allT);
+
+    const lastHtml = (items) => items.map(a => {
+      const last = a.points[a.points.length - 1].y;
+      return `<span><i style="background:${a.s.color}"></i>${a.s.label} <b>${fmtVal(last)}</b> ${a.s.unit}</span>`;
+    }).join("");
+
+    const legend = { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 8, color: "#112336" } };
+
+    if (graphState.mode === "overlay") {
+      const card = document.createElement("div");
+      card.className = "gcard";
+      card.innerHTML = `<div class="gcard-head"><div class="gcard-title">Constantes superposées</div><div class="glast">${lastHtml(active)}</div></div><div class="gcanvas tall"><canvas></canvas></div>`;
+      graphZone.appendChild(card);
+
+      const opts = baseOptions(tMin, tMax);
+      opts.plugins.legend = legend;
+      active.forEach((a, i) => {
+        opts.scales["y_" + a.s.key] = {
+          position: i % 2 === 0 ? "left" : "right",
+          display: i < 2,
+          grace: "8%",
+          grid: { drawOnChartArea: i === 0, color: "rgba(17,35,54,.06)" },
+          ticks: { color: a.s.color, font: { size: 11 } },
+          title: { display: i < 2, text: a.s.label + (a.s.unit ? ` (${a.s.unit})` : ""), color: a.s.color, font: { size: 11, weight: "600" } }
+        };
+      });
+      const ds = active.map(a => ({ ...makeDataset(a.s, a.points), yAxisID: "y_" + a.s.key }));
+      graphCharts.push(new Chart(card.querySelector("canvas"), { type: "line", data: { datasets: ds }, options: opts }));
+      if (active.length > 2) {
+        const note = document.createElement("div");
+        note.className = "gempty";
+        note.style.padding = "0 0 6px";
+        note.style.fontSize = "13px";
+        note.textContent = "Seuls les deux premiers axes sont affichés ; survolez les points pour lire les valeurs réelles.";
+        graphZone.appendChild(note);
+      }
+      return;
+    }
+
+    Object.keys(GRAPH_GROUPS).forEach(g => {
+      const items = active.filter(a => a.s.group === g);
+      if (!items.length) return;
+      const meta = GRAPH_GROUPS[g];
+      const card = document.createElement("div");
+      card.className = "gcard";
+      card.innerHTML = `<div class="gcard-head"><div class="gcard-title">${meta.title}${meta.unit ? `<small>${meta.unit}</small>` : ""}</div><div class="glast">${lastHtml(items)}</div></div><div class="gcanvas"><canvas></canvas></div>`;
+      graphZone.appendChild(card);
+
+      const opts = baseOptions(tMin, tMax);
+      opts.scales.y = {
+        grace: "10%",
+        grid: { color: "rgba(17,35,54,.06)" },
+        ticks: { color: "#586a7e", font: { size: 11 } }
+      };
+      if (g === "saturation") opts.scales.y.max = 100;
+      if (items.length > 1) opts.plugins.legend = legend;
+      graphCharts.push(new Chart(card.querySelector("canvas"), {
+        type: "line",
+        data: { datasets: items.map(a => makeDataset(a.s, a.points)) },
+        options: opts
+      }));
+    });
+  }
+
+  function openGraphModal() {
+    buildChips();
+    modalGraphBackdrop.style.display = "flex";
+    renderGraph();
+  }
+  function closeGraphModal() {
+    modalGraphBackdrop.style.display = "none";
+    destroyCharts();
+  }
+
+  $("btnGraph").addEventListener("click", openGraphModal);
+  $("btnCloseGraph").addEventListener("click", closeGraphModal);
+  $("graphAll").addEventListener("click", () => {
+    GRAPH_SERIES.forEach(s => graphState.selected.add(s.key)); buildChips(); renderGraph();
+  });
+  $("graphNone").addEventListener("click", () => {
+    graphState.selected.clear(); buildChips(); renderGraph();
+  });
+  $("graphPeriod").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-h]"); if (!b) return;
+    graphState.periodH = Number(b.dataset.h);
+    document.querySelectorAll("#graphPeriod button").forEach(x => x.classList.toggle("on", x === b));
+    renderGraph();
+  });
+  $("graphMode").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-m]"); if (!b) return;
+    graphState.mode = b.dataset.m;
+    document.querySelectorAll("#graphMode button").forEach(x => x.classList.toggle("on", x === b));
+    renderGraph();
+  });
+
+  /* ------------------------------------------------------------------ */
+  renderTable();
+  loadData().catch((err) => {
+    console.error(err);
+    setNotice("Erreur de chargement des constantes. Actualisez la page.", "error");
+  });
+</script>
 </body>
 </html>

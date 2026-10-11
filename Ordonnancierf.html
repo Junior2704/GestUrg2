@@ -459,6 +459,32 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
+    .ordo-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:4px;
+    }
+    .ordo-head .ordo-date{ margin-bottom:0; }
+    .btn-reuse{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      flex-shrink:0;
+      padding:4px 9px;
+      font:inherit;
+      font-size:11.5px;
+      font-weight:600;
+      color:var(--c-primary-dark);
+      background:#fff;
+      border:1px solid var(--c-border);
+      border-radius:7px;
+      cursor:pointer;
+      transition:background .15s ease, border-color .15s ease;
+    }
+    .btn-reuse:hover{ background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
+    .btn-reuse svg{ width:13px; height:13px; }
 
     /* ===== APERÇU / MODALE DE CONFIRMATION ===== */
     .preview-ordo{
@@ -1425,6 +1451,7 @@ async function validatePrescription() {
         dateCreation: dateFormatted,
         type: "Ordonnance médicale",
         contenu: prescriptionText,
+        items: prescriptionItems.map(({ id, ...reste }) => reste),
         ord: ord
       });
 
@@ -1601,6 +1628,103 @@ async function chargerAnciennesOrdonnances() {
   }
 }
 
+/* ---- Réutiliser une ordonnance de l'historique ---- */
+const ICON_REUSE = iconSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>');
+
+/* Reconstruit la liste d'items (médicaments / consignes / sections) d'une ordonnance.
+   - Ordonnances récentes : on relit directement data.items.
+   - Anciennes ordonnances : on relit data.ord.contenu (ou, à défaut, le texte brut). */
+function extraireItemsDepuisOrdonnance(data) {
+  if (Array.isArray(data.items) && data.items.length) {
+    return data.items.map(it => ({ ...it, id: newId() }));
+  }
+
+  // 1) Mise à plat en "lignes"
+  const lignes = [];
+  if (data.ord && Array.isArray(data.ord.contenu)) {
+    let cur = "";
+    const flush = () => { if (cur.trim()) lignes.push({ t: cur.trim() }); cur = ""; };
+    data.ord.contenu.forEach(n => {
+      if (n.type === "separator") { flush(); lignes.push({ sep: true }); }
+      else if (n.type === "newline") { flush(); }
+      else if (n.type === "text") { cur += n.value || ""; }
+    });
+    flush();
+  } else {
+    String(data.contenu || "").split(/\r?\n/).forEach(l => { if (l.trim()) lignes.push({ t: l.trim() }); });
+  }
+
+  // 2) Regroupement en items
+  const items = [];
+  let courant = null;
+  let attendTitre = false;
+  const reNum = /^\d+\s*[.)]\s*(.*)$/;
+  const estTitreMajuscule = (t) => !/[a-zà-ÿ]/.test(t) && /[A-ZÀ-Ý]{3}/.test(t);
+
+  lignes.forEach(l => {
+    if (l.sep) {
+      items.push({ id: newId(), kind: "section", titre: "" });
+      courant = null; attendTitre = true;
+      return;
+    }
+    const m = l.t.match(reNum);
+    if (m) {
+      courant = { id: newId(), kind: "med", nom: m[1].trim(), _extra: [] };
+      items.push(courant);
+      attendTitre = false;
+    } else if (attendTitre) {
+      items[items.length - 1].titre = l.t;
+      attendTitre = false; courant = null;
+    } else if (courant && !estTitreMajuscule(l.t)) {
+      courant._extra.push(l.t);
+    } else {
+      items.push({ id: newId(), kind: "section", titre: l.t });
+      courant = null;
+    }
+  });
+
+  // 3) Détail des médicaments (posologie / durée / quantité / remarque)
+  return items.map(it => {
+    if (it.kind !== "med") return it;
+    const extra = it._extra; delete it._extra;
+    if (extra.length === 0) {           // simple ligne numérotée = consigne
+      return { id: it.id, kind: "note", texte: it.nom };
+    }
+    let details = extra[0];
+    it.remarque = extra.length > 1 ? extra.slice(1).join(" ") : "";
+    it.posologie = ""; it.duree = ""; it.quantite = "";
+    const q = details.match(/(?:\s*—\s*)*Qté\s*:\s*(.*)$/);
+    if (q) { it.quantite = q[1].trim(); details = details.slice(0, q.index).replace(/[\s—]+$/, ""); }
+    const d = details.match(/(?:^|\s—\s)pendant\s+(.+)$/);
+    if (d) { it.duree = d[1].trim(); details = details.slice(0, d.index); }
+    it.posologie = details.trim();
+    return it;
+  });
+}
+
+function reutiliserOrdonnance(data) {
+  const items = extraireItemsDepuisOrdonnance(data);
+  if (!items.length) {
+    afficherBulle("⛔ Impossible de relire cette ordonnance.", "alerte");
+    return;
+  }
+
+  // Brouillon en cours non vide : demander confirmation avant de l'écraser
+  const brouillonNonVide = !rxLocked && prescriptionItems.some(i =>
+    (i.nom || i.texte || i.titre || i.posologie || "").trim());
+  if (brouillonNonVide && !confirm("Remplacer l'ordonnance en cours par celle de l'historique ?")) return;
+
+  // Ordonnance déjà validée : on repart d'un éditeur vierge et déverrouillé
+  if (rxLocked) resetOrdonnance();
+
+  prescriptionItems = items;
+  renderItems();
+  syncHiddenEditor();
+  afficherBulle("📋 Ordonnance recopiée dans l'éditeur", "success");
+  document.getElementById("rx-list").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+window.reutiliserOrdonnance = reutiliserOrdonnance;
+
 function renderHistorique(ordonnances) {
   const container = document.getElementById("listeOrdonnances");
   container.innerHTML = "";
@@ -1615,9 +1739,18 @@ function renderHistorique(ordonnances) {
     const row = document.createElement("div");
     row.className = "ordo-row";
     row.innerHTML = `
-      <div class="ordo-date">${data.dateCreation || ""}</div>
+      <div class="ordo-head">
+        <div class="ordo-date">${data.dateCreation || ""}</div>
+        <button type="button" class="btn-reuse" title="Recopier cette ordonnance dans l'éditeur">${ICON_REUSE}Réutiliser</button>
+      </div>
       <div class="ordo-preview">${escapeHtml(contenu)}...</div>`;
     row.title = "Double-cliquez pour ouvrir l'ordonnance";
+
+    row.querySelector(".btn-reuse").addEventListener("click", (e) => {
+      e.stopPropagation();
+      reutiliserOrdonnance(data);
+    });
+    row.querySelector(".btn-reuse").addEventListener("dblclick", (e) => e.stopPropagation());
 
     row.addEventListener("dblclick", async () => {
       if (data.ord) {

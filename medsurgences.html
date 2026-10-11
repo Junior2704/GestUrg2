@@ -862,75 +862,115 @@
   /* =====================================================================
      CATALOGUE DES MÉDICAMENTS
      ===================================================================== */
-  let medicaments = [];
+  // La liste n'est PLUS affichée en entier : elle est chargée à la demande
+  // (au 1er clic dans la recherche) et on n'affiche que les premiers résultats.
+  const MAX_RESULTS = 30;
+  let medicaments = null;   // tableau de noms (null = pas encore chargé)
+  let medLower = [];        // version minuscule pré-calculée pour la recherche
+  let medLoading = null;
 
-  async function loadMedicaments() {
-    try {
-      const res = await fetch("medicaments.json");
-      medicaments = await res.json();
-      renderMedicaments(medicaments);
-    } catch (e) {
-      console.error("Erreur chargement medicament.json", e);
+  function ensureMedicaments() {
+    if (medicaments) return Promise.resolve(medicaments);
+    if (!medLoading) {
+      medLoading = fetch("medicaments.json")
+        .then((r) => r.json())
+        .then((list) => {
+          medicaments = list;
+          medLower = list.map((m) => String(m).toLowerCase());
+          return list;
+        })
+        .catch((e) => {
+          console.error("Erreur chargement medicaments.json", e);
+          medLoading = null;
+          return [];
+        });
     }
+    return medLoading;
   }
 
   function medRow(name, { free = false, custom = false } = {}) {
-    const row = document.createElement("div");
-    row.className = "med" + (free ? " med-free" : "") + (custom ? " med-custom" : "");
+    const kind = custom ? "custom" : (free ? "free" : "med");
     const label = custom
       ? `Prescription libre : <strong>"${esc(name)}"</strong>`
       : (free ? "Prescription libre" : esc(name));
-    row.innerHTML = `
+    return `<div class="med${free ? " med-free" : ""}${custom ? " med-custom" : ""}" data-kind="${kind}" data-name="${esc(name)}">
       <span class="med-ico">${icon(free || custom ? "pen" : "pill")}</span>
       <span class="med-name">${label}</span>
-      <button class="med-add" type="button" aria-label="Prescrire">${icon("plus")}</button>`;
-    return row;
+      <button class="med-add" type="button" aria-label="Prescrire">${icon("plus")}</button>
+    </div>`;
   }
 
-  // --- Rendu de la liste des médicaments ---
-  function renderMedicaments(list, searchQuery = "") {
+  // --- Rendu : un seul innerHTML, au maximum MAX_RESULTS lignes ---
+  function renderMedicaments(list, searchQuery = "", hasMore = false) {
     const container = document.getElementById("medicaments-list");
     const count = document.getElementById("med-count");
-    container.innerHTML = "";
+    const q = searchQuery.trim();
 
-    // Si la liste est vide ET qu'une recherche est en cours
-    if (list.length === 0 && searchQuery.trim() !== "") {
-      count.textContent = "Aucun résultat dans la base";
-      const freeBtn = medRow(searchQuery, { custom: true });
-      // Clic simple pour plus d'accessibilité
-      freeBtn.onclick = () => addMedicamentToPrescription(searchQuery, true);
-      container.appendChild(freeBtn);
+    if (q === "") {
+      count.textContent = "Tapez le nom d'un médicament pour le rechercher.";
+      container.innerHTML = medRow("", { free: true });
       return;
     }
 
-    count.textContent = searchQuery.trim() !== ""
-      ? `${list.length} résultat${list.length > 1 ? "s" : ""}`
-      : "Double-clic (ou bouton +) pour créer une demande.";
+    if (list.length === 0) {
+      count.textContent = "Aucun résultat dans la base";
+      container.innerHTML = medRow(searchQuery, { custom: true });
+      return;
+    }
 
-    // Prescription libre classique en haut de liste
-    const free = medRow("", { free: true });
-    free.ondblclick = () => addMedicamentToPrescription("", true);
-    free.querySelector(".med-add").onclick = (e) => { e.stopPropagation(); addMedicamentToPrescription("", true); };
-    container.appendChild(free);
-
-    // Médicaments depuis le JSON
-    list.forEach((med) => {
-      const div = medRow(med);
-      div.ondblclick = () => addMedicamentToPrescription(med, false);
-      div.querySelector(".med-add").onclick = (e) => { e.stopPropagation(); addMedicamentToPrescription(med, false); };
-      container.appendChild(div);
-    });
+    count.textContent = hasMore
+      ? `${MAX_RESULTS} premiers résultats — précisez la recherche`
+      : `${list.length} résultat${list.length > 1 ? "s" : ""} · double-clic (ou +) pour prescrire`;
+    container.innerHTML = medRow("", { free: true }) + list.map((m) => medRow(m)).join("");
   }
 
-  // --- Recherche instantanée ---
-  document.getElementById("search").addEventListener("input", (e) => {
-    const q = e.target.value;
-    const qLower = q.toLowerCase();
-    const filtered = medicaments.filter((m) => m.toLowerCase().includes(qLower));
-    renderMedicaments(filtered, q);
+  // --- Clics : un seul écouteur pour toute la liste ---
+  (function () {
+    const container = document.getElementById("medicaments-list");
+    const act = (row) => {
+      const kind = row.dataset.kind;
+      const name = row.dataset.name;
+      addMedicamentToPrescription(name, kind !== "med");
+    };
+    container.addEventListener("click", (e) => {
+      const row = e.target.closest(".med");
+      if (!row) return;
+      if (e.target.closest(".med-add") || row.dataset.kind === "custom") act(row);
+    });
+    container.addEventListener("dblclick", (e) => {
+      const row = e.target.closest(".med");
+      if (row && row.dataset.kind !== "custom") act(row);
+    });
+  })();
+
+  // --- Recherche (avec petit délai pour ne pas recalculer à chaque touche) ---
+  const searchInput = document.getElementById("search");
+  let searchTimer = null;
+
+  async function runSearch() {
+    const q = searchInput.value;
+    const qLower = q.trim().toLowerCase();
+    if (qLower === "") { renderMedicaments([], ""); return; }
+    await ensureMedicaments();
+    if (searchInput.value !== q) return; // la saisie a changé entre-temps
+    const out = [];
+    let hasMore = false;
+    for (let i = 0; i < medLower.length; i++) {
+      if (medLower[i].includes(qLower)) {
+        if (out.length === MAX_RESULTS) { hasMore = true; break; }
+        out.push(medicaments[i]);
+      }
+    }
+    renderMedicaments(out, q, hasMore);
+  }
+
+  searchInput.addEventListener("focus", ensureMedicaments, { once: true });
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 150);
   });
 
-  document.addEventListener("DOMContentLoaded", loadMedicaments);
+  renderMedicaments([], "");
 
   /* =====================================================================
      MODALE DE PRESCRIPTION

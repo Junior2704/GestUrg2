@@ -2019,47 +2019,46 @@ function activerAppuiLong(card, id) {
     }
   }, { passive: true });
 
-  // Double tap = double clic (iOS ne génère pas "dblclick" avec touch-action:manipulation)
-  let dernierTap = 0, tapX = 0, tapY = 0, aBouge = false;
-  card.addEventListener("touchstart", () => { aBouge = false; }, { passive: true });
-  card.addEventListener("touchmove", (e) => {
-    const t = e.touches[0];
-    if (Math.abs(t.clientX - startX) > TOLERANCE_DOIGT || Math.abs(t.clientY - startY) > TOLERANCE_DOIGT) aBouge = true;
-  }, { passive: true });
-  card.addEventListener("touchend", (e) => {
-    annuler();
-    if (aBouge || Date.now() - window.__appuiLongTs < 1000) { dernierTap = 0; return; }
-    const t = e.changedTouches[0];
-    const maintenant = Date.now();
-    if (maintenant - dernierTap < 350 &&
-        Math.abs(t.clientX - tapX) < 30 && Math.abs(t.clientY - tapY) < 30) {
-      dernierTap = 0;
-      e.preventDefault(); // évite un éventuel "dblclick" natif en double
-      if (typeof card.ondblclick === "function") card.ondblclick(e);
-    } else {
-      dernierTap = maintenant; tapX = t.clientX; tapY = t.clientY;
-    }
-  }, { passive: false });
+  card.addEventListener("touchend", annuler);
   card.addEventListener("touchcancel", annuler);
-
-  // Filet de sécurité : deux "clics" rapprochés sur la même carte = double clic
-  let dernierClic = 0, clicX = 0, clicY = 0;
-  card.addEventListener("click", (e) => {
-    const maintenant = Date.now();
-    if (maintenant - dernierClic < 450 &&
-        Math.abs(e.clientX - clicX) < 30 && Math.abs(e.clientY - clicY) < 30) {
-      dernierClic = 0;
-      if (typeof card.ondblclick === "function") card.ondblclick(e);
-    } else {
-      dernierClic = maintenant; clicX = e.clientX; clicY = e.clientY;
-    }
-  });
 
   // Sur iPad, l'appui long déclenche aussi le "glisser-déposer" natif : on l'empêche
   card.addEventListener("dragstart", (e) => {
     if (Date.now() - window.__appuiLongTs < 1500) e.preventDefault();
   });
 }
+
+/* ===============================
+   DOUBLE TAP (tablette) = double clic sur une carte patient
+   Détecté au niveau du document (pointerup), donc indépendant
+   de l'appui long, du glisser-déposer et du dblclick natif d'iOS.
+=================================*/
+(function(){
+  let dernier = { id: null, t: 0, x: 0, y: 0 };
+  let depart = null;
+  document.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    depart = { x: e.clientX, y: e.clientY, t: Date.now() };
+  }, true);
+  document.addEventListener("pointerup", (e) => {
+    if (e.pointerType === "mouse" || !depart) return;
+    const d = depart; depart = null;
+    const maintenant = Date.now();
+    // un appui long ou un glissement n'est pas un tap
+    if (maintenant - d.t > 350 || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12) { dernier.id = null; return; }
+    if (maintenant - (window.__appuiLongTs || 0) < 1000) { dernier.id = null; return; }
+    const card = e.target.closest && e.target.closest(".patient-card");
+    if (!card) { dernier.id = null; return; }
+    const id = card.dataset.id || card.querySelector(".patient-nom")?.textContent || "x";
+    if (dernier.id === id && maintenant - dernier.t < 500 &&
+        Math.hypot(e.clientX - dernier.x, e.clientY - dernier.y) < 40) {
+      dernier.id = null;
+      if (typeof card.ondblclick === "function") card.ondblclick(e);
+    } else {
+      dernier = { id, t: maintenant, x: e.clientX, y: e.clientY };
+    }
+  }, true);
+})();
 
 // Le relâchement du doigt après un appui long génère un "clic" fantôme
 // qui refermerait aussitôt le menu : on l'ignore.

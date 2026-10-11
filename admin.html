@@ -3,885 +3,346 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
   <title>Admin - Gestion des comptes</title>
   <link rel="icon" href="logo.png" type="image/jpeg">
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
-    }
-    h1 {
-      text-align: center;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: center;
-    }
-    th {
-      background: #0078d4;
-      color: white;
-    }
-    button {
-      background: red;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: darkred;
-    }
-    input[type="checkbox"] {
-      transform: scale(1.2);
-    }
-    #bubble-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 9999;
-  align-items: flex-end;
-}
-	.bubble {
-  max-width: 300px;
-  padding: 10px 15px;
-  border-radius: 8px;
-  color: white;
-  font-family: sans-serif;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  animation: fadeout 0.5s ease-in-out 1.5s forwards;
-  word-wrap: break-word;
-  text-align: left;
-}
-
-.administratif {
-  background-color: #2196F3; /* bleu */
-}
-
-.alerte {
-  background-color: #f44336; /* rouge */
-}
-
-@keyframes fadeout {
-  to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-}
-#shell-topbar{
-  position:fixed;top:0;left:0;right:0;height:64px;
-  background:#ffffff;display:flex;flex-direction:column;
-  padding:6px 14px;z-index:10000;box-shadow:0 4px 16px rgba(0,0,0,.12)
-}
-
-#actions{
-  display:flex;gap:10px;align-items:center
-}
-
-.action-btn{
-  background:#e6f0fc;
-  border:none;
-  border-radius:12px;
-  padding:8px 14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:.2s;
-}
-.action-btn:hover{background:#0078d4;color:white}
-#shell-topbar {
-  display: flex;
-  flex-direction: column;
-  padding: 6px 14px;
-}
-
-#topbar-left, #topbar-right {
-  display: flex;
-  align-items: center;
-}
-
-#topbar-left {
-  position: absolute;
-  left: 14px;
-  top: 10px;
-  font-weight: bold;
-  font-size: 20px;
-}
-
-#topbar-right {
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-weight: 500;
-  font-size: 14px;
-  color: #374151;
-}
-#shell-topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 64px;
-  background: #ffffff;
-  padding: 6px 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.12);
-  display: flex;
-  flex-direction: column;
-  z-index: 10000;
-}
-
-#topbar-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* Titre à gauche, actions au centre, date à droite */
-  gap: 10px;
-}
-
-#app-title {
-  font-weight: bold;
-  font-size: 20px;
-}
-#topbar-center {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-#actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap; /* pour les écrans plus petits */
-  justify-content: center; /* centre les boutons */
-}
-
-#datetime {
-  font-weight: 500;
-  font-size: 14px;
-  color: #374151;
-}
-body {
-  font-family: "Segoe UI", sans-serif;
-  margin: 40px 40px 0 40px; /* on garde le margin latéral, mais top sera ajusté par padding-top */
-  padding-top: 80px; /* espace pour la barre fixe de 64px + un peu de marge */
-  background: #f7f9fc;
-  color: #2c3e50;
-}
-  /* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-.table-wrapper {
-  width: 100%;
-  max-height: 75vh;
-  overflow: auto;
-  background: white;
-  border-radius: 18px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-  margin-top: 20px;
-}
-
-.pro-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  min-width: 2400px; /* force scroll horizontal */
-  width: max-content;
-  font-size: 14px;
-}
-
-.pro-table th,
-.pro-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.pro-table th {
-  position: sticky;
-  top: 0;
-  background: linear-gradient(135deg, #0078d4, #005fa3);
-  color: white;
-  z-index: 20;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.pro-table tbody tr:nth-child(even) {
-  background: #f8fafc;
-}
-
-.pro-table tbody tr:hover {
-  background: #e8f3ff;
-  transition: 0.2s;
-}
-
-/* Première colonne fixe */
-.sticky-col {
-  position: sticky !important;
-  left: 0;
-  z-index: 30 !important;
-  background: linear-gradient(135deg, #0066b3, #004f8a) !important;
-  min-width: 220px;
-  text-align: left !important;
-}
-
-.pro-table td:first-child {
-  position: sticky;
-  left: 0;
-  background: white;
-  z-index: 10;
-  font-weight: 600;
-  text-align: left;
-  min-width: 220px;
-}
-
-.pro-table tbody tr:nth-child(even) td:first-child {
-  background: #f8fafc;
-}
-
-.pro-table tbody tr:hover td:first-child {
-  background: #dbeafe;
-}
-
-/* Checkboxes plus propres */
-input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #0078d4;
-}
-
-/* --- Badges --- */
-@keyframes badgePulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,120,212,0.4); }
-  50% { transform: scale(1.03); box-shadow: 0 0 0 12px rgba(0,120,212,0); }
-}
-.badge-scan-img {
-  width: 180px;
-  margin: 15px auto;
-  display: block;
-  border-radius: 12px;
-  animation: badgePulse 1.4s ease-in-out infinite;
-}
-.badge-hidden-input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-  border: none;
-  pointer-events: none;
-}
-
-/* ============================================================
-   🔒 LOADER VERROUILLANT — bloque tout accès visuel/interactif
-   tant que l'authentification + les droits + l'identité ne sont
-   pas validés.
-   ============================================================ */
-#accessLockOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999999;
-  background: linear-gradient(135deg, #eef2f7, #dbe4f0);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  text-align: center;
-  font-family: "Segoe UI", sans-serif;
-}
-
-#accessLockOverlay .lock-icon {
-  font-size: 46px;
-  animation: lockPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes lockPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: .75; }
-}
-
-#accessLockOverlay .lock-spinner {
-  width: 42px;
-  height: 42px;
-  border: 4px solid #cfd8e3;
-  border-top: 4px solid #0078d4;
-  border-radius: 50%;
-  animation: lockSpin 0.9s linear infinite;
-}
-
-@keyframes lockSpin {
-  to { transform: rotate(360deg); }
-}
-
-#accessLockOverlay p {
-  color: #374151;
-  font-weight: 600;
-  font-size: 15px;
-  margin: 0;
-}
-
-/* Contenu de la page : masqué/inerte tant que non déverrouillé */
-#content {
-  display: none;
-}
-
-.blur {
-  filter: blur(10px);
-  pointer-events: none;
-  user-select: none;
-}
-
-/* ============================================================
-   MODALES D'ACCÈS (refus / erreur)
-   ============================================================ */
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px);
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f;
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-
-/* ===== VÉRIFICATION D'IDENTITÉ (badge / mot de passe) ===== */
-#modalIdentityCheck .card {
-  max-width: 620px;
-  width: 92vw;
-
-  /* Hauteur fixe : aucun changement entre les états */
-  height: 750px;
-  min-height: 750px;
-
-  padding: 28px 32px;
-  box-sizing: border-box;
-
-  overflow: hidden;
-
-  display: flex;
-  flex-direction: column;
-}
-#modalIdentityCheck h2 {
-  flex-shrink: 0;
-}
-
-#modalIdentityCheck > .card > p {
-  flex-shrink: 0;
-}
-
-.idcheck-switch {
-  flex-shrink: 0;
-}
-
-.idcheck-panel {
-  display: none;
-  height: 495px;
-  min-height: 495px;
-  box-sizing: border-box;
-  position: relative;
-}
-
-#idcheckError {
-  flex-shrink: 0;
-}
-
-.idcheck-actions {
-  flex-shrink: 0;
-}
-
-#modalIdentityCheck h2 {
-  color: #0078d4;
-}
-
-#modalIdentityCheck p {
-  font-size: 14px;
-  color: #55627a;
-  margin-bottom: 14px;
-}
-
-.idcheck-switch {
-  display: flex;
-  gap: 8px;
-  background: #eef1f6;
-  padding: 4px;
-  border-radius: 10px;
-  margin-bottom: 14px;
-}
-
-.idcheck-tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 9px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13.5px;
-  color: #374151;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.idcheck-tab.active {
-  background: linear-gradient(135deg,#0078d4,#2893ff);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(0,120,212,.30);
-}
-
-.idcheck-tab:hover:not(.active) {
-  background: #dbe4f0;
-  color: #0078d4;
-}
-
-
-
-.idcheck-panel.active {
-  display: block;
-}
-
-.idcheck-badge-hint {
-  font-size: 14px;
-  color: #374151;
-  margin: 4px 0 0;
-  text-align: center;
-}
-
-/* Champ du lecteur : masqué visuellement mais focusable */
-.idcheck-badge-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  border: 0;
-  opacity: 0;
-}
-
-#idcheckPasswordInput {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #ccd6e0;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-#idcheckError {
-  color: #c0392b;
-  font-size: 13px;
-
-  margin-top: 10px;
-
-  /* Toujours réserver la place du message */
-  height: 38px;
-  min-height: 38px;
-
-  box-sizing: border-box;
-
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-
-  text-align: center;
-  line-height: 18px;
-
-  overflow: hidden;
-}
-
-.idcheck-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 18px;
-}
-
-.idcheck-actions .btn,
-.idcheck-actions .btn-add {
-  padding: 10px 22px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  background: #0078d4;
-  color: white;
-  transition: .2s;
-}
-
-.idcheck-actions .btn-add:hover {
-  background: #005fa3;
-}
-
-.idcheck-actions .logout-btn {
-  background: #e74c3c;
-  color: white;
-}
-.idcheck-badge-iframe-wrapper,
-.idcheck-password-iframe-wrapper {
-  width: 100%;
-  max-width: 540px;
-  height: 325px;
-  margin: 0 auto;
-  overflow: hidden;
-  position: relative;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-
-.idcheck-badge-anim {
-  width: 100%;
-  height: 325px;
-  border: none;
-  display: block;
-  overflow: hidden;
-}
-
-.idcheck-password-anim {
-  width: 100%;
-  height: 325px;
-  border: none;
-  display: block;
-  overflow: hidden;
-  margin: 0 auto;
-}
-.info-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: 5px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: #0078d4;
-  color: white;
-  font-size: 11px;
-  font-weight: bold;
-  cursor: pointer;
-  vertical-align: middle;
-  line-height: 1;
-}
-
-.info-btn:hover {
-  background: #005fa3;
-  transform: scale(1.1);
-}
-
-.info-popup {
-  position: fixed;
-  z-index: 99999;
-  max-width: 280px;
-  padding: 12px 14px;
-  background: white;
-  color: #1f2937;
-  border: 1px solid #dbe3ec;
-  border-radius: 10px;
-  box-shadow: 0 8px 25px rgba(0,0,0,.18);
-  font-size: 13px;
-  line-height: 1.45;
-  display: none;
-  text-align: left;
-}
-
-.info-popup.active {
-  display: block;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-/* ==========================================
-   LOADER CRÉATION UTILISATEUR
-========================================== */
-
-.creation-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
-
-  opacity: 1;
-  visibility: visible;
-
-  transition:
-    opacity 0.25s ease,
-    visibility 0.25s ease;
-}
-
-.creation-loader.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.creation-loader-card {
-  width: min(440px, calc(100vw - 40px));
-
-  background: #fff;
-  border-radius: 18px;
-
-  padding: 32px;
-
-  text-align: center;
-
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.25);
-
-  animation: creationLoaderAppear 0.25s ease;
-}
-
-@keyframes creationLoaderAppear {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-
-/* ICÔNE */
-
-.creation-loader-icon {
-  width: 64px;
-  height: 64px;
-
-  margin: 0 auto 20px;
-
-  position: relative;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* SPINNER */
-
-.loader-spinner {
-  width: 52px;
-  height: 52px;
-
-  border: 5px solid #e5e7eb;
-  border-top-color: #0078d4;
-
-  border-radius: 50%;
-
-  animation: loaderSpin 0.8s linear infinite;
-}
-
-@keyframes loaderSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-/* CHECK */
-
-.loader-check {
-  display: none;
-
-  width: 52px;
-  height: 52px;
-
-  border-radius: 50%;
-
-  background: #16a34a;
-  color: white;
-
-  font-size: 30px;
-  font-weight: bold;
-
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* ERREUR */
-
-.loader-error {
-  display: none;
-
-  width: 52px;
-  height: 52px;
-
-  border-radius: 50%;
-
-  background: #dc2626;
-  color: white;
-
-  font-size: 30px;
-  font-weight: bold;
-
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* TITRE */
-
-#creationLoaderTitle {
-  margin: 0;
-
-  font-size: 21px;
-  font-weight: 700;
-
-  color: #1f2937;
-}
-
-
-/* TEXTE */
-
-#creationLoaderText {
-  margin: 8px 0 22px;
-
-  font-size: 14px;
-  color: #6b7280;
-
-  min-height: 20px;
-}
-
-
-/* BARRE */
-
-.creation-progress-container {
-  width: 100%;
-  height: 9px;
-
-  background: #e5e7eb;
-
-  border-radius: 999px;
-
-  overflow: hidden;
-}
-
-.creation-progress-bar {
-  width: 0%;
-  height: 100%;
-
-  background: linear-gradient(
-    90deg,
-    #0078d4,
-    #00a8ff
-  );
-
-  border-radius: 999px;
-
-  transition: width 0.35s ease;
-}
-
-
-/* POURCENTAGE */
-
-.creation-loader-percent {
-  margin-top: 10px;
-
-  font-size: 13px;
-  font-weight: 600;
-
-  color: #6b7280;
+/* =====================================================================
+   ADMIN — GESTION DES COMPTES · THÈME FICHE PATIENT (moderne hospitalier)
+   ===================================================================== */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg:#ffffff; --surface:#ffffff; --ink:#112336; --muted:#586a7e;
+  --line:#d8e1ea; --line-soft:#e9eff5; --field:#f6f9fc;
+  --primary:#0b6fa4; --primary-d:#085a86; --primary-soft:#e3f1f9;
+  --ok:#16784a; --ok-soft:#e1f4e9;
+  --late:#b92a30; --late-soft:#fdecec;
+  --warn:#7a4f00; --warn-soft:#fff5da; --warn-line:#f0d98f;
+  --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --gutter:clamp(16px,3vw,32px);
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.i.sm{width:16px;height:16px}
+.i.lg{width:24px;height:24px}
+
+/* ---------- EN-TÊTE DE PAGE ---------- */
+.panel-head{padding:22px var(--gutter) 16px;background:#fff;border-bottom:1px solid var(--line)}
+.panel-title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.panel-title .ico{width:40px;height:40px;flex:none;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:12px}
+.hint{margin-top:6px;margin-left:52px;font-size:14px;color:var(--muted)}
+.panel-body{padding:22px var(--gutter) 48px}
+
+/* ---------- CARTES ---------- */
+.card-sec{margin-bottom:16px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+.card-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+
+/* ---------- CHAMPS ---------- */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px 20px}
+.field{position:relative;min-width:0}
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=email],input[type=password],select{
+  width:100%;min-height:48px;margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+input::placeholder{color:#8a9bad}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+select{
+  appearance:none;-webkit-appearance:none;padding-right:42px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0;cursor:pointer}
+#createMsg{margin-top:12px;font-weight:600;color:var(--primary-d)}
+#createMsg:empty{display:none}
+
+/* ---------- BOUTONS ---------- */
+.btn-id,.btn{
+  appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.btn-id:focus-visible,.btn:focus-visible,.info-btn:focus-visible,.idcheck-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.btn-id:active{background:var(--line-soft)}
+@media (hover:hover){.btn-id:hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v,.btn-primary,.btn-add{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active,.btn-primary:active,.btn-add:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover,.btn-primary:hover,.btn-add:hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-id-c{color:var(--late);background:#fff;border-color:#f0c3c5}
+@media (hover:hover){.btn-id-c:hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}}
+.btn-ok{color:var(--ok);border-color:#b7dfc8}
+@media (hover:hover){.btn-ok:hover{background:var(--ok-soft) !important;border-color:#8fcfaa !important;color:var(--ok) !important}}
+.btn-sm{min-height:38px;padding:0 14px;font-size:14px;border-radius:10px}
+.btn-ico{width:38px;min-height:38px;padding:0;border-radius:10px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+
+/* ---------- TABLEAU ---------- */
+.table-card{padding:0;overflow:hidden}
+.table-wrapper{width:100%;max-height:72vh;overflow:auto;background:#fff}
+.pro-table{border-collapse:separate;border-spacing:0;min-width:2400px;width:max-content;font-size:14px}
+.pro-table th,.pro-table td{padding:12px 14px;border-bottom:1px solid var(--line-soft);text-align:center;white-space:nowrap}
+.pro-table th{
+  position:sticky;top:0;z-index:20;background:var(--field);
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  border-bottom:1px solid var(--line);
+}
+.pro-table tbody tr:nth-child(even){background:#fafcfe}
+@media (hover:hover){.pro-table tbody tr:hover{background:var(--primary-soft);transition:background .15s}}
+.sticky-col{position:sticky !important;left:0;z-index:30 !important;min-width:220px;text-align:left !important;border-right:1px solid var(--line)}
+.pro-table td:first-child{position:sticky;left:0;z-index:10;min-width:220px;text-align:left;font-weight:600;background:#fff;border-right:1px solid var(--line)}
+.pro-table tbody tr:nth-child(even) td:first-child{background:#fafcfe}
+@media (hover:hover){.pro-table tbody tr:hover td:first-child{background:var(--primary-soft)}}
+
+.info-btn{
+  display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:6px;padding:0;
+  border:0;border-radius:50%;background:var(--primary-soft);color:var(--primary-d);
+  font-size:11px;font-weight:700;line-height:1;cursor:pointer;vertical-align:middle;text-transform:none;
+  transition:background .15s,color .15s;
+}
+.info-btn:hover{background:var(--primary);color:#fff}
+.info-popup{
+  position:fixed;z-index:99999;max-width:280px;padding:12px 14px;display:none;text-align:left;
+  background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 12px 32px rgba(17,35,54,.18);font-size:14px;line-height:1.45;
+}
+.info-popup.active{display:block}
+
+/* ---------- MODALES ---------- */
+.modal-overlay{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  animation:fade .15s ease-out;
+}
+#badgeModal{z-index:10000} #lireBadgeModal{z-index:10001} #editModal{z-index:10002}
+.modal{
+  position:relative;width:min(480px,100%);max-height:100%;overflow-y:auto;
+  padding:22px 24px 24px;background:#fff;border-radius:18px;
+  box-shadow:0 20px 50px rgba(10,25,41,.3);animation:rise .2s ease-out;
+}
+.modal h3{
+  display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:0 44px 14px 0;
+  font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ink);border-bottom:1px solid var(--line);
+}
+.modal h3 .i{color:var(--primary)}
+.modal .field{margin-bottom:14px}
+.modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.modal-x{
+  appearance:none;position:absolute;top:14px;right:14px;width:40px;height:40px;display:grid;place-items:center;padding:0;
+  color:var(--muted);background:transparent;border:0;border-radius:12px;cursor:pointer;
+}
+.modal-x:hover{color:var(--late);background:var(--late-soft)}
+.modal-x:focus-visible{outline:3px solid rgba(11,111,164,.4)}
+.nom-ligne{margin:0 0 14px;font-weight:600;color:var(--ink)}
+#badgeStatutBox{padding:14px 16px;margin-bottom:16px;text-align:left;background:var(--field);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px}
+#badgeActions{display:flex;gap:10px;flex-wrap:wrap}
+#lireBadgeModal .modal{text-align:center}
+#lireBadgeModal .modal h3{justify-content:center;padding-right:0}
+#lireBadgeModal p{color:var(--muted);font-size:14px}
+.badge-scan-img{width:180px;max-width:100%;margin:15px auto;display:block;border-radius:14px;animation:badgePulse 1.4s ease-in-out infinite}
+@keyframes badgePulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(11,111,164,.35)}50%{transform:scale(1.03);box-shadow:0 0 0 12px rgba(11,111,164,0)}}
+.badge-hidden-input{position:absolute;opacity:0;width:1px;height:1px;border:none;pointer-events:none;min-height:0}
+
+/* Accès refusé / erreur / vérification d'identité */
+.modalna{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);z-index:9999;
+}
+.modalna .card{width:min(440px,100%);padding:30px 28px 28px;text-align:center;background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);animation:rise .2s ease-out}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico .i{width:28px;height:28px}
+.state-ico.info{background:var(--primary-soft);color:var(--primary)}
+.modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+
+#modalIdentityCheck .card{width:min(620px,100%);max-height:96dvh;overflow:auto;padding:26px 28px;display:flex;flex-direction:column;text-align:center}
+#modalIdentityCheck h2{color:var(--ink)}
+#modalIdentityCheck > .card > p{font-size:15px;color:var(--muted);margin-bottom:16px}
+.idcheck-switch{display:grid;grid-template-columns:1fr 1fr;width:100%;margin-bottom:18px;border-bottom:2px solid var(--line);flex-shrink:0}
+.idcheck-tab{
+  appearance:none;flex:1;width:100%;min-height:48px;margin-bottom:-2px;padding:0 12px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 15px/1 var(--font);color:var(--muted);
+  background:transparent;border:0;border-bottom:3px solid transparent;border-radius:10px 10px 0 0;
+  cursor:pointer;touch-action:manipulation;transition:color .15s,background .15s,border-color .15s;
+}
+@media (hover:hover){.idcheck-tab:hover:not(.active){background:var(--primary-soft);color:var(--primary-d)}}
+.idcheck-tab.active{color:var(--primary);background:var(--primary-soft);border-bottom-color:var(--primary)}
+.idcheck-panel{display:none;min-height:0;position:relative;text-align:center}
+@media (min-height:900px){.idcheck-panel{min-height:400px}}
+.idcheck-panel.active{display:block}
+.idcheck-badge-iframe-wrapper,.idcheck-password-iframe-wrapper{width:100%;max-width:540px;height:325px;margin:0 auto;overflow:hidden;position:relative;border-radius:12px;flex-shrink:0}
+.idcheck-badge-anim,.idcheck-password-anim{width:100%;height:325px;border:0;display:block;overflow:hidden;margin:0 auto}
+.idcheck-badge-hint,.idcheck-password-hint{margin:10px 0 12px;font-size:15px;color:var(--muted);text-align:center}
+.idcheck-badge-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;opacity:0;min-height:0}
+#idcheckPasswordInput{text-align:center;letter-spacing:.08em}
+#idcheckError{min-height:38px;margin-top:10px;font-size:14px;line-height:18px;text-align:center;color:var(--late);flex-shrink:0}
+.idcheck-actions{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-shrink:0}
+.idcheck-actions .btn,.idcheck-actions .btn-add{min-width:160px}
+.idcheck-actions .logout-btn{background:var(--late);border-color:var(--late);color:#fff}
+
+/* Verrou d'accès initial */
+#accessLockOverlay{
+  position:fixed;inset:0;z-index:999999;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;
+}
+#accessLockOverlay .lock-icon{width:64px;height:64px;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:20px;animation:lockPulse 1.6s ease-in-out infinite}
+#accessLockOverlay .lock-icon .i{width:30px;height:30px}
+#accessLockOverlay .lock-spinner{width:44px;height:44px;border:5px solid var(--line-soft);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+#accessLockOverlay p{font-size:15px;font-weight:600;color:var(--muted)}
+@keyframes lockPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.8}}
+#content{display:none}
+.blur{filter:blur(10px);pointer-events:none;user-select:none}
+
+/* Loader de création */
+.creation-loader{
+  position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  opacity:1;visibility:visible;transition:opacity .25s ease,visibility .25s ease;padding:16px;
+}
+.creation-loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.creation-loader-card{width:min(440px,100%);padding:32px;text-align:center;background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);animation:rise .2s ease-out}
+.creation-loader-icon{width:64px;height:64px;margin:0 auto 18px;position:relative;display:flex;align-items:center;justify-content:center}
+.loader-spinner{width:52px;height:52px;border:5px solid var(--line-soft);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
+.loader-check,.loader-error{display:none;width:56px;height:56px;border-radius:50%;align-items:center;justify-content:center}
+.loader-check{background:var(--ok-soft);color:var(--ok)}
+.loader-error{background:var(--late-soft);color:var(--late)}
+.loader-check .i,.loader-error .i{width:28px;height:28px;stroke-width:2.6}
+#creationLoaderTitle{margin:0;justify-content:center;padding:0;border:0;font-size:21px;font-weight:700;color:var(--ink)}
+#creationLoaderText{margin:8px 0 22px;font-size:15px;color:var(--muted);min-height:20px}
+.creation-progress-container{width:100%;height:10px;background:var(--line-soft);border-radius:999px;overflow:hidden}
+.creation-progress-bar{width:0;height:100%;background:var(--primary);border-radius:999px;transition:width .35s ease}
+.creation-loader-percent{margin-top:10px;font-size:14px;font-weight:600;color:var(--muted)}
+
+/* Bulles (relayées au parent, conservées pour compatibilité) */
+#bubble-container{position:fixed;top:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:9999;align-items:flex-end}
+.bubble{max-width:300px;padding:12px 16px;border-radius:12px;color:#fff;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(17,35,54,.2);animation:fadeout .5s ease-in-out 1.5s forwards;word-wrap:break-word;text-align:left}
+.administratif{background:var(--primary)}
+.alerte{background:var(--late)}
+@keyframes fadeout{to{opacity:0;transform:translateX(-20px)}}
+
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.modal,.modalna .card,.creation-loader-card,.badge-scan-img,.lock-icon{animation:none !important}.creation-loader{transition:none}}
+
+/* Barres de défilement */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+@media (max-width:700px){
+  .panel-head{padding-top:16px;padding-bottom:12px}
+  .panel-title{font-size:19px}
+  .hint{margin-left:0}
+  .panel-body{padding-top:16px}
+  .card-sec{padding:16px;border-radius:14px}
+  .table-card{padding:0}
+}
+@media (max-width:640px){
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{width:100%;max-height:92dvh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + var(--safe-b))}
+  #lireBadgeModal{align-items:center;padding:16px}
+  #lireBadgeModal .modal{border-radius:20px}
+  .modal-actions .btn-id{flex:1 1 auto}
 }
 </style>
+<script>window.ICO=(n,c="i sm")=>`<svg class="${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;</script>
 </head>
 <body>
 
-<!-- 🔒 Loader verrouillant : visible dès le chargement, tant que l'identité n'est pas validée -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 14h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+  <symbol id="i-syringe" viewBox="0 0 24 24"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-.9-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M12 8v4M10 10h4"/></symbol>
+  <symbol id="i-transfer" viewBox="0 0 24 24"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+  <symbol id="i-ambulance" viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+  <symbol id="i-user-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></symbol>
+  <symbol id="i-heart-pulse" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/><path d="M3.2 12h4l1.3-2 3 6 2-4h4"/></symbol>
+  <symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M4 10h12M4 14h9M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1M4.93 4.93l.7.7"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M12 4v6M2 18h20"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v7m0 0-3 7m3-7 3 7M8 10h8"/></symbol>
+  <symbol id="i-chair" viewBox="0 0 24 24"><circle cx="16" cy="4" r="1"/><path d="m18 19 1-7-6 1"/><path d="m5 8 3-3 5.5 3-2.36 3.5"/><path d="M4.24 14.5a5 5 0 0 0 6.88 6"/><path d="M13.76 17.5a5 5 0 0 0-6.88-6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.4-8.4M18 5l3 3M15 8l2 2"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14 0M8.5 16a6 6 0 0 1 7 0M2 8.8a15 15 0 0 1 20 0M12 20h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+</svg>
+
+<!-- Loader verrouillant : visible dès le chargement, tant que l'identité n'est pas validée -->
 <div id="accessLockOverlay">
-  <div class="lock-icon">🔒</div>
+  <div class="lock-icon"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></div>
   <div class="lock-spinner"></div>
   <p>Vérification de votre accès en cours…</p>
 </div>
 
 <div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></div>
+    <h2>Accès refusé</h2>
     <p>Vous n'avez pas accès à cette page.</p>
     <p>Veuillez contacter un administrateur pour plus d'informations.</p>
   </div>
@@ -889,7 +350,8 @@ input[type="checkbox"] {
 
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+    <h2>Oups, une erreur est survenue</h2>
     <p>Veuillez re-essayer un peu plus tard</p>
     <p>Si le problème persiste, contactez un administrateur</p>
   </div>
@@ -897,106 +359,78 @@ input[type="checkbox"] {
 
 <div id="modalIdentityCheck" class="modalna">
   <div class="card">
-    <h2>🔐 Vérification d'identité</h2>
+    <div class="state-ico info"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg></div>
+    <h2>Vérification d'identité</h2>
     <p>Merci de confirmer que c'est bien vous avant d'accéder à la gestion des comptes.</p>
 
     <div class="idcheck-switch" id="idcheckSwitch" style="display:none;">
-      <button type="button" id="idcheckTabBadge" class="idcheck-tab" onclick="switchIdentityTab('badge')">🪪 Badge</button>
-      <button type="button" id="idcheckTabPassword" class="idcheck-tab" onclick="switchIdentityTab('password')">🔑 Mot de passe</button>
+      <button type="button" id="idcheckTabBadge" class="idcheck-tab" onclick="switchIdentityTab('badge')"><svg class="i sm" aria-hidden="true"><use href="#i-id"/></svg> Badge</button>
+      <button type="button" id="idcheckTabPassword" class="idcheck-tab" onclick="switchIdentityTab('password')"><svg class="i sm" aria-hidden="true"><use href="#i-key"/></svg> Mot de passe</button>
     </div>
 
-   <!-- VOLET BADGE -->
-<div
-  id="idcheckPanelBadge"
-  class="idcheck-panel"
-  onclick="focusIdentityBadgeInput()"
->
+    <!-- VOLET BADGE -->
+    <div id="idcheckPanelBadge" class="idcheck-panel" onclick="focusIdentityBadgeInput()">
+      <div class="idcheck-badge-iframe-wrapper">
+        <iframe src="animation-badge.html" class="idcheck-badge-anim" scrolling="no" frameborder="0" title="Animation de lecture du badge"></iframe>
+      </div>
+      <p class="idcheck-badge-hint">Approchez votre badge du lecteur…</p>
+      <input type="text" id="idcheckBadgeInput" class="idcheck-badge-input" autocomplete="off">
+    </div>
 
-  <div class="idcheck-badge-iframe-wrapper">
-    <iframe
-      src="animation-badge.html"
-      class="idcheck-badge-anim"
-      scrolling="no"
-      frameborder="0"
-      title="Animation de lecture du badge">
-    </iframe>
-  </div>
-
-  <p class="idcheck-badge-hint">
-    Approchez votre badge du lecteur…
-  </p>
-
-  <input
-    type="text"
-    id="idcheckBadgeInput"
-    class="idcheck-badge-input"
-    autocomplete="off"
-  >
-
-</div>
-
- <!-- VOLET MOT DE PASSE -->
-<div
-  id="idcheckPanelPassword"
-  class="idcheck-panel"
->
-
-  <div class="idcheck-password-iframe-wrapper">
-    <iframe
-      src="animation-mdp.html"
-      class="idcheck-password-anim"
-      scrolling="no"
-      frameborder="0"
-      title="Animation de saisie du mot de passe">
-    </iframe>
-  </div>
-
-  <p class="idcheck-password-hint">
-    Veuillez saisir votre mot de passe.
-  </p>
-
-  <input
-    type="password"
-    id="idcheckPasswordInput"
-    placeholder="Mot de passe"
-  >
-
-</div>
+    <!-- VOLET MOT DE PASSE -->
+    <div id="idcheckPanelPassword" class="idcheck-panel">
+      <div class="idcheck-password-iframe-wrapper">
+        <iframe src="animation-mdp.html" class="idcheck-password-anim" scrolling="no" frameborder="0" title="Animation de saisie du mot de passe"></iframe>
+      </div>
+      <p class="idcheck-password-hint">Veuillez saisir votre mot de passe.</p>
+      <input type="password" id="idcheckPasswordInput" placeholder="Mot de passe">
+    </div>
 
     <div id="idcheckError"></div>
 
     <div class="idcheck-actions">
-      <button class="btn btn-add" onclick="attemptIdentityCheck()">Valider</button>
+      <button class="btn btn-add" onclick="attemptIdentityCheck()"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg> Valider</button>
     </div>
   </div>
 </div>
 
 <div id="content">
 
-	<h2>➕ Créer un nouvel utilisateur</h2>
-<div id="creationBox" style="background:white;padding:20px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1);margin-bottom:30px;">
-  <input type="email" id="newEmail" placeholder="Email *" style="padding:10px;width:220px;margin-right:10px;">
-  <input type="text" id="newNom" placeholder="Nom complet *" style="padding:10px;width:200px;margin-right:10px;">
-    <input type="text" id="newNom2" placeholder="Nom *" style="padding:10px;width:200px;margin-right:10px;">
-  <input type="text" id="newPrenom" placeholder="Prénom *" style="padding:10px;width:200px;margin-right:10px;">
+  <div class="panel-head">
+    <h1 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg></span> Gestion des comptes</h1>
+    <p class="hint">Créer des utilisateurs, modifier leurs informations et gérer leurs accès aux pages.</p>
+  </div>
 
-  <input type="text" id="newSpecialite" placeholder="Spécialité" style="padding:10px;width:180px;margin-right:10px;">
-  <input type="text" id="newLieu" placeholder="Lieu d'exercice" style="padding:10px;width:180px;margin-right:10px;">
-  <select id="newType" style="padding:10px;margin-right:10px;">
-    <option value="">-- Type --</option>
-    <option value="doc">Médecin</option>
-    <option value="infirmier">Infirmier</option>
-    <option value="AS">Aide Soignant</option>
-    <option value="Ambulancier">Ambulancier</option>
-        <option value="Int">Interne</option>
-                <option value="Ext">Externe</option>
+  <div class="panel-body">
 
+    <section class="card-sec" id="creationBox">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Créer un nouvel utilisateur</div>
+      <div class="form-grid">
+        <div class="field"><label for="newEmail">Email *</label><input type="email" id="newEmail" placeholder="prenom.nom@exemple.fr"></div>
+        <div class="field"><label for="newNom">Nom complet *</label><input type="text" id="newNom" placeholder="Nom complet *"></div>
+        <div class="field"><label for="newNom2">Nom *</label><input type="text" id="newNom2" placeholder="Nom *"></div>
+        <div class="field"><label for="newPrenom">Prénom *</label><input type="text" id="newPrenom" placeholder="Prénom *"></div>
+        <div class="field"><label for="newSpecialite">Spécialité</label><input type="text" id="newSpecialite" placeholder="Spécialité"></div>
+        <div class="field"><label for="newLieu">Lieu d'exercice</label><input type="text" id="newLieu" placeholder="Lieu d'exercice"></div>
+        <div class="field"><label for="newType">Type</label>
+          <select id="newType">
+            <option value="">-- Type --</option>
+            <option value="doc">Médecin</option>
+            <option value="infirmier">Infirmier</option>
+            <option value="AS">Aide Soignant</option>
+            <option value="Ambulancier">Ambulancier</option>
+            <option value="Int">Interne</option>
+            <option value="Ext">Externe</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="createUserBtn" class="btn-id btn-id-v"><svg class="i sm" aria-hidden="true"><use href="#i-plus"/></svg> Créer</button>
+      </div>
+      <div id="createMsg"></div>
+    </section>
 
-  </select>
-  <button id="createUserBtn" style="padding:10px 15px;background:#0078d4;color:white;border:none;border-radius:8px;cursor:pointer;">Créer</button>
-  <div id="createMsg" style="margin-top:10px;font-weight:bold;"></div>
-</div>
-
+    <section class="card-sec table-card">
   <div class="table-wrapper">
   <table class="pro-table">
     <thead>
@@ -1078,98 +512,82 @@ input[type="checkbox"] {
     <tbody id="usersTable"></tbody>
   </table>
 </div>
+    </section>
+  </div>
 
-<!-- ✅ MODALE ÉDITION UTILISATEUR -->
-<div id="editModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.5);justify-content:center;align-items:center;Z-index:10000000000;">
-  <div style="background:white;padding:20px;border-radius:10px;width:400px;position:relative;">
-    <h3>✏️ Modifier le compte</h3>
+<!-- MODALE ÉDITION UTILISATEUR -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <h3><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Modifier le compte</h3>
     <input type="hidden" id="editUserId">
-    <input id="editNom" placeholder="Nom complet" style="width:100%;padding:8px;margin-bottom:10px;">
-    <input id="editEmail" placeholder="Email" style="width:100%;padding:8px;margin-bottom:10px;">
-    <input id="editSpecialite" placeholder="Spécialité" style="width:100%;padding:8px;margin-bottom:10px;">
-    <input id="editLieu" placeholder="Lieu d'exercice" style="width:100%;padding:8px;margin-bottom:10px;">
-    <select id="editType" style="width:100%;padding:8px;margin-bottom:10px;">
-      <option value="">-- Type --</option>
-    <option value="doc">Médecin</option>
-    <option value="infirmier">Infirmier</option>
-    <option value="AS">Aide Soignant</option>
+    <div class="field"><label for="editNom">Nom complet</label><input id="editNom" type="text" placeholder="Nom complet"></div>
+    <div class="field"><label for="editEmail">Email</label><input id="editEmail" type="email" placeholder="Email"></div>
+    <div class="field"><label for="editSpecialite">Spécialité</label><input id="editSpecialite" type="text" placeholder="Spécialité"></div>
+    <div class="field"><label for="editLieu">Lieu d'exercice</label><input id="editLieu" type="text" placeholder="Lieu d'exercice"></div>
+    <div class="field"><label for="editType">Type</label>
+      <select id="editType">
+        <option value="">-- Type --</option>
+        <option value="doc">Médecin</option>
+        <option value="infirmier">Infirmier</option>
+        <option value="AS">Aide Soignant</option>
         <option value="Int">Interne</option>
-                <option value="Ext">Externe</option>
-    </select>
-    
-    <button onclick="fermerModale()" style="background:gray;color:white;padding:8px 15px;border:none;border-radius:8px;float:right;">✖ Fermer</button>
-	  <button id="saveEditBtn" style="background:#0078d4;color:white;padding:8px 15px;border:none;border-radius:8px;">💾 Enregistrer</button>
+        <option value="Ext">Externe</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button onclick="fermerModale()" class="btn-id"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg> Fermer</button>
+      <button id="saveEditBtn" class="btn-id btn-id-v"><svg class="i sm" aria-hidden="true"><use href="#i-save"/></svg> Enregistrer</button>
+    </div>
   </div>
 </div>
 
-<!-- ✅ MODALE GESTION DU BADGE -->
-<div id="badgeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.5);justify-content:center;align-items:center;z-index:10000;">
-  <div style="background:white;padding:20px;border-radius:10px;width:380px;position:relative;">
-    <h3>🪪 Gestion du badge</h3>
-    <p id="badgeModalNom" style="font-weight:600;margin-bottom:15px;color:#374151;"></p>
-    <div id="badgeStatutBox" style="padding:14px;border-radius:8px;margin-bottom:15px;background:#f4f4f4;text-align:left;">
+<!-- MODALE GESTION DU BADGE -->
+<div id="badgeModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-x" onclick="fermerBadgeModal()" aria-label="Fermer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> Gestion du badge</h3>
+    <p id="badgeModalNom" class="nom-ligne"></p>
+    <div id="badgeStatutBox">
       <span id="badgeStatutTexte">Chargement...</span>
     </div>
-    <div id="badgeActions" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
-    <button onclick="fermerBadgeModal()" style="background:gray;color:white;padding:8px 15px;border:none;border-radius:8px;margin-top:20px;float:right;">✖ Fermer</button>
+    <div id="badgeActions"></div>
+    <div class="modal-actions">
+      <button onclick="fermerBadgeModal()" class="btn-id"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg> Fermer</button>
+    </div>
   </div>
 </div>
 
-<!-- ✅ MODALE LECTURE DU BADGE -->
-<div id="lireBadgeModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:10001;">
-  <div style="background:white;padding:30px;border-radius:14px;width:360px;text-align:center;position:relative;">
-    <button onclick="fermerLectureBadge()" style="background:gray;color:white;padding:6px 12px;border:none;border-radius:8px;position:absolute;top:10px;right:10px;">✖</button>
-    <h3 id="lireBadgeTitre">📡 Scannez le badge</h3>
+<!-- MODALE LECTURE DU BADGE -->
+<div id="lireBadgeModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-x" onclick="fermerLectureBadge()" aria-label="Fermer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <h3 id="lireBadgeTitre"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg> Scannez le badge</h3>
     <img src="animation-badge.jpeg" alt="Scan badge" class="badge-scan-img">
-    <p style="color:#555;font-size:14px;">Approchez ou passez le badge sur le lecteur...</p>
+    <p>Approchez ou passez le badge sur le lecteur...</p>
     <input type="text" id="badgeInputCache" class="badge-hidden-input" autocomplete="off">
   </div>
 </div>
-<!-- ==========================================
-     LOADER CRÉATION UTILISATEUR
-========================================== -->
 
+<!-- LOADER CRÉATION UTILISATEUR -->
 <div id="creationUserLoader" class="creation-loader hidden">
-
   <div class="creation-loader-card">
-
     <div class="creation-loader-icon">
       <div class="loader-spinner"></div>
-      <div id="creationLoaderCheck" class="loader-check">✓</div>
-      <div id="creationLoaderError" class="loader-error">!</div>
+      <div id="creationLoaderCheck" class="loader-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div>
+      <div id="creationLoaderError" class="loader-error"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
     </div>
-
-    <h3 id="creationLoaderTitle">
-      Création du compte
-    </h3>
-
-    <p id="creationLoaderText">
-      Préparation...
-    </p>
-
+    <h3 id="creationLoaderTitle">Création du compte</h3>
+    <p id="creationLoaderText">Préparation...</p>
     <div class="creation-progress-container">
-      <div
-        id="creationProgressBar"
-        class="creation-progress-bar"
-      ></div>
+      <div id="creationProgressBar" class="creation-progress-bar"></div>
     </div>
-
-    <div
-      id="creationLoaderPercent"
-      class="creation-loader-percent"
-    >
-      0 %
-    </div>
-
+    <div id="creationLoaderPercent" class="creation-loader-percent">0 %</div>
   </div>
-
 </div>
 </div><!-- /#content -->
 <div id="columnInfoPopup" class="info-popup"></div>
-  <script type="module">
+
+<script type="module">
   emailjs.init("CZapZCcxYfJ8-acLS"); // clé publique par défaut, remplacée si multi-comptes
   import { envoyerMessageSysteme } from "./messagerie-envoi.js";
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1615,29 +1033,29 @@ tr.innerHTML = `
   <td>${data.specialite || ""}</td>
   <td>${data.lieu || ""}</td>
   <td>
-    <button class="editBtn"
+    <button class="editBtn btn-id btn-sm btn-ico"
       data-id="${id}"
       data-nom="${data.nom || ""}"
       data-email="${data.email || ""}"
       data-specialite="${data.specialite || ""}"
       data-lieu="${data.lieu || ""}"
       data-type="${data.type || ""}"
-      style="background:#ffa500;">✏️</button>
+      aria-label="Modifier" title="Modifier">${ICO("pen")}</button>
   </td>
   <td>
-    <button style="background:#0078d4" onclick="demanderChangement('${id}')">🔁 Demander un changement</button>
+    <button class="btn-id btn-sm" onclick="demanderChangement('${id}')">${ICO("refresh")} Demander un changement</button>
   </td>
 
 <td>
   ${
     data.supprime
-    ? `<button style="background:#4caf50;color:white;"
+    ? `<button class="btn-id btn-sm btn-ok"
         onclick="annulerSuppression('${id}','${data.email}')">
-        ✅ Annuler
+        ${ICO("check")} Annuler
       </button>`
-    : `<button style="background:#ff0000;color:white;"
+    : `<button class="btn-id btn-sm btn-id-c"
         onclick="marquerSuppression('${id}','${data.email}')">
-        ❌ Supprimer
+        ${ICO("trash")} Supprimer
       </button>`
   }
 </td>

@@ -1,429 +1,296 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-        <link rel="icon" type="image/jpeg" href="logog2.png">
-
-<meta charset="UTF-8">
-<title>Accueil – Service des Urgences</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-<style>
+  <link rel="icon" type="image/jpeg" href="logog2.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Accueil – Service des Urgences</title>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+/* =====================================================================
+   THÈME MODERNE HOSPITALIER — identité reprise de fiche.html
+   Fond blanc · bleu clinique · cartes à bordure fine
+   ===================================================================== */
 :root{
-  --blue:#0b5ed7;
-  --green:#198754;
-  --red:#dc3545;
-  --bg:#f4f7fb;
-  --card:#ffffff;
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg:#ffffff; --surface:#ffffff; --ink:#112336; --muted:#586a7e;
+  --line:#d8e1ea; --line-soft:#e9eff5; --field:#f6f9fc;
+  --primary:#0b6fa4; --primary-d:#085a86; --primary-soft:#e3f1f9;
+  --ok:#16784a; --ok-soft:#e1f4e9;
+  --late:#b92a30; --late-soft:#fdecec;
+  --warn:#7a4f00; --warn-soft:#fff5da; --warn-line:#f0d98f;
+  --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+  --safe-t:env(safe-area-inset-top,0px); --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-l:env(safe-area-inset-left,0px);
+  --head-h:64px; --gutter:clamp(16px,3vw,32px);
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0;padding:0}
 body{
-  margin:0;
-  font-family:Inter,Segoe UI,Arial,sans-serif;
-  background:var(--bg);
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg);
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;
 }
-.card{
-  background:var(--card);
-  width:100%;
-  max-width:460px;
-  border-radius:18px;
-  box-shadow:0 12px 30px rgba(0,0,0,.12);
-  padding:28px;
-  display:none;
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+
+.brand{
+  width:38px;height:38px;flex:none;display:grid;place-items:center;
+  color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));
+  border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25);
 }
-.card.active{display:block}
-h1{text-align:center}
-input,select,button{
-  width:100%;
-  padding:12px;
-  margin:8px 0 14px;
-  border-radius:10px;
-  border:1px solid #ccc;
+.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.head-title{font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint{font-size:14px;color:var(--muted)}
+
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+.lbl{display:flex;align-items:center;gap:8px}
+.lbl .i{color:var(--primary);width:17px;height:17px}
+input[type=text],select{
+  width:100%;min-height:48px;margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
 }
-button{font-weight:600;cursor:pointer}
-.btn-primary{background:#0b5ed7;color:white;border:none}
-.btn-success{background:#198754;color:white;border:none;font-size:1.3rem}
-.btn-danger{background:#dc3545;color:white;border:none}
-.numero{text-align:center;font-size:4rem;font-weight:800;color:#dc3545}
-.status{text-align:center;font-weight:600;min-height:24px}
-.ok{color:#198754}
-.err{color:#dc3545}
-.footer{text-align:center;font-size:.85rem;color:#667;margin-top:10px}
-#infosPatient div{
-  font-size:1.05rem;
-  margin-top:4px;
-  font-weight:500;
-  color:#0b2240;
+input::placeholder{color:#8a9bad}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+select{
+  appearance:none;-webkit-appearance:none;padding-right:42px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
 }
-/* Overlay */
-.modal-overlay {
-  position: fixed;
-  top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content:center;
-  align-items:center;
-  z-index: 1000;
+input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;flex:none;margin:0}
+
+.btn-id{
+  appearance:none;width:100%;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;margin:0;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:hover){.btn-id:hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-id-c{color:var(--late);background:#fff;border-color:#f0c3c5}
+@media (hover:hover){.btn-id-c:hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}}
+.btn-id-c:active{background:#fbdcdc}
+
+.card-sec{padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+.card-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+
+/* Modales */
+.modal-overlay{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  z-index:99999;animation:fade .15s ease-out;
+}
+.modal{
+  width:min(520px,100%);max-height:100%;overflow-y:auto;overflow-x:hidden;
+  padding:22px 24px 24px;background:#fff;border-radius:18px;
+  box-shadow:0 20px 50px rgba(10,25,41,.3);animation:rise .2s ease-out;
+}
+.modal h3{
+  display:flex;align-items:center;gap:10px;margin:0 0 16px;padding-bottom:14px;
+  font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ink);border-bottom:1px solid var(--line);
+}
+.modal h3 .i{color:var(--primary)}
+.modal-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.modal-buttons .btn-id{flex:1 1 140px;width:auto}
+
+.choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.choice{
+  position:relative;display:flex;align-items:center;gap:12px;
+  min-height:52px;padding:10px 14px;margin:0;
+  font-size:15px;font-weight:600;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.choice input{position:absolute;opacity:0;width:100%;height:100%;inset:0;margin:0;cursor:pointer}
+.choice > span{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+@media (hover:hover){.choice:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.choice:has(input:checked){background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d);box-shadow:inset 0 0 0 1px var(--primary)}
+.choice:has(input:focus-visible){outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.choice-check{width:22px;height:22px;flex:none;margin-left:auto;display:grid;place-items:center;color:transparent;border:2px solid var(--line);border-radius:7px;transition:all .15s}
+.choice:has(input:checked) .choice-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.choice-check .i{width:13px;height:13px;stroke-width:3.2}
+
+/* Accès refusé / erreur */
+.modalna{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);z-index:9999;
+}
+.modalna .card{width:min(440px,100%);padding:30px 28px 28px;text-align:center;background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3)}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico .i{width:28px;height:28px}
+.modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+.modalna p:last-child{margin-bottom:0}
+
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.modal-overlay,.modal{animation:none !important}.choice,.btn-id{transition:none !important}}
+
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+@media (max-width:640px){
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{width:100%;max-height:92dvh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + var(--safe-b))}
 }
 
-/* Contenu modale */
-.modal-content {
-  background: #fff;
-  padding: 24px;
-  border-radius: 16px;
-  max-width: 450px;
-  width: 90%;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  font-family: Inter, sans-serif;
+body{display:grid;place-items:center;min-height:100%;overflow:auto;padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l))}
+#cardAccueil{width:100%;max-width:480px;padding:22px}
+.card-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.ticket{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:16px;margin-bottom:16px;text-align:center;
+  background:linear-gradient(180deg,var(--primary-soft),#fff);
+  border:1px solid var(--line);border-left:6px solid var(--primary);border-radius:14px;
 }
-
-.modal-content h2 {
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.filter-section h3 {
-  margin-bottom: 8px;
-}
-
-/* Grid des cases */
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* Style des cases comme boutons */
-.checkbox-card {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
-}
-
-.checkbox-card input {
-  margin-right: 8px;
-}
-
-.checkbox-card:hover {
-  background-color: #f0f4ff;
-  border-color: #0b5ed7;
-}
-
-.checkbox-card input:checked + span {
-  font-weight: 600;
-  color: #0b5ed7;
-}
-
-/* Boutons modale */
-.modal-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 18px;
-}
-
-.modal-buttons .btn-danger {
-  flex: 1;
-  margin-right: 8px;
-}
-
-.modal-buttons .btn-success {
-  flex: 1;
-  margin-left: 8px;
-  font-size: 1.1rem;
-}
-
-.attente-stats{
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border-radius: 14px;
-  font-size: 14px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-}
-
-.attente-total{
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.attente-types{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.attente-types span{
-  background: #e8f0ff;
-  color: #1e40af;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-  width: 100%;
-  margin:8px 0 14px;
-}
-
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-input, select, button.btn-id{
-  width:100%;
-  box-sizing:border-box;
-}
-/* Case entière */
-.checkbox-card {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* 🔥 force gauche */
-  gap: 10px; /* meilleur que margin-right */
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
-  text-align: left;
-}
-
-/* checkbox */
-.checkbox-card input {
-  margin: 0;
-  flex-shrink: 0; /* évite écrasement */
-}
-
-/* texte */
-.checkbox-card span {
-  flex: 1;
-  text-align: left;
-}
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
+.ticket .cap{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ticket .cap .i{color:var(--primary);width:18px;height:18px}
+.numero{font-size:56px;font-weight:800;line-height:1.1;letter-spacing:-.02em;color:var(--primary-d);font-variant-numeric:tabular-nums}
+.field{margin-bottom:16px}
+.infos{display:grid;gap:8px;margin-bottom:16px}
+.info-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-weight:600;min-width:0}
+.info-row .i{color:var(--primary)}
+.info-row div{overflow-wrap:anywhere}
+.status{min-height:0;margin-top:12px;font-weight:600;text-align:center}
+.status:empty{display:none}
+.status.ok,.status.err{padding:10px 14px;border-radius:12px;border:1px solid}
+.status.ok{color:var(--ok);background:var(--ok-soft);border-color:#b7dfc8}
+.status.err{color:var(--late);background:var(--late-soft);border-color:#f0c3c5}
+.attente-stats{margin:16px 0;padding:14px 16px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.attente-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.attente-head .i{color:var(--primary)}
+.attente-total{font-weight:700}
+.attente-types{display:flex;flex-wrap:wrap;gap:6px}
+.attente-types span{display:inline-flex;align-items:center;padding:6px 12px;font-size:13px;font-weight:700;line-height:1;color:var(--primary-d);background:var(--primary-soft);border:1px solid #b5d6ea;border-radius:999px}
+.footer{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
+.footer strong{font-weight:600}
+.footer:has(#bureauLabel:empty){display:none}
 </style>
 </head>
-
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 14h3"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 11v2M13 17v2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M12 8v4M10 10h4"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+</svg>
 
- <div id="modal-no-access" class="modalna">
+<div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></div>
+    <h2>Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
-        <p>veuillez contacter un administrateur pour plus d'informations.</p>
-
+    <p>Veuillez contacter un administrateur pour plus d'informations.</p>
   </div>
 </div>
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez re-essayer un peu plus tard</p>
-        <p>Si le problème persiste, contactez un administrateur</p>
-
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
+    <h2>Oups, une erreur est survenue</h2>
+    <p>Veuillez réessayer un peu plus tard.</p>
+    <p>Si le problème persiste, contactez un administrateur.</p>
   </div>
 </div>
+
 <!-- POSTE -->
-<div class="card active" id="cardAccueil">
-  <h1>🧾 Poste d’accueil</h1>
-  <div class="numero" id="numeroAffiche">—</div>
-  
-<div style="margin-top:12px;">
-  <label style="font-weight:600;">🏢 Bureau :</label>
-  <select id="bureauSelect" onchange="changerBureau(this.value)"></select>
-</div>
+<div class="card-sec active" id="cardAccueil">
+  <div class="card-head">
+    <div class="brand" aria-hidden="true"><svg class="i" aria-hidden="true"><use href="#i-cross"/></svg></div>
+    <div class="head-text">
+      <span class="head-kicker">Service des urgences</span>
+      <h1 class="head-title">Poste d’accueil</h1>
+    </div>
+  </div>
 
-<div id="infosPatient" style="text-align:center; margin-bottom:14px; display:none">
-  <div id="infoMotif"></div>
-  <div id="infoCircuit"></div>
-  <div id="infoAttente"></div>
-</div>
-  <button class="btn-id btn-id-v" onclick="appelerTicket()">📣 Appeler le ticket suivant</button>
+  <div class="ticket">
+    <span class="cap"><svg class="i" aria-hidden="true"><use href="#i-ticket"/></svg>Ticket appelé</span>
+    <div class="numero" id="numeroAffiche">—</div>
+  </div>
+
+  <div class="field">
+    <label class="lbl" for="bureauSelect"><svg class="i" aria-hidden="true"><use href="#i-building"/></svg>Bureau</label>
+    <select id="bureauSelect" onchange="changerBureau(this.value)"></select>
+  </div>
+
+  <div id="infosPatient" style="display:none">
+    <div class="infos">
+      <div class="info-row"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg><div id="infoMotif"></div></div>
+      <div class="info-row"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg><div id="infoCircuit"></div></div>
+      <div class="info-row"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><div id="infoAttente"></div></div>
+    </div>
+  </div>
+
+  <button class="btn-id btn-id-v" type="button" onclick="appelerTicket()"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg>Appeler le ticket suivant</button>
   <div class="status" id="appelStatus"></div>
-<div id="attenteStats" class="attente-stats">
-  <div class="attente-total">⏳ Patients en attente : —</div>
-  <div id="attenteParType" class="attente-types"></div>
-</div>
-<br>
-<button class="btn-id" onclick="openParams()">⚙️ Paramètres</button>
 
+  <div id="attenteStats" class="attente-stats">
+    <div class="attente-head"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><div class="attente-total">Patients en attente : —</div></div>
+    <div id="attenteParType" class="attente-types"></div>
+  </div>
 
-<div class="footer">
-  <strong id="bureauLabel"></strong>
+  <button class="btn-id" type="button" onclick="openParams()"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Paramètres</button>
+
+  <div class="footer"><strong id="bureauLabel"></strong></div>
 </div>
-</div>
+
 <!-- MODALE PARAMETRES -->
-<div id="modalParams" style="display:none;">
-  <div class="modal-overlay">
-    <div class="modal-content">
-      <h2>⚙️ Paramètres d’affichage</h2>
-      
-      <div class="filter-section">
-        <h3>Motifs :</h3>
-        <div class="checkbox-grid">
-          <label class="checkbox-card"><input type="checkbox" value="Consultation" class="filterMotif"><span>Consultation</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Administratif" class="filterMotif"><span>Administratif</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Traumatologie" class="filterMotif"><span>Traumatologie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Pédiatrie" class="filterMotif"><span>Pédiatrie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Sortie" class="filterMotif"><span>Sortie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Gynécologie" class="filterMotif"><span>Gynécologie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Ophtalmologie" class="filterMotif"><span>Ophtalmologie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Psychiatrie" class="filterMotif"><span>Psychiatrie</span></label>
-          <label class="checkbox-card"><input type="checkbox" value="Autres" class="filterMotif"><span>Autres</span></label>
-        </div>
-      </div>
-      
-      <div class="modal-buttons">
-        <button class="btn-id btn-id-c" onclick="closeParams()">❌ Annuler</button>
-        <button class="btn-id btn-id-v" onclick="applyParams()">✔️ Appliquer</button>
-      </div>
+<div id="modalParams" class="modal-overlay">
+  <div class="modal">
+    <h3><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Paramètres d’affichage</h3>
+    <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg> Motifs</div>
+    <div class="choice-grid">
+      <label class="choice"><input type="checkbox" value="Consultation" class="filterMotif"><span>Consultation</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Administratif" class="filterMotif"><span>Administratif</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Traumatologie" class="filterMotif"><span>Traumatologie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Pédiatrie" class="filterMotif"><span>Pédiatrie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Sortie" class="filterMotif"><span>Sortie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Gynécologie" class="filterMotif"><span>Gynécologie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Ophtalmologie" class="filterMotif"><span>Ophtalmologie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Psychiatrie" class="filterMotif"><span>Psychiatrie</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="checkbox" value="Autres" class="filterMotif"><span>Autres</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-id btn-id-c" type="button" onclick="closeParams()"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Annuler</button>
+      <button class="btn-id btn-id-v" type="button" onclick="applyParams()"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Appliquer</button>
     </div>
   </div>
 </div>
@@ -603,7 +470,7 @@ async function updateAttenteStats() {
 );
 
   // Total
-  totalDiv.textContent = `⏳ Patients en attente : ${snap.size}`;
+  totalDiv.textContent = `Patients en attente : ${snap.size}`;
 
   // Comptage par motif
   const counts = {};
@@ -865,14 +732,14 @@ async function appelerTicket(){
 
   infoMotif.innerText =
     data.motif ?
-    "📝 Motif : "+data.motif :
-    "📝 Motif : —";
+    "Motif : "+data.motif :
+    "Motif : —";
 
 
   infoCircuit.innerText =
     data.circuit ?
-    "🧭 Circuit : "+data.circuit :
-    "🧭 Circuit : —";
+    "Circuit : "+data.circuit :
+    "Circuit : —";
 
 
 
@@ -894,8 +761,8 @@ async function appelerTicket(){
 
   infoAttente.innerText =
     attenteMs!==null ?
-    "⏱️ Attente : "+formatDuree(attenteMs):
-    "⏱️ Attente : —";
+    "Attente : "+formatDuree(attenteMs):
+    "Attente : —";
 
 
   afficher("Ticket appelé",true);

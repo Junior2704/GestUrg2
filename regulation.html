@@ -3,364 +3,459 @@
 <head>
   <link rel="icon" type="image/jpeg" href="logog2.png">
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
   <title>Afficheur Médecins – Urgences</title>
-
   <style>
-    /* ==========================================================
-       RESET / BASE
-    ========================================================== */
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      background: #f4f7fb;
-      color: #0b2240;
-    }
+/* =====================================================================
+   RÉGULATION — THÈME MODERNE HOSPITALIER
+   Identité reprise de fiche.html (tokens, en-tête, cartes, champs,
+   boutons, pastilles, modales). Fond blanc · bleu clinique.
+   ===================================================================== */
 
-    body { padding: 20px; }
+/* ---------- TOKENS ---------- */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-    button { font-family: inherit; }
+  --bg:#ffffff;
+  --surface:#ffffff;
+  --ink:#112336;
+  --muted:#586a7e;
+  --line:#d8e1ea;
+  --line-soft:#e9eff5;
+  --field:#f6f9fc;
 
-    main, section { display: block; }
+  --primary:#0b6fa4;
+  --primary-d:#085a86;
+  --primary-soft:#e3f1f9;
 
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #004b8d;
-      margin-bottom: 14px;
-      text-transform: uppercase;
-    }
+  --ok:#16784a;    --ok-soft:#e1f4e9;
+  --late:#b92a30;  --late-soft:#fdecec;
+  --plan:#4a5b6e;  --plan-soft:#eceff3;
+  --warn:#7a4f00;  --warn-soft:#fff5da; --warn-line:#f0d98f;
+  --amber:#b45309; --amber-soft:#fff0e0;
+  --violet:#5b3fa8;--violet-soft:#efeafb;
+  --teal:#0f766e;  --teal-soft:#dff4f1;
 
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 0.85rem;
-      color: #64748b;
-    }
+  --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
 
-    /* ==========================================================
-       SCROLLBAR
-    ========================================================== */
-    ::-webkit-scrollbar { width: 12px; height: 12px; }
-    ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #2196f3, #1565c0);
-      border-radius: 10px;
-      border: 2px solid #eef3ff;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(180deg, #42a5f5, #1976d2);
-    }
-    * { scrollbar-width: thin; scrollbar-color: #2196f3 #eef3ff; }
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
 
-    /* ==========================================================
-       BOUTONS — SYSTÈME UNIFIÉ (.btn)
-    ========================================================== */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: none;
-      border-radius: 10px;
-      padding: 9px 16px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
-      white-space: nowrap;
-    }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.18); }
-    .btn:active { transform: translateY(0); box-shadow: none; }
-    .btn:focus-visible { outline: 2px solid #0078d4; outline-offset: 2px; }
-
-    .btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 8px; }
-
-    .btn-primary { background: #0078d4; color: #fff; }
-    .btn-primary:hover { background: #005ea2; }
-
-    .btn-danger { background: #b71c1c; color: #fff; }
-    .btn-danger:hover { background: #8f1414; }
-
-    .btn-warning { background: #f57c00; color: #fff; }
-    .btn-warning:hover { background: #cc6600; }
-
-    .btn-info { background: #1976d2; color: #fff; }
-    .btn-info:hover { background: #125ea1; }
-
-    .btn-success { background: #2e7d32; color: #fff; }
-    .btn-success:hover { background: #255f28; }
-
-    .btn-ghost { background: #e2e8f0; color: #1e293b; }
-    .btn-ghost:hover { background: #cbd5e1; }
-
-    /* ==========================================================
-       CARTES SYNTHÈSE
-    ========================================================== */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 18px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .card h2 { margin: 0; font-size: 2.4rem; color: #0b2240; }
-    .card p { margin-top: 6px; font-size: 1rem; color: #475569; font-weight: 500; }
-
-    .total   { border-left: 6px solid #1976d2; }
-    .attente { border-left: 6px solid #4caf50; }
-    .pec     { border-left: 6px solid #ff9800; }
-    .vital   { border-left: 6px solid #b71c1c; }
-    .relatif { border-left: 6px solid #6f42c1; }
-    .admin   { border-left: 6px solid #009688; }
-
-    /* ==========================================================
-       CIRCUITS
-    ========================================================== */
-    .circuit-grid {
-      margin-top: 25px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-    }
-
-    .circuit {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-    .circuit h3 { margin: 0; font-size: 2rem; color: #004b8d; }
-    .circuit span { display: block; margin-top: 4px; font-size: 0.95rem; font-weight: 600; color: #1e3a8a; }
-
-    /* ==========================================================
-       BARRE DE FILTRES
-    ========================================================== */
-    .filter-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-end;
-      padding: 14px 18px;
-      background: #ffffff;
-      border-radius: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-      margin-bottom: 16px;
-    }
-
-    .filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
-
-    .filter-group label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #475569;
-      text-transform: uppercase;
-    }
-
-    .filter-group select {
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.9rem;
-      background: #f8fafc;
-    }
-
-    .filter-group.checkbox { min-width: auto; }
-    .filter-group.checkbox label {
-      text-transform: none;
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .filter-presets { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-
-    .filter-status { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-
-    .filter-badge {
-      background: #b71c1c;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-    .filter-badge.hidden { display: none; }
-
-    .filter-count { font-size: 0.85rem; font-weight: 700; color: #334155; }
-
-    /* ==========================================================
-       TABLEAU MÉDICAL
-    ========================================================== */
-    .medical-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-      font-size: 0.95rem;
-    }
-
-    .medical-table thead { background: #0b2240; color: #ffffff; }
-
-    .medical-table th {
-      padding: 12px 10px;
-      text-align: left;
-      font-weight: 700;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-    }
-
-    .medical-table td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
-      vertical-align: middle;
-    }
-
-    .medical-table tbody tr:hover { background: #f1f5f9; }
-
-    /* Couleurs lignes par gravité */
-    .medical-table tbody tr.grav-p3 { background-color: rgba(183,28,28,.08) !important; }
-    .medical-table tbody tr.grav-p2 { background-color: rgba(255,152,0,.08) !important; }
-    .medical-table tbody tr.grav-p1 { background-color: rgba(255,193,7,.10) !important; }
-    .medical-table tbody tr.grav-p0 { background-color: rgba(76,175,80,.10) !important; }
-
-    /* Couleur texte gravité (colonne Gravité) */
-    .medical-table tbody tr.grav-p3 td:nth-child(3) { color: #b71c1c; font-weight: 700; }
-    .medical-table tbody tr.grav-p2 td:nth-child(3) { color: #ef6c00; font-weight: 700; }
-    .medical-table tbody tr.grav-p1 td:nth-child(3) { color: #f9a825; font-weight: 700; }
-    .medical-table tbody tr.grav-p0 td:nth-child(3) { color: #2e7d32; font-weight: 700; }
-
-    /* Hover qui conserve la couleur */
-    .medical-table tbody tr.grav-p3:hover { background: #f7d7d7 !important; }
-    .medical-table tbody tr.grav-p2:hover { background: #ffe7c0 !important; }
-    .medical-table tbody tr.grav-p1:hover { background: #fff4c2 !important; }
-    .medical-table tbody tr.grav-p0:hover { background: #dff3df !important; }
-
-    /* PDC (colonne 6) */
-    .pdc-oui td:nth-child(6) { color: #2e7d32; font-weight: 600; }
-    .pdc-non td:nth-child(6) { color: #c62828; font-weight: 600; }
-
-    .alert-equipe td:first-child { border-left: 4px solid #b71c1c; }
-
-    /* Vigilances */
-    .vigilance-alert {
-      color: #b71c1c !important;
-      font-weight: 700 !important;
-      animation: blink-slow 4s infinite;
-    }
-    @keyframes blink-slow {
-      0%, 50%, 100% { opacity: 1; }
-      25%, 75%      { opacity: 0; }
-    }
-    .vigilance-none {
-      color: inherit !important;
-      font-weight: normal !important;
-      animation: none !important;
-    }
-
-    .tooltip { position: relative; display: inline-block; cursor: help; }
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: max-content;
-      max-width: 200px;
-      background-color: #b71c1c;
-      color: #fff;
-      text-align: left;
-      padding: 5px 8px;
-      border-radius: 4px;
-      position: absolute;
-      z-index: 1;
-      top: -5px;
-      left: 105%;
-      white-space: pre-wrap;
-    }
-    .tooltip:hover .tooltiptext { visibility: visible; }
-
-    /* Ligne "aucun résultat" */
-    .no-results-row td {
-      text-align: center;
-      padding: 24px;
-      font-size: 1rem;
-      font-weight: 600;
-      color: #64748b;
-      background: #f8fafc;
-    }
-    .no-results-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .no-results-content .no-results-text { font-style: italic; }
-    .no-results-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-
-    /* ==========================================================
-       MODALES
-    ========================================================== */
-    .modalna {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(5px);
-      z-index: 9999;
-    }
-    .modalna .card {
-      background: #fff;
-      padding: 24px 32px;
-      border-radius: 12px;
-      text-align: center;
-      max-width: 400px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }
-    .modalna h2 { color: #d32f2f; margin-bottom: 12px; }
-    .modalna p { font-size: 16px; margin-bottom: 20px; }
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  --head-h:64px;
+  --gutter:clamp(16px,3vw,32px);
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0;padding:0}
+body{
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font);
+  font-size:16px;line-height:1.45;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+.i.lg{width:24px;height:24px}
+
+/* ---------- EN-TÊTE ---------- */
+body > header{
+  flex:none;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:var(--head-h);
+  padding:calc(8px + var(--safe-t)) calc(20px + var(--safe-r)) 8px calc(20px + var(--safe-l));
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  z-index:5;
+}
+.left-header{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand{
+  width:38px;height:38px;flex:none;
+  display:grid;place-items:center;
+  color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));
+  border-radius:11px;
+  box-shadow:0 4px 10px rgba(11,111,164,.25);
+}
+.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.head-title{
+  font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.right-header{display:flex;align-items:center;gap:10px;flex:none}
+#currentTime{
+  display:none;
+  font-size:14px;font-weight:600;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+#currentTime:not(:empty){display:inline-flex;align-items:center;padding:6px 12px;background:var(--field);border:1px solid var(--line);border-radius:999px}
+
+.icon-button{
+  appearance:none;
+  width:44px;height:44px;flex:none;
+  display:inline-grid;place-items:center;padding:0;margin:0;
+  color:var(--primary);background:#fff;
+  border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s;
+}
+.icon-button:active{background:var(--primary-soft)}
+@media (hover:hover){.icon-button:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.icon-button:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+
+/* ---------- STRUCTURE ---------- */
+#mainContent{
+  flex:1;min-height:0;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding:22px var(--gutter) calc(48px + var(--safe-b));
+  background:#fff;
+}
+#mainContent > section{margin:0 0 16px}
+
+/* ---------- CARTES / SECTIONS ---------- */
+.card-sec{
+  padding:20px;
+  background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.card-title{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+.card-title .push{margin-left:auto}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.toolbar .card-title{margin:0}
+
+/* ---------- SYNTHÈSE ---------- */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));
+  gap:12px;
+}
+.kpi{
+  --st:var(--primary);--st-soft:var(--primary-soft);
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px 14px 14px;
+  background:linear-gradient(90deg,var(--st-soft),#fff 45%);
+  border:1px solid var(--line);border-left:6px solid var(--st);border-radius:12px;
+  min-width:0;
+}
+.kpi-ico{
+  width:42px;height:42px;flex:none;display:grid;place-items:center;
+  color:var(--st);background:#fff;border:1px solid color-mix(in srgb,var(--st) 25%,transparent);border-radius:12px;
+}
+.kpi-ico .i{width:22px;height:22px}
+.kpi h2{font-size:30px;font-weight:700;line-height:1.05;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi p{margin-top:3px;font-size:14px;font-weight:600;color:var(--muted)}
+.total   {--st:var(--primary);--st-soft:var(--primary-soft)}
+.attente {--st:var(--warn);   --st-soft:var(--warn-soft)}
+.pec     {--st:var(--ok);     --st-soft:var(--ok-soft)}
+.vital   {--st:var(--late);   --st-soft:var(--late-soft)}
+.relatif {--st:var(--violet); --st-soft:var(--violet-soft)}
+.admin   {--st:var(--teal);   --st-soft:var(--teal-soft)}
+
+/* ---------- CIRCUITS ---------- */
+.circuit-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));
+  gap:12px;
+}
+.circuit{
+  padding:12px 14px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+  min-width:0;
+}
+.circuit h3{font-size:26px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--primary-d);font-variant-numeric:tabular-nums}
+.circuit span{display:block;margin-top:3px;font-size:13px;font-weight:500;color:var(--muted)}
+
+/* ---------- CHAMPS ---------- */
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+select{
+  width:100%;min-height:44px;
+  margin:0;padding:10px 14px;
+  font:inherit;font-size:15px;color:var(--ink);
+  background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+  appearance:none;-webkit-appearance:none;
+  padding-right:42px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+select:focus{outline:none;border-color:var(--primary);background-color:#fff;box-shadow:var(--ring)}
+input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;flex:none;margin:0}
+
+/* ---------- FILTRES ---------- */
+.filters{
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 16px;
+  margin-bottom:14px;
+}
+.filter-group{display:flex;flex-direction:column;min-width:min(100%,170px);flex:1 1 170px;max-width:260px}
+.filter-group label{margin-bottom:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.filter-group.checkbox{min-width:auto;flex:0 0 auto;max-width:none}
+
+.choice{
+  position:relative;
+  display:flex;align-items:center;gap:12px;
+  min-height:44px;padding:8px 14px;margin:0;
+  font-size:15px;font-weight:600;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.choice .i{color:var(--muted);transition:color .15s}
+.choice input{position:absolute;opacity:0;width:100%;height:100%;inset:0;margin:0;cursor:pointer}
+.choice > span{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+@media (hover:hover){.choice:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.choice:has(input:checked){
+  background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d);
+  box-shadow:inset 0 0 0 1px var(--primary);
+}
+.choice:has(input:checked) .i{color:var(--primary)}
+.choice:has(input:focus-visible){outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.choice-check{
+  width:22px;height:22px;flex:none;margin-left:auto;display:grid;place-items:center;
+  color:transparent;border:2px solid var(--line);border-radius:7px;
+  transition:all .15s;
+}
+.choice:has(input:checked) .choice-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.choice-check .i{width:13px;height:13px;stroke-width:3.2;color:inherit}
+.choice:has(input:checked) .choice-check .i{color:#fff}
+
+.filter-presets{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding-top:14px;margin-bottom:16px;
+  border-top:1px solid var(--line-soft);
+}
+.filter-presets .lbl-inline{margin:0 6px 0 0;font-size:13px;font-weight:600;color:var(--muted)}
+
+.filter-status{display:flex;align-items:center;gap:10px}
+.filter-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;
+  color:var(--late);background:var(--late-soft);
+  border:1px solid color-mix(in srgb,var(--late) 25%,transparent);border-radius:999px;
+}
+.filter-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--late)}
+.filter-badge.hidden{display:none}
+.filter-count{
+  display:inline-flex;align-items:center;padding:6px 12px;
+  font-size:14px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;
+  background:var(--field);border:1px solid var(--line);border-radius:999px;
 }
 
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
+/* ---------- BOUTONS ---------- */
+.btn-id,.btn{
+  appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:42px;padding:0 16px;
+  font:600 14px/1 var(--font);color:var(--ink);text-decoration:none;white-space:nowrap;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
 }
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:hover){.btn-id:hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-warn{color:var(--warn);background:#fff;border-color:var(--warn-line)}
+.btn-warn .i{color:var(--amber)}
+@media (hover:hover){.btn-warn:hover{background:var(--warn-soft);border-color:#e6c76a;color:var(--warn)}}
+.btn-warn:active{background:#ffeab8}
 
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
+/* ---------- TABLEAU ---------- */
+.table-wrap{
+  overflow-x:auto;
+  border:1px solid var(--line);border-radius:14px;
+  background:#fff;
 }
+.medical-table{
+  width:100%;min-width:1040px;
+  border-collapse:separate;border-spacing:0;
+  font-size:15px;
+}
+.medical-table thead th{
+  padding:12px 14px;
+  text-align:left;white-space:nowrap;
+  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  background:var(--field);
+  border-bottom:1px solid var(--line);
+}
+.medical-table tbody td{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line-soft);
+  vertical-align:middle;
+}
+.medical-table tbody tr:last-child td{border-bottom:0}
+.medical-table tbody tr[data-id]{
+  --st:var(--line);
+  background:color-mix(in srgb,var(--st) 6%,#fff);
+  cursor:pointer;
+  transition:background .15s;
+}
+.medical-table tbody tr[data-id] > td:first-child{
+  border-left:6px solid var(--st);
+  font-weight:600;
+}
+@media (hover:hover){
+  .medical-table tbody tr[data-id]:hover{background:color-mix(in srgb,var(--st) 13%,#fff)}
+}
+.medical-table tbody tr[data-id]:active{background:color-mix(in srgb,var(--st) 16%,#fff)}
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
+/* Couleurs par gravité */
+.medical-table tbody tr.grav-p3{--st:var(--late)}
+.medical-table tbody tr.grav-p2{--st:var(--amber)}
+.medical-table tbody tr.grav-p1{--st:#a97800}
+.medical-table tbody tr.grav-p0{--st:var(--ok)}
+
+.grav-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;font-size:14px;font-weight:700;line-height:1;white-space:nowrap;
+  color:var(--st);background:color-mix(in srgb,var(--st) 12%,#fff);
+  border:1px solid color-mix(in srgb,var(--st) 28%,transparent);border-radius:999px;
+}
+.grav-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--st)}
+
+/* PDC (colonne 6) */
+.pdc-oui td:nth-child(6){color:var(--ok);font-weight:600}
+.pdc-non td:nth-child(6){color:var(--late);font-weight:600}
+
+/* Équipe référente */
+.eq{display:flex;align-items:center;gap:8px;line-height:1.35}
+.eq + .eq{margin-top:3px}
+.eq .i{color:var(--primary)}
+.eq span{overflow-wrap:anywhere}
+
+/* Vigilances */
+.vigilance-alert{
+  color:var(--late) !important;
+  font-weight:700 !important;
+  animation:blink-slow 4s infinite;
+}
+@keyframes blink-slow{
+  0%,50%,100%{opacity:1}
+  25%,75%{opacity:0}
+}
+.vigilance-none{
+  color:var(--muted) !important;
+  font-weight:500 !important;
+  animation:none !important;
+}
+.temps-ecoule{white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Aucun résultat */
+.no-results-row td{
+  padding:32px 16px !important;
+  text-align:center;
+  background:var(--field);
+  border-left:0 !important;
+}
+.no-results-content{display:flex;flex-direction:column;align-items:center;gap:14px}
+.no-results-content .no-results-text{font-size:15px;font-weight:500;color:var(--muted)}
+.no-results-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- MODALES (accès refusé / erreur) ---------- */
+.modalna{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);z-index:9999;
+}
+.modalna .card{
+  width:min(440px,100%);padding:30px 28px 28px;text-align:center;
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico .i{width:28px;height:28px}
+.modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+.modalna p:last-child{margin-bottom:0}
+
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:900px){
+  body > header{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}
+  .head-kicker{display:none}
+}
+@media (max-width:700px){
+  #mainContent{padding-top:16px}
+  .card-sec{padding:16px;border-radius:14px}
+  .filter-group{max-width:none;flex:1 1 calc(50% - 8px);min-width:140px}
+  .filter-group.checkbox{flex:1 1 100%}
+  .filter-presets .btn-id{flex:1 1 auto}
+  .filter-presets .lbl-inline{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .vigilance-alert{animation:none !important}
+  .choice,.choice-check,.btn-id,.icon-button,.medical-table tbody tr[data-id]{transition:none !important}
 }
 </style>
 </head>
 <body>
-<div id="mainContent">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-user-x" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5M22 8l-5 5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></symbol>
+  <symbol id="i-heart-pulse" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/><path d="M3.2 12h4l1.3-2 3 6 2-4h4"/></symbol>
+  <symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1M4.93 4.93l.7.7"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M12 4v6M2 18h20"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+</svg>
+
+<header>
+  <div class="left-header">
+    <div class="brand" aria-hidden="true"><svg class="i" aria-hidden="true"><use href="#i-cross"/></svg></div>
+    <div class="head-text">
+      <span class="head-kicker">Régulation</span>
+      <h1 class="head-title">Afficheur médecins – Urgences</h1>
+    </div>
+  </div>
+  <div class="right-header">
+    <span id="currentTime"></span>
+    <button class="icon-button" type="button" onclick="location.reload();" aria-label="Actualiser la page" title="Actualiser"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+  </div>
+</header>
+
+<main id="mainContent">
 
   <div id="modal-no-access" class="modalna">
     <div class="card">
-      <h2>⛔️ Accès refusé</h2>
+      <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></div>
+      <h2>Accès refusé</h2>
       <p>Vous n'avez pas accès à cette page.</p>
       <p>Veuillez contacter un administrateur pour plus d'informations.</p>
     </div>
@@ -368,28 +463,29 @@
 
   <div id="modal-error" class="modalna">
     <div class="card">
-      <h2>😞 Oups, une erreur est survenue</h2>
+      <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
+      <h2>Oups, une erreur est survenue</h2>
       <p>Veuillez réessayer un peu plus tard.</p>
       <p>Si le problème persiste, contactez un administrateur.</p>
     </div>
   </div>
 
   <!-- === SYNTHÈSE GLOBALE === -->
-  <section>
-    <div class="section-title">Synthèse d'activité</div>
+  <section class="card-sec">
+    <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg> Synthèse d'activité</div>
     <div class="grid">
-      <div class="card total"><h2 id="total">--</h2><p>Patients présents</p></div>
-      <div class="card attente"><h2 id="attente">--</h2><p>Salle d'attente</p></div>
-      <div class="card pec"><h2 id="pec">--</h2><p>Patients pris en charge</p></div>
-      <div class="card vital"><h2 id="critique">--</h2><p>Urgences vitales (P3)</p></div>
-      <div class="card relatif"><h2 id="couche">--</h2><p>Urgences relatives (P0–P2)</p></div>
-      <div class="card admin"><h2 id="admin">--</h2><p>Motif administratif</p></div>
+      <div class="kpi total"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg></span><div><h2 id="total">--</h2><p>Patients présents</p></div></div>
+      <div class="kpi attente"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></span><div><h2 id="attente">--</h2><p>Salle d'attente</p></div></div>
+      <div class="kpi pec"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg></span><div><h2 id="pec">--</h2><p>Patients pris en charge</p></div></div>
+      <div class="kpi vital"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-siren"/></svg></span><div><h2 id="critique">--</h2><p>Urgences vitales (P3)</p></div></div>
+      <div class="kpi relatif"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-bed"/></svg></span><div><h2 id="couche">--</h2><p>Urgences relatives (P0–P2)</p></div></div>
+      <div class="kpi admin"><span class="kpi-ico"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg></span><div><h2 id="admin">--</h2><p>Motif administratif</p></div></div>
     </div>
   </section>
 
   <!-- === CIRCUITS MÉDICAUX === -->
-  <section>
-    <div class="section-title" style="margin-top:30px">Répartition par circuit</div>
+  <section class="card-sec">
+    <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg> Répartition par circuit</div>
     <div class="circuit-grid">
       <div class="circuit"><h3 id="circuit-general">--</h3><span>Général</span></div>
       <div class="circuit"><h3 id="circuit-pediatrie">--</h3><span>Pédiatrie</span></div>
@@ -401,11 +497,17 @@
   </section>
 
   <!-- === LISTE PATIENTS === -->
-  <section style="margin-top:40px">
-    <div class="section-title">Patients présents</div>
+  <section class="card-sec">
+    <div class="toolbar">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg> Patients présents</div>
+      <div class="filter-status">
+        <span id="activeFiltersBadge" class="filter-badge hidden">Filtres actifs</span>
+        <span id="visibleCount" class="filter-count">0 / 0</span>
+      </div>
+    </div>
 
-    <!-- 🔎 BARRE DE FILTRES -->
-    <div class="filter-bar">
+    <!-- BARRE DE FILTRES -->
+    <div class="filters">
 
       <div class="filter-group">
         <label for="filterGravite">Gravité</label>
@@ -457,33 +559,28 @@
       </div>
 
       <div class="filter-group checkbox">
-        <label><input type="checkbox" id="filterVigilance"> Vigilance</label>
+        <label class="choice"><input type="checkbox" id="filterVigilance"><span><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Vigilance</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
       </div>
 
       <div class="filter-group checkbox">
-        <label><input type="checkbox" id="filterMesPatients"> 🧑‍⚕️ Mes patients</label>
-      </div>
-
-      <!-- PRESETS -->
-      <div class="filter-presets">
-        
-        <button id="btn-preset-vigilance" class="btn btn-warning" onclick="presetVigilance()">⚠ Vigilance</button>
-        <button id="btn-preset-sans-medecin" class="btn btn-info" onclick="presetSansMedecin()">👨‍⚕️ Manque médecin</button>
-        <button id="btn-preset-temps-2h" class="btn btn-info" onclick="presetTemps(2)">⏱ &gt; 2h</button>
-        <button id="btn-preset-temps-4h" class="btn btn-info" onclick="presetTemps(4)">⏱ &gt; 4h</button>
-        <button id="btn-preset-allergies" class="btn btn-warning" onclick="presetAllergies()">⭐ Allergies</button>
-        <button id="btn-preset-mes-patients" class="btn btn-primary" onclick="presetMesPatients()">🧑‍⚕️ Mes patients</button>
-        <button id="btn-reset-filters" class="btn btn-ghost" onclick="resetFilters()">♻ Réinitialiser</button>
-      </div>
-
-      <div class="filter-status">
-        <span id="activeFiltersBadge" class="filter-badge hidden">Filtres actifs</span>
-        <span id="visibleCount" class="filter-count">0 / 0</span>
+        <label class="choice"><input type="checkbox" id="filterMesPatients"><span><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>Mes patients</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
       </div>
 
     </div>
 
-    <div style="overflow-x:auto">
+    <!-- PRESETS -->
+    <div class="filter-presets">
+      <span class="lbl-inline">Filtres rapides</span>
+      <button id="btn-preset-vigilance" class="btn-id btn-warn" type="button" onclick="presetVigilance()"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Vigilance</button>
+      <button id="btn-preset-sans-medecin" class="btn-id" type="button" onclick="presetSansMedecin()"><svg class="i" aria-hidden="true"><use href="#i-user-x"/></svg>Manque médecin</button>
+      <button id="btn-preset-temps-2h" class="btn-id" type="button" onclick="presetTemps(2)"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>&gt; 2h</button>
+      <button id="btn-preset-temps-4h" class="btn-id" type="button" onclick="presetTemps(4)"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>&gt; 4h</button>
+      <button id="btn-preset-allergies" class="btn-id btn-warn" type="button" onclick="presetAllergies()"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg>Allergies</button>
+      <button id="btn-preset-mes-patients" class="btn-id btn-id-v" type="button" onclick="presetMesPatients()"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>Mes patients</button>
+      <button id="btn-reset-filters" class="btn-id" type="button" onclick="resetFilters()"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg>Réinitialiser</button>
+    </div>
+
+    <div class="table-wrap">
       <table class="medical-table">
         <thead>
           <tr>
@@ -503,9 +600,7 @@
     </div>
   </section>
 
-  <footer></footer>
-
-</div>
+</main>
 
 <!-- Firebase (SDK modulaire uniquement — les builds "compat" ne sont pas utilisés dans ce fichier) -->
 <script type="module">
@@ -544,6 +639,14 @@
   const activeFiltersBadge = document.getElementById('activeFiltersBadge');
   const visibleCount = document.getElementById('visibleCount');
   const patientListBody = document.getElementById('patient-list');
+
+  // Horloge de l'en-tête
+  const currentTime = document.getElementById('currentTime');
+  function majHorloge() {
+    currentTime.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+  majHorloge();
+  setInterval(majHorloge, 15000);
 
   // Filtres "spéciaux" pilotés par les presets (pas de <select> dédié)
   const specialFilters = { sansMedecin: false, allergies: false, tempsMin: 0 };
@@ -706,10 +809,10 @@
 
     const text = jours > 0 ? `${jours}j ${heures}h ${minutes}m` : `${heures}h ${minutes}m`;
 
-    let color = "#2e7d32";
-    if (jours >= 1 || heures >= 8) color = "#b71c1c";
-    else if (heures >= 4) color = "#ef6c00";
-    else if (heures >= 2) color = "#f9a825";
+    let color = "#16784a";
+    if (jours >= 1 || heures >= 8) color = "#b92a30";
+    else if (heures >= 4) color = "#b45309";
+    else if (heures >= 2) color = "#8a6200";
 
     return { text, color };
   }
@@ -718,20 +821,22 @@
     if (!equipe) return "—";
 
     const roles = [
-      ["medecinReferent", "👨‍⚕️"],
-      ["infirmierReferent", "👩‍⚕️"],
-      ["interneReferent", "🎓"],
-      ["externeReferent", "📘"]
+      ["medecinReferent", "i-stethoscope", "Médecin référent"],
+      ["infirmierReferent", "i-heart-pulse", "Infirmier référent"],
+      ["interneReferent", "i-user", "Interne"],
+      ["externeReferent", "i-grad", "Externe"]
     ];
 
-    const noms = roles
-      .map(([role, emoji]) => {
+    const lignes = roles
+      .map(([role, icone, titre]) => {
         const nom = equipe[role]?.nom;
-        return nom ? `${emoji} ${nom}` : null;
+        return nom
+          ? `<div class="eq" title="${titre}"><svg class="i sm" aria-hidden="true"><use href="#${icone}"/></svg><span>${nom}</span></div>`
+          : null;
       })
       .filter(Boolean);
 
-    return noms.length ? noms.join("<br>") : "—";
+    return lignes.length ? lignes.join("") : "—";
   }
 
   // Un médecin est-il référent (quel que soit son rôle) de ce patient ?
@@ -798,7 +903,7 @@
     tr.innerHTML = `
       <td>${nomAffiche}</td>
       <td class="${vigilanceClass}">${vigilance}</td>
-      <td>${p.gravite || "—"}</td>
+      <td>${p.gravite ? `<span class="grav-badge">${p.gravite}</span>` : "—"}</td>
       <td>${p.motif || "—"}</td>
       <td>${p.circuit || "—"}</td>
       <td>${p.pdc || ""}</td>
@@ -944,7 +1049,7 @@
     tr.className = "no-results-row";
 
     const suggestionMesPatients = !mesPatientsActif
-      ? `<button id="btn-suggest-mes-patients" class="btn btn-primary btn-sm" onclick="presetMesPatients()">🧑‍⚕️ Voir mes patients</button>`
+      ? `<button id="btn-suggest-mes-patients" class="btn-id btn-id-v" type="button" onclick="presetMesPatients()"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>Voir mes patients</button>`
       : "";
 
     tr.innerHTML = `
@@ -952,7 +1057,7 @@
         <div class="no-results-content">
           <span class="no-results-text">Aucun patient ne correspond aux filtres sélectionnés</span>
           <div class="no-results-actions">
-            <button id="btn-suggest-reset" class="btn btn-ghost btn-sm" onclick="resetFilters()">♻ Réinitialiser les filtres</button>
+            <button id="btn-suggest-reset" class="btn-id" type="button" onclick="resetFilters()"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg>Réinitialiser les filtres</button>
             ${suggestionMesPatients}
           </div>
         </div>

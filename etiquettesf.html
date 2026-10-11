@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>🎟️ Générateur d’étiquettes patient</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Générateur d’étiquettes patient</title>
     <link rel="icon" type="image/jpeg" href="logog2.png">
 
 <!-- Librairies PDF & code-barres -->
@@ -10,235 +12,202 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
 <style>
-:root {
-  --primary: #0078d4;
-  --primary-dark: #005ea2;
-  --bg: #f5f7fa;
-  --card-bg: #fff;
-  --radius: 12px;
-}
-body {
-  margin: 0;
-  font-family: "Segoe UI", Tahoma, sans-serif;
-  background: var(--bg);
-  color: #333;
-}
-header {
-  background: var(--primary);
-  color: white;
-  padding: 20px;
-  text-align: center;
-  font-size: 1.4rem;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-}
-main {
-  max-width: 900px;
-  margin: 30px auto;
-  background: var(--card-bg);
-  padding: 30px;
-  border-radius: var(--radius);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
-button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  margin: 6px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  font-size: 1rem;
-}
-button:hover { background: var(--primary-dark); transform: translateY(-2px); }
-button.secondary { background: #6c757d; }
-button.secondary:hover { background: #5a6268; }
+/* =====================================================================
+   Même identité visuelle que fiche.html
+   Fond blanc · bleu clinique · cartes à bordure fine
+   ===================================================================== */
 
-label { font-weight:600; margin-top:10px; display:block; }
-input[type="number"] { width:70px; padding:4px; margin-left:8px; }
+/* ---------- TOKENS (identiques à fiche.html) ---------- */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-#preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
-  gap: 12px;
-  margin-top: 25px;
-}
-.preview-card {
-  border: 1px solid #ddd;
-  border-radius: var(--radius);
-  padding: 12px;
-  background: #fafafa;
-  font-size: 0.9rem;
-  text-align: center;
-  position: relative;
-}
-.preview-card img { margin-top:8px; max-width:130px; }
-.preview-title {
-  position:absolute;
-  top:8px;
-  right:12px;
-  font-size:0.8rem;
-  color:#999;
-}
-footer {
-  text-align:center;
-  color:#777;
-  margin-top:40px;
-  font-size:0.85rem;
+  --bg:#ffffff;
+  --ink:#112336;
+  --muted:#586a7e;
+  --line:#d8e1ea;
+  --line-soft:#e9eff5;
+  --field:#f6f9fc;
+
+  --primary:#0b6fa4;
+  --primary-d:#085a86;
+  --primary-soft:#e3f1f9;
+
+  --ok:#16784a;    --ok-soft:#e1f4e9;
+  --late:#b92a30;  --late-soft:#fdecec;
+  --warn:#7a4f00;  --warn-soft:#fff5da; --warn-line:#f0d98f;
+
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+
+  --gutter:clamp(16px,3vw,32px);
+  --maxw:1100px;
 }
 
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0;background:var(--bg)}
+html{scroll-padding-top:var(--safe-t);max-width:100%;overflow-x:hidden}
+body{
+  font-family:var(--font);
+  font-size:16px;line-height:1.45;
+  color:var(--ink);
+  max-width:100%;overflow-x:hidden;
+  padding:calc(22px + var(--safe-t)) max(var(--gutter),calc((100% - var(--maxw))/2)) calc(48px + var(--safe-b));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+.i.lg{width:24px;height:24px}
+.muted{color:var(--muted)}
+hr{border:0;height:1px;background:var(--line);margin:22px 0}
+
+/* ---------- BOUTONS ---------- */
+.btn-id{
+  appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.btn-id:disabled{opacity:.6;cursor:progress}
+@media (hover:hover){.btn-id:hover:not(:disabled){background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover:not(:disabled){background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-id-c{color:var(--late);background:#fff;border-color:#f0c3c5}
+.btn-id-c:active{background:#fbdcdc}
+@media (hover:hover){.btn-id-c:hover:not(:disabled){background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}}
+.btn-danger{background:var(--late);border-color:var(--late);color:#fff}
+.btn-danger:active{background:#951f25}
+@media (hover:hover){.btn-danger:hover:not(:disabled){background:#951f25;border-color:#951f25;color:#fff}}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ---------- CHAMPS ---------- */
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],select,textarea{
+  width:100%;min-height:48px;margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);
+  background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+input::placeholder{color:#8a9bad}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+
+/* ---------- CARTES ---------- */
+.card{
+  margin-bottom:16px;padding:20px;
+  background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.card-title{
+  display:flex;align-items:center;gap:10px;
+  margin:0 0 16px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fact{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;min-width:0}
+.fact-lbl{display:block;margin:0 0 3px;font-size:13px;font-weight:500;color:var(--muted)}
+.fact .val{display:block;min-height:22px;font-weight:600;overflow-wrap:anywhere}
+.page-title{
+  display:flex;align-items:center;gap:12px;
+  margin:0 0 20px;
+  font-size:22px;font-weight:700;letter-spacing:-.015em;color:var(--ink);
+}
+.page-title .ico{
+  width:40px;height:40px;flex:none;display:grid;place-items:center;
+  color:var(--primary);background:var(--primary-soft);border-radius:12px;
 }
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+/* ---------- ÉTATS : accès refusé / erreur ---------- */
+.modalna{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+  background:rgba(10,25,41,.5);
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  z-index:99999;
+}
+.modalna .card{
+  width:min(440px,100%);margin:0;padding:30px 28px 28px;text-align:center;
+  background:#fff;border:0;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico .i{width:28px;height:28px}
+.modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+.modalna p:last-child{margin-bottom:0}
+
+/* ---------- ANIMATIONS ---------- */
+.spinner{
+  width:48px;height:48px;margin:auto;
+  border:5px solid var(--line-soft);border-top-color:var(--primary);border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+/* =====================================================================
+   ÉTIQUETTES
+   ===================================================================== */
+main{display:block}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.field{min-width:0}
+.field input[type=number]{max-width:none}
+.actions.sep{margin-top:20px}
+#infos{padding:0;border:0;box-shadow:none;margin-bottom:16px;background:transparent}
+#infos.msg{padding:14px 16px;font-weight:600;color:var(--late);background:var(--late-soft);border:1px solid #f0c3c5;border-radius:12px}
+
+#preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.preview-card{
+  position:relative;
+  padding:38px 14px 14px;
+  font-size:15px;line-height:1.5;text-align:center;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+  overflow-wrap:anywhere;
+}
+.preview-card b{font-size:16px;font-weight:700}
+.preview-card img{display:block;margin:10px auto 0;max-width:150px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:8px}
+.preview-title{
+  position:absolute;top:10px;left:12px;
+  padding:4px 10px;
+  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--primary-d);background:var(--primary-soft);border-radius:999px;
 }
 
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+.loader-overlay{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  background:rgba(255,255,255,.8);
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  z-index:100000;
+  font-weight:600;color:var(--primary-d);
 }
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-
-/* ---- Modales accès / erreur (identiques au reste de l'application) ---- */
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px);
-  z-index: 9999;
-}
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-.modalna h2 { color: #d32f2f; margin-bottom: 12px; }
-.modalna p { font-size: 16px; margin-bottom: 20px; }
-
-.loader-overlay {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.75);
-  z-index: 10000;
-  flex-direction: column;
-  gap: 12px;
-  font-weight: 600;
-  color: var(--primary-dark);
-}
-.spinner {
-  width: 42px;
-  height: 42px;
-  border: 4px solid #cfe3fb;
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
+@media (max-width:700px){
+  body{padding-top:calc(16px + var(--safe-t))}
+  .card{padding:16px;border-radius:14px}
+  .form-grid{grid-template-columns:1fr}
+  .actions .btn-id{flex:1 1 100%}
 }
 </style>
 </head>
@@ -248,28 +217,36 @@ footer {
 <main id="mainContent" style="display:none;">
   <div id="infos">Chargement du patient...</div>
 
-  <h3 style="margin-top:25px;">Presets</h3>
-  <div style="margin-top:15px;">
-   
-    <button class="btn-id" id="btnDefault">🧾 Planche par défaut</button>
-    <button class="btn-id" id="btnIdentite">👤 Identité uniquement</button>
-    <button class="btn-id" id="btnAdresse">🏠 Adresse uniquement</button>
-    
-  </div>
-    <hr>
-   <h3 style="margin-top:25px;">Planche personalisée</h3>
-<div>
-    <label>Nombre d’étiquettes d’identité :
-      <input type="number" id="nbIdentite" value="4" min="0">
-    </label>
-    <label>Nombre d’étiquettes d’adresse :
-      <input type="number" id="nbAdresse" value="2" min="0">
-    </label>
-    <button id="btnGenerer" class="btn-id" >🖨️ Générer PDF (manuel)</button>
-  </div>
-<hr>
-  <h3 style="margin-top:25px;">Aperçu des modèles</h3>
-  <div id="preview"></div>
+  <section class="card">
+    <h3 class="card-title"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8Z"/><circle cx="7" cy="7" r="1.5"/></svg> Presets</h3>
+    <div class="actions">
+      <button class="btn-id" id="btnDefault"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/></svg> Planche par défaut</button>
+      <button class="btn-id" id="btnIdentite"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Identité uniquement</button>
+      <button class="btn-id" id="btnAdresse"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg> Adresse uniquement</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3 class="card-title"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg> Planche personnalisée</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="nbIdentite">Nombre d’étiquettes d’identité</label>
+        <input type="number" id="nbIdentite" value="4" min="0">
+      </div>
+      <div class="field">
+        <label for="nbAdresse">Nombre d’étiquettes d’adresse</label>
+        <input type="number" id="nbAdresse" value="2" min="0">
+      </div>
+    </div>
+    <div class="actions" style="margin-top:20px;">
+      <button id="btnGenerer" class="btn-id btn-id-v"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg> Générer PDF (manuel)</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3 class="card-title"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8Z"/><circle cx="7" cy="7" r="1.5"/></svg> Aperçu des modèles</h3>
+    <div id="preview"></div>
+  </section>
 </main>
 
 
@@ -283,7 +260,8 @@ footer {
 <!-- Accès refusé -->
 <div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+    <div class="state-ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></div>
+    <h2>Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
   </div>
 </div>
@@ -291,7 +269,8 @@ footer {
 <!-- Erreur générique -->
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
+    <div class="state-ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+    <h2>Oups, une erreur est survenue</h2>
     <p>Veuillez re-essayer un peu plus tard</p>
     <p>Si le problème persiste, contactez un administrateur</p>
   </div>
@@ -320,6 +299,12 @@ const db = getFirestore(app);
 const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
 let patientData = null;
+
+function afficherMessageInfos(texte) {
+  const infos = document.getElementById("infos");
+  infos.classList.add("msg");
+  infos.textContent = texte;
+}
 
 function afficherLoader() {
   document.getElementById("loaderOverlay").style.display = "flex";
@@ -376,7 +361,7 @@ onAuthStateChanged(auth, async (user) => {
 /* --- CHARGER PATIENT (API modulaire) --- */
 async function chargerPatient() {
   if (!patientId) {
-    document.getElementById("infos").textContent = "❌ Identifiant patient manquant dans l'URL";
+    afficherMessageInfos("Identifiant patient manquant dans l'URL");
     return;
   }
 
@@ -384,21 +369,25 @@ async function chargerPatient() {
     const snap = await getDoc(doc(db, "patients", patientId));
 
     if (!snap.exists()) {
-      document.getElementById("infos").textContent = "❌ Patient introuvable";
+      afficherMessageInfos("Patient introuvable");
       return;
     }
 
     patientData = snap.data();
-    document.getElementById("infos").innerHTML = `
-      <b>${patientData.prenom} ${patientData.nom}</b><br>
-      Né(e) le ${patientData.dateNaissance || "?"}<br>
-      ID: ${patientId}
+    const infos = document.getElementById("infos");
+    infos.classList.remove("msg");
+    infos.innerHTML = `
+      <div class="facts">
+        <div class="fact"><span class="fact-lbl">Patient</span><span class="val">${patientData.prenom} ${patientData.nom}</span></div>
+        <div class="fact"><span class="fact-lbl">Né(e) le</span><span class="val">${patientData.dateNaissance || "?"}</span></div>
+        <div class="fact"><span class="fact-lbl">ID patient</span><span class="val">${patientId}</span></div>
+      </div>
     `;
     majApercu();
 
   } catch (error) {
     console.error("Erreur chargement patient :", error);
-    document.getElementById("infos").textContent = "❌ Erreur lors du chargement du patient";
+    afficherMessageInfos("Erreur lors du chargement du patient");
   }
 }
 

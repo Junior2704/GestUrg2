@@ -2019,7 +2019,27 @@ function activerAppuiLong(card, id) {
     }
   }, { passive: true });
 
-  card.addEventListener("touchend", annuler);
+  // Double tap = double clic (iOS ne génère pas "dblclick" avec touch-action:manipulation)
+  let dernierTap = 0, tapX = 0, tapY = 0, aBouge = false;
+  card.addEventListener("touchstart", () => { aBouge = false; }, { passive: true });
+  card.addEventListener("touchmove", (e) => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - startX) > TOLERANCE_DOIGT || Math.abs(t.clientY - startY) > TOLERANCE_DOIGT) aBouge = true;
+  }, { passive: true });
+  card.addEventListener("touchend", (e) => {
+    annuler();
+    if (aBouge || Date.now() - window.__appuiLongTs < 1000) { dernierTap = 0; return; }
+    const t = e.changedTouches[0];
+    const maintenant = Date.now();
+    if (maintenant - dernierTap < 350 &&
+        Math.abs(t.clientX - tapX) < 30 && Math.abs(t.clientY - tapY) < 30) {
+      dernierTap = 0;
+      e.preventDefault(); // évite un éventuel "dblclick" natif en double
+      if (typeof card.ondblclick === "function") card.ondblclick(e);
+    } else {
+      dernierTap = maintenant; tapX = t.clientX; tapY = t.clientY;
+    }
+  }, { passive: false });
   card.addEventListener("touchcancel", annuler);
 
   // Sur iPad, l'appui long déclenche aussi le "glisser-déposer" natif : on l'empêche

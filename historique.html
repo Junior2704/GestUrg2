@@ -3,430 +3,306 @@
 <head>
 <link rel="icon" type="image/jpeg" href="logog2.png">
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
 <title>Historique Patient</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- Moteur de génération PDF universel (ord -> pdf) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="ordToPdf.js"></script>
 <style>
-  :root {
-    --bleu: #0078d4;
-    --bleu-fonce: #005ea2;
-    --gris-fond: #ffff;
-   --gris-bord: #ccc;
-  }
+/* =====================================================================
+   HISTORIQUE PATIENT — même identité visuelle que fiche.html
+   Fond blanc · bleu clinique · cartes à bordure fine
+   ===================================================================== */
 
-  * { box-sizing: border-box; }
+/* ---------- TOKENS (identiques à fiche.html) ---------- */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--gris-fond);
-    color: #333;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
+  --bg:#ffffff;
+  --ink:#112336;
+  --muted:#586a7e;
+  --line:#d8e1ea;
+  --line-soft:#e9eff5;
+  --field:#f6f9fc;
 
-  body {
-    padding: 20px;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
+  --primary:#0b6fa4;
+  --primary-d:#085a86;
+  --primary-soft:#e3f1f9;
 
-  header.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+  --ok:#16784a;    --ok-soft:#e1f4e9;
+  --late:#b92a30;  --late-soft:#fdecec;
+  --plan:#4a5b6e;  --plan-soft:#eceff3;
+  --warn:#7a4f00;  --warn-soft:#fff5da; --warn-line:#f0d98f;
 
-  header.page-header h1 {
-    font-size: 1.5rem;
-    color: var(--bleu);
-    margin: 0;
-  }
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
 
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
 
-  button {
-    font-size: 0.95rem;
-    padding: 9px 14px;
-    border-radius: 8px;
-    border: none;
-    background: var(--bleu);
-    color: white;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-  button:hover { background: var(--bleu-fonce); }
-  button.secondaire {
-    background: white;
-    color: var(--bleu);
-    border: 1px solid var(--bleu);
-  }
-  button.secondaire:hover { background: #eaf3fc; }
-
-  label.checkbox-inline {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.9rem;
-    background: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--gris-bord);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    padding: 20px;
-    margin-bottom: 22px;
-  }
-
-  /* ---- Bloc identité patient (rappel permanent) ---- */
-  #identitePatient {
-    border-left: 6px solid var(--bleu);
-  }
-  #identitePatient h2 {
-    margin-top: 0;
-    color: var(--bleu);
-  }
-  .identite-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px 20px;
-  }
-  .identite-grid .champ {
-    background: #f9f9f9;
-    border-radius: 6px;
-    padding: 8px 10px;
-  }
-  .identite-grid .champ .lbl {
-    display: block;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: #777;
-    margin-bottom: 2px;
-  }
-  .identite-grid .champ .val {
-    font-weight: 600;
-    color: #222;
-  }
-  .alerte-allergie {
-    color: #c62828;
-    font-weight: 700;
-  }
-
-  /* ---- Cartes hospitalisation ---- */
-  .hospi-card {
-    border-left: 6px solid var(--bleu);
-  }
-  .hospi-card.active-hospi {
-    border-left-color: #2e7d32;
-  }
-  .hospi-card h2 {
-    margin-top: 0;
-    color: var(--bleu);
-    border-bottom: 3px solid var(--bleu);
-    padding-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .hospi-card.active-hospi h2 { color: #2e7d32; border-bottom-color: #2e7d32; }
-  .badge-active {
-    background: #2e7d32;
-    color: white;
-    font-size: 0.7rem;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-weight: 600;
-  }
-  .entry {
-    background: #f9f9f9;
-    padding: 8px 10px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-  }
-  .hospi-card h3 {
-    color: var(--bleu);
-    margin-bottom: 8px;
-  }
-  .hospi-card hr {
-    border: none;
-    height: 3px;
-    background: #e0e6ec;
-    border-radius: 2px;
-    margin: 16px 0;
-  }
-
-  /* ---- Journal des modifications ---- */
-  .journal-modifications {
-    margin-top: 14px;
-    border: 1px dashed var(--gris-bord);
-    border-radius: 8px;
-    padding: 12px 14px;
-    background: #fbfcfe;
-  }
-  .journal-modifications summary {
-    cursor: pointer;
-    font-weight: 700;
-    color: var(--bleu);
-    outline: none;
-  }
-  .journal-liste {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .journal-ligne {
-    display: grid;
-    grid-template-columns: 150px 1fr 190px;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    background: white;
-    border: 1px solid #eee;
-    font-size: 0.88rem;
-    align-items: center;
-  }
-  .journal-ligne .jl-date { color: #555; font-variant-numeric: tabular-nums; }
-  .journal-ligne .jl-action { color: #222; }
-  .journal-ligne .jl-auteur {
-    text-align: right;
-    color: #0078d4;
-    font-weight: 600;
-    font-size: 0.82rem;
-  }
-  .journal-ligne .jl-auteur .type {
-    display: block;
-    color: #888;
-    font-weight: 400;
-    font-size: 0.75rem;
-  }
-  .journal-vide {
-    color: #888;
-    font-style: italic;
-    font-size: 0.9rem;
-  }
-
-  /* ---- Sous-sections actes / médicaments / documents ---- */
-  .sous-liste {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .sous-item {
-    background: #f9f9f9;
-    border-left: 4px solid var(--bleu);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 0.92rem;
-  }
-  .sous-item.statut-ok { border-left-color: #2e7d32; }
-  .sous-item.statut-attente { border-left-color: #e08a00; }
-  .sous-item .sous-item-titre {
-    font-weight: 700;
-    color: #222;
-  }
-  .sous-item .sous-item-meta {
-    color: #666;
-    font-size: 0.82rem;
-    margin-top: 2px;
-  }
-  .badge-statut {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 6px;
-  }
-  .badge-statut.ok { background: #cbf7d5; color: #146c2e; }
-  .badge-statut.attente { background: #fff3cd; color: #7a5600; }
-
-  .doc-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f9f9f9;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 6px;
-    font-size: 0.92rem;
-  }
-  .doc-item button {
-    padding: 5px 10px;
-    font-size: 0.82rem;
-  }
-
-  .mini-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-    margin-top: 6px;
-  }
-  .mini-table th, .mini-table td {
-    border: 1px solid #e0e6ec;
-    padding: 5px 7px;
-    text-align: left;
-  }
-  .mini-table th {
-    background: #eef3fb;
-    color: var(--bleu-fonce);
-  }
-  .section-vide {
-    color: #888;
-    font-style: italic;
-    font-size: 0.88rem;
-  }
-
-  /* ---- Barre d'export d'une hospitalisation ---- */
-  #selectHospiExport {
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--gris-bord);
-    font-size: 0.9rem;
-    background: white;
-  }
-
-  #rechercheGlobale {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 18px;
-    border-radius: 8px;
-    border: 1px solid var(--gris-bord);
-  }
-  #etatChargement, #erreurChargement {
-    text-align: center;
-    padding: 40px 0;
-    color: #666;
-  }
-  #erreurChargement { color: #c62828; display:none; }
-
-  .no-print { display:none;
-   }
-   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+  --gutter:clamp(16px,3vw,32px);
+  --maxw:1100px;
 }
 
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0;background:var(--bg)}
+html{scroll-padding-top:var(--safe-t)}
+body{
+  font-family:var(--font);
+  font-size:16px;line-height:1.45;
+  color:var(--ink);
+  padding:calc(22px + var(--safe-t)) max(var(--gutter),calc((100% - var(--maxw))/2)) calc(48px + var(--safe-b));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+.muted{color:var(--muted)}
+.no-print{display:none}
+
+hr{border:0;height:1px;background:var(--line);margin:22px 0}
+
+/* ---------- EN-TÊTE / BARRE D'OUTILS ---------- */
+header.page-header{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  margin-bottom:20px;
+}
+header.page-header h1{font-size:22px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.toolbar select{width:auto;flex:1 1 280px;min-width:0}
+
+/* ---------- BOUTONS ---------- */
+.btn-id{
+  appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.btn-id:disabled{opacity:.6;cursor:progress}
+@media (hover:hover){.btn-id:hover:not(:disabled){background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover:not(:disabled){background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-sm{min-height:38px;padding:0 14px;font-size:14px}
+
+/* ---------- CHAMPS ---------- */
+select,input[type=text]{
+  width:100%;min-height:48px;margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);
+  background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+input::placeholder{color:#8a9bad}
+select:focus,input[type=text]:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+select{
+  appearance:none;-webkit-appearance:none;
+  padding-right:42px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;flex:none;margin:0}
+
+label.checkbox-inline{
+  display:flex;align-items:center;gap:12px;
+  min-height:48px;margin:0;padding:10px 14px;
+  font-size:15px;font-weight:600;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;
 }
 
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
+#rechercheGlobale{
+  margin-bottom:16px;padding-left:44px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:14px center;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
+/* ---------- CARTES ---------- */
+.card{
+  margin-bottom:16px;padding:20px;
+  background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.card-title,.hospi-card h3{
+  display:flex;align-items:center;gap:10px;
+  margin:0 0 14px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.card-title .i,.hospi-card h3 .i{color:var(--primary);width:18px;height:18px}
+.hint{margin-top:10px;font-size:14px;color:var(--muted)}
+
+/* Identité (rappel patient) */
+#identitePatient h2{
+  display:flex;align-items:center;gap:10px;margin:0 0 14px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+#identitePatient h2 .i{color:var(--primary);width:18px;height:18px}
+
+/* Faits (libellé + valeur) */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fact{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;min-width:0}
+.fact-lbl{display:flex;align-items:center;gap:6px;margin:0 0 3px;font-size:13px;font-weight:500;color:var(--muted)}
+.fact-lbl .i{color:var(--primary)}
+.fact > .val{display:block;min-height:22px;font-weight:600;overflow-wrap:anywhere}
+.fact > .val.pre{white-space:pre-wrap;font-weight:500}
+.fact.wide{grid-column:1/-1}
+.fact.alerte{background:var(--late-soft);border-color:#f0c3c5}
+.fact.alerte .fact-lbl,.fact.alerte .val{color:var(--late)}
+.alerte-allergie{color:var(--late);font-weight:700}
+.alerte-allergie .i{vertical-align:-3px;margin-right:4px}
+
+.texte-libre{
+  padding:14px 16px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+  white-space:pre-wrap;overflow-wrap:anywhere;
 }
 
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
+/* ---------- HOSPITALISATIONS ---------- */
+.hospi-card{border-left:6px solid var(--primary)}
+.hospi-card.active-hospi{border-left-color:var(--ok)}
+.hospi-card h2{
+  display:flex;align-items:center;flex-wrap:wrap;gap:12px;
+  margin:0 0 18px;padding-bottom:16px;
+  font-size:20px;font-weight:700;letter-spacing:-.015em;color:var(--ink);
+  border-bottom:1px solid var(--line);
 }
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
+.hospi-card h2 .ico{
+  width:40px;height:40px;flex:none;display:grid;place-items:center;
+  color:var(--primary);background:var(--primary-soft);border-radius:12px;
+}
+.hospi-card.active-hospi h2 .ico{color:var(--ok);background:var(--ok-soft)}
+.hospi-card h2 .h-text{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0}
+.hospi-card h2 small{font-size:13px;font-weight:500;color:var(--muted);overflow-wrap:anywhere}
+.hospi-card h2 .examen-badge{margin-left:auto}
+.hospi-card hr{margin:22px 0}
+
+/* Pastilles de statut */
+.examen-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;font-size:14px;font-weight:700;line-height:1;white-space:nowrap;
+  color:var(--st,var(--primary));background:var(--st-soft,var(--primary-soft));
+  border:1px solid color-mix(in srgb,var(--st,var(--primary)) 25%,transparent);border-radius:999px;
+}
+.examen-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--st,var(--primary))}
+.examen-badge.a-faire{--st:var(--primary);--st-soft:var(--primary-soft)}
+.examen-badge.realise{--st:var(--ok);--st-soft:var(--ok-soft)}
+.examen-badge.refus{--st:var(--late);--st-soft:var(--late-soft)}
+
+/* Encarts examens / actes / médicaments */
+.sous-liste{display:flex;flex-direction:column;gap:10px}
+.examen-encart{
+  padding:14px 14px 14px 16px;
+  background:linear-gradient(90deg,var(--st-soft,var(--primary-soft)),#fff 45%);
+  border:1px solid var(--line);border-left:6px solid var(--st,var(--primary));border-radius:12px;
+}
+.examen-encart.a-faire{--st:var(--primary);--st-soft:var(--primary-soft)}
+.examen-encart.realise{--st:var(--ok);--st-soft:var(--ok-soft)}
+.examen-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.examen-head strong{font-size:17px;font-weight:700;letter-spacing:-.005em;overflow-wrap:anywhere}
+.meta{margin-top:4px;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.meta em{font-style:normal;color:var(--ink)}
+
+.section-vide{
+  padding:14px 16px;font-size:14px;color:var(--muted);
+  background:var(--field);border:1px dashed var(--line);border-radius:12px;
 }
 
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
+/* Documents */
+.doc-item{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:10px 14px;margin-bottom:8px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
 }
+.doc-item:last-child{margin-bottom:0}
+.doc-item .doc-main{min-width:0;overflow-wrap:anywhere}
 
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
+/* Tableau des constantes */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;-webkit-overflow-scrolling:touch}
+.mini-table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.mini-table th,.mini-table td{padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line-soft)}
+.mini-table td:last-child{white-space:normal;min-width:140px}
+.mini-table th{
+  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  background:var(--field);border-bottom:1px solid var(--line);
 }
+.mini-table tbody tr:last-child td{border-bottom:0}
+@media (hover:hover){.mini-table tbody tr:hover td{background:var(--primary-soft)}}
 
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
+/* Signature */
+.signature-bloc{margin-top:16px}
+.signature-img{display:block;max-width:280px;width:100%;margin-top:6px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px}
 
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+/* ---------- JOURNAL DES MODIFICATIONS ---------- */
+.journal-modifications{padding:14px 16px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.journal-modifications summary{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  cursor:pointer;list-style:none;outline:none;
 }
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
+.journal-modifications summary::-webkit-details-marker{display:none}
+.journal-modifications summary .i{color:var(--primary);width:18px;height:18px}
+.journal-modifications summary::after{
+  content:"";margin-left:auto;width:8px;height:8px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);transition:transform .2s;
 }
+.journal-modifications[open] summary::after{transform:rotate(-135deg)}
+.journal-modifications summary:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:4px;border-radius:6px}
+.journal-liste{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.journal-ligne{
+  display:grid;grid-template-columns:160px 1fr 190px;gap:8px 12px;align-items:center;
+  padding:10px 12px;font-size:14px;
+  background:#fff;border:1px solid var(--line-soft);border-radius:10px;
+}
+.journal-ligne .jl-date{color:var(--muted);font-variant-numeric:tabular-nums}
+.journal-ligne .jl-action{color:var(--ink);overflow-wrap:anywhere}
+.journal-ligne .jl-auteur{text-align:right;color:var(--primary-d);font-weight:600}
+.journal-ligne .jl-auteur .type{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.journal-vide{margin-top:10px;font-size:14px;color:var(--muted)}
 
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
+/* ---------- ÉTATS ---------- */
+#etatChargement{padding:48px 0;text-align:center;color:var(--muted)}
+#etatChargement p{margin-top:14px}
+.spinner{
+  width:48px;height:48px;margin:auto;
+  border:5px solid var(--line-soft);border-top-color:var(--primary);border-radius:50%;
+  animation:spin 1s linear infinite;
 }
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+#erreurChargement{
+  display:none;margin:24px 0;padding:16px 18px;
+  font-weight:600;color:var(--late);
+  background:var(--late-soft);border:1px solid #f0c3c5;border-radius:12px;
 }
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner,.journal-modifications summary::after{animation:none !important;transition:none !important}}
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
 
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:700px){
+  body{padding-top:calc(16px + var(--safe-t))}
+  .card{padding:16px;border-radius:14px}
+  .hospi-card h2{font-size:18px}
+  .hospi-card h2 .examen-badge{margin-left:0}
+  .journal-ligne{grid-template-columns:1fr}
+  .journal-ligne .jl-auteur{text-align:left}
+  .toolbar .btn-id{width:100%}
+  .doc-item{flex-wrap:wrap}
 }
 </style>
 </head>
@@ -434,39 +310,37 @@
   <header class="page-header no-print">
 
     <div class="toolbar">
-      <button type="button" class="secondaire" style = "display:none;" id="btnRetour">⬅️ Retour à la fiche</button>
+      <button type="button" class="btn-id" style="display:none;" id="btnRetour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7M19 12H5"/></svg> Retour à la fiche</button>
     </div>
   </header>
 
   <div class="card no-print" id="barreExport" style="display:none;">
-    <h3 style="margin-top:0;">📥 Impression PDF d'une hospitalisation</h3>
+    <h3 class="card-title"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg> Impression PDF d'une hospitalisation</h3>
     <div class="toolbar">
       <select id="selectHospiExport"></select>
       <label class="checkbox-inline">
         <input type="checkbox" id="chkInclureHistorique">
         Inclure le journal des modifications
       </label>
-      <button type="btn-id" id="btnExporterPDF">📥 Générer le PDF</button>
+      <button type="button" class="btn-id btn-id-v" id="btnExporterPDF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg> Générer le PDF</button>
     </div>
-    <div class="muted" style="font-size:0.82rem;color:#777;margin-top:8px;">
-      L'export ne concerne que l'hospitalisation sélectionnée ci-dessus (avec rappel de l'identité du patient en en-tête).
-    </div>
+    <p class="hint">L'export ne concerne que l'hospitalisation sélectionnée ci-dessus (avec rappel de l'identité du patient en en-tête).</p>
   </div>
 
   <input
     type="text"
     id="rechercheGlobale"
     class="no-print"
-    placeholder="🔍 Rechercher dans l'historique (motif, service, date, texte, auteur...)"
+    placeholder="Rechercher dans l'historique (motif, service, date, texte, auteur…)"
     style="display:none;"
   />
 
-  <div id="etatChargement">⏳ Chargement de l'historique du patient...</div>
+  <div id="etatChargement"><div class="spinner"></div><p>Chargement de l'historique du patient…</p></div>
   <div id="erreurChargement"></div>
 
   <div id="contenuHistorique" style="display:none;">
     <!-- Bloc identité patient : rappel permanent -->
-    <section id="identitePatient" style = "display:none;" class="card"></section>
+    <section id="identitePatient" style="display:none;" class="card"></section>
 
     <!-- Liste des hospitalisations -->
     <div id="listeHospitalisations"></div>
@@ -533,7 +407,7 @@ onAuthStateChanged(auth, async (user) => {
 function afficherErreur(message) {
   elEtat.style.display = "none";
   elErreur.style.display = "block";
-  elErreur.textContent = "❌ " + message;
+  elErreur.textContent = message;
 }
 
 function calculerAge(dateNaissance) {
@@ -561,6 +435,26 @@ function echapper(texte) {
   return div.innerHTML;
 }
 
+// ---------- Aides de rendu (cohérentes avec fiche.html) ----------
+const ICONES = {"user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/>", "building": "<path d=\"M3 21h18\"/><path d=\"M6 21V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v16\"/><path d=\"M12 8v6M9 11h6\"/>", "users": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75\"/>", "clipboard": "<rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"/>", "trend": "<path d=\"m22 7-8.5 8.5-5-5L2 17\"/><path d=\"M16 7h6v6\"/>", "activity": "<path d=\"M22 12h-4l-3 9L9 3l-3 9H2\"/>", "scan": "<path d=\"M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2\"/><path d=\"M7 12h10\"/>", "stetho": "<path d=\"M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3\"/><path d=\"M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4\"/><circle cx=\"20\" cy=\"10\" r=\"2\"/>", "pill": "<path d=\"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z\"/><path d=\"m8.5 8.5 7 7\"/>", "file": "<path d=\"M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z\"/><path d=\"M14 2v6h6\"/>", "logout": "<path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5M21 12H9\"/>", "check": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m9 12 2 2 4-4\"/>", "pen": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "history": "<path d=\"M3 12a9 9 0 1 0 3-6.7L3 8\"/><path d=\"M3 3v5h5M12 7v5l3 2\"/>", "download": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5M12 15V3\"/>", "eye": "<path d=\"M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>", "alert": "<path d=\"M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z\"/><path d=\"M12 9v4M12 17h.01\"/>", "arrowleft": "<path d=\"m12 19-7-7 7-7M19 12H5\"/>"};
+
+function ico(nom, cls = "") {
+  return `<svg class="i${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONES[nom] || ""}</svg>`;
+}
+
+function titre(nomIcone, texte) {
+  return `<h3>${ico(nomIcone)}<span>${texte}</span></h3>`;
+}
+
+function fact(label, valeur, opts = {}) {
+  const cls = "fact" + (opts.wide ? " wide" : "") + (opts.alerte ? " alerte" : "");
+  return `<div class="${cls}"><span class="fact-lbl">${echapper(label)}</span><span class="val${opts.pre ? " pre" : ""}">${echapper(valeur)}</span></div>`;
+}
+
+function badge(classe, texte) {
+  return `<span class="examen-badge ${classe}">${echapper(texte)}</span>`;
+}
+
 function formatHorodatage(entree) {
   // entree.horodatage est un Timestamp Firestore ; fallback sur date/heure textuelles
   try {
@@ -576,17 +470,21 @@ function rendreIdentite(patient) {
   const age = calculerAge(patient.dateNaissance);
   const allergiesImportantes = patient.importanceAllergies === true;
 
+  const allergies = allergiesImportantes
+    ? `<div class="fact alerte"><span class="fact-lbl">Allergies</span><span class="val alerte-allergie">${ico("alert", "sm")}${echapper(patient.allergies || "aucune")}</span></div>`
+    : fact("Allergies", patient.allergies || "aucune");
+
   elIdentite.innerHTML = `
-    <h2>🧑‍⚕️ Identité du patient</h2>
-    <div class="identite-grid">
-      <div class="champ"><span class="lbl">Nom</span><span class="val">${echapper(patient.nom || "—")}</span></div>
-      <div class="champ"><span class="lbl">Prénom</span><span class="val">${echapper(patient.prenom || "—")}</span></div>
-      <div class="champ"><span class="lbl">Sexe</span><span class="val">${echapper(patient.sexe || "—")}</span></div>
-      <div class="champ"><span class="lbl">Date de naissance</span><span class="val">${echapper(patient.dateNaissance || "—")}${age !== null ? " (" + age + " ans)" : ""}</span></div>
-      <div class="champ"><span class="lbl">ID patient</span><span class="val">${echapper(patientId)}</span></div>
-      <div class="champ"><span class="lbl">Médecin traitant</span><span class="val">${echapper(patient.medtraitant || "—")}</span></div>
-      <div class="champ"><span class="lbl">Allergies</span><span class="val ${allergiesImportantes ? "alerte-allergie" : ""}">${allergiesImportantes ? "🚨 " : ""}${echapper(patient.allergies || "aucune")}</span></div>
-      <div class="champ"><span class="lbl">Vigilances</span><span class="val">${echapper(patient.vigilances || "aucune")}</span></div>
+    <h2>${ico("user")}<span>Identité du patient</span></h2>
+    <div class="facts">
+      ${fact("Nom", patient.nom || "—")}
+      ${fact("Prénom", patient.prenom || "—")}
+      ${fact("Sexe", patient.sexe || "—")}
+      ${fact("Date de naissance", (patient.dateNaissance || "—") + (age !== null ? " (" + age + " ans)" : ""))}
+      ${fact("ID patient", patientId)}
+      ${fact("Médecin traitant", patient.medtraitant || "—")}
+      ${allergies}
+      ${fact("Vigilances", patient.vigilances || "aucune")}
     </div>
   `;
 }
@@ -604,7 +502,7 @@ function rendreJournalModifications(historique) {
   if (entrees.length === 0) {
     return `
       <details class="journal-modifications">
-        <summary>🕘 Journal des modifications (0)</summary>
+        <summary>${ico("history")}<span>Journal des modifications (0)</span></summary>
         <p class="journal-vide">Aucune modification enregistrée pour cette hospitalisation.</p>
       </details>
     `;
@@ -630,7 +528,7 @@ function rendreJournalModifications(historique) {
 
   return `
     <details class="journal-modifications" open>
-      <summary>🕘 Journal des modifications (${entrees.length})</summary>
+      <summary>${ico("history")}<span>Journal des modifications (${entrees.length})</span></summary>
       <div class="journal-liste">${lignes}</div>
     </details>
   `;
@@ -666,16 +564,17 @@ function rendreListeActesOuMeds(items, verbeRealise, champComment, champDateReal
   return `<div class="sous-liste">` + items.map(it => {
     const estFait = it.status === "realise" || it.status === "pris";
     return `
-      <div class="sous-item ${estFait ? "statut-ok" : "statut-attente"}">
-        <div class="sous-item-titre">${echapper(it.product || "Non renseigné")}
-          <span class="badge-statut ${estFait ? "ok" : "attente"}">${estFait ? "✅ " + verbeRealise : "⏳ en attente"}</span>
+      <div class="examen-encart ${estFait ? "realise" : "a-faire"}">
+        <div class="examen-head">
+          <strong>${echapper(it.product || "Non renseigné")}</strong>
+          ${badge(estFait ? "realise" : "a-faire", estFait ? verbeRealise.charAt(0).toUpperCase() + verbeRealise.slice(1) : "En attente")}
         </div>
-        <div class="sous-item-meta">
+        <div class="meta">
           ${it.createdAt ? `Demandé le ${echapper(it.createdAt)}` : ""}${it.dueAt ? ` — pour le ${echapper(it.dueAt)}` : ""}
-          ${it[champDateRealise] ? `<br>${verbeRealise} le ${echapper(it[champDateRealise])}` : ""}
+          ${it[champDateRealise] ? `<br>${verbeRealise.charAt(0).toUpperCase() + verbeRealise.slice(1)} le ${echapper(it[champDateRealise])}` : ""}
         </div>
-        ${it[champComment] ? `<div class="sous-item-meta">Commentaire demande : ${echapper(it[champComment])}</div>` : ""}
-        ${it[champCommentRealise] ? `<div class="sous-item-meta">Commentaire réalisation : ${echapper(it[champCommentRealise])}</div>` : ""}
+        ${it[champComment] ? `<div class="meta">Commentaire demande : ${echapper(it[champComment])}</div>` : ""}
+        ${it[champCommentRealise] ? `<div class="meta">Commentaire réalisation : ${echapper(it[champCommentRealise])}</div>` : ""}
       </div>
     `;
   }).join("") + `</div>`;
@@ -701,12 +600,14 @@ function rendreConstantesTable(rows) {
     </tr>
   `).join("");
   return `
-    <table class="mini-table">
-      <thead>
-        <tr><th>Date</th><th>Heure</th><th>Temp</th><th>FC</th><th>TA</th><th>Sat</th><th>FR</th><th>Douleur</th><th>GCS</th><th>Obs</th></tr>
-      </thead>
-      <tbody>${lignes}</tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="mini-table">
+        <thead>
+          <tr><th>Date</th><th>Heure</th><th>Temp</th><th>FC</th><th>TA</th><th>Sat</th><th>FR</th><th>Douleur</th><th>GCS</th><th>Obs</th></tr>
+        </thead>
+        <tbody>${lignes}</tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -716,8 +617,8 @@ function rendreDocumentsListe(docs) {
   }
   return docs.map(d => `
     <div class="doc-item">
-      <span><strong>${echapper(d.type || "Document")}</strong> — ${echapper(d.dateCreation || "date inconnue")}${d.creePar ? ` <span style="color:#888;">(par ${echapper(d.creePar)})</span>` : ""}</span>
-      ${d.pdfBase64 ? `<button type="button" class="secondaire" data-doc-open="${d.id}">🔎 Consulter</button>` : ""}
+      <span class="doc-main"><strong>${echapper(d.type || "Document")}</strong> — ${echapper(d.dateCreation || "date inconnue")}${d.creePar ? ` <span class="muted">(par ${echapper(d.creePar)})</span>` : ""}</span>
+      ${d.pdfBase64 ? `<button type="button" class="btn-id btn-sm" data-doc-open="${d.id}">${ico("eye", "sm")} Consulter</button>` : ""}
     </div>
   `).join("");
 }
@@ -738,88 +639,99 @@ function rendreHospitalisation(hospi, numero, hospiId, estActive, documents) {
   const constantes = Array.isArray(hospi.constantesReleves) ? hospi.constantesReleves : [];
 
   const parts = [];
-  parts.push(`<div class="entry"><strong>📅 Admission :</strong> ${echapper(date)}</div>`);
-  parts.push(`<div class="entry"><strong>📅 Sortie :</strong> ${echapper(datef)}</div>`);
-  parts.push(`<div class="entry"><strong>Motif :</strong> ${echapper(motif)}</div>`);
-  parts.push(`<div class="entry"><strong>Gravité :</strong> ${echapper(gravite)}</div>`);
+  parts.push(`<div class="facts">
+    ${fact("Admission", date)}
+    ${fact("Sortie", datef)}
+    ${fact("Motif", motif)}
+    ${fact("Gravité", gravite)}
+  </div>`);
 
   parts.push(`<hr>`);
-  parts.push(`<h3>👥 Équipe référente</h3>`);
-  parts.push(`<p>
-    <strong>Médecin :</strong> ${echapper(equipe.medecinReferent?.nom || "—")}<br>
-    <strong>Infirmier(e) :</strong> ${echapper(equipe.infirmierReferent?.nom || "—")}<br>
-    <strong>Interne :</strong> ${echapper(equipe.interneReferent?.nom || "—")}<br>
-    <strong>Externe :</strong> ${echapper(equipe.externeReferent?.nom || "—")}
-  </p>`);
+  parts.push(titre("users", "Équipe référente"));
+  parts.push(`<div class="facts">
+    ${fact("Médecin", equipe.medecinReferent?.nom || "—")}
+    ${fact("Infirmier(e)", equipe.infirmierReferent?.nom || "—")}
+    ${fact("Interne", equipe.interneReferent?.nom || "—")}
+    ${fact("Externe", equipe.externeReferent?.nom || "—")}
+  </div>`);
 
   parts.push(`<hr>`);
-  parts.push(`<h3>📋 Dossier médical</h3>`);
-  parts.push(`<p><strong>Questionnaire IAO :</strong><br>${echapper(dossier.questionnaire || "—")}</p>`);
-  parts.push(`<p><strong>Antécédents :</strong><br>${echapper(dossier.antecedents || "—")}</p>`);
-  parts.push(`<p><strong>Traitements :</strong><br>${echapper(dossier.traitements || "—")}</p>`);
-  parts.push(`<p><strong>Histoire de la maladie :</strong><br>${echapper(dossier.histoire || "—")}</p>`);
-  parts.push(`<p><strong>CR Auscultation :</strong><br>${echapper(dossier.auscultation || "—")}</p>`);
+  parts.push(titre("clipboard", "Dossier médical"));
+  parts.push(`<div class="facts">
+    ${fact("Questionnaire IAO", dossier.questionnaire || "—", { wide: true, pre: true })}
+    ${fact("Antécédents", dossier.antecedents || "—", { wide: true, pre: true })}
+    ${fact("Traitements", dossier.traitements || "—", { wide: true, pre: true })}
+    ${fact("Histoire de la maladie", dossier.histoire || "—", { wide: true, pre: true })}
+    ${fact("CR Auscultation", dossier.auscultation || "—", { wide: true, pre: true })}
+  </div>`);
 
   parts.push(`<hr>`);
-  parts.push(`<h3>📈 Évolution aux urgences</h3>`);
-  parts.push(`<p style="white-space:pre-wrap">${echapper(evolution)}</p>`);
+  parts.push(titre("trend", "Évolution aux urgences"));
+  parts.push(`<div class="texte-libre">${echapper(evolution)}</div>`);
 
   parts.push(`<hr>`);
-  parts.push(`<h3>🌡️ Constantes vitales</h3>`);
+  parts.push(titre("activity", "Constantes vitales"));
   parts.push(rendreConstantesTable(constantes));
 
   if (examens.length > 0) {
     parts.push(`<hr>`);
-    parts.push(`<h3>🩻 Examens demandés</h3>`);
-    parts.push(examens.map(ex => `
-      <div class="entry">
-        <strong>${echapper(ex.type || "Examen")}</strong> — ${ex.realise ? "✅ Réalisé" : "⏳ En attente"}
-        ${ex.commentaire ? `<br><em>${echapper(ex.commentaire)}</em>` : ""}
-        ${ex.dateDemande ? `<br><small>Demandé le ${echapper(ex.dateDemande)}</small>` : ""}
-          ${ex.dateRealisation ? `<br><small>Réalisé le ${echapper(ex.dateRealisation)}</small>` : ""}
-        ${ex.compteRendu ? `<br><small>Résultat : ${echapper(ex.compteRendu)}</small>` : ""}
-
+    parts.push(titre("scan", "Examens demandés"));
+    parts.push(`<div class="sous-liste">` + examens.map(ex => `
+      <div class="examen-encart ${ex.realise ? "realise" : "a-faire"}">
+        <div class="examen-head">
+          <strong>${echapper(ex.type || "Examen")}</strong>
+          ${badge(ex.realise ? "realise" : "a-faire", ex.realise ? "Réalisé" : "En attente")}
+        </div>
+        ${ex.commentaire ? `<div class="meta"><em>${echapper(ex.commentaire)}</em></div>` : ""}
+        ${ex.dateDemande ? `<div class="meta">Demandé le ${echapper(ex.dateDemande)}</div>` : ""}
+        ${ex.dateRealisation ? `<div class="meta">Réalisé le ${echapper(ex.dateRealisation)}</div>` : ""}
+        ${ex.compteRendu ? `<div class="meta">Résultat : ${echapper(ex.compteRendu)}</div>` : ""}
       </div>
-    `).join(""));
+    `).join("") + `</div>`);
   }
 
   parts.push(`<hr>`);
-  parts.push(`<h3>🩺 Actes réalisés</h3>`);
+  parts.push(titre("stetho", "Actes réalisés"));
   parts.push(rendreListeActesOuMeds(actes, "réalisé", "comment", "realiseAt", "realiseComment"));
 
   parts.push(`<hr>`);
-  parts.push(`<h3>💊 Médicaments administrés aux urgences</h3>`);
+  parts.push(titre("pill", "Médicaments administrés aux urgences"));
   parts.push(rendreListeActesOuMeds(meds, "administré", "comment", "takenAt", "takeComment"));
 
   parts.push(`<hr>`);
-  parts.push(`<h3>📄 Documents</h3>`);
+  parts.push(titre("file", "Documents"));
   parts.push(rendreDocumentsListe(documents));
 
   if (sortie) {
     parts.push(`<hr>`);
-    parts.push(`<h3>🚪 Sortie</h3>`);
-    parts.push(`<p><strong>Type :</strong> ${echapper(sortie.type || "—")}</p>`);
-    if (sortie.serviceHospitalisation) parts.push(`<p><strong>🏥 Service hospitalisation :</strong> ${echapper(sortie.serviceHospitalisation)}</p>`);
-    if (sortie.destinationTransfert) parts.push(`<p><strong>↔️ Destination transfert :</strong> ${echapper(sortie.destinationTransfert)}</p>`);
-    if (sortie.avisSpecialiste) parts.push(`<p><strong>👩‍⚕️ Avis spécialiste :</strong> ${echapper(sortie.avisSpecialiste)}</p>`);
-    if (Array.isArray(sortie.options) && sortie.options.length > 0) parts.push(`<p><strong>📋 Options :</strong> ${echapper(sortie.options.join(", "))}</p>`);
-    if (sortie.traitementSortie) parts.push(`<p><strong>💊 Traitement de sortie :</strong><br>${echapper(sortie.traitementSortie)}</p>`);
-    if (sortie.autreSortieTexte) parts.push(`<p><strong>🔤 Autre :</strong> ${echapper(sortie.autreSortieTexte)}</p>`);
-    if (sortie.autreOptionTexte) parts.push(`<p><strong>🔤 Autre option :</strong> ${echapper(sortie.autreOptionTexte)}</p>`);
+    parts.push(titre("logout", "Sortie"));
+    const faitsSortie = [fact("Type", sortie.type || "—")];
+    if (sortie.serviceHospitalisation) faitsSortie.push(fact("Service hospitalisation", sortie.serviceHospitalisation));
+    if (sortie.destinationTransfert) faitsSortie.push(fact("Destination transfert", sortie.destinationTransfert));
+    if (sortie.avisSpecialiste) faitsSortie.push(fact("Avis spécialiste", sortie.avisSpecialiste));
+    if (Array.isArray(sortie.options) && sortie.options.length > 0) faitsSortie.push(fact("Options", sortie.options.join(", ")));
+    if (sortie.traitementSortie) faitsSortie.push(fact("Traitement de sortie", sortie.traitementSortie, { wide: true, pre: true }));
+    if (sortie.autreSortieTexte) faitsSortie.push(fact("Autre", sortie.autreSortieTexte));
+    if (sortie.autreOptionTexte) faitsSortie.push(fact("Autre option", sortie.autreOptionTexte));
+    parts.push(`<div class="facts">${faitsSortie.join("")}</div>`);
   }
 
   if (rapportTexte) {
     parts.push(`<hr>`);
-    parts.push(`<h3>🧾 Clôture</h3>`);
-    parts.push(`<p style="white-space:pre-wrap">${echapper(rapportTexte)}</p>`);
+    parts.push(titre("check", "Clôture"));
+    parts.push(`<div class="texte-libre">${echapper(rapportTexte)}</div>`);
   }
-if (hospi.signatureImage) {
-      parts.push(`<p><strong>✍️ Signature du patient :</strong><br>
-        <img src="${hospi.signatureImage}" alt="Signature du patient" style="max-width:280px;border:1px solid #e0e6ec;border-radius:6px;background:white;padding:6px;">
-      </p>`);
-    } else if (hospi.signatureStatut === "Refus de signer") {
-      parts.push(`<p><strong>✍️ Signature du patient :</strong> ⚠️ Refus de signer</p>`);
-    }
+  if (hospi.signatureImage) {
+    parts.push(`<div class="signature-bloc">
+      <div class="fact-lbl">${ico("pen", "sm")} Signature du patient</div>
+      <img class="signature-img" src="${hospi.signatureImage}" alt="Signature du patient">
+    </div>`);
+  } else if (hospi.signatureStatut === "Refus de signer") {
+    parts.push(`<div class="signature-bloc">
+      <div class="fact-lbl">${ico("pen", "sm")} Signature du patient</div>
+      ${badge("refus", "Refus de signer")}
+    </div>`);
+  }
   parts.push(`<hr>`);
   parts.push(rendreJournalModifications(hospi.historique));
 
@@ -827,8 +739,11 @@ if (hospi.signatureImage) {
   card.className = "card hospi-card" + (estActive ? " active-hospi" : "");
   card.dataset.hospiId = hospi.__id || "";
   card.innerHTML = `
-    <h2>🏥 Hospitalisation n°${numero} (${hospiId}) ${estActive ? '<span class="badge-active">EN COURS</span>' : ""}</h2>
-   
+    <h2>
+      <span class="ico">${ico("building")}</span>
+      <span class="h-text">Hospitalisation n°${numero} <small>(${hospiId})</small></span>
+      ${estActive ? badge("realise", "En cours") : ""}
+    </h2>
     ${parts.join("\n")}
   `;
 
@@ -1024,9 +939,9 @@ document.getElementById("btnExporterPDF").addEventListener("click", async () => 
 
   const inclure = document.getElementById("chkInclureHistorique").checked;
   const btn = document.getElementById("btnExporterPDF");
-  const texteOriginal = btn.textContent;
+  const htmlOriginal = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = "⏳ Génération...";
+  btn.textContent = "Génération…";
 
   try {
 
@@ -1065,7 +980,7 @@ document.getElementById("btnExporterPDF").addEventListener("click", async () => 
     afficherBulle("Une erreur est survenue lors de la génération du PDF.", "error");
   } finally {
     btn.disabled = false;
-    btn.textContent = texteOriginal;
+    btn.innerHTML = htmlOriginal;
   }
 });
 

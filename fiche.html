@@ -662,12 +662,19 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 .info-grid p span{font-weight:600;color:var(--ink)}
 
 /* Clôture par badge / code */
-.idcheck-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:16px;background:var(--line-soft);border-radius:14px}
+.idcheck-switch{display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;padding:0;margin-bottom:18px;border-bottom:2px solid var(--line)}
 .idcheck-tab{
-  appearance:none;min-height:44px;padding:0 10px;font:600 15px/1 var(--font);
-  color:var(--muted);background:transparent;border:0;border-radius:10px;cursor:pointer;
+  appearance:none;width:100%;min-height:48px;margin-bottom:-2px;padding:0 12px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 15px/1 var(--font);color:var(--muted);
+  background:transparent;border:0;border-bottom:3px solid transparent;border-radius:10px 10px 0 0;
+  cursor:pointer;touch-action:manipulation;
+  transition:color .15s,background .15s,border-color .15s;
 }
-.idcheck-tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(17,35,54,.15)}
+.idcheck-tab .i{width:18px;height:18px}
+@media (hover:hover){.idcheck-tab:hover{background:var(--primary-soft);color:var(--primary-d)}}
+.idcheck-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:-3px}
+.idcheck-tab.active{color:var(--primary);background:var(--primary-soft);border-bottom-color:var(--primary)}
 .idcheck-panel{display:none;text-align:left}
 .idcheck-panel.active{display:block}
 .idcheck-badge-iframe-wrapper{width:100%;max-width:320px;height:200px;margin:0 auto;overflow:hidden;position:relative;border-radius:12px}
@@ -3068,7 +3075,7 @@ async function ouvrirModaleClotureValidation() {
 
   const switchEl = document.getElementById("clotureSwitch");
   if (hasBadge) {
-    switchEl.style.display = "flex";
+    switchEl.style.display = "grid";
     switchClotureTab("badge");
   } else {
     // Pas de badge enregistré : on ne propose que le code

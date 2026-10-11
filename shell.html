@@ -1693,103 +1693,413 @@ body{height:100vh;height:100dvh}
 @media (max-height:420px){
   #clockCanvas{display:none}
 }
+
+/* =====================================================================
+   THÈME MODERNE HOSPITALIER — aligné sur fiche.html
+   (surcharge : placé en fin de feuille pour primer sur les anciennes règles)
+   ===================================================================== */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg:#ffffff; --surface:#ffffff; --ink:#112336; --muted:#586a7e;
+  --line:#d8e1ea; --line-soft:#e9eff5; --field:#f6f9fc;
+  --primary:#0b6fa4; --primary-d:#085a86; --primary-soft:#e3f1f9;
+  --ok:#16784a; --ok-soft:#e1f4e9;
+  --late:#b92a30; --late-soft:#fdecec;
+  --warn:#7a4f00; --warn-soft:#fff5da; --warn-line:#f0d98f;
+  --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+  --safe-t:env(safe-area-inset-top,0px); --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-l:env(safe-area-inset-left,0px);
+}
+body{font-family:var(--font);color:var(--ink);background:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button,input{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+.i.lg{width:24px;height:24px}
+
+/* ---------- BARRE DU HAUT ---------- */
+#shell-topbar{
+  background:#fff;box-shadow:none;border-bottom:1px solid var(--line);
+  padding:0 !important;
+}
+#topbar-main{
+  height:64px;box-shadow:none;background:#fff;gap:16px;
+  padding:8px calc(20px + var(--safe-r)) 8px calc(20px + var(--safe-l));
+  font-family:var(--font);
+}
+#app-title{
+  display:flex;align-items:center;gap:12px;flex:none;
+  font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--ink);white-space:nowrap;
+}
+.brand{
+  width:38px;height:38px;flex:none;display:grid;place-items:center;
+  color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));
+  border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25);
+}
+.brand .i{width:22px;height:22px;stroke-width:2.4}
+#actions{gap:8px;justify-content:flex-end}
+
+/* Boutons (identiques à .btn-id de la fiche) */
+.btn-id{
+  all:unset;box-sizing:border-box;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:0 16px;
+  font:600 15px/1 var(--font);color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+  backdrop-filter:none;
+}
+.btn-id .i{width:18px;height:18px;color:var(--primary);transition:color .15s}
+.btn-id:active{background:var(--line-soft);transform:none;box-shadow:none}
+.btn-id:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px;box-shadow:none}
+.btn-id:focus{box-shadow:none}
+@media (hover:hover){
+  .btn-id:hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d);transform:none;box-shadow:none}
+}
+.btn-id-v,.btn-id.btn-id-v{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v .i{color:#fff}
+@media (hover:hover){.btn-id-v:hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff;box-shadow:none}}
+.btn-id-c{color:var(--late);border-color:#f0c3c5}
+.btn-id-c .i{color:var(--late)}
+@media (hover:hover){.btn-id-c:hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late);box-shadow:none}.btn-id-c:hover .i{color:var(--late)}}
+@media (hover:hover){.btn-id:hover .i{color:var(--primary-d)}}
+#btnLogout{color:var(--late);border-color:#f0c3c5}
+#btnLogout .i{color:var(--late)}
+@media (hover:hover){#btnLogout:hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}#btnLogout:hover .i{color:var(--late)}}
+.btn-ico{display:inline-grid;place-items:center;line-height:1}
+#topbar-main.compact .btn-id{padding:0;width:44px;gap:0;font-size:15px}
+
+/* ---------- ONGLETS OUVERTS ---------- */
+#tabs{
+  gap:6px;align-items:flex-end;min-height:44px;
+  padding:6px calc(20px + var(--safe-r)) 0 calc(20px + var(--safe-l));
+  background:var(--field);border-top:1px solid var(--line-soft);
+}
+.tab{
+  position:relative;height:38px;box-sizing:border-box;
+  padding:0 8px 0 16px;gap:10px;
+  font:600 14px/1 var(--font);color:var(--muted);
+  background:transparent;border:1px solid transparent;border-bottom:0;
+  border-radius:12px 12px 0 0;
+  transition:background .15s,color .15s,border-color .15s;
+}
+@media (hover:hover){.tab:hover{background:var(--primary-soft);color:var(--primary-d)}}
+.tab.active{background:#fff;color:var(--primary-d);border-color:var(--line)}
+.tab.active::after{left:0;right:0;top:0;bottom:auto;height:3px;border-radius:12px 12px 0 0;background:var(--primary)}
+.tab span.close{width:22px;height:22px;font-size:11px;color:var(--muted);border-radius:8px}
+.tab.active span.close{color:var(--muted)}
+.tab span.close:hover{background:var(--late-soft);color:var(--late)}
+.tab.drag-over{border-left:3px solid var(--primary)}
+
+/* ---------- MENU OUTILS ---------- */
+.dropdown-content{
+  top:calc(100% + 8px);min-width:380px;padding:8px;
+  background:#fff;backdrop-filter:none;
+  border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 12px 32px rgba(17,35,54,.14);
+}
+.dropdown-item{
+  gap:12px;min-height:48px;margin-bottom:2px;padding:6px 8px 6px 12px;
+  font-size:15px;font-weight:600;color:var(--ink);border-radius:12px;
+  transition:background .15s;
+}
+.dropdown-item:not(:last-child){border-bottom:0}
+.dropdown-item:hover{background:var(--primary-soft);transform:none}
+.dropdown-item .i{color:var(--muted);margin-right:10px;vertical-align:-4px}
+.dropdown-item:hover .i{color:var(--primary)}
+.dropdown-item span{
+  flex:none;padding:0 14px;min-height:36px;display:inline-flex;align-items:center;
+  font:600 14px/1 var(--font);color:var(--primary-d);
+  background:#fff;border:1px solid var(--line);border-radius:10px;backdrop-filter:none;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.dropdown-item span:hover{background:var(--primary);border-color:var(--primary);color:#fff;transform:none;box-shadow:none}
+.dropdown-item span:focus{border-color:var(--primary);box-shadow:var(--ring)}
+.dropdown-item::after{
+  background:var(--ink);border-radius:12px;font-size:13px;font-weight:500;
+  box-shadow:0 8px 24px rgba(17,35,54,.25);
+}
+
+/* ---------- ACCUEIL ---------- */
+#home{background:#fff;font-family:var(--font)}
+#welcome-text{color:var(--primary);font-weight:700;letter-spacing:-.02em}
+#clockCanvas{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+#digitalClock{color:var(--ink);font-weight:600;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#currentDate{color:var(--muted);font-weight:500}
+
+/* Messages d'accueil : cartes à bordure fine + liseré de couleur */
+.home-message{
+  --st:var(--primary);--st-soft:var(--primary-soft);
+  color:var(--ink);backdrop-filter:none;
+  background:linear-gradient(90deg,var(--st-soft),#fff 55%);
+  border:1px solid var(--line);border-left:6px solid var(--st);
+  border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.home-message::before,.home-message::after{display:none;animation:none}
+.home-message.info{--st:var(--primary);--st-soft:var(--primary-soft);background:linear-gradient(90deg,var(--st-soft),#fff 55%)}
+.home-message.alerte_moyenne,.home-message.alerte-moyenne{--st:#c27a00;--st-soft:var(--warn-soft);background:linear-gradient(90deg,var(--st-soft),#fff 55%)}
+.home-message.alerte_grave,.home-message.alerte-grave{--st:var(--late);--st-soft:var(--late-soft);background:linear-gradient(90deg,var(--st-soft),#fff 55%)}
+.home-message.remerciement{--st:var(--ok);--st-soft:var(--ok-soft);color:var(--ink);background:linear-gradient(90deg,var(--st-soft),#fff 55%)}
+.home-message h3{color:var(--ink);font-weight:700;letter-spacing:-.01em}
+.home-message p.text1{color:var(--ink)}
+.home-message p.text2{color:var(--muted);opacity:1}
+.home-dot{width:10px;height:10px;background:var(--line);transition:background .15s,transform .15s}
+.home-dot.active{background:var(--primary);transform:scale(1.2)}
+.home-arrow{
+  width:34px;height:34px;display:inline-grid;place-items:center;
+  color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:10px;
+  cursor:pointer;user-select:none;font-size:12px;transition:background .15s,border-color .15s;
+}
+@media (hover:hover){.home-arrow:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+
+/* ---------- MODALES ---------- */
+.modal-overlay,.modalna,.lock-overlay{
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+}
+.modal{
+  width:min(440px,calc(100% - 32px));padding:26px 26px 24px;text-align:left;
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+}
+.modal h3{
+  margin:0 0 14px;padding-bottom:14px;font-size:19px;font-weight:700;letter-spacing:-.01em;
+  color:var(--ink);border-bottom:1px solid var(--line);
+}
+.modal p{color:var(--muted);line-height:1.5}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.modal-actions button{
+  min-height:46px;padding:0 18px;font:600 15px/1 var(--font);
+  color:#fff;background:var(--primary);border:1px solid var(--primary);border-radius:12px;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.modal-actions button:hover{background:var(--primary-d);border-color:var(--primary-d)}
+
+/* Accès refusé / erreur */
+.modalna .card{
+  width:min(440px,calc(100% - 32px));padding:30px 28px 28px;max-width:none;
+  border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+}
+.modalna h2{margin:0 0 10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin:0 0 8px;font-size:16px;color:var(--ink)}
+.modalna p:last-child{margin-bottom:0}
+
+/* ---------- VEILLE ---------- */
+.lock-modal{
+  width:min(620px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow-y:auto;
+  padding:26px 28px 24px;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.35);
+}
+.lock-modal h2{margin:0 0 8px;font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.lock-modal p{color:var(--muted)}
+.lock-modal strong{color:var(--ink)}
+.lock-modal input{
+  min-height:48px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:12px;box-sizing:border-box;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.lock-modal input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+.lock-modal input[type="password"],#unlockPassword{margin-top:14px}
+.lock-badge-input{min-height:0 !important;padding:0 !important;margin:-1px !important;border:0 !important}
+
+/* Volets Badge / Mot de passe : vrais onglets pleine largeur */
+.lock-switch{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;
+  margin:18px 0 16px;padding:0;background:transparent;border-radius:0;border-bottom:2px solid var(--line);
+}
+.lock-tab{
+  appearance:none;width:100%;min-height:48px;margin-bottom:-2px;padding:0 12px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 15px/1 var(--font);color:var(--muted);
+  background:transparent;border:0;border-bottom:3px solid transparent;border-radius:10px 10px 0 0;
+  cursor:pointer;touch-action:manipulation;transition:color .15s,background .15s,border-color .15s;
+}
+.lock-tab .i{width:18px;height:18px}
+@media (hover:hover){.lock-tab:hover{background:var(--primary-soft);color:var(--primary-d)}}
+.lock-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:-3px}
+.lock-tab.active{background:var(--primary-soft);color:var(--primary);border-bottom-color:var(--primary);box-shadow:none}
+.lock-panel-placeholder{height:0;margin:0}
+.lock-panel{min-height:0}
+.lock-badge-hint{color:var(--muted)}
+.lock-actions{gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.lock-actions button{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;font:600 15px/1 var(--font);
+  color:#fff;background:var(--primary);border:1px solid var(--primary);border-radius:12px;
+  transition:background .15s,border-color .15s;
+}
+.lock-actions button:hover{background:var(--primary-d);border-color:var(--primary-d)}
+.logout-btn{color:var(--late) !important;background:#fff !important;border:1px solid #f0c3c5 !important}
+.logout-btn:hover{background:var(--late-soft) !important;border-color:#e7a9ac !important;color:var(--late) !important}
+.lock-error{color:var(--late);font-weight:600}
+.login-badge-iframe-wrapper,.login-password-iframe-wrapper{max-width:100%;border-radius:14px;border:1px solid var(--line-soft)}
+
+/* ---------- BLOCAGE SYSTÈME ---------- */
+.system-block-modal{border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.5)}
+.system-block-icon{
+  width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;
+  font-size:28px;border-radius:50%;background:var(--late-soft);color:var(--late);
+}
+.system-block-modal h2{color:var(--late);font-size:21px;font-weight:700}
+.system-block-modal p{color:var(--ink)}
+.system-block-comment{background:var(--field);border:1px solid var(--line);border-left:4px solid var(--late);border-radius:10px;color:var(--ink) !important}
+.system-block-footer{color:var(--muted) !important}
+.modal-system-unlocked{border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3)}
+.unlock-icon{background:var(--ok-soft);color:var(--ok)}
+.modal-system-unlocked h2{color:var(--ink);font-size:21px;font-weight:700}
+.modal-system-unlocked p{color:var(--muted)}
+#btnSystemUnlockedOk{min-height:46px;font-family:var(--font);background:var(--primary);border-radius:12px}
+#btnSystemUnlockedOk:hover{background:var(--primary-d)}
+
+/* ---------- NOTIFICATIONS ---------- */
+.toast{
+  display:flex;align-items:center;gap:10px;max-width:min(380px,calc(100vw - 24px));
+  padding:12px 16px;font:600 14px/1.35 var(--font);
+  color:var(--ink);background:#fff;border:1px solid var(--line);border-left:5px solid var(--primary);
+  border-radius:12px;box-shadow:0 12px 32px rgba(17,35,54,.18);
+}
+.toast.success{border-left-color:var(--ok);background:linear-gradient(90deg,var(--ok-soft),#fff 60%)}
+.toast.error{border-left-color:var(--late);background:linear-gradient(90deg,var(--late-soft),#fff 60%)}
+.toast.warning{border-left-color:#c27a00;background:linear-gradient(90deg,var(--warn-soft),#fff 60%)}
+
+.lock-modal h2{display:flex;align-items:center;justify-content:center;gap:10px}
+.lock-modal h2 .i{color:var(--primary)}
+.lock-actions button .i{width:18px;height:18px}
+.dropdown-item{align-items:center}
+#btnOutils .i.sm{margin-left:-2px}
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar-thumb{background-color:rgba(11,111,164,.35)}
+::-webkit-scrollbar-thumb:hover{background-color:rgba(8,90,134,.6)}
+
+@media (max-width:700px){
+  #topbar-main{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r));gap:10px}
+  #tabs{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}
+  .modal-actions .btn-id,.modal-actions button,.lock-actions button{flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){.tab,.btn-id,.dropdown-item,.home-message{transition:none !important}}
 </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></symbol>
+  <symbol id="i-ambulance" viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 12v6"/></symbol>
+  <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-log-in" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5M15 12H3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 14h3"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M4 10h12M4 14h9M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
+
 <div id="shell-topbar">
   <div id="topbar-main">
-    <span id="app-title">🚑 GestUrg2</span>
+    <span id="app-title"><span class="brand" aria-hidden="true"><svg class="i" aria-hidden="true"><use href="#i-cross"/></svg></span>GestUrg2</span>
 
     <div id="actions">
       <button class="btn-id"
         data-page="urgences"
         title="Urgences" aria-label="Urgences"
         onclick="openTab('Urgences','urgences.html')">
-    <span class="btn-ico">🚑</span><span class="btn-label">Urgences</span>
+    <span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-ambulance"/></svg></span><span class="btn-label">Urgences</span>
 </button>
 
 <button class="btn-id"
         data-page="regulation"
         title="Tableau" aria-label="Tableau"
         onclick="openTab('Tableau','regulation.html')">
-    <span class="btn-ico">📊</span><span class="btn-label">Tableau</span>
+    <span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg></span><span class="btn-label">Tableau</span>
 </button>
 <div class="dropdown" id="dropdownOutils">
-  <button class="btn-id" id="btnOutils" title="Outils" aria-label="Outils"><span class="btn-ico">🧰</span><span class="btn-label">Outils ▾</span></button>
+  <button class="btn-id" id="btnOutils" title="Outils" aria-label="Outils"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-briefcase"/></svg></span><span class="btn-label">Outils</span><svg class="i sm" aria-hidden="true"><use href="#i-chevron"/></svg></button>
 
   <div class="dropdown-content" id="menuOutils">
 
     <div class="dropdown-item" data-desc="Accéder aux dossiers et comptes rendus des patients." data-page="fichepatient">
-       👥 Patients
+       <svg class="i sm" aria-hidden="true"><use href="#i-users"/></svg>Patients
      <span onclick="openTab('Patients','patients.html')">Ouvrir</span>
     </div>
 <div class="dropdown-item" data-desc="Gestion des appels des tickets patients." data-page="bureau">
-       🎟️ Tickets-Accueil
+       <svg class="i sm" aria-hidden="true"><use href="#i-ticket"/></svg>Tickets-Accueil
      <span onclick="openTab('Tickets','bureau.html')">Ouvrir</span>
     </div>
       <div class="dropdown-item" data-desc="Créer un patient ou une hospitalisation" data-page="ajouterpatient">
-       ➕ Entrée aux Urgences
+       <svg class="i sm" aria-hidden="true"><use href="#i-plus"/></svg>Entrée aux Urgences
      <span onclick="openTab('Entrées patients','ajouterpatient.html')">Ouvrir</span>
     </div>
  
 
     <div class="dropdown-item" data-desc="Établir les factures patients. Pré-remplissage possible via la fiche patient." data-page="facturation">
-      💳 Facturation
+      <svg class="i sm" aria-hidden="true"><use href="#i-euro"/></svg>Facturation
       <span onclick="openTab('Facturation','Facturation.html')">Ouvrir</span>
     </div>
 
 
     <div class="dropdown-item" data-desc="Imprimer des fiches conseils de sortie adaptées à la pathologie." data-page="fichesconseil">
-      📋 Fiches conseils
+      <svg class="i sm" aria-hidden="true"><use href="#i-clipboard"/></svg>Fiches conseils
       <span onclick="openTab('Fiches conseils','fichesconseilf.html')">Ouvrir</span>
     </div>
 
     <div class="dropdown-item" data-desc="Visualiser les examens, rédiger les comptes rendus et gérer l’imagerie." data-page="gestionnaireradiologie">
-      🩻 Gestionnaire imagerie
+      <svg class="i sm" aria-hidden="true"><use href="#i-scan"/></svg>Gestionnaire imagerie
       <span onclick="openTab('Imagerie','gestionnaireradiologie.html')">Ouvrir</span>
     </div>
 
     <div class="dropdown-item" data-desc="Écrire un email à un patient. Pré-remplissage possible via la fiche patient." data-page="mailto">
-      ✉️ Mail To patients
+      <svg class="i sm" aria-hidden="true"><use href="#i-mail"/></svg>Mail To patients
       <span onclick="openTab('Mail','mailto.html')">Ouvrir</span>
     </div>
 
    
 <div class="dropdown-item" data-desc="Messagerie interne à GestUrg2">
-      💬 Ma Messagerie GestUrg2
+      <svg class="i sm" aria-hidden="true"><use href="#i-message"/></svg>Ma Messagerie GestUrg2
       <span onclick="openTab('Messagerie','messagerie.html')">Ouvrir</span>
     </div>
     <div class="dropdown-item" data-desc="Administration de la messagerie de GestUrg2" data-page="messagerieadministration">
-      🛠️ Administration Messagerie GestUrg2
+      <svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>Administration Messagerie GestUrg2
       <span onclick="openTab('Messagerie-Admin','messagerieadministration.html')">Ouvrir</span>
     </div>
     <div class="dropdown-item" data-desc="Statistiques des avis patients" data-page="adminavis">
-      🗣️ Administration avis GestUrg2
+      <svg class="i sm" aria-hidden="true"><use href="#i-message"/></svg>Administration avis GestUrg2
       <span onclick="openTab('Admin avis','adminavis.html')">Ouvrir</span>
     </div>
     <div class="dropdown-item" data-desc="Administration et paramétrage de GestUrg2" data-page="parametres">
-      ⚙️ Administration GestUrg2
+      <svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>Administration GestUrg2
       <span onclick="openTab('Administration','parametres.html')">Ouvrir</span>
     </div>
       <div class="dropdown-item" data-desc="Gestion des comptes d'accès à GestUrg2" data-page="admin">
-🔐 Gestion des comptes GestUrg2
+<svg class="i sm" aria-hidden="true"><use href="#i-key"/></svg>Gestion des comptes GestUrg2
       <span onclick="openTab('Gestion des comptes','admin.html')">Ouvrir</span>
     </div>
      <div class="dropdown-item" data-desc="Gérer les badges d'accès à GestUrg2 des personnels." data-page="gestionbadge">
-     💳 Gestion des badges
+     <svg class="i sm" aria-hidden="true"><use href="#i-id"/></svg>Gestion des badges
       <span onclick="openTab('Gestion badges','gestionbadge.html')">Ouvrir</span>
     </div>
     <div class="dropdown-item" data-desc="Voir les données de votre compte (non modifiables).">
-      👤 Mon compte professionnel
+      <svg class="i sm" aria-hidden="true"><use href="#i-user"/></svg>Mon compte professionnel
       <span onclick="openTab('Mon compte','viewacountf.html')">Ouvrir</span>
     </div>
 
   </div>
 </div>
-	  <button class="btn-id" title="Tout fermer" aria-label="Tout fermer" onclick="closeAllTabs()"><span class="btn-ico">🧹</span><span class="btn-label">Tout Fermer</span></button>
-<button class="btn-id" title="Verrouiller" aria-label="Verrouiller" onclick="lockSession()"><span class="btn-ico">🔐</span><span class="btn-label">Vérrouiller</span></button>
-      <button class="btn-id" id="btnLogout" title="Se déconnecter" aria-label="Se déconnecter"><span class="btn-ico">→]</span><span class="btn-label">Se déconnecter</span></button>
+	  <button class="btn-id" title="Tout fermer" aria-label="Tout fermer" onclick="closeAllTabs()"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-x-circle"/></svg></span><span class="btn-label">Tout Fermer</span></button>
+<button class="btn-id" title="Verrouiller" aria-label="Verrouiller" onclick="lockSession()"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><span class="btn-label">Verrouiller</span></button>
+      <button class="btn-id" id="btnLogout" title="Se déconnecter" aria-label="Se déconnecter"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg></span><span class="btn-label">Se déconnecter</span></button>
 
     </div>
 
@@ -1805,7 +2115,7 @@ body{height:100vh;height:100dvh}
 </div>
  <div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+    <h2>Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
         <p>veuillez contacter un administrateur pour plus d'informations.</p>
 
@@ -1813,7 +2123,7 @@ body{height:100vh;height:100dvh}
 </div>
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
+    <h2>Oups, une erreur est survenue</h2>
     <p>Veuillez re-essayer un peu plus tard</p>
         <p>Si le problème persiste, contactez un administrateur</p>
 
@@ -1850,7 +2160,7 @@ body{height:100vh;height:100dvh}
 
 <div id="tabOverflowModal" class="modal-overlay">
   <div class="modal">
-    <h3>🚨 Trop d’onglets ouverts</h3>
+    <h3>Trop d’onglets ouverts</h3>
     <p>
       La largeur disponible ne permet plus d’afficher de nouveaux onglets.<br>
       Veuillez fermer un ou plusieurs onglets pour continuer.
@@ -1868,13 +2178,13 @@ body{height:100vh;height:100dvh}
 <!-- ===== VEILLE AUTO ===== -->
 <div id="lockOverlay" class="lock-overlay">
   <div class="lock-modal">
-    <h2>🔒 GestUrg2 s'est mis en veille</h2>
-     <p>Pour des raisons de sécurité, votre session GestUrg2 a été vérouillée.</p>
+    <h2><svg class="i lg" aria-hidden="true"><use href="#i-lock"/></svg> GestUrg2 s'est mis en veille</h2>
+     <p>Pour des raisons de sécurité, votre session GestUrg2 a été verrouillée.</p>
 <strong id="lockUserName"></strong>
 
     <div class="lock-switch">
-      <button type="button" id="lockTabBadge" class="lock-tab" onclick="switchLockTab('badge')">🪪 Badge</button>
-      <button type="button" id="lockTabPassword" class="lock-tab" onclick="switchLockTab('password')">🔑 Mot de passe</button>
+      <button type="button" id="lockTabBadge" class="lock-tab" onclick="switchLockTab('badge')"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> Badge</button>
+      <button type="button" id="lockTabPassword" class="lock-tab" onclick="switchLockTab('password')"><svg class="i" aria-hidden="true"><use href="#i-key"/></svg> Mot de passe</button>
     </div>
 
     <!-- Volet BADGE -->
@@ -1913,8 +2223,8 @@ body{height:100vh;height:100dvh}
 
     <div class="lock-actions">
        
-      <button class="logout-btn" onclick="forceLogout()">→] Se déconnecter</button>
-      <button onclick="attemptUnlock()">[→ Se reconnecter</button>
+      <button class="logout-btn" onclick="forceLogout()"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg> Se déconnecter</button>
+      <button onclick="attemptUnlock()"><svg class="i" aria-hidden="true"><use href="#i-log-in"/></svg> Se reconnecter</button>
     </div>
   </div>
 </div>
@@ -2959,37 +3269,13 @@ if (!notificationContainer) {
   document.body.appendChild(notificationContainer);
 }
 function afficherBulle(msg, type = 'info') {
-   
+
   const el = document.createElement('div');
+  el.className = 'toast ' + type;
   el.textContent = msg;
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '8px';
-  el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-  el.style.fontSize = '14px';
-  el.style.fontWeight = '500';
   el.style.opacity = '0';
   el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
   el.style.transform = 'translateY(-10px)';
-
-  // --- Code couleur selon type ---
-  switch (type) {
-    case 'success':
-      el.style.background = '#e6ffed'; // vert clair
-      el.style.color = '#064e22';      // texte vert foncé
-      break;
-    case 'error':
-      el.style.background = '#ffdede'; // rouge clair
-      el.style.color = '#a00';         // texte rouge foncé
-      break;
-    case 'warning':
-      el.style.background = '#fff4e5'; // orange clair
-      el.style.color = '#663c00';      // texte orange foncé
-      break;
-    default: // info ou autre
-      el.style.background = '#333';    // gris foncé
-      el.style.color = '#fff';         // texte blanc
-      break;
-  }
 
   notificationContainer.appendChild(el);
 

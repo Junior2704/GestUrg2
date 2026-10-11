@@ -1,646 +1,619 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <link rel="icon" type="image/jpeg" href="logo.png" />
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Prescriptions médicamenteuses</title>
+  <link rel="icon" type="image/jpeg" href="logo.png" />
 
 <style>
-   body{
-    font-family: Inter, Arial, Helvetica, sans-serif;
-    margin: 12px;
-    background:#ffffff;
-    color:#1d2d50;
+  /* =====================================================================
+     TOKENS
+     ===================================================================== */
+  :root{
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --bg:#e9eff5;
+    --surface:#ffffff;
+    --ink:#112336;
+    --muted:#586a7e;
+    --line:#d8e1ea;
+    --line-soft:#e9eff5;
+    --field:#f6f9fc;
+
+    --primary:#0b6fa4;
+    --primary-d:#085a86;
+    --primary-soft:#e3f1f9;
+
+    --ok:#16784a;     --ok-soft:#e1f4e9;
+    --late:#b92a30;   --late-soft:#fdecec;
+    --plan:#4a5b6e;   --plan-soft:#eceff3;
+    --warn:#7a4f00;   --warn-soft:#fff5da;  --warn-line:#f0d98f;
+
+    --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+    --safe-t:env(safe-area-inset-top,0px);
+    --safe-r:env(safe-area-inset-right,0px);
+    --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-l:env(safe-area-inset-left,0px);
   }
 
-  h1{
-    font-size:22px;
-    font-weight:700;
-    color:#0b5ed7;
-    margin-bottom:14px;
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:var(--font);
+    font-size:16px;
+    line-height:1.4;
+    color:var(--ink);
+    background:var(--bg);
+    -webkit-text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;
   }
+  button{font-family:inherit}
+  h1,h2,h3,p{margin:0}
 
-  .container{max-width:1200px;margin:0 auto}
+  .i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-  .row{display:flex;gap:16px}
+  /* =====================================================================
+     STATUTS (couleur portée par --st / --st-soft)
+     ===================================================================== */
+  [data-status="a-donner"]{--st:var(--primary);--st-soft:var(--primary-soft)}
+  [data-status="en-retard"]{--st:var(--late);--st-soft:var(--late-soft)}
+  [data-status="pris"]{--st:var(--ok);--st-soft:var(--ok-soft)}
+  [data-status="prevu"]{--st:var(--plan);--st-soft:var(--plan-soft)}
 
-  .col{
-    background:#ffffff;
-    border-radius:12px;
-    padding:16px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.08);
-    border:1px solid #e3e9f2;
-  }
-
-  .col.small{flex:0 0 360px}
-  .col.big{flex:1}
-
-  #search{
-width: 100%;
-    box-sizing: border-box;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ccd6e0;
-    background:#f8fbff;
-   
-
-}
-
-  #medicaments-list{
-    max-height:480px;
-    overflow:auto;
-    margin-top:8px;
-    padding:4px;
-  }
-
-  .medicament-item{
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #e0e6ef;
-    margin-bottom:8px;
-    background:white;
-    cursor:pointer;
-    transition:0.15s;
-  }
-  .medicament-item:hover{
-    background:#eaf3ff;
-    border-color:#bcd4ff;
-  }
-
-  /* --- HISTORIQUE --- */
-  .history-list{max-height:480px;overflow:auto;margin-top:12px;}
-
-  .history-item{
-    padding:12px;
-    border-radius:10px;
-    margin-bottom:10px;
-    background:#f7f9fc;
-    border-left:5px solid #b8c7e8;
+  /* =====================================================================
+     STRUCTURE
+     ===================================================================== */
+  .app{
+    height:100dvh;
     display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    flex-direction:column;
+    gap:12px;
+    padding:calc(12px + var(--safe-t)) calc(12px + var(--safe-r)) calc(12px + var(--safe-b)) calc(12px + var(--safe-l));
   }
 
-  /* couleurs selon statut */
-  .history-item[data-status="a-donner"]{
-    border-left-color:#0d6efd;
+  .layout{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:clamp(320px,36vw,440px) 1fr;
+    gap:12px;
   }
-  .history-item[data-status="en-retard"]{
-    border-left-color:#ff6b6b;
-    background:#ffecec;
+
+  .panel{
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
   }
-  .history-item[data-status="pris"]{
-    border-left-color:#32c671;
-    background:#e8fff1;
+  .panel-head{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+  .panel-title{
+    display:flex;align-items:center;gap:10px;
+    font-size:18px;font-weight:700;letter-spacing:-.01em;
   }
+  .panel-title .i{color:var(--primary)}
+  .hint{margin-top:6px;font-size:14px;color:var(--muted)}
+  .list{flex:1;min-height:0;overflow:auto;padding:14px 14px 18px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+  /* Onglets (petits écrans uniquement) */
+  .tabs{display:none}
+
+  /* =====================================================================
+     RECHERCHE + CATALOGUE
+     ===================================================================== */
+  .search{position:relative;margin-top:14px}
+  .search .i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  #search{
+    width:100%;
+    min-height:50px;
+    padding:0 14px 0 44px;
+    font:inherit;font-size:16px;
+    color:var(--ink);
+    background:var(--field);
+    border:1px solid var(--line);
+    border-radius:14px;
+  }
+  #search:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 4px rgba(11,111,164,.15)}
+  .count{margin-top:10px;font-size:13px;color:var(--muted)}
+
+  .med{
+    display:flex;align-items:center;gap:12px;
+    min-height:56px;
+    padding:6px 8px 6px 12px;
+    margin-bottom:8px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    cursor:pointer;
+    user-select:none;-webkit-user-select:none;
+    touch-action:manipulation;
+    transition:background .15s,border-color .15s;
+  }
+  @media (hover:hover){
+    .med:hover{background:var(--primary-soft);border-color:#b5d6ea}
+  }
+  .med-ico{
+    width:34px;height:34px;flex:none;
+    display:grid;place-items:center;
+    border-radius:10px;
+    background:var(--primary-soft);color:var(--primary);
+  }
+  .med-ico .i{width:18px;height:18px}
+  .med-name{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}
+  .med-add{
+    flex:none;width:44px;height:44px;
+    display:grid;place-items:center;
+    border:1px solid var(--line);border-radius:12px;
+    background:#fff;color:var(--primary);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .med-add:active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .med-free{border-style:dashed;background:var(--field)}
+  .med-free .med-ico{background:var(--plan-soft);color:var(--plan)}
+  .med-custom{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+  .med-custom .med-ico{background:#fff0c2;color:var(--warn)}
+  .med-custom .med-name{font-weight:700}
+
+  /* =====================================================================
+     FILTRES + HISTORIQUE
+     ===================================================================== */
+  .chips{display:flex;gap:8px;margin-top:14px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;
+    display:inline-flex;align-items:center;gap:8px;
+    min-height:42px;padding:0 14px;
+    font:600 14px/1 var(--font);
+    color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:999px;
+    cursor:pointer;touch-action:manipulation;
+  }
+  .chip:not([data-status]){--st:var(--ink)}
+  .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--st)}
+  .chip .n{padding:3px 8px;border-radius:999px;background:var(--line-soft);font-size:12px;color:var(--muted)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip[aria-pressed="true"] .n{background:rgba(255,255,255,.2);color:#fff}
+
+  .rx{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 14px 14px 16px;
+    margin-bottom:10px;
+    background:linear-gradient(90deg,var(--st-soft),#fff 45%);
+    border:1px solid var(--line);
+    border-left:6px solid var(--st);
+    border-radius:12px;
+  }
+  .rx[data-status="en-retard"]{border-color:#f0c3c5;border-left-color:var(--st)}
+  .rx-main{flex:1;min-width:0}
+  .rx-name{font-size:17px;font-weight:700;letter-spacing:-.005em;overflow-wrap:anywhere}
+  .rx-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px;font-size:14px;color:var(--muted)}
+  .rx-when{display:inline-flex;align-items:center;gap:6px}
+  .rx-when .i{width:16px;height:16px}
+  .rx-meta .late{color:var(--late);font-weight:600}
+  .rx-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;min-width:192px}
 
   .badge{
-    padding:4px 8px;
-    border-radius:6px;
-    font-size:12px;
-    font-weight:600;
-  }
-
-  /* couleur badge statut */
-  .badge[data-status="a-donner"]{
-    background:#dceaff;
-    color:#0d6efd;
-  }
-  .badge[data-status="en-retard"]{
-    background:#ffdada;
-    color:#c62828;
-  }
-  .badge[data-status="pris"]{
-    background:#cbf7d5;
-    color:#146c2e;
-  }
-
-  .btn{
+    display:inline-flex;align-items:center;gap:7px;
     padding:6px 12px;
-    border-radius:6px;
-    border:1px solid #aac2dd;
-    background:#f4f8ff;
-    cursor:pointer;
-    font-size:13px;
+    font-size:14px;font-weight:700;line-height:1;
+    color:var(--st);background:var(--st-soft);
+    border:1px solid color-mix(in srgb,var(--st) 25%,transparent);
+    border-radius:999px;white-space:nowrap;
   }
-  .btn:hover{
-    background:#e2ecff;
+  .badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--st)}
+
+  .empty{padding:28px 12px;text-align:center;color:var(--muted);font-size:15px}
+
+  /* =====================================================================
+     BOUTONS
+     ===================================================================== */
+  .btn{
+    appearance:none;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:46px;padding:0 18px;
+    font:600 15px/1 var(--font);
+    color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    cursor:pointer;touch-action:manipulation;
+    transition:background .15s,border-color .15s,color .15s;
   }
-  .btn.primary{
-    background:#0b5ed7;
-    color:white;
-    border-color:#0b5ed7;
-  }
-  .btn.primary:hover{
-    background:#0948a8;
+  .btn:active{background:var(--line-soft)}
+  .btn:focus-visible,.chip:focus-visible,.tab:focus-visible,.med-add:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+  .btn-icon{width:46px;padding:0;color:var(--primary)}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:active{background:var(--primary-d)}
+  .btn-success{background:var(--ok);border-color:var(--ok);color:#fff}
+  .btn-success:active{background:#0f5f3a}
+  .btn-danger{color:var(--late);background:var(--late-soft);border-color:#f0c3c5}
+  @media (hover:hover){
+    .btn:hover{background:var(--line-soft)}
+    .btn-primary:hover{background:var(--primary-d)}
+    .btn-success:hover{background:#0f5f3a}
+    .btn-danger:hover{background:#fbdcdc}
   }
 
-  /* --- MODALES --- */
+  /* =====================================================================
+     MODALES
+     ===================================================================== */
   .modal{
-    position:fixed;
-    inset:0;
+    position:fixed;inset:0;
     display:none;
-    align-items:center;
-    justify-content:center;
-    background:rgba(0,0,0,0.45);
-    backdrop-filter: blur(3px);
+    align-items:center;justify-content:center;
+    padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+    background:rgba(10,25,41,.5);
+    backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+    z-index:9999;
+    animation:fade .15s ease-out;
   }
   .modal .card{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    min-width:360px;
-    max-width:720px;
-    box-shadow:0 4px 16px rgba(0,0,0,0.2);
-    border:1px solid #e3e9f2;
+    width:min(560px,100%);
+    max-height:100%;
+    display:flex;flex-direction:column;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(10,25,41,.3);
+    overflow:hidden;
+    animation:rise .2s ease-out;
   }
-
-  label{
-    margin-top:10px;
-    font-size:14px;
-    font-weight:600;
-    color:#1d2d50;
+  .modal .card.sm{width:min(480px,100%)}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+  .sheet-head h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .sheet-close{
+    width:44px;height:44px;flex:none;margin:-6px -8px -6px 0;
+    display:grid;place-items:center;
+    background:transparent;border:0;border-radius:12px;color:var(--muted);
+    cursor:pointer;touch-action:manipulation;
   }
+  .sheet-close:active{background:var(--line-soft)}
+  .sheet-body{flex:1;min-height:0;overflow:auto;padding:18px 20px;-webkit-overflow-scrolling:touch}
+  .sheet-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--field)}
 
-  input[type=text],textarea,select,
-  input[type=datetime-local],input[type=number]{
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  .field > label,.lbl{display:block;margin-bottom:6px;font-size:14px;font-weight:600;color:var(--ink)}
+  input[type=text],input[type=number],input[type=datetime-local],textarea{
     width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ccd6e0;
-    background:#f8fbff;
-    margin-top:4px;
+    min-height:48px;
+    padding:12px 14px;
+    font:inherit;font-size:16px;  /* 16px : évite le zoom automatique d'iOS */
+    color:var(--ink);
+    background:var(--field);
+    border:1px solid var(--line);border-radius:12px;
+  }
+  textarea{resize:vertical;min-height:92px}
+  input:focus,textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 4px rgba(11,111,164,.15)}
+  input[readonly]{color:var(--muted);background:var(--line-soft)}
+  #pres-datetime{margin-top:10px}
+
+  .alert{
+    display:flex;gap:12px;align-items:flex-start;
+    margin-bottom:16px;padding:12px 14px;
+    font-size:14px;line-height:1.45;
+    color:var(--warn);background:var(--warn-soft);
+    border:1px solid var(--warn-line);border-radius:12px;
+  }
+  .alert .i{margin-top:1px}
+
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--line-soft);border-radius:14px}
+  .seg label{position:relative;margin:0}
+  .seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+  .seg span{
+    display:flex;align-items:center;justify-content:center;
+    min-height:44px;padding:0 8px;text-align:center;
+    font-size:15px;font-weight:600;color:var(--muted);
+    border-radius:10px;
+  }
+  .seg input:checked + span{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(17,35,54,.15)}
+  .seg input:focus-visible + span{outline:3px solid rgba(11,111,164,.4)}
+
+  label.switch{
+    position:relative;
+    margin-bottom:0;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    min-height:52px;padding:0 14px;
+    background:var(--field);border:1px solid var(--line);border-radius:12px;
+    font-size:15px;font-weight:600;cursor:pointer;touch-action:manipulation;
+  }
+  .switch-text{display:flex;align-items:center;gap:10px}
+  .switch-text .i{color:var(--primary)}
+  .switch input{position:absolute;opacity:0;width:1px;height:1px}
+  .track{position:relative;width:50px;height:30px;border-radius:999px;background:#c2cedb;transition:background .2s}
+  .track::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+  .switch input:checked + .track{background:var(--primary)}
+  .switch input:checked + .track::after{transform:translateX(20px)}
+  .switch input:focus-visible + .track{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+
+  #frequency-block{margin-top:14px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pair label{display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:var(--muted)}
+
+  /* Détails */
+  .detail-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .detail-name{font-size:20px;font-weight:700;letter-spacing:-.01em;overflow-wrap:anywhere}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}
+  .fact{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+  .fact dt{font-size:13px;color:var(--muted)}
+  .fact dd{margin:3px 0 0;font-weight:600}
+  .note{margin-bottom:12px}
+  .note-label{margin-bottom:6px;font-size:14px;font-weight:600}
+  .note-text{padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere;background:#fff;border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:10px}
+  #modal-details .sheet-foot{justify-content:space-between}
+  #btnDeleteDetail{margin-right:auto}
+  #modal-details .sheet-foot .btn-close{margin-left:auto}
+
+  /* Modales d'état (accès refusé / erreur) */
+  .state-card{padding:30px 28px 28px;text-align:center}
+  .state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+  .state-ico .i{width:28px;height:28px}
+  .state-card h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+  .state-card p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+  .state-card p:last-child{margin-bottom:0}
+
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion:reduce){.modal,.modal .card{animation:none}.track,.track::after{transition:none}}
+
+  /* Barres de défilement */
+  *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+  /* =====================================================================
+     RESPONSIVE
+     ===================================================================== */
+
+  /* iPad portrait & plus petit : un seul panneau à la fois, via onglets */
+  @media (max-width:899px){
+    .tabs{
+      display:grid;grid-template-columns:1fr 1fr;gap:4px;
+      padding:4px;
+      background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    }
+    .tab{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      min-height:48px;padding:0 12px;
+      font:600 16px/1 var(--font);color:var(--muted);
+      background:transparent;border:0;border-radius:10px;
+      cursor:pointer;touch-action:manipulation;
+    }
+    .tab[aria-selected="true"]{background:var(--primary);color:#fff}
+    .tab-badge{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;font-size:13px;font-weight:700;color:#fff;background:var(--late);border-radius:999px}
+    .tab[aria-selected="true"] .tab-badge{background:#fff;color:var(--late)}
+
+    .layout{grid-template-columns:1fr}
+    .panel{display:none}
+    .panel.is-active{display:flex}
   }
 
-  .flex{display:flex;gap:12px;align-items:center}
-  .muted{color:#627089;font-size:13px;margin-top:4px}
-/* Badge d'état du médicament */
-.badge {
-    font-size: 1.1rem;          /* plus gros */
-    font-weight: 700;           /* bien visible */
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: #dceaff;        /* bleu clair lisible */
-    color: #0d47a1;             /* bleu foncé médical */
-    display: inline-block;
-}
-.modal {
-    position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
+  /* Téléphone / très petit écran */
+  @media (max-width:640px){
+    .app{padding:calc(8px + var(--safe-t)) calc(8px + var(--safe-r)) calc(8px + var(--safe-b)) calc(8px + var(--safe-l));gap:8px}
+    .rx{flex-wrap:wrap;gap:10px 12px}
+    .rx-main{flex:1 1 55%}
+    .rx-actions{width:100%;min-width:0}
+    .rx-actions .btn-primary{flex:1}
+    .modal{align-items:flex-end;padding:0}
+    .modal .card,.modal .card.sm{width:100%;max-height:92dvh;border-radius:20px 20px 0 0;padding-bottom:var(--safe-b)}
+    .state-card{border-radius:20px}
+    #modal-no-access,#modal-error{align-items:center;padding:16px}
+    #modal-no-access .card,#modal-error .card{border-radius:20px;max-height:100%}
+    .pair{grid-template-columns:1fr}
+  }
 
-.modal .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modal h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modal p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modal .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-.history-item {
-    display: grid;
-    grid-template-columns: 1fr 100px 40px 110px 110px; 
-    align-items: center;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    background: #f7f9fc;
-    border-left: 5px solid #b8c7e8;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.history-center {
-    justify-self: center;
-}
-
-.history-right {
-    justify-self: end;
-}
-
-.container {
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
-
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-
-/* Chrome, Edge, Opera */
-::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-::-webkit-scrollbar-track {
-    background: #eef3ff;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #2196f3, #1565c0);
-    border-radius: 10px;
-    border: 2px solid #eef3ff;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #42a5f5, #1976d2);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #2196f3 #eef3ff;
-}
-
-.row{
-  display:flex;
-  gap:16px;
-  align-items:stretch; /* important : force même hauteur */
-}
-
-/* Hauteur commune des deux blocs */
-.col{
-  height: 90vh; /* ajuste si besoin */
-  display:flex;
-  flex-direction:column;
-}
-
-/* zones scrollables */
-#medicaments-list,
-#history{
-  flex:1;
-  overflow:auto;
-  max-height:none; /* on enlève l'ancien comportement */
-}
-.container{
-  max-width: 100%;
-}
-
-.row{
-  display: grid;
-  grid-template-columns: 500px 1fr;
-  gap: 16px;
-}
-/* ===== MODALE PRESCRIPTION CLEAN UI ===== */
-
-#modal-prescription .card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 22px 26px;
-  width: 520px;
-  max-width: 95vw;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-/* Titre */
-#modal-prescription h3 {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #0b5ed7;
-  border-bottom: 1px solid #e6eef9;
-  padding-bottom: 10px;
-}
-
-/* Labels */
-#modal-prescription label {
-  display: block;
-  margin-top: 14px;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-/* Champs input / textarea */
-#modal-prescription input[type="text"],
-#modal-prescription input[type="number"],
-#modal-prescription input[type="datetime-local"],
-#modal-prescription textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #d6deea;
-  background: #f8fbff;
-  font-size: 14px;
-  transition: 0.2s;
-}
-
-/* focus propre */
-#modal-prescription input:focus,
-#modal-prescription textarea:focus {
-  outline: none;
-  border-color: #0b5ed7;
-  box-shadow: 0 0 0 3px rgba(11,94,215,0.15);
-  background: #fff;
-}
-
-/* warning mieux intégré */
-#pres-warning {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-/* radio group propre */
-#modal-prescription .flex {
-  gap: 18px;
-  margin-top: 6px;
-  margin-bottom: 4px;
-  align-items: center;
-}
-
-#modal-prescription .flex label {
-  margin: 0;
-  font-weight: 500;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* bloc fréquence (évite effet collé) */
-#modal-prescription .flex input {
-  flex: 1;
-}
-
-/* bouton zone */
-#modal-prescription .card > div:last-child {
-  margin-top: 18px;
-  padding-top: 12px;
-  border-top: 1px solid #eef2f7;
-}
-
-/* espacement général */
-#modal-prescription * {
-  box-sizing: border-box;
-}
-#modal-prescription .card {
-  font-size: 16px;
-}
-#modal-prescription .flex {
-  justify-content: center;
-  gap: 20px;
-  align-items: center;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
+  /* iPad paysage avec clavier à l'écran : modales plus compactes */
+  @media (max-height:520px){
+    .sheet-head{padding:12px 20px}
+    .sheet-body{padding:12px 20px}
+    .sheet-foot{padding:10px 20px}
+  }
 </style>
-
 </head>
+
 <body>
-  <!--<div class="container">!-->
-    
-    <div class="row">
-      <div class="col small">
-        <input id="search" placeholder="Rechercher un médicament..." />
-        <div id="medicaments-list"> <!-- list fournie par l'utilisateur; placeholder remplie via JS -->
+
+<!-- Icônes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-pill" viewBox="0 0 24 24"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></symbol>
+</svg>
+
+<div class="app">
+
+  <!-- Onglets : visibles uniquement sur petits écrans -->
+  <nav class="tabs" role="tablist" aria-label="Navigation">
+    <button class="tab" role="tab" id="tab-catalog" data-tab="catalog" aria-selected="true" type="button">
+      <svg class="i"><use href="#i-pill"/></svg> Médicaments
+    </button>
+    <button class="tab" role="tab" id="tab-history" data-tab="history" aria-selected="false" type="button">
+      <svg class="i"><use href="#i-list"/></svg> Historique
+      <span class="tab-badge" id="tab-late" hidden></span>
+    </button>
+  </nav>
+
+  <main class="layout">
+
+    <!-- Catalogue -->
+    <section class="panel is-active" id="panel-catalog" aria-labelledby="tab-catalog">
+      <header class="panel-head">
+        <h2 class="panel-title"><svg class="i"><use href="#i-pill"/></svg> Médicaments</h2>
+        <div class="search">
+          <svg class="i"><use href="#i-search"/></svg>
+          <input id="search" placeholder="Rechercher un médicament..." autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" />
+        </div>
+        <div class="count" id="med-count">Double-clic (ou bouton +) pour créer une demande.</div>
+      </header>
+      <div id="medicaments-list" class="list"><!-- remplie via JS --></div>
+    </section>
+
+    <!-- Historique -->
+    <section class="panel" id="panel-history" aria-labelledby="tab-history">
+      <header class="panel-head">
+        <h2 class="panel-title"><svg class="i"><use href="#i-list"/></svg> Historique &amp; demandes</h2>
+        <p class="hint">Liste des prescriptions / demandes enregistrées pour le patient (triées par date de création).</p>
+        <div class="chips" id="filters" role="group" aria-label="Filtrer par statut"></div>
+      </header>
+      <div id="history" class="list history-list"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal pour créer demande -->
+<div id="modal-prescription" class="modal">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="sheet-head">
+      <h3 id="modal-title">Nouvelle demande</h3>
+      <button class="sheet-close" type="button" data-close aria-label="Fermer"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="sheet-body">
+      <div class="field">
+        <label for="pres-name">Produit</label>
+        <input type="text" id="pres-name" />
+      </div>
+
+      <div id="pres-warning" class="alert" style="display:none">
+        <svg class="i"><use href="#i-warn"/></svg>
+        <div><strong>Attention :</strong> Ce médicament n'est pas présent dans la base de données des médicaments. Il se peut qu'il ne soit pas/plus disponible.</div>
+      </div>
+
+      <div class="field">
+        <label for="pres-comment">Commentaires</label>
+        <textarea id="pres-comment" rows="3"></textarea>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Moment</span>
+        <div class="seg">
+          <label><input type="radio" name="when" value="now" checked /><span>Maintenant</span></label>
+          <label><input type="radio" name="when" value="at" /><span>À une date/heure</span></label>
+        </div>
+        <input type="datetime-local" id="pres-datetime" style="display:none" />
+      </div>
+
+      <div class="field">
+        <label class="switch">
+          <span class="switch-text"><svg class="i"><use href="#i-repeat"/></svg> Répétition</span>
+          <input type="checkbox" id="pres-repeat-toggle" />
+          <span class="track" aria-hidden="true"></span>
+        </label>
+        <div id="frequency-block" style="display:none">
+          <div class="pair">
+            <div>
+              <label for="pres-every-hours">Fréquence (heures)</label>
+              <input type="number" id="pres-every-hours" placeholder="toutes les X heures" min="1" inputmode="numeric" />
+            </div>
+            <div>
+              <label for="pres-repeat-count">Répétitions</label>
+              <input type="number" id="pres-repeat-count" placeholder="N répétitions (ex:6)" min="1" inputmode="numeric" />
+            </div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="col big">
-        <h3>Historique & demandes</h3>
-        <div class="muted">Liste des prescriptions / demandes enregistrées pour le patient (triées par date de création).</div>
-        <div id="history" class="history-list"></div>
-      </div>
+    <div class="sheet-foot">
+      <button class="btn" id="pres-cancel" type="button"><svg class="i"><use href="#i-x"/></svg> Annuler</button>
+      <button class="btn btn-primary" id="pres-save" type="button"><svg class="i"><use href="#i-check"/></svg> Valider &amp; enregistrer</button>
     </div>
   </div>
-
-  <!-- Modal pour créer demande -->
-  <div id="modal-prescription" class="modal">
-    <div class="card">
-      <h3 id="modal-title">Nouvelle demande</h3>
-      <label>Produit</label>
-      <input type="text" id="pres-name"/>
-      <div id="pres-warning" style="display:none; background:#fff3cd; color:#664d03; border:1px solid #ffecb5; padding:10px; border-radius:8px; font-size:13px; margin-top:8px; text-align:left;">
-        🚨 <strong>Attention :</strong> Ce médicament n'est pas présent dans la base de données des médicaments. Il se peut qu'il ne soit pas/plus disponible.
-      </div>
-      <label>Commentaires</label>
-      <textarea id="pres-comment" rows="3"></textarea>
-
-      <label>Moment</label>
-      <div class="flex">
-        <label><input type="radio" name="when" value="now" checked/> Maintenant</label>
-        <label><input type="radio" name="when" value="at"/> A une date/heure</label>
-      </div>
-            <input type="datetime-local" id="pres-datetime" style="display:none;margin-top:6px;" />
-
-<label style="margin-top:14px;">
-  <input type="checkbox" id="pres-repeat-toggle" />
-  Répétition
-</label>
-<div id="frequency-block" style="display:none;">
-      <label>Fréquence</label>
-      <div class="flex">
-        <input type="number" id="pres-every-hours" placeholder="toutes les X heures" min="1"/>
-        <input type="number" id="pres-repeat-count" placeholder="N répétitions (ex:6)" min="1"/>
-      </div>
 </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-       <button class="btn-id btn-id-c" id="pres-cancel">❌ Annuler</button>
-        <button class="btn-id btn-id-v" id="pres-save">✔️ Valider & enregistrer</button>
-      </div>
-    </div>
-  </div>
+
+<!-- Modal détails -->
 <div id="modal-details" class="modal">
-  <div class="card" style="max-width:480px">
-    <h3>Détails du médicament</h3>
-    <div id="detail-content"></div>
-
-    <div style="display:flex; justify-content:space-between; margin-top:18px;">
-      <button class="btn" id="btnDeleteDetail" style="display:none;background:#ffdddd; color:#a00; border-color:#ffb3b3;">
-        Supprimer
-      </button>
-      <button class="btn-id btn-id-c" onclick="closeDetails()">Fermer</button>
+  <div class="card sm" role="dialog" aria-modal="true" aria-labelledby="details-title">
+    <div class="sheet-head">
+      <h3 id="details-title">Détails du médicament</h3>
+      <button class="sheet-close" type="button" data-close aria-label="Fermer"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="sheet-body" id="detail-content"></div>
+    <div class="sheet-foot">
+      <button class="btn btn-danger" id="btnDeleteDetail" type="button" style="display:none"><svg class="i"><use href="#i-trash"/></svg> Supprimer</button>
+      <button class="btn btn-close" type="button" onclick="closeDetails()">Fermer</button>
     </div>
   </div>
 </div>
 
-
-  <!-- Modal prise -->
-  <div id="modal-take" class="modal">
-    <div class="card">
-      <h3>Prise du médicament</h3>
-      <label>Produit</label>
-      <input type="text" id="take-name" readonly />
-      <label>Commentaire prise</label>
-      <textarea id="take-comment" rows="3"></textarea>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-        <button class="btn-id btn-id-c" id="take-cancel">❌ Annuler</button>
-        <button class="btn-id btn-id-v" id="take-save">✔️ Valider prise</button>
+<!-- Modal prise -->
+<div id="modal-take" class="modal">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="take-title">
+    <div class="sheet-head">
+      <h3 id="take-title">Prise du médicament</h3>
+      <button class="sheet-close" type="button" data-close aria-label="Fermer"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label for="take-name">Produit</label>
+        <input type="text" id="take-name" readonly />
+      </div>
+      <div class="field">
+        <label for="take-comment">Commentaire prise</label>
+        <textarea id="take-comment" rows="3"></textarea>
       </div>
     </div>
+    <div class="sheet-foot">
+      <button class="btn" id="take-cancel" type="button"><svg class="i"><use href="#i-x"/></svg> Annuler</button>
+      <button class="btn btn-success" id="take-save" type="button"><svg class="i"><use href="#i-check"/></svg> Valider prise</button>
+    </div>
   </div>
+</div>
+
 <!-- Modale d'accès refusé -->
 <div id="modal-no-access" class="modal">
-  <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+  <div class="card sm state-card" role="alertdialog" aria-modal="true">
+    <div class="state-ico"><svg class="i"><use href="#i-ban"/></svg></div>
+    <h2>Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
   </div>
 </div>
-<div id="modal-error" class="modalna">
-  <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez re-essayer un peu plus tard</p>
-        <p>Si le problème persiste, contactez un administrateur</p>
 
+<!-- Modale d'erreur -->
+<div id="modal-error" class="modal">
+  <div class="card sm state-card" role="alertdialog" aria-modal="true">
+    <div class="state-ico"><svg class="i"><use href="#i-warn"/></svg></div>
+    <h2>Oups, une erreur est survenue</h2>
+    <p>Veuillez re-essayer un peu plus tard</p>
+    <p>Si le problème persiste, contactez un administrateur</p>
   </div>
 </div>
- 
-  <script type="module">
+
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  arrayUnion,
-  Timestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    addDoc,
+    collection,
+    getDocs,
+    query,
+    where,
+    arrayUnion,
+    Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
     authDomain: "urgences-a8ed4.firebaseapp.com",
@@ -651,6 +624,9 @@ import {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  /* =====================================================================
+     HISTORIQUE D'ACTIONS (trace dans l'hospitalisation active)
+     ===================================================================== */
   /**
    * ajouterEntreeHistorique : fonction autonome (voir fiche.html) qui trace
    * une action dans le champ "historique" de l'hospitalisation active.
@@ -695,750 +671,843 @@ import {
   }
   window.ajouterEntreeHistorique = ajouterEntreeHistorique;
 
-   let medecinNom = "";
+  /* =====================================================================
+     UTILITAIRES D'AFFICHAGE
+     ===================================================================== */
+  const icon = (name) => `<svg class="i"><use href="#i-${name}"/></svg>`;
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+
+  const STATUS_LABEL = {
+    "a-donner": "À donner",
+    "en-retard": "En retard",
+    "pris": "Pris",
+    "prevu": "Prévu"
+  };
+  const statusLabel = (s) => STATUS_LABEL[s] || s || "—";
+
+  // "JJ/MM/AAAA HH:MM:SS" → Date
+  const parseDate = (str) => {
+    if (!str) return null;
+    try {
+      const [d, h] = String(str).trim().split(/[\s,]+/);
+      const [jj, mm, aaaa] = d.split("/");
+      const [HH, MM, SS] = h.split(":");
+      return new Date(aaaa, mm - 1, jj, HH, MM, SS || 0);
+    } catch (e) {
+      console.error("❌ Erreur parseDate:", e, str);
+      return null;
+    }
+  };
+
+  const validDate = (dt) => dt instanceof Date && !isNaN(dt);
+  const fmtLong = (str) => {
+    const dt = parseDate(str);
+    return validDate(dt)
+      ? dt.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "—";
+  };
+  const fmtShort = (dt) => validDate(dt)
+    ? dt.toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+    : "—";
+  const fmtDuration = (minutes) => {
+    const m = Math.max(0, Math.round(minutes));
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    return h ? `${h} h ${String(r).padStart(2, "0")}` : `${r} min`;
+  };
+
+  // Statut affiché : "pris" si pris, sinon calculé d'après l'heure prévue
+  function computeStatus(d) {
+    let status = d.status;
+    if (status !== "pris") {
+      const now = new Date();
+      const due = parseDate(d.dueAt);
+      if (due) {
+        const diff = (now - due) / 60000;
+        if (Math.abs(diff) <= 10) status = "a-donner";
+        else if (diff < -10) status = "prevu";
+        else status = "en-retard";
+      }
+    }
+    return status;
+  }
+
+  /* =====================================================================
+     AUTHENTIFICATION / ACCÈS
+     ===================================================================== */
+  let medecinNom = "";
   let medecinSpecialite = "";
   let medecinLieu = "";
   let medecinType = "";
-    onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    return;
-  } else {
-    try {
-      window.afficherLoader();
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        medecinNom = data.nom || "";
-        medecinSpecialite = data.specialite || "";
-        medecinLieu = data.lieu || "";
-        medecinType = data.type || "";
 
-        // Met à jour aussi les variables globales sur window
-        window.medecinNom = medecinNom;
-        window.medecinSpecialite = medecinSpecialite;
-        window.medecinLieu = medecinLieu;
-        window.medecinType = medecinType;
-
-        // Mise à jour des éléments HTML si présents
-        const nomElem = document.getElementById("nom-medecin");
-        if (nomElem) nomElem.textContent = medecinNom;
-
-        const specElem = document.getElementById("specialite");
-        if (specElem) specElem.textContent = medecinSpecialite;
-
-        const lieuElem = document.getElementById("lieu-medecin");
-        if (lieuElem) lieuElem.textContent = medecinLieu;
-
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-        if (!pages[currentPage]) {
-const modal = document.getElementById("modal-no-access");
-          if (modal) masquerLoader();
-          modal.style.display = "flex";       
-          console.warn("Accès refusé à", currentPage);
-        }
-      } else {
-        // Document inexistant — redirection
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        return;
-      }
-    loadHistory();
-    } catch (error) {
-      const modal = document.getElementById("modal-error");
-          if (modal) masquerLoader();
-          modal.style.display = "flex"; 
-      
-      
-    }
-  }
-});
-window.afficherLoader = function() {
-  let loader = document.getElementById("loadingScreen");
-  
-  if (!loader) {
-    loader = document.createElement("iframe");
-    loader.id = "loadingScreen";
-    loader.src = "loader.html?modal=true"; 
-    loader.style.position = "fixed";
-    loader.style.top = "0";
-    loader.style.left = "0";
-    loader.style.width = "100%";
-    loader.style.height = "100%";
-    loader.style.border = "none";
-    loader.style.zIndex = "9999";
-    loader.style.background = "transparent";
-    loader.style.pointerEvents = "none"; 
-    document.body.appendChild(loader);
-  }
-
-  loader.style.display = "block";
-  loader.style.opacity = "1";
-};
-
-// --- Masque l’écran de chargement ---
-window.masquerLoader = function() {
-  const loader = document.getElementById("loadingScreen");
-  if (loader) {
-    loader.style.transition = "opacity 0.3s ease";
-    loader.style.opacity = "0";
-    setTimeout(() => {
-      loader.style.display = "none";
-    }, 300); // délai pour l’animation
-  }
-};
-
-    // Récupérer l'ID du patient depuis l'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const patientId = urlParams.get("id");
-  if (!patientId) {
-  const modal = document.getElementById("modal-error");
-  if (modal) {
-    masquerLoader();
-    modal.style.display = "flex";
-  }
-}
-   const patientRef = doc(db, "patients", patientId);
-
-document.addEventListener("DOMContentLoaded", () => {
-    const selectNow = document.getElementById("moment-now");
-    const selectOther = document.getElementById("moment-other");
-    const dateField = document.getElementById("date-time-field");
-    
-    const radios = document.querySelectorAll('input[name="when"]');
-    const dateInput = document.getElementById("pres-datetime");
-
-    function updateDateVisibility() {
-        const selected = document.querySelector('input[name="when"]:checked').value;
-        if (selected === "at") {
-            dateInput.style.display = "block";
-        } else {
-            dateInput.style.display = "none";
-        }
-    }
-
-    radios.forEach(r => r.addEventListener("change", updateDateVisibility));
-});
-
-    // --- insertion de la liste fournie par l'utilisateur ---
-   let medicaments = [];
-
-async function loadMedicaments() {
-  try {
-    const res = await fetch("medicaments.json");
-    medicaments = await res.json();
-    renderMedicaments(medicaments);
-  } catch (e) {
-    console.error("Erreur chargement medicament.json", e);
-  }
-}
-
-// --- Rendu de la liste des médicaments ---
-function renderMedicaments(list, searchQuery = "") {
-  const container = document.getElementById("medicaments-list");
-  container.innerHTML = "";
-
-  // Si la liste est vide ET qu'une recherche est en cours
-  if (list.length === 0 && searchQuery.trim() !== "") {
-    const freeBtn = document.createElement("div");
-    freeBtn.className = "medicament-item";
-    freeBtn.style.background = "#fff0f0";
-    freeBtn.style.borderColor = "#ffcccc";
-    freeBtn.style.color = "#c62828";
-    freeBtn.style.fontWeight = "600";
-    freeBtn.innerHTML = `✨ Prescription libre : <strong>"${searchQuery}"</strong>`;
-    
-    // Au double-clic ou clic simple pour plus d'accessibilité
-    freeBtn.onclick = () => addMedicamentToPrescription(searchQuery, true);
-    container.appendChild(freeBtn);
-    return;
-  }
-
-  // Prescription libre classique en haut de liste (si pas de recherche spécifique vide)
-  const free = document.createElement("div");
-  free.className = "medicament-item";
-  free.textContent = "-- Prescription libre --";
-  free.ondblclick = () => addMedicamentToPrescription("", true);
-  container.appendChild(free);
-
-  // Médicaments depuis le JSON
-  list.forEach(med => {
-    const div = document.createElement("div");
-    div.className = "medicament-item";
-    div.textContent = med;
-    div.ondblclick = () => addMedicamentToPrescription(med, false);
-    container.appendChild(div);
-  });
-}
-
-// --- Recherche instantanée mise à jour ---
-document.getElementById("search").addEventListener("input", e => {
-  const q = e.target.value;
-  const qLower = q.toLowerCase();
-  
-  // On filtre la liste globale
-  const filtered = medicaments.filter(m => m.toLowerCase().includes(qLower));
-  
-  // On passe la requête à renderMedicaments pour gérer le cas vide
-  renderMedicaments(filtered, q);
-});
-
-// --- Ouverture de la modale adaptée ---
-window.addMedicamentToPrescription = function(name, isFreeInput = false) {
-  const nameInput = document.getElementById('pres-name');
-  const warningDiv = document.getElementById('pres-warning');
-
-  nameInput.value = name;
-  presComment.value = '';
-  presEvery.value = '';
-  presRepeat.value = '';
-  presDatetime.value = '';
-
-  if (isFreeInput) {
-    nameInput.removeAttribute('readonly'); // On peut modifier le nom
-    nameInput.style.background = "#ffffff";
-    warningDiv.style.display = 'block';    // On affiche l'avertissement
-  } else {
-    nameInput.setAttribute('readonly', 'true'); // Verrouillé si vient du JSON
-    nameInput.style.background = "#f8fbff";
-    warningDiv.style.display = 'none';     // Masqué
-  }
-
-  modalPres.style.display = 'flex';
-}
-
-
-document.addEventListener("DOMContentLoaded", loadMedicaments);
-function formatDate(d) {
-  const pad = n => n.toString().padStart(2, '0');
-  const jour = pad(d.getDate());
-  const mois = pad(d.getMonth() + 1);
-  const annee = d.getFullYear();
-  const heures = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  const secondes = pad(d.getSeconds());
-  return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
-}
-
-
-    // --- modals handling ---
-    const modalPres = document.getElementById('modal-prescription');
-    const presName = document.getElementById('pres-name');
-    const presComment = document.getElementById('pres-comment');
-    const presNowRadio = () => document.querySelector('input[name="when"]:checked').value;
-    const presDatetime = document.getElementById('pres-datetime');
-    const presEvery = document.getElementById('pres-every-hours');
-    const presRepeat = document.getElementById('pres-repeat-count');
-
-
-    document.getElementById('pres-cancel').onclick = ()=> modalPres.style.display='none';
-
-    document.getElementById('pres-save').onclick = async () => {
-  modalPres.style.display = 'none';
-  const name = presName.value;
-  const comment = presComment.value || '';
-  const whenChoice = presNowRadio();
-  const everyHours = parseInt(presEvery.value) || null;
-  const repeatCount = parseInt(presRepeat.value) || 1;
-
-  const now = new Date();
-  const scheduled = (whenChoice === 'now') ? now : (presDatetime.value ? new Date(presDatetime.value) : now);
-
-  // Préparer les événements
-  const events = [];
-  for (let i = 0; i < repeatCount; i++) {
-    const d = new Date(scheduled.getTime() + (everyHours ? i * everyHours * 3600 * 1000 : 0));
-    const formattedDueAt = formatDate(d);
-    const formattedCreatedAt = formatDate(new Date());
-
-    events.push({
-      product: name,
-      comment: comment,
-      createdAt: formattedCreatedAt, // format JJ/MM/AAAA HH:MM:SS
-      dueAt: formattedDueAt,         // format JJ/MM/AAAA HH:MM:SS
-      status: 'a-donner',
-      takenAt: null,
-      takeComment: null
-    });
-  }
-
-  try {
-    // 🔹 Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-    if (!patientSnap.exists()) { 
-      alert('Patient introuvable'); 
-      return; 
-    }
-    const patientData = patientSnap.data();
-
-    // 🔹 Récupérer l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) {
-      alert('Aucune hospitalisation active trouvée');
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
       return;
-    }
-
-    const hospiRef = doc(db, 'hospitalisations', hospiId);
-    const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists()) {
-      alert('Hospitalisation introuvable');
-      return;
-    }
-
-    const hospiData = hospiSnap.data();
-    hospiData.meds = Array.isArray(hospiData.meds) ? hospiData.meds : [];
-
-    // 🔹 Ajouter les événements
-    events.forEach(ev => hospiData.meds.push(ev));
-
-    // 🔹 Mettre à jour l'hospitalisation
-    await updateDoc(hospiRef, { meds: hospiData.meds });
-
-    afficherBulle('✔️ Demande enregistrée', 'success');
-
-    const nomsEvenements = events.map(ev => ev.product).join(", ");
-    ajouterEntreeHistorique(`Prescription médicament(s) : ${nomsEvenements}`, {
-      hospitalisationId: hospiId,
-      silencieux: true
-    });
-
-    loadHistory();
-
-  } catch (err) {
-    console.error(err);
-    alert('Erreur enregistrement: ' + err.message);
-  }
-};
-
-  async function loadHistory() {
-  const container = document.getElementById("history");
-  container.innerHTML = "<div class='muted'>Chargement...</div>";
-  console.log("➡️ loadHistory() lancé");
-
-  try {
-    // 🔹 Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const patientSnap = await getDoc(patientRef);
-
-    if (!patientSnap.exists()) {
-      console.error("❌ Patient introuvable");
-      container.innerHTML = "<div class='muted'>Patient introuvable</div>";
-      return;
-    }
-
-    const patientData = patientSnap.data();
-    console.log("📌 Données patient :", patientData);
-
-    // 🔹 Récupérer l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) {
-      console.error("❌ Aucune hospitalisation active");
-      container.innerHTML = "<div class='muted'>Aucune hospitalisation active</div>";
-      return;
-    }
-
-    const hospiRef = doc(db, "hospitalisations", hospiId);
-    const hospiSnap = await getDoc(hospiRef);
-
-    if (!hospiSnap.exists()) {
-      console.error("❌ Hospitalisation introuvable");
-      container.innerHTML = "<div class='muted'>Hospitalisation introuvable</div>";
-      masquerLoader();
-      return;
-    }
-
-    const hosp = hospiSnap.data();
-    const meds = hosp.meds || [];
-
-    if (meds.length === 0) {
-      console.log("ℹ️ Aucun médicament enregistré");
-      container.innerHTML = "<div class='muted'>Aucune demande</div>";
-      masquerLoader();
-      return;
-    }
-
-    console.log("💊 Médicaments trouvés:", meds);
-
-    // 🔹 Fonction utilitaire parseDate
-    const parseDate = (str) => {
-      if (!str) return null;
+    } else {
       try {
-        const [d, h] = str.split(" ");
-        const [jj, mm, aaaa] = d.split("/");
-        const [HH, MM, SS] = h.split(":");
-        return new Date(aaaa, mm - 1, jj, HH, MM, SS);
-      } catch (e) {
-        console.error("❌ Erreur parseDate:", e, str);
-        return null;
+        window.afficherLoader();
+        const docRef = doc(db, "medecins", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          medecinNom = data.nom || "";
+          medecinSpecialite = data.specialite || "";
+          medecinLieu = data.lieu || "";
+          medecinType = data.type || "";
+
+          // Met à jour aussi les variables globales sur window
+          window.medecinNom = medecinNom;
+          window.medecinSpecialite = medecinSpecialite;
+          window.medecinLieu = medecinLieu;
+          window.medecinType = medecinType;
+
+          // Mise à jour des éléments HTML si présents
+          const nomElem = document.getElementById("nom-medecin");
+          if (nomElem) nomElem.textContent = medecinNom;
+
+          const specElem = document.getElementById("specialite");
+          if (specElem) specElem.textContent = medecinSpecialite;
+
+          const lieuElem = document.getElementById("lieu-medecin");
+          if (lieuElem) lieuElem.textContent = medecinLieu;
+
+          // --- Vérification d'accès à la page ---
+          const pages = data.pages || {};
+          const currentPath = window.location.pathname;
+          const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+          if (!pages[currentPage]) {
+            const modal = document.getElementById("modal-no-access");
+            if (modal) masquerLoader();
+            modal.style.display = "flex";
+            console.warn("Accès refusé à", currentPage);
+          }
+        } else {
+          // Document inexistant — redirection
+          alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+          return;
+        }
+        loadHistory();
+      } catch (error) {
+        const modal = document.getElementById("modal-error");
+        if (modal) masquerLoader();
+        modal.style.display = "flex";
       }
-    };
+    }
+  });
 
-    // 🔹 Trier par createdAt décroissant
-    const sorted = meds
-      .map((m, originalIndex) => ({ ...m, originalIndex }))
-      .sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
+  window.afficherLoader = function () {
+    let loader = document.getElementById("loadingScreen");
 
+    if (!loader) {
+      loader = document.createElement("iframe");
+      loader.id = "loadingScreen";
+      loader.src = "loader.html?modal=true";
+      loader.style.position = "fixed";
+      loader.style.top = "0";
+      loader.style.left = "0";
+      loader.style.width = "100%";
+      loader.style.height = "100%";
+      loader.style.border = "none";
+      loader.style.zIndex = "9999";
+      loader.style.background = "transparent";
+      loader.style.pointerEvents = "none";
+      document.body.appendChild(loader);
+    }
+
+    loader.style.display = "block";
+    loader.style.opacity = "1";
+  };
+
+  // --- Masque l’écran de chargement ---
+  window.masquerLoader = function () {
+    const loader = document.getElementById("loadingScreen");
+    if (loader) {
+      loader.style.transition = "opacity 0.3s ease";
+      loader.style.opacity = "0";
+      setTimeout(() => {
+        loader.style.display = "none";
+      }, 300); // délai pour l’animation
+    }
+  };
+
+  // Récupérer l'ID du patient depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const patientId = urlParams.get("id");
+  if (!patientId) {
+    const modal = document.getElementById("modal-error");
+    if (modal) {
+      masquerLoader();
+      modal.style.display = "flex";
+    }
+  }
+
+  /* =====================================================================
+     NAVIGATION PAR ONGLETS (petits écrans)
+     ===================================================================== */
+  function showTab(name) {
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.setAttribute("aria-selected", String(t.dataset.tab === name));
+    });
+    document.getElementById("panel-catalog").classList.toggle("is-active", name === "catalog");
+    document.getElementById("panel-history").classList.toggle("is-active", name === "history");
+  }
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.addEventListener("click", () => showTab(t.dataset.tab));
+  });
+
+  /* =====================================================================
+     CATALOGUE DES MÉDICAMENTS
+     ===================================================================== */
+  let medicaments = [];
+
+  async function loadMedicaments() {
+    try {
+      const res = await fetch("medicaments.json");
+      medicaments = await res.json();
+      renderMedicaments(medicaments);
+    } catch (e) {
+      console.error("Erreur chargement medicament.json", e);
+    }
+  }
+
+  function medRow(name, { free = false, custom = false } = {}) {
+    const row = document.createElement("div");
+    row.className = "med" + (free ? " med-free" : "") + (custom ? " med-custom" : "");
+    const label = custom
+      ? `Prescription libre : <strong>"${esc(name)}"</strong>`
+      : (free ? "Prescription libre" : esc(name));
+    row.innerHTML = `
+      <span class="med-ico">${icon(free || custom ? "pen" : "pill")}</span>
+      <span class="med-name">${label}</span>
+      <button class="med-add" type="button" aria-label="Prescrire">${icon("plus")}</button>`;
+    return row;
+  }
+
+  // --- Rendu de la liste des médicaments ---
+  function renderMedicaments(list, searchQuery = "") {
+    const container = document.getElementById("medicaments-list");
+    const count = document.getElementById("med-count");
     container.innerHTML = "";
 
-    sorted.forEach((d, i) => {
-      const item = document.createElement("div");
-      item.className = "history-item";
+    // Si la liste est vide ET qu'une recherche est en cours
+    if (list.length === 0 && searchQuery.trim() !== "") {
+      count.textContent = "Aucun résultat dans la base";
+      const freeBtn = medRow(searchQuery, { custom: true });
+      // Clic simple pour plus d'accessibilité
+      freeBtn.onclick = () => addMedicamentToPrescription(searchQuery, true);
+      container.appendChild(freeBtn);
+      return;
+    }
 
-      // Calcul du statut
-      let status = d.status;
-      if (status !== "pris") {
-        const now = new Date();
-        const due = parseDate(d.dueAt);
-        if (due) {
-          const diff = (now - due) / 60000;
-          if (Math.abs(diff) <= 10) status = "a-donner";
-          else if (diff < -10) status = "prevu";
-          else status = "en-retard";
-        }
+    count.textContent = searchQuery.trim() !== ""
+      ? `${list.length} résultat${list.length > 1 ? "s" : ""}`
+      : "Double-clic (ou bouton +) pour créer une demande.";
+
+    // Prescription libre classique en haut de liste
+    const free = medRow("", { free: true });
+    free.ondblclick = () => addMedicamentToPrescription("", true);
+    free.querySelector(".med-add").onclick = (e) => { e.stopPropagation(); addMedicamentToPrescription("", true); };
+    container.appendChild(free);
+
+    // Médicaments depuis le JSON
+    list.forEach((med) => {
+      const div = medRow(med);
+      div.ondblclick = () => addMedicamentToPrescription(med, false);
+      div.querySelector(".med-add").onclick = (e) => { e.stopPropagation(); addMedicamentToPrescription(med, false); };
+      container.appendChild(div);
+    });
+  }
+
+  // --- Recherche instantanée ---
+  document.getElementById("search").addEventListener("input", (e) => {
+    const q = e.target.value;
+    const qLower = q.toLowerCase();
+    const filtered = medicaments.filter((m) => m.toLowerCase().includes(qLower));
+    renderMedicaments(filtered, q);
+  });
+
+  document.addEventListener("DOMContentLoaded", loadMedicaments);
+
+  /* =====================================================================
+     MODALE DE PRESCRIPTION
+     ===================================================================== */
+  const modalPres = document.getElementById("modal-prescription");
+  const presName = document.getElementById("pres-name");
+  const presComment = document.getElementById("pres-comment");
+  const presNowRadio = () => document.querySelector('input[name="when"]:checked').value;
+  const presDatetime = document.getElementById("pres-datetime");
+  const presEvery = document.getElementById("pres-every-hours");
+  const presRepeat = document.getElementById("pres-repeat-count");
+  const repeatToggle = document.getElementById("pres-repeat-toggle");
+  const frequencyBlock = document.getElementById("frequency-block");
+
+  function updateDateVisibility() {
+    presDatetime.style.display = presNowRadio() === "at" ? "block" : "none";
+  }
+  document.querySelectorAll('input[name="when"]').forEach((r) => r.addEventListener("change", updateDateVisibility));
+
+  repeatToggle.addEventListener("change", () => {
+    if (repeatToggle.checked) {
+      frequencyBlock.style.display = "block";
+    } else {
+      frequencyBlock.style.display = "none";
+      // reset propre
+      presEvery.value = "";
+      presRepeat.value = "";
+    }
+  });
+
+  // --- Ouverture de la modale adaptée ---
+  window.addMedicamentToPrescription = function (name, isFreeInput = false) {
+    const nameInput = document.getElementById("pres-name");
+    const warningDiv = document.getElementById("pres-warning");
+
+    nameInput.value = name;
+    presComment.value = "";
+    presEvery.value = "";
+    presRepeat.value = "";
+    presDatetime.value = "";
+
+    // Réinitialisation du moment et de la répétition à chaque nouvelle demande
+    document.querySelector('input[name="when"][value="now"]').checked = true;
+    updateDateVisibility();
+    repeatToggle.checked = false;
+    frequencyBlock.style.display = "none";
+
+    if (isFreeInput) {
+      nameInput.removeAttribute("readonly"); // On peut modifier le nom
+      nameInput.style.background = "#ffffff";
+      warningDiv.style.display = "flex";     // On affiche l'avertissement
+    } else {
+      nameInput.setAttribute("readonly", "true"); // Verrouillé si vient du JSON
+      nameInput.style.background = "";
+      warningDiv.style.display = "none";          // Masqué
+    }
+
+    modalPres.style.display = "flex";
+    if (isFreeInput) nameInput.focus();
+  };
+
+  function formatDate(d) {
+    const pad = (n) => n.toString().padStart(2, "0");
+    const jour = pad(d.getDate());
+    const mois = pad(d.getMonth() + 1);
+    const annee = d.getFullYear();
+    const heures = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const secondes = pad(d.getSeconds());
+    return `${jour}/${mois}/${annee} ${heures}:${minutes}:${secondes}`;
+  }
+
+  document.getElementById("pres-cancel").onclick = () => (modalPres.style.display = "none");
+
+  document.getElementById("pres-save").onclick = async () => {
+    modalPres.style.display = "none";
+    const name = presName.value;
+    const comment = presComment.value || "";
+    const whenChoice = presNowRadio();
+    const everyHours = parseInt(presEvery.value) || null;
+    const repeatCount = parseInt(presRepeat.value) || 1;
+
+    const now = new Date();
+    const scheduled = (whenChoice === "now") ? now : (presDatetime.value ? new Date(presDatetime.value) : now);
+
+    // Préparer les événements
+    const events = [];
+    for (let i = 0; i < repeatCount; i++) {
+      const d = new Date(scheduled.getTime() + (everyHours ? i * everyHours * 3600 * 1000 : 0));
+      const formattedDueAt = formatDate(d);
+      const formattedCreatedAt = formatDate(new Date());
+
+      events.push({
+        product: name,
+        comment: comment,
+        createdAt: formattedCreatedAt, // format JJ/MM/AAAA HH:MM:SS
+        dueAt: formattedDueAt,         // format JJ/MM/AAAA HH:MM:SS
+        status: "a-donner",
+        takenAt: null,
+        takeComment: null
+      });
+    }
+
+    try {
+      // 🔹 Récupérer le patient
+      const patientRef = doc(db, "patients", patientId);
+      const patientSnap = await getDoc(patientRef);
+      if (!patientSnap.exists()) {
+        alert("Patient introuvable");
+        return;
       }
-      d.status = status;
+      const patientData = patientSnap.data();
+
+      // 🔹 Récupérer l'hospitalisation active
+      const hospiId = patientData.hospitalisationActiveId;
+      if (!hospiId) {
+        alert("Aucune hospitalisation active trouvée");
+        return;
+      }
+
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
+      if (!hospiSnap.exists()) {
+        alert("Hospitalisation introuvable");
+        return;
+      }
+
+      const hospiData = hospiSnap.data();
+      hospiData.meds = Array.isArray(hospiData.meds) ? hospiData.meds : [];
+
+      // 🔹 Ajouter les événements
+      events.forEach((ev) => hospiData.meds.push(ev));
+
+      // 🔹 Mettre à jour l'hospitalisation
+      await updateDoc(hospiRef, { meds: hospiData.meds });
+
+      afficherBulle("✔️ Demande enregistrée", "success");
+
+      const nomsEvenements = events.map((ev) => ev.product).join(", ");
+      ajouterEntreeHistorique(`Prescription médicament(s) : ${nomsEvenements}`, {
+        hospitalisationId: hospiId,
+        silencieux: true
+      });
+
+      loadHistory();
+      showTab("history"); // petits écrans : on bascule sur l'historique
+
+    } catch (err) {
+      console.error(err);
+      alert("Erreur enregistrement: " + err.message);
+    }
+  };
+
+  /* =====================================================================
+     HISTORIQUE & DEMANDES
+     ===================================================================== */
+  let historyItems = [];
+  let activeFilter = "all";
+
+  const FILTERS = [
+    ["all", "Tous"],
+    ["en-retard", "En retard"],
+    ["a-donner", "À donner"],
+    ["prevu", "Prévu"],
+    ["pris", "Pris"]
+  ];
+
+  function setHistoryMessage(html) {
+    document.getElementById("history").innerHTML = html;
+    document.getElementById("filters").innerHTML = "";
+    document.getElementById("tab-late").hidden = true;
+  }
+
+  function renderHistory() {
+    const container = document.getElementById("history");
+    const filters = document.getElementById("filters");
+
+    // Compteurs
+    const counts = { all: historyItems.length };
+    historyItems.forEach((d) => { counts[d.status] = (counts[d.status] || 0) + 1; });
+
+    filters.innerHTML = FILTERS.map(([key, label]) => `
+      <button type="button" class="chip" data-filter="${key}"${key !== "all" ? ` data-status="${key}"` : ""} aria-pressed="${activeFilter === key}">
+        ${key !== "all" ? '<span class="dot"></span>' : ""}${label}<span class="n">${counts[key] || 0}</span>
+      </button>`).join("");
+
+    // Pastille "en retard" sur l'onglet
+    const tabLate = document.getElementById("tab-late");
+    const late = counts["en-retard"] || 0;
+    tabLate.textContent = late;
+    tabLate.hidden = late === 0;
+
+    const shown = activeFilter === "all" ? historyItems : historyItems.filter((d) => d.status === activeFilter);
+    container.innerHTML = "";
+
+    if (shown.length === 0) {
+      container.innerHTML = "<div class='empty'>Aucune demande pour ce filtre</div>";
+      return;
+    }
+
+    shown.forEach((d) => {
+      const status = d.status;
+      const item = document.createElement("article");
+      item.className = "rx";
       item.dataset.status = status;
 
-      const badge = `<span class="badge" data-status="${status}">${status}</span>`;
-      const loupe = `<button class="btn" onclick="showDetails(${d.originalIndex})">🔎</button>`;
-      const takeBtn = status !== "pris"
-        ? `<button class="btn" onclick="openTakeModal(${d.originalIndex}, '${d.product}')">Administrer</button>`
-        : "";
+      // Ligne d'information (heure prévue / administrée / retard)
+      const due = parseDate(d.dueAt);
+      let meta;
+      if (status === "pris") {
+        const taken = parseDate(d.takenAt);
+        meta = `<span class="rx-when">${icon("check")}<span>Administré ${validDate(taken) ? fmtShort(taken) : ""}</span></span>`;
+      } else {
+        meta = `<span class="rx-when">${icon("clock")}<span>Prévu ${fmtShort(due)}</span></span>`;
+        if (status === "en-retard" && validDate(due)) {
+          meta += `<span class="late">retard ${fmtDuration((new Date() - due) / 60000)}</span>`;
+        }
+      }
 
       item.innerHTML = `
-        <div><strong>${d.product}</strong></div>
-        <div class="history-center">${loupe}</div>
-        <div class="history-center">${badge}</div>
-        <div class="history-right">${takeBtn}</div>
-      `;
+        <div class="rx-main">
+          <div class="rx-name">${esc(d.product)}</div>
+          <div class="rx-meta">${meta}</div>
+        </div>
+        <span class="badge" data-status="${status}">${esc(statusLabel(status))}</span>
+        <div class="rx-actions">
+          <button class="btn btn-icon" type="button" data-act="details" aria-label="Voir les détails">${icon("eye")}</button>
+          ${status !== "pris" ? `<button class="btn btn-primary" type="button" data-act="take">Administrer</button>` : ""}
+        </div>`;
+
+      item.querySelector('[data-act="details"]').addEventListener("click", () => showDetails(d.originalIndex));
+      const takeBtn = item.querySelector('[data-act="take"]');
+      if (takeBtn) takeBtn.addEventListener("click", () => openTakeModal(d.originalIndex, d.product));
 
       container.appendChild(item);
     });
-masquerLoader();
-  } catch (err) {
-    console.error("❌ ERREUR loadHistory():", err);
-    container.innerHTML = "<div class='muted'>Erreur chargement</div>";
   }
-}
 
-let currentDetailId = null;
+  document.getElementById("filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    activeFilter = chip.dataset.filter;
+    renderHistory();
+  });
 
-window.showDetails = async function(medIndex){
-  currentDetailId = medIndex;
+  async function loadHistory() {
+    const container = document.getElementById("history");
+    container.innerHTML = "<div class='empty'>Chargement...</div>";
+    console.log("➡️ loadHistory() lancé");
 
-  try {
-    // 🔹 Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const snap = await getDoc(patientRef);
-    if (!snap.exists) return;
+    try {
+      // 🔹 Récupérer le patient
+      const patientRef = doc(db, "patients", patientId);
+      const patientSnap = await getDoc(patientRef);
 
-    const patientData = snap.data();
-
-    // 🔹 Récupérer l'hospitalisation active
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) return;
-
-    const hospiRef = doc(db, "hospitalisations", hospiId);
-    const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists) return;
-
-    const hosp = hospiSnap.data();
-    const meds = hosp.meds || [];
-
-    const d = meds[medIndex];
-    if (!d) return;
-
-    // 🔹 Convertisseur "JJ/MM/AAAA HH:MM:SS" → Date
-    const parseDate = (str) => {
-      if (!str) return null;
-      try {
-        const [datePart, timePart] = str.split(" ");
-        const [dd, mm, yyyy] = datePart.split("/");
-        const [h, m, s] = timePart.split(":");
-        return new Date(yyyy, mm - 1, dd, h, m, s);
-      } catch (e) {
-        console.error("Erreur parseDate:", str, e);
-        return null;
+      if (!patientSnap.exists()) {
+        console.error("❌ Patient introuvable");
+        setHistoryMessage("<div class='empty'>Patient introuvable</div>");
+        return;
       }
-    };
 
-    const created = d.createdAt ? parseDate(d.createdAt).toLocaleString() : "—";
-    const due = d.dueAt ? parseDate(d.dueAt).toLocaleString() : "—";
-    const taken = d.takenAt ? parseDate(d.takenAt).toLocaleString() : "—";
+      const patientData = patientSnap.data();
+      console.log("📌 Données patient :", patientData);
 
-    const html = `
-      <p><strong>Nom :</strong> ${d.product}</p>
-      <p><strong>Commentaire demande :</strong><br>${d.comment || "—"}</p>
-      <p><strong>Créé le :</strong> ${created}</p>
-      <p><strong>Pour le :</strong> ${due}</p>
-      <p><strong>Statut :</strong> ${d.status}</p>
-      <p><strong>Commentaire prise :</strong><br>${d.takeComment || "—"}</p>
-      <p><strong>Prise le :</strong> ${taken}</p>
-    `;
+      // 🔹 Récupérer l'hospitalisation active
+      const hospiId = patientData.hospitalisationActiveId;
+      if (!hospiId) {
+        console.error("❌ Aucune hospitalisation active");
+        setHistoryMessage("<div class='empty'>Aucune hospitalisation active</div>");
+        return;
+      }
 
-    document.getElementById("detail-content").innerHTML = html;
-    document.getElementById("modal-details").style.display = "flex";
-    document.getElementById("btnDeleteDetail").style.display = "none";
-if(d.status!=="pris")
-  document.getElementById("btnDeleteDetail").style.display = "block";
-    document.getElementById("btnDeleteDetail").onclick = deleteFromModal;
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
 
-  } catch (err) {
-    console.error("Erreur showDetails():", err);
-  }
-}
+      if (!hospiSnap.exists()) {
+        console.error("❌ Hospitalisation introuvable");
+        setHistoryMessage("<div class='empty'>Hospitalisation introuvable</div>");
+        masquerLoader();
+        return;
+      }
 
+      const hosp = hospiSnap.data();
+      const meds = hosp.meds || [];
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
+      if (meds.length === 0) {
+        console.log("ℹ️ Aucun médicament enregistré");
+        historyItems = [];
+        setHistoryMessage("<div class='empty'>Aucune demande</div>");
+        masquerLoader();
+        return;
+      }
 
-    const modalDetails = document.getElementById("modal-details");
-    const modalTake = document.getElementById("modal-take");
+      console.log("💊 Médicaments trouvés:", meds);
 
-    if (modalDetails && modalDetails.style.display !== "none") {
-      closeDetails();
+      // 🔹 Trier par createdAt décroissant (en gardant l'index d'origine)
+      historyItems = meds
+        .map((m, originalIndex) => ({ ...m, originalIndex }))
+        .sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
+
+      // 🔹 Calcul du statut
+      historyItems.forEach((d) => { d.status = computeStatus(d); });
+
+      renderHistory();
+      masquerLoader();
+    } catch (err) {
+      console.error("❌ ERREUR loadHistory():", err);
+      setHistoryMessage("<div class='empty'>Erreur chargement</div>");
     }
-
-    if (modalTake && modalTake.style.display !== "none") {
-      modalTake.style.display = "none";
-    }
   }
-});
-window.closeDetails = function() {
+
+  /* =====================================================================
+     DÉTAILS / SUPPRESSION
+     ===================================================================== */
+  let currentDetailId = null;
+
+  window.showDetails = async function (medIndex) {
+    currentDetailId = medIndex;
+
+    try {
+      // 🔹 Récupérer le patient
+      const patientRef = doc(db, "patients", patientId);
+      const snap = await getDoc(patientRef);
+      if (!snap.exists) return;
+
+      const patientData = snap.data();
+
+      // 🔹 Récupérer l'hospitalisation active
+      const hospiId = patientData.hospitalisationActiveId;
+      if (!hospiId) return;
+
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
+      if (!hospiSnap.exists) return;
+
+      const hosp = hospiSnap.data();
+      const meds = hosp.meds || [];
+
+      const d = meds[medIndex];
+      if (!d) return;
+
+      const status = computeStatus(d);
+
+      const html = `
+        <div class="detail-head">
+          <div class="detail-name">${esc(d.product)}</div>
+          <span class="badge" data-status="${status}">${esc(statusLabel(status))}</span>
+        </div>
+
+        <dl class="facts">
+          <div class="fact"><dt>Créé le</dt><dd>${fmtLong(d.createdAt)}</dd></div>
+          <div class="fact"><dt>Pour le</dt><dd>${fmtLong(d.dueAt)}</dd></div>
+          <div class="fact"><dt>Prise le</dt><dd>${fmtLong(d.takenAt)}</dd></div>
+        </dl>
+
+        <div class="note">
+          <div class="note-label">Commentaire demande</div>
+          <div class="note-text">${esc(d.comment) || "—"}</div>
+        </div>
+        <div class="note">
+          <div class="note-label">Commentaire prise</div>
+          <div class="note-text">${esc(d.takeComment) || "—"}</div>
+        </div>
+      `;
+
+      document.getElementById("detail-content").innerHTML = html;
+      document.getElementById("modal-details").style.display = "flex";
+      document.getElementById("btnDeleteDetail").style.display = "none";
+      if (d.status !== "pris")
+        document.getElementById("btnDeleteDetail").style.display = "inline-flex";
+      document.getElementById("btnDeleteDetail").onclick = deleteFromModal;
+
+    } catch (err) {
+      console.error("Erreur showDetails():", err);
+    }
+  };
+
+  window.closeDetails = function () {
     document.getElementById("modal-details").style.display = "none";
-}
-async function deleteFromModal() {
-  if (currentDetailId == null) return;
+  };
 
-  if (!confirm("Supprimer cette demande ?")) return;
+  async function deleteFromModal() {
+    if (currentDetailId == null) return;
 
-  try {
-    // 🔹 Récupérer le patient
-    const patientRef = doc(db, "patients", patientId);
-    const snap = await getDoc(patientRef);
-    if (!snap.exists) {
-      alert("Patient introuvable.");
+    if (!confirm("Supprimer cette demande ?")) return;
+
+    try {
+      // 🔹 Récupérer le patient
+      const patientRef = doc(db, "patients", patientId);
+      const snap = await getDoc(patientRef);
+      if (!snap.exists) {
+        alert("Patient introuvable.");
+        return;
+      }
+
+      const patientData = snap.data();
+      const hospiId = patientData.hospitalisationActiveId;
+      if (!hospiId) {
+        alert("Aucune hospitalisation active.");
+        return;
+      }
+
+      // 🔹 Récupérer l'hospitalisation active
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
+      if (!hospiSnap.exists) {
+        alert("Hospitalisation introuvable.");
+        return;
+      }
+
+      const hospData = hospiSnap.data();
+      const meds = hospData.meds || [];
+
+      if (currentDetailId >= meds.length) {
+        alert("Demande introuvable.");
+        return;
+      }
+
+      // 🔹 Supprimer la demande
+      const medSupprime = meds[currentDetailId];
+      meds.splice(currentDetailId, 1);
+
+      // 🔹 Mettre à jour Firestore
+      await updateDoc(hospiRef, { meds });
+
+      afficherBulle("✔️ Demande supprimée", "success");
+
+      ajouterEntreeHistorique(`Suppression de la prescription : ${medSupprime?.product || "—"}`, {
+        hospitalisationId: hospiId,
+        silencieux: true
+      });
+
+      closeDetails();
+      loadHistory();
+
+    } catch (err) {
+      console.error(err);
+      alert("Erreur : " + err.message);
+    }
+  }
+
+  /* =====================================================================
+     MODALE D'ADMINISTRATION (prise)
+     ===================================================================== */
+  const modalTake = document.getElementById("modal-take");
+  const takeName = document.getElementById("take-name");
+  const takeComment = document.getElementById("take-comment");
+  let currentTakingDocId = null;
+
+  window.openTakeModal = (docId, name) => {
+    currentTakingDocId = docId;
+    takeName.value = name;
+    takeComment.value = "";
+    modalTake.style.display = "flex";
+  };
+  document.getElementById("take-cancel").onclick = () => (modalTake.style.display = "none");
+
+  document.getElementById("take-save").onclick = async () => {
+    modalTake.style.display = "none";
+
+    if (currentTakingDocId == null) return;
+
+    try {
+      const takeAt = new Date();
+
+      // 🔹 Récupérer le patient et hospitalisation
+      const patientRef = doc(db, "patients", patientId);
+      const snap = await getDoc(patientRef);
+      if (!snap.exists) {
+        alert("Patient introuvable.");
+        return;
+      }
+
+      const patientData = snap.data();
+      const hospiId = patientData.hospitalisationActiveId;
+      if (!hospiId) {
+        alert("Aucune hospitalisation active.");
+        return;
+      }
+
+      const hospiRef = doc(db, "hospitalisations", hospiId);
+      const hospiSnap = await getDoc(hospiRef);
+      if (!hospiSnap.exists) {
+        alert("Hospitalisation introuvable.");
+        return;
+      }
+
+      const hospData = hospiSnap.data();
+      const meds = hospData.meds || [];
+
+      if (currentTakingDocId >= meds.length) {
+        alert("Entrée introuvable.");
+        return;
+      }
+
+      // 🔹 Mettre à jour la médication
+      meds[currentTakingDocId] = {
+        ...meds[currentTakingDocId],
+        status: "pris",
+        takenAt: takeAt.toLocaleString("fr-FR"),
+        takeComment: takeComment.value || ""
+      };
+
+      await updateDoc(hospiRef, { meds });
+
+      afficherBulle("✔️ Administration enregistrée");
+
+      ajouterEntreeHistorique(`Administration du médicament : ${meds[currentTakingDocId].product || "—"}`, {
+        hospitalisationId: hospiId,
+        silencieux: true
+      });
+
+      loadHistory();
+
+    } catch (err) {
+      console.error(err);
+      alert("Erreur: " + err.message);
+    }
+  };
+
+  /* =====================================================================
+     NOTIFICATIONS (relayées vers la page parente)
+     ===================================================================== */
+  const ORIGINE_PARENT_BULLE = "*";
+
+  function afficherBulle(message, typeBulle) {
+    if (window.parent === window) {
+      console.warn("afficherBulle appelée sans parent, message perdu :", message);
       return;
     }
+    window.parent.postMessage(
+      {
+        source: "notification-bulle",
+        message,
+        typeBulle
+      },
+      ORIGINE_PARENT_BULLE
+    );
+  }
 
-    const patientData = snap.data();
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) {
-      alert("Aucune hospitalisation active.");
-      return;
+  /* relais : si ce code est lui-même iframé et que d'autres codes
+     demandent une bulle, on transmet plus haut à notre tour */
+  window.addEventListener("message", (event) => {
+    if (
+      event.data &&
+      event.data.source === "notification-bulle" &&
+      window.parent !== window
+    ) {
+      window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
     }
+  });
 
-    // 🔹 Récupérer l'hospitalisation active
-    const hospiRef = doc(db, "hospitalisations", hospiId);
-    const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists) {
-      alert("Hospitalisation introuvable.");
-      return;
+  /* =====================================================================
+     FERMETURE DES MODALES
+     ===================================================================== */
+  // Touche Échap
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const modalDetails = document.getElementById("modal-details");
+      if (modalDetails && modalDetails.style.display !== "none") closeDetails();
+      if (modalTake && modalTake.style.display !== "none") modalTake.style.display = "none";
     }
+  });
 
-    const hospData = hospiSnap.data();
-    const meds = hospData.meds || [];
+  // Clic en dehors de la carte
+  window.addEventListener("click", (e) => {
+    if (e.target === modalPres) modalPres.style.display = "none";
+    if (e.target === modalTake) modalTake.style.display = "none";
+    if (e.target === document.getElementById("modal-details")) closeDetails();
+  });
 
-    if (currentDetailId >= meds.length) {
-      alert("Demande introuvable.");
-      return;
-    }
-
-    // 🔹 Supprimer la demande
-    const medSupprime = meds[currentDetailId];
-    meds.splice(currentDetailId, 1);
-
-    // 🔹 Mettre à jour Firestore
-    await updateDoc(hospiRef, { meds });
-
-    afficherBulle("✔️ Demande supprimée", "success");
-
-    ajouterEntreeHistorique(`Suppression de la prescription : ${medSupprime?.product || "—"}`, {
-      hospitalisationId: hospiId,
-      silencieux: true
+  // Bouton ✕ des modales
+  document.querySelectorAll("[data-close]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest(".modal").style.display = "none";
     });
-
-    closeDetails();
-    loadHistory();
-
-  } catch (err) {
-    console.error(err);
-    alert("Erreur : " + err.message);
-  }
-}
-
-
-
-    // --- modal prise ---
-    const modalTake = document.getElementById('modal-take');
-    const takeName = document.getElementById('take-name');
-    const takeComment = document.getElementById('take-comment');
-    let currentTakingDocId = null;
-
-window.openTakeModal = (docId, name) => {
-  currentTakingDocId = docId;
-  takeName.value = name;
-  takeComment.value = '';
-  modalTake.style.display = 'flex';
-};
-    document.getElementById('take-cancel').onclick = ()=> modalTake.style.display='none';
-
- document.getElementById('take-save').onclick = async () => {
-  modalTake.style.display = 'none';
-
-  if (currentTakingDocId == null) return;
-
-  try {
-    const takeAt = new Date();
-
-    // 🔹 Récupérer le patient et hospitalisation
-    const patientRef = doc(db, "patients", patientId);
-    const snap = await getDoc(patientRef);
-    if (!snap.exists) {
-      alert("Patient introuvable.");
-      return;
-    }
-
-    const patientData = snap.data();
-    const hospiId = patientData.hospitalisationActiveId;
-    if (!hospiId) {
-      alert("Aucune hospitalisation active.");
-      return;
-    }
-
-    const hospiRef = doc(db, "hospitalisations", hospiId);
-    const hospiSnap = await getDoc(hospiRef);
-    if (!hospiSnap.exists) {
-      alert("Hospitalisation introuvable.");
-      return;
-    }
-
-    const hospData = hospiSnap.data();
-    const meds = hospData.meds || [];
-
-    if (currentTakingDocId >= meds.length) {
-      alert("Entrée introuvable.");
-      return;
-    }
-
-    // 🔹 Mettre à jour la médication
-    meds[currentTakingDocId] = {
-      ...meds[currentTakingDocId],
-      status: "pris",
-      takenAt: takeAt.toLocaleString("fr-FR"),
-      takeComment: takeComment.value || ""
-    };
-
-    await updateDoc(hospiRef, { meds });
-
-    afficherBulle("✔️ Administration enregistrée");
-
-    ajouterEntreeHistorique(`Administration du médicament : ${meds[currentTakingDocId].product || "—"}`, {
-      hospitalisationId: hospiId,
-      silencieux: true
-    });
-
-    loadHistory();
-
-  } catch (err) {
-    console.error(err);
-    alert("Erreur: " + err.message);
-  } 
-}; 
-
-
-    // --- helper pour notifications simples ---
-// Conteneur global pour les bulles
-let notificationContainer = document.getElementById('notification-container');
-if (!notificationContainer) {
-  notificationContainer = document.createElement('div');
-  notificationContainer.id = 'notification-container';
-  notificationContainer.style.position = 'fixed';
-  notificationContainer.style.top = '12px';
-  notificationContainer.style.right = '12px'; // EN HAUT À DROITE
-  notificationContainer.style.display = 'flex';
-  notificationContainer.style.flexDirection = 'column';
-  notificationContainer.style.gap = '8px'; // espace vertical entre bulles
-  notificationContainer.style.zIndex = 9999;
-  document.body.appendChild(notificationContainer);
-}
-
-// Fonction pour afficher une bulle
-const ORIGINE_PARENT_BULLE = "*";
-
-
-function afficherBulle(message, typeBulle){
-
-  if(window.parent === window){
-
-    console.warn("afficherBulle appelée sans parent, message perdu :", message);
-
-    return;
-
-  }
-
-  window.parent.postMessage(
-
-    {
-      source:"notification-bulle",
-      message,
-      typeBulle
-    },
-
-    ORIGINE_PARENT_BULLE
-
-  );
-
-}
-
-
-/* relais : si ce code lui-même iframe d'autres codes qui
-   demandent une bulle, on transmet plus haut à notre tour */
-
-window.addEventListener("message",(event)=>{
-
-  if(
-    event.data &&
-    event.data.source==="notification-bulle" &&
-    window.parent!==window
-  ){
-
-    window.parent.postMessage(event.data, ORIGINE_PARENT_BULLE);
-
-  }
-
-});
-
-
- 
-
-    // fermer modals si on clique en dehors
-    window.addEventListener('click', (e)=>{
-      if(e.target===modalPres) modalPres.style.display='none';
-      if(e.target===modalTake) modalTake.style.display='none';
-    });
-
- const repeatToggle = document.getElementById("pres-repeat-toggle");
-const frequencyBlock = document.getElementById("frequency-block");
-const everyHours = document.getElementById("pres-every-hours");
-const repeatCount = document.getElementById("pres-repeat-count");
-
-repeatToggle.addEventListener("change", () => {
-  if (repeatToggle.checked) {
-    frequencyBlock.style.display = "block";
-  } else {
-    frequencyBlock.style.display = "none";
-
-    // reset propre
-    everyHours.value = "";
-    repeatCount.value = "";
-  }
-});
-
+  });
 </script>
 </body>
 </html>

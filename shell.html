@@ -1973,7 +1973,7 @@ button,input{font-family:inherit}
 
 /* ---------- INFOBULLE DU MENU OUTILS : vraie bulle à côté du menu (hors du menu, donc pas d'ascenseur horizontal) ---------- */
 .dropdown-item::after{display:none !important;content:none !important}
-.dropdown-content{overflow-x:hidden}
+.dropdown-content{overflow-x:hidden;max-width:calc(100vw - 24px);box-sizing:border-box}
 #outilsTip{
   position:fixed;left:0;top:0;z-index:2000000;
   box-sizing:border-box;width:280px;max-width:calc(100vw - 24px);
@@ -2529,6 +2529,15 @@ function ajusterHauteurMenuOutils() {
   const top = menuOutils.getBoundingClientRect().top;
   const hauteurDispo = window.innerHeight - top - marge;
   menuOutils.style.maxHeight = Math.max(120, hauteurDispo) + "px";
+
+  // Garde le menu dans l'écran horizontalement (iPad : le bouton est proche du bord droit)
+  const margeX = 12;
+  menuOutils.style.left = "0px";
+  const r = menuOutils.getBoundingClientRect();
+  let decalage = 0;
+  if (r.right > window.innerWidth - margeX) decalage = (window.innerWidth - margeX) - r.right;
+  if (r.left + decalage < margeX) decalage = margeX - r.left;
+  menuOutils.style.left = Math.round(decalage) + "px";
 }
 
 // clic bouton = verrouille ouvert

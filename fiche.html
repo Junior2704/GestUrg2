@@ -5,3436 +5,1270 @@
     <link rel="icon" type="image/jpeg" href="logog2.png">
 
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
   <title>Fiche Patient </title>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;      /* 🔥 scroll global possible par défaut */
-  overflow-x: hidden;    /* pas de scroll horizontal */
-}
-
-.bouton-ancienne {
-  all: unset;
-  cursor: pointer;
-  font-size: 1em;
-  margin-left: 5px;
-  color: #2c7be5;   /* bleu */
-  background: transparent !important; /* 👈 reste transparent */
-}
-
-.bouton-ancienne:hover,
-.bouton-ancienne:focus,
-.bouton-ancienne:active {
-  color: #1b4f9c;   /* un bleu plus foncé pour l'effet visuel */
-  background: transparent !important; /* 👈 pas de fond */
-  text-decoration: none; /* pas de soulignement */
-  outline: none;  /* pas de bordure focus */
-  box-shadow: none; /* pas d’ombre */
-}
-.radio-grid {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* carte radio */
-.radio-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
-  background: white;
-}
-
-/* cacher le vrai radio */
-.radio-card input {
-  accent-color: #0b5ed7;
-  transform: scale(1.1);
-}
-
-/* hover */
-.radio-card:hover {
-  border-color: #0b5ed7;
-  background: #f0f4ff;
-}
-
-/* effet sélection */
-.radio-card input:checked + span {
-  font-weight: 600;
-  color: #0b5ed7;
-}
-
-	  hr {
-  border: none;
-  height: 4px;
-  background-color: #0078d4; 
-  border-radius: 2px;
-  margin: 20px 0;
-}
-
-	 .tabs {
-  display: flex;          /* aligne les boutons sur une ligne */
-  width: 100%;            /* prend toute la largeur */
-}
-
-.tabs {
-  display: flex;
-  width: 100%;
-}
-
-.tablink {
-  flex: 1;
-  text-align: center;
-  padding: 12px;
-  border: none;
-  cursor: pointer;
-  background: #2196f3;      /* bleu normal */
-  color: white;             /* texte blanc */
-  font-size: 16px;
-  transition: transform 0.2s, background 0.2s;
-}
-
-.tablink:hover {
-  background: #1976d2;      /* bleu plus foncé */
-  transform: scale(1.05);   /* zoom léger */
-}
-
-.tablink.active {
-  background: #2196f3;      /* même bleu */
-  color: black;             /* texte noir pour l’actif */
-  font-weight: bold;
-  transform: scale(1.08);   /* zoom un peu plus marqué */
-}
-
-
-
-.tab-content {
-  display: none;
-  width: 100%;       /* occupe toute la largeur */
-  max-width: none;   /* enlève la limite de largeur */
-  box-sizing: border-box;
-}
-.close-tab {
-  all: unset;
-  cursor: pointer;
-  color: #c62828;     /* rouge vif */
-  font-size: 20px;
-  font-weight: bold;
-  line-height: 1;
-  background: transparent !important;  /* 👈 force pas de fond */
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.close-tab:hover,
-.close-tab:focus,
-.close-tab:active {
-  transform: scale(1.3);
-  color: #e53935;            /* rouge plus clair */
-  background: transparent !important; /* 👈 bloque le bleu moche */
-  outline: none;             /* pas de contour par défaut */
-  box-shadow: none;          /* supprime glow éventuel */
-}
-
-#hospitalisationsContent .card {
-  margin-bottom: 20px;
-  padding: 15px;
-  border-left: 6px solid #0078d4;
-}
-#hospitalisationsContent h3 {
-  margin-top: 0;
-  color: #0078d4;
-}
-#hospitalisationsContent .entry {
-  background: #f9f9f9;
-  padding: 8px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
-
-#examensListe,
-#actesListe {
-  max-width: none !important;  /* supprime la limite de largeur */
-  width: 100% !important;      /* étire les blocs */
-}
-
-
-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;       /* permet de redimensionner verticalement */
-  border: 1px solid #ccc; /* bord fin et gris */
-  border-radius: 6px;     /* coins arrondis */
-  background-color: #fff; /* fond blanc */
-}
-
-/* Hauteur spécifique par champ */
-#questionnaire {
-  height: 150px;
-  resize: vertical;
-}
-
-#antecedents {
- height: 150px;
-  resize: vertical;
-}
-
-#traitements {
- height: 150px;
-  resize: vertical;
-}
-
-#histoire {
-   height: 300px;
-  resize: vertical;
-}
-#auscultation {
-  height: 300px;
-  resize: vertical;
-}
-
-
-#evolutionTexte {
-   height: 500px;
-  resize: vertical;
-}
-
-
-#tab-dossier .card {
-  max-width: none !important;
-  width: 100% !important;
-}
-
-    body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-	  #dossierMedical input[type="text"],
-#dossierMedical input[type="number"] {
-  width: 100%;
-}
-	
-	.bouton-horloge {
-  all: unset;
-  cursor: pointer;
-  font-size: 1.1em;
-  line-height: 1;
-  margin-left: 5px;
-  color: #555;
-}
-.bouton-horloge:hover,
-.bouton-horloge:focus {
-  outline: none;
-  box-shadow: none;
-  background-color: transparent; 
-}
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    header h2 {
-      margin: 0;
-      color: #0078d4;
-    }
-    button, select, input[type="text"], input[type="number"] {
-      font-size: 1rem;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      outline: none;
-      transition: border-color 0.3s ease;
-    }
-    button {
-      background-color: #0078d4;
-      color: white;
-      cursor: pointer;
-      border: none;
-      margin-right: 10px;
-    }
-    button:hover {
-      background-color: #005ea2;
-    }
-    .card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 25px;
-      max-width: 600px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: #555;
-    }
-    .field-group {
-      margin-bottom: 15px;
-    }
-    .inline-fields {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .inline-fields > div {
-      flex: 1;
-      min-width: 150px;
-    }
-  section.panel {
-  display: none;
-  position: relative;
-  width: 100%;
-  height: auto;
-  z-index: 0;
-  overflow: visible; /* ✅ important pour éviter l’apparition d’un scroll interne */
-}
-
-section.panel.active {
-  display: block;
-  z-index: 1;
-}
-  
-/* --- Correction complète pour les cartes de l'historique --- */
-
-/* === Correction finale : cartes d'historique adaptatives === */
-
-#panel-historique,
-#hospitalisationsContent {
-  position: relative;
-  width: 100%;
-  overflow: visible;
-}
-
-
-#hospitalisationsContent .card {
-  display: block !important;     /* empêche flex ou grid de les forcer */
-  height: auto !important;       /* s’adapte au contenu */
-  min-height: unset !important;  /* supprime toute hauteur minimale forcée */
-  flex: none !important;         /* évite flex-grow/shrink */
-  align-self: auto !important;   /* empêche le stretch */
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box;
-  background: #f9f9f9;
-  border-left: 6px solid #0078d4;
-  border-radius: 8px;
-  padding: 15px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: visible !important;  /* grandit selon le contenu */
-  word-wrap: break-word;
-  white-space: normal;
-}
-
-
-/* Chaque hospitalisation (carte) */
-#hospitalisationsContent .card {
-  width: 100% !important;         /* prend toute la largeur */
-  max-width: none !important;     /* désactive les limites globales */
-  box-sizing: border-box;
-  background: #f9f9f9;
-  border-left: 6px solid #0078d4;
-  border-radius: 8px;
-  padding: 15px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: visible !important;   /* s’adapte au contenu long */
-  word-wrap: break-word;          /* évite les dépassements horizontaux */
-  white-space: normal;            /* le texte revient bien à la ligne */
-}
-
-/* Titre à l’intérieur des cartes */
-#hospitalisationsContent .card h2 {
-  margin-top: 0;
-  color: #0078d4;
-  border-bottom: 3px solid #0078d4;
-  padding-bottom: 5px;
-  margin-bottom: 15px;
-}
-
-/* Paragraphes et sections internes */
-#hospitalisationsContent .card p,
-#hospitalisationsContent .card div,
-#hospitalisationsContent .card h3 {
-  max-width: 100%;
-  overflow: visible;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-
-    .modal-overlay {
-      position: fixed;
-      top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.35);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  width: 90%;
-  max-width: 400px;
-  max-height: 90vh;         /* Limite la hauteur à 90% de la fenêtre */
-  overflow-y: auto;         /* Affiche un ascenseur vertical si besoin */
-  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-}
-
-    .modal h3 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #0078d4;
-    }
-      .modal h2 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #000000;
-    }
-    .modal label {
-      font-weight: 600;
-      margin-bottom: 6px;
-      display: block;
-    }
-    .modal input[type="text"], .modal select, .modal textarea {
-      width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 15px;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      resize: vertical;
-    }
-    .modal textarea {
-      min-height: 80px;
-    }
-    .modal-buttons {
-      text-align: right;
-    }
-    .modal-buttons button {
-      margin-left: 10px;
-      min-width: 90px;
-    }
-button {
-  all: unset;
-  display: inline-block;
-  padding: 10px 16px;
-  font-size: 1rem;
-  border-radius: 8px;
-  min-width: 120px;
-  text-align: center;
-  font-weight: 500;
-  background-color: #0078d4;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-button:hover {
-  background-color: #005ea2;
-  transform: translateY(-1px);
-}
-
-/* Boutons secondaires */
-button.secondary {
-  background-color: #6c757d;
-}
-
-button.secondary:hover {
-  background-color: #5a6268;
-}
-
-/* Boutons de validation */
-button.success {
-  background-color: #218838;
-}
-
-button.success:hover {
-  background-color: #218838;
-}
-
-/* Boutons d’alerte / suppression */
-button.danger {
-  background-color: transparent;
-}
-
-button.danger:hover {
-  background-color: #c82333;
-}
-	  
-
-/* Cartes d’hospitalisation */
-#hospitalisationsContent {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-#hospitalisationsContent .card {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-  border-left: 8px solid #0078d4;
-}
-
-#hospitalisationsContent h3 {
-  color: #0078d4;
-  margin-top: 10px;
-  margin-bottom: 8px;
-}
-
-#hospitalisationsContent p {
-  margin: 5px 0;
-  line-height: 1.5;
-  white-space: pre-wrap; /* conserve les sauts de ligne */
-  color: #333;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-
-
-/* Pour groupes de boutons côte à côte */
-.button-group {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.inline-fields {
-  display: flex;
-  gap: 20px; /* espace entre les champs */
-  flex-wrap: wrap; /* pour que ça passe à la ligne si trop étroit */
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  min-width: 150px; /* largeur mini des champs */
-}
-.bouton-supprimer {
-  background-color: #e0e0e0;
-  color: #555;
-  border: none;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  margin-left: 4px;
-}
-.bouton-supprimer:hover {
-  background-color: #ccc;
-}
-
-/* === COMPORTEMENT DÉFINITIF DES ASCENSEURS === */
-
-
-
-/* Conteneur principal */
-.app {
-  display: flex;
-  height: calc(100vh - 80px); /* occupe tout sauf le header */
-  overflow: hidden; /* 🚫 aucun scroll global dans le layout */
-}
-
-/* Menu fixe à gauche */
-nav {
-  width: 260px;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
-  padding: 15px;
-  flex-shrink: 0;
-  overflow: hidden; /* 🚫 aucun ascenseur ici */
-}
-
-/* Zone de contenu à droite */
-.content {
-  flex: 1;
-  overflow-y: auto;  /* ✅ seul ascenseur vertical ici */
-  overflow-x: hidden; /* 🚫 pas de scroll horizontal */
-  padding: 20px;
-  box-sizing: border-box;
-  background: #f4f6f8;
-}
-
-/* === Comportement responsive (mobile) === */
-@media (max-width: 900px) {
- 
-
-  nav {
-    position: fixed;
-    top: 0;
-    left: -260px;
-    bottom: 0;
-    width: 260px;
-    background: #fff;
-    box-shadow: 3px 0 10px rgba(0,0,0,0.2);
-    z-index: 2000;
-    transition: left 0.3s ease;
-    overflow-y: auto; /* ✅ ici, le menu mobile peut défiler si besoin */
-  }
-
-  nav.open {
-    left: 0;
-  }
-
-  .content {
-    overflow-y: auto;
-    padding: 15px;
-  }
-}
-
-
-
-main {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px;
-  overflow: auto;
-  flex: 1;
-  justify-content: flex-start;
-  align-content: flex-start;
-}
-
-.card {
-  flex: 1 1 300px;
-  max-height: 300px;
-  overflow: auto;
-  box-sizing: border-box;
-  padding: 10px;
-  margin: 0;
-}
-#bubble-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 9999;
-  align-items: flex-end;
-}
-
-
-.exam-button {
-  background-color: #007BFF;
-  color: white;
-  padding: 12px;
-  width: 100%;
-  border: none;
-  border-radius: 6px;
-  margin-top: 10px;
-  cursor: pointer;
-  font-size: 16px;
-}
-.exam-button:hover {
-  background-color: #0056b3;
-}
-.sub-list {
-  display: none;
-  margin-top: 10px;
-  padding-left: 10px;
-}
-.sub-list label {
-  display: block;
-  margin: 5px 0;
-  cursor: pointer;
-}
-.prescription-item {
-  background: #eef;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-delete {
-  background-color: red;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-.btn-delete-acte {
-  width: 28px;
-  height: 28px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: transparent !important;
-  border: none !important;
-
-  padding: 0;
-  margin: 0;
-
-  cursor: pointer;
-
-  color: inherit; 
-  transition: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-.btn-delete-acte:hover {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.08);
-}
-
-/* Overlay de la modale */
-#modalAdmin.modal-overlay {
-  position: fixed;
-  inset: 0; /* top:0; right:0; bottom:0; left:0; */
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex; /* garder le flex pour le centrage */
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease;
-  z-index: 2000;
-}
-
-/* Overlay visible */
-#modalAdmin.modal-overlay.show {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Modale elle-même */
-#modalAdmin .modal {
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-
-  /* Animation d'apparition fluide */
-  transform: scale(0.95);
-  opacity: 0;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-/* Modale visible */
-#modalAdmin.modal-overlay.show .modal {
-  transform: scale(1);
-  opacity: 1;
-}
-
-#modalCloture.modal-overlay {
-  z-index: 3000; /* plus haut que #modalAdmin */
-}
-#modalActe.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 3000;
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
-
-#modalActe .modal {
-  width: 95%;
-  max-width: none;
-  max-height: 95vh;
-  height: 95vh;
-  overflow-y: auto;
-  border-radius: 12px;
-  background: white;
-  padding: 25px;
-}
-
-
-input[type="text"],
-input[type="date"],
-input[type="email"],
-input[type="tel"],
-select {
-  width: 100%;
-  padding: 8px 12px;
-  margin: 6px 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-sizing: border-box;
-  font-size: 16px;
-  font-family: inherit;
-  appearance: none; /* pour uniformiser certains navigateurs */
-  background-color: #fff;
-}
-input.text1 {
-  width: 120px;   /* largeur fixe, tu peux changer */
-  display: inline-block;
-}
-select.text2,
-	  input.text2 {
-  width: 300px;   /* largeur fixe, tu peux changer */
-  display: inline-block;
-}
-input[type="date"]::-webkit-inner-spin-button,
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.5); /* optionnel : améliore l'intégration dans les thèmes clairs/foncés */
-}
-
-label {
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
-}
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  background-color: #f5f5f5; /* optionnel, pour une meilleure lisibilité */
-  border-bottom: 1px solid #ccc;
-}
-
-.left-header h2 {
-  margin: 0;
-}
-
-.right-header {
-  font-size: 0.9em;
-  color: #333;
-}
-
-  .vidal-search {
-    display: flex;
-   
-    align-items: center;
-    margin: 20px 0;
-    font-family: Arial, sans-serif;
-  }
-
-  /* Input de recherche */
-  .vidal-search input[type="text"] {
-    padding: 10px;
-    font-size: 16px;
-    border: 2px solid #d32f2f; /* rouge Vidal */
-    border-right: none; /* pour que le bouton soit collé */
-    border-radius: 4px 0 0 4px; /* coins arrondis côté gauche */
-    outline: none;
-    width: 300px;
-  }
-
-  /* Bouton de recherche */
-  .vidal-search button {
-    padding: 10px 20px;
-    background-color: #d32f2f; /* rouge Vidal */
-    color: white;
-    font-size: 16px;
-    border: 2px solid #d32f2f;
-    border-radius: 0 4px 4px 0; /* coins arrondis côté droit */
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-
-  /* Effet au survol */
-  .vidal-search button:hover {
-    background-color: #b71c1c; /* rouge plus foncé au survol */
-    border-color: #b71c1c;
-  }
-	  /* 🏥 Modale de saisie du code de clôture */
-#modalCodeCloture.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.55); /* voile sombre mais doux */
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 99999; /* 👑 au-dessus de tout */
-  animation: fadeInOverlay 0.25s ease;
-}
-
-/* Fenêtre centrale */
-#modalCodeCloture .modal {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 30px 25px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
-  text-align: center;
-  animation: popIn 0.3s ease;
-  border-top: 6px solid #0078d4; /* bleu médical */
-}
-
-/* Titre */
-#modalCodeCloture .modal h3 {
-  margin-top: 0;
-  color: #0078d4;
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-/* Champ input */
-#modalCodeCloture input[type="password"] {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #ccd6e0;
-  font-size: 1rem;
-  font-family: "Segoe UI", Tahoma, sans-serif;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-#modalCodeCloture input[type="password"]:focus {
-  border-color: #0078d4;
-  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.25);
-  outline: none;
-}
-
-/* Boutons */
-#modalCodeCloture .modal-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-/* ===== Onglets Badge / Code (clôture) ===== */
-.idcheck-switch {
-  display: flex;
-  gap: 8px;
-  background: #eef1f6;
-  padding: 4px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-}
-
-.idcheck-tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 9px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13.5px;
-  color: #374151;
-  cursor: pointer;
-  transition: .2s;
-  font-family: inherit;
-}
-
-.idcheck-tab.active {
-  background: linear-gradient(135deg,#0078d4,#2893ff);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(0,120,212,.30);
-}
-
-.idcheck-panel {
-  display: none;
-  text-align: left;
-}
-
-.idcheck-panel.active {
-  display: block;
-}
-
-.idcheck-badge-iframe-wrapper {
-  width: 100%;
-  max-width: 320px;
-  height: 200px;
-  margin: 0 auto;
-  overflow: hidden;
-  position: relative;
-  border-radius: 10px;
-}
-
-.idcheck-badge-anim {
-  width: 100%;
-  height: 200px;
-  border: none;
-  display: block;
-  overflow: hidden;
-  margin: 0 auto;
-}
-
-.idcheck-badge-hint {
-  font-size: 14px;
-  color: #374151;
-  margin: 8px 0 0;
-  text-align: center;
-}
-
-/* Champ du lecteur : masqué visuellement mais focusable */
-.idcheck-badge-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  border: 0;
-  opacity: 0;
-}
-
-#clotureIdcheckError {
-  color: #c0392b;
-  font-size: 13px;
-  margin-top: 10px;
-  min-height: 18px;
-  text-align: center;
-  line-height: 18px;
-}
-
-#modalCodeCloture #cloturePanelCode label {
-  display: block;
-  font-size: 14px;
-  color: #374151;
-  margin-bottom: 8px;
-}
-
-
-
-/* Animation d'apparition douce */
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes popIn {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-
-.loader-content {
-  text-align: center;
-}
-
-.spinner {
-  border: 6px solid rgba(255, 255, 255, 0.3);
-  border-top: 6px solid white;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-
-/* 🌙 Switch ON/OFF */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 28px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: 0.4s;
-  border-radius: 34px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 22px;
-  width: 22px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #2196F3;
-}
-
-input:checked + .slider:before {
-  transform: translateX(22px);
-}
-
-footer {
-  margin-top: auto;
-  padding: 15px;
-  text-align: center;
-  color: #777;
-  font-size: 0.9rem;
-}
-
-
-.nav-title {
-  font-weight: bold;
-  color: #0078d4;
-  margin-bottom: 10px;
-}
-
-.nav-item {
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.2s, transform 0.1s;
-  margin-bottom: 6px;
-}
-
-.nav-item:hover {
-  background: #eef6ff;
-  transform: translateX(3px);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, #eaf4ff, #fff);
-  border-left: 4px solid #0078d4;
-  color: #0078d4;
-  font-weight: bold;
-}
-
-.panel {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  padding: 20px;
-
-}
-/* ✅ Correction finale : cartes de l’historique auto-hauteur sans scroll */
-#hospitalisationsContent .card {
-  flex: none !important;       /* ne s'étire pas avec flexbox */
-  height: auto !important;     /* s’adapte à la taille du texte */
-  max-height: none !important; /* supprime la limite de hauteur */
-  overflow: visible !important;/* pas de scrollbar interne */
-}
-/* === MENU RESPONSIVE CORRIGÉ === */
-.menu-toggle {
-  display: none;
-  background-color: #0078d4;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  font-size: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* 📱 Version mobile : menu caché par défaut */
-@media (max-width: 900px) {
-  .menu-toggle {
-    display: inline-block;
-  }
-
-  nav {
-    position: fixed;
-    top: 0;
-    left: -260px;
-    bottom: 0;
-    width: 260px;
-    background: #fff;
-    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
-    z-index: 2000;
-    transition: left 0.3s ease;
-  }
-
-  nav.open {
-    left: 0;
-  }
-
-  .content {
-    padding: 15px;
-  }
-
-  /* Désactive le scroll horizontal global */
-  body {
-    overflow-x: hidden;
-  }
-}
-
-/* 💻 Version bureau : menu toujours visible et fixe */
-@media (min-width: 901px) {
-  nav {
-    position: static;
-    left: 0;
-    width: 260px;
-    box-shadow: none;
-    transition: none;
-  }
-  .content {
-    margin-left: 0;
-  }
-}
-
-
-
-
-
-	   /* === CORRECTION : supprimer la bande blanche à gauche sur mobile === */
-
-
-/* === MENU SUPÉRIEUR AVEC DÉROULANTS === */
-.top-menu {
-  display: flex;
-  gap: 10px;
-  background: #0078d4;
-  padding: 10px 20px;
-  border-radius: 0 0 8px 8px;
-  position: sticky;
-  top: 0;
-  z-index: 1500;
-}
-
-.dropbtn {
-  background: white;
-  color: #0078d4;
-  font-weight: 600;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.dropbtn:hover {
-  background: #eaf4ff;
-  transform: translateY(-2px);
-}
-
-/* Conteneur de menu déroulant */
-.dropdown {
-  position: relative;
-}
-
-/* Sous-menu caché */
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #fff;
-  min-width: 180px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  border-radius: 8px;
-  margin-top: 8px;
-  z-index: 9999;
-}
-
-/* Liens du sous-menu */
-.dropdown-content a {
-  color: #333;
-  padding: 10px 14px;
-  text-decoration: none;
-  display: block;
-  transition: background 0.2s;
-}
-
-.dropdown-content a:hover {
-  background-color: #eef6ff;
-}
-
-/* Affichage du menu au clic */
-.dropdown.show .dropdown-content {
-  display: block;
-}
-
-
-/* --- Sous-onglets du panneau Documents --- */
-
-.docs-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-.docs-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-
-.docs-tab {
-  padding: 10px 16px;
-  background: #e5e5e5;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-
-.docs-tab.active {
-  background: #0078d4;
-  color: white;
-}
-
-/************************************
-   🔵 RÈGLES GLOBALES (NE PAS TOUCHER)
-*************************************/
-
-/* Le site entier NE doit JAMAIS scroller */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;         /* 🚫 jamais de scroll global */
-}
-
-/* Layout principal */
-.app {
-  height: calc(100vh - 90px);   /* ajuste si ton header a une autre hauteur */
-  display: flex;
-  overflow: hidden;             /* 🚫 pas de scroll ici */
-}
-
-/* Menu latéral fixe */
-nav {
-  flex-shrink: 0;
-  overflow: hidden;             /* 🚫 jamais de scroll ici */
-}
-
-/**********************************************
-   🟩 PANELS PAR DÉFAUT (TOUS LES ONGLET SAUF DOCUMENTS)
-***********************************************/
-
-.content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;        /* gestion fine par panel */
-}
-
-section.panel {
-  flex: 1;
-  overflow-y: auto;        /* ✔️ chaque panel peut scroller */
-  overflow-x: hidden;
-  display: none;           /* masqué par défaut */
-}
-
-section.panel.active {
-  display: block;
-}
-
-
-/* --- Panel Documents caché par défaut comme les autres --- */
-#panel-documents {
-    overflow: hidden !important;
-    display: none;          /* ⛔ très important */
-    flex-direction: column; 
-}
-
-/* --- Quand le panel Documents est actif --- */
-#panel-documents.active {
-    display: flex !important;   /* ✔ remplace display:none */
-    flex-direction: column;
-}
-
-/* --- Onglets en haut --- */
-.docs-tabs {
-    flex-shrink: 0;
-}
-
-/* --- Iframe occupe toute la hauteur restante --- */
-#docsFrame {
-    flex: 1;
-    width: 100%;
-    height: auto;
-    border: none;
-    overflow: auto;   /* le seul ascenseur visible */
-}
-#panel-historique {
-  display: none;
-  flex-direction: column;
-  flex: 1;
-   overflow-y: auto;
-  padding-right: 15px;           /* scroll permanent, plus fluide */
-  scrollbar-width: thin;        /* Firefox */
-  scrollbar-color: #0078d4 #f4f6f8; /* couleur de la scrollbar */
-}
-#panel-historique.active {
-  display: flex
-
-}
-
-/* Menu latéral compact façon École Directe */
-nav {
-  border-top-right-radius: 20px;     /* ⬅ arrondi haut à droite */
-  border-bottom-right-radius: 20px;     /* ⬅ arrondi haut à droite */
-
-  width: 65px;                    /* ⬅ réduit : seulement les emojis visibles */
-  transition: width 0.25s ease;
-  overflow: hidden;
-}
-
-nav:hover {
-  width: 300px;                   /* ⬅ se déploie au survol */
-}
-
-/* Items du menu */
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;                      /* espace emoji / texte */
-  white-space: nowrap;            /* pas de retour ligne */
-  padding: 10px 14px;
-}
-
-/* Texte caché quand le menu est réduit */
-.nav-item span {
-  opacity: 0;
-  transition: opacity 0.20s ease;
-}
-
-/* Texte visible quand menu ouvert */
-nav:hover .nav-item span {
-  opacity: 1;
-}
-.field-group {
-  position: relative;
-}
-
-
-.suggestions {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 0 0;
-  border: 1px solid #ccc;
-  background: white;
-  max-height: 150px;
-  overflow-y: auto;
-  border-radius: 6px;
-  display: none;
-  position: absolute;
-  z-index: 1000;
-  width: 100%;
-  top: 100%;
-  left: 0;
-}
-
-.suggestions li {
-  padding: 8px;
-  cursor: pointer;
-}
-
-.suggestions li:hover {
-  background: #eef6ff;
-}
-
-.alerte-orange {
-  margin-top: 5px;
-  color: #e65100;
-  font-size: 0.9em;
-}
-
-.clear-btn {
-  all: unset;
-  cursor: pointer;
-  font-size: 1.1em;
-  line-height: 1;
-  margin-left: 5px;
-  color: #555;
-}
-.clear-btn:hover,
-.clear-btn:focus {
-  outline: none;
-  box-shadow: none;
-  background-color: transparent; 
-}
-/* 🔲 Grille 2x2 équipe référente */
-.equipe-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-/* 📦 Champ avec bouton intégré */
-.input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.input-wrapper input {
-  width: 100%;
-  padding-right: 34px; /* place pour la croix */
-}
-
-/* ❌ Bouton clear dans le champ */
-.input-wrapper .clear-btn {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  color: #888;
-  cursor: pointer;
-}
-
-.input-wrapper .clear-btn:hover {
-  color: #c62828;
-}
-
-/* 📱 Responsive : une seule colonne sur mobile */
-@media (max-width: 700px) {
-  .equipe-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 9999;
-  background: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  margin-bottom: 15px;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #005ea2;
-}
-
-.tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.tab {
-  background: transparent;
-  color: #005ea2;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tab.active,
-.tab:hover {
-  background: #e6f0fc;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-btn {
-  background: #f0f4f8;
-  color: #333;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.icon-btn:hover {
-  background: #dbe9ff;
-}
-
-/* 🔽 Menu hover */
-.hover-menu {
-  position: relative;
-}
-
-.hover-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  overflow: hidden;
-}
-
-.hover-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.hover-panel button:hover {
-  background: #f0f8ff;
-}
-
-.hover-menu:hover .hover-panel {
-  display: flex;
-}
-/* 🔧 Correctif lisibilité topbar */
-.topbar button,
-.topbar .tab,
-.topbar .icon-btn {
-  color: #1f2937; /* gris foncé lisible */
-}
-.hover-panel button {
-  color: #1f2937;
-  background: white;
-}
-
-.hover-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-.tab.active {
-  background: #0078d4;
-  color: white;
-}
-.menu-wrapper {
-  position: relative;
-}
-
-.menu-panel {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.menu-panel button {
-  background: none;
-  border: none;
-  padding: 10px 14px;
-  text-align: left;
-  cursor: pointer;
-  color: #1f2937;
-}
-
-.menu-panel button:hover {
-  background: #e6f0fc;
-  color: #005ea2;
-}
-
-/* état ouvert */
-.menu-wrapper.open .menu-panel {
-  display: flex;
-}
-.search-wrapper {
-  position: relative;
-}
-
-.search-results {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  width: 100%;
-  max-height: 320px;
-  overflow-y: auto;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-  z-index: 10000;
-}
-
-.search-results.hidden {
-  display: none;
-}
-
-.resultat-item {
-  padding: 10px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid #eee;
-}
-
-.resultat-item:hover {
-  background: #e6f0fc;
-}
-
-.topbar,
-.search-container {
-  position: relative;
-}
-#recherchePatient {
-  display: none;
-}
-
-.icon-button {
-  font-size: 2em;
-  background: transparent;
-  border: none;
-  padding: 0;
-  box-shadow: none;
-  outline: none;
-  cursor: pointer;
-}
-
-.icon-button:hover,
-.icon-button:active,
-.icon-button:focus {
-  background: transparent;
-  box-shadow: none;
-  outline: none;
-}
-.left-header {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* espace entre les éléments */
-}
-.suggestions-box {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 2px;
-  box-sizing: border-box;
-  box-shadow: 0 6px 16px rgba(0,0,0,.12);
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-  display: none;
-  z-index: 1000;
-}
-
-.suggestion-item {
-  padding: 8px 10px;
-  cursor: pointer;
-}
-
-.suggestion-item:hover {
-  background-color: #eef3ff;
-}
-.modalna {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* flou de l'écran */
-  z-index: 9999;
-}
-
-.modalna .card {
-  background: #fff;
-  padding: 24px 32px;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.modalna h2 {
-  color: #d32f2f; /* rouge pour danger/erreur */
-  margin-bottom: 12px;
-}
-
-.modalna p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.modalna .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-}
-#panel-constantes {
-  display: none;
-  flex-direction: column;
-  overflow: hidden; /* important */
-}
-
-#panel-constantes.active {
-  display: flex;
-}
-#constantesFrame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  border-radius: 10px;
-  overflow: auto;
-}
-#panel-medsurgences {
-  display: none;
-  flex-direction: column;
-  overflow: hidden; /* important */
-}
-
-#panel-medsurgences.active {
-  display: flex;
-}
-#medsurgencesFrame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  border-radius: 10px;
-  overflow: auto;
-}
-#actesFrame {
-  flex: 1;
-  width: 100%;
-  border: none;
-  border-radius: 10px;
-  overflow: auto;
-}
-/* 🔲 OVERLAY spécifique */
-#modalExamen {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 20, 30, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 9999;
-}
-
-#modalExamen.active {
-  display: flex !important;
-}
-/* 🪟 MODALE */
-#modalExamen .modal {
-  background: #ffffff;
-  width: 620px;
-  max-height: 85vh;
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  animation: modalFadeExam 0.2s ease-out;
-  overflow: hidden;
-}
-#modalExamen .modal {
-  width: 800px;
-  max-width: 95vw;
-  height: 85vh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Animation */
-@keyframes modalFadeExam {
-  from {
-    opacity: 0;
-    transform: translateY(25px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* TITRES */
-#modalExamen h3 {
-  margin-bottom: 15px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-#modalExamen h4 {
-  margin: 10px 0 6px;
-  font-size: 14px;
-  color: #555;
-}
-
-/* 🔍 RECHERCHE */
-#modalExamen #searchExamen {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-  transition: 0.2s;
-}
-
-#modalExamen #searchExamen:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
-}
-
-/* 📋 RESULTATS */
-#modalExamen #resultatsExamens {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 8px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-}
-
-/* Item */
-#modalExamen .result-item {
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-#modalExamen .result-item:hover {
-  background: #f1f6ff;
-}
-
-/* Badge emoji */
-#modalExamen .result-item span {
-  font-size: 16px;
-}
-
-/* Catégorie */
-#modalExamen .result-item small {
-  margin-left: auto;
-  font-size: 11px;
-  color: #888;
-}
-
-/* 🧾 EXAMENS SELECTIONNES */
-#modalExamen #examensSelectionnes {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 5px;
-}
-#modalExamen #resultatsExamens {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 120px;
-  max-height: none;
-}
-/* Ligne */
-#modalExamen #examensSelectionnes > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: 10px;
-  border: 1px solid #eee;
-  background: #f9fafc;
-}
-
-/* Nom */
-#modalExamen #examensSelectionnes strong {
-  flex: 1;
-  font-size: 13px;
-}
-
-/* Input commentaire */
-#modalExamen #examensSelectionnes input {
-  flex: 2;
-  padding: 6px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  font-size: 12px;
-}
-
-#modalExamen #examensSelectionnes input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-/* Bouton supprimer */
-#modalExamen #examensSelectionnes button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #e74c3c;
-  font-size: 14px;
-  transition: transform 0.1s;
-}
-
-#modalExamen #examensSelectionnes button:hover {
-  transform: scale(1.2);
-}
-
-/* 🔘 ACTIONS */
-#modalExamen .modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-
-
-/* Annuler */
-
- .delete-examen-btn {
-  all: unset;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: transparent;
-  border: none;
-  cursor: pointer;
-
-  border-radius: 6px;
-  transition: all 0.15s ease;
-
-  color: #666;
-  font-size: 14px;
-}
- .delete-examen-btn:hover {
-  color: #e74c3c;
-  background: transparent;
-}
-.btn-id {
-  all: unset;
-  background: transparent;
-  color: #000;
-  border: 1.5px solid rgba(0, 0, 0, 0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(2px);
-}
-
-.btn-id:hover {
-  background: rgba(0, 120, 255, 0.12);
-  border-color: rgba(0, 120, 255, 0.6);
-  color: #0078ff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-}
-
-.btn-id:active {
-  transform: translateY(0px);
-  box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1);
-}
-
-.btn-id:focus {
-  outline: none;
-  border-color: rgba(0, 120, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-}
-.btn-id-c:hover {
-  background: rgba(255, 0, 0, 0.10);
-  border-color: rgba(255, 0, 0, 0.6);
-  color: #e60000;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15);
-}
-
-.btn-id-c:focus {
-  border-color: rgba(255, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
-}
-.btn-id-v:hover {
-  background: rgba(0, 200, 80, 0.12);
-  border-color: rgba(0, 200, 80, 0.6);
-  color: #00b35a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15);
-}
-
-.btn-id-v:focus {
-  border-color: rgba(0, 200, 80, 0.8);
-  box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15);
-}
-#suggestionsadd{
-    position: absolute;
-    width: 100%;
-    max-width: 500px;
-
-    background: #ffffff;
-
-    border-radius: 14px;
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.08),
-        0 2px 8px rgba(0,0,0,0.05);
-
-    overflow: hidden;
-
-    margin-top: 8px;
-
-    z-index: 9999;
-
-    border: 1px solid #ececec;
-
-    display: none;
-}
-
-/* Affiché seulement si il y a des suggestions */
-#suggestionsadd.active{
-    display: block;
-}
-
-#suggestionsadd div{
-    padding: 14px 18px;
-
-    cursor: pointer;
-
-    font-size: 15px;
-
-    color: #222;
-
-    transition:
-        background 0.18s ease,
-        padding-left 0.18s ease;
-
-    border-bottom: 1px solid #f3f3f3;
-}
-
-#suggestionsadd div:last-child{
-    border-bottom: none;
-}
-
-#suggestionsadd div:hover{
-    background: #f7f9fc;
-
-    padding-left: 24px;
-}
-.content{
-    flex:1;
-
-    height:100%;
-
-    display:flex;
-    flex-direction:column;
-
-    overflow:hidden;
-
-    padding:0 50px 0 10px; /* ← SUPPRIME espace haut/bas */
-
-    box-sizing:border-box;
-
-    min-height:0;
-}
-
- ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-#modalVerificationIdentite{
-z-index: 3000;
-}
-
-#modalSignaturePatient{
-z-index: 3000;
-}
-.historique-verifications {
-  margin-top: 10px;
-}
-
-.verification-item {
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.verification-item:last-child {
-  border-bottom: none;
-}
-
-.verification-vide {
-  color: #777;
-  font-style: italic;
-}
-
-/* 📧 Liste des emails (modale administrative) */
-.admin-email-list {
-  margin: 6px 0 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.admin-email-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafc;
-}
-
-.admin-email-item input[type="email"] {
-  flex: 1;
-  margin: 0 !important;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-}
-
-.admin-email-item input[type="email"]:invalid:not(:placeholder-shown) {
-  border-color: #e74c3c;
-}
-
-.admin-email-item button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
-}
-
-.admin-email-item button:hover {
-  background: rgba(231, 76, 60, 0.12);
-  color: #e74c3c;
-}
-
-.admin-email-vide {
-  color: #777;
-  font-style: italic;
-  font-size: 13px;
-  margin: 4px 0 8px;
-}
-
-#btnAjouterEmail {
-  margin-bottom: 15px;
-}
-.acte-card{
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:12px;
-    padding:14px;
-    margin-bottom:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,.04);
-    transition:.2s;
-}
-
-.acte-card:hover{
-    box-shadow:0 4px 14px rgba(0,0,0,.08);
-}
-
-.acte-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:8px;
-}
-
-.acte-type{
-    font-weight:600;
-    color:#1f2937;
-}
-
-.acte-date{
-    font-size:.85rem;
-    color:#6b7280;
-}
-
-.badge-a-faire{
-    background:#fef3c7;
-    color:#92400e;
-    padding:4px 8px;
-    border-radius:999px;
-    font-size:.8rem;
-}
-
-.badge-fait{
-    background:#dcfce7;
-    color:#166534;
-    padding:4px 8px;
-    border-radius:999px;
-    font-size:.8rem;
-}
-.empty-state{
-    text-align:center;
-    padding:40px 20px;
-    color:#9ca3af;
-}
-
-.empty-state i{
-    font-size:2rem;
-    margin-bottom:10px;
-    display:block;
-}
-#modalExamen {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 20, 30, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 9999;
-}
-
-
-/* 🪟 MODALE */
-#modalActe .modal {
-  background: #ffffff;
-  width: 620px;
-  max-height: 85vh;
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  animation: modalFadeExam 0.2s ease-out;
-  overflow: hidden;
-}
-#modalActe .modal {
-  width: 800px;
-  max-width: 95vw;
-  height: 85vh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Animation */
-@keyframes modalFadeExam {
-  from {
-    opacity: 0;
-    transform: translateY(25px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* TITRES */
-#modalActe h3 {
-  margin-bottom: 15px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-#modalActeh4 {
-  margin: 10px 0 6px;
-  font-size: 14px;
-  color: #555;
-}
-.btn-delete-acte{
-    background:none;
-    border:none;
-    color:#dc2626;
-    cursor:pointer;
-    font-size:.9rem;
-}
-
-.btn-delete-acte:hover{
-    color:#991b1b;
-}
-
-.examen-encart {
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  border-left: 5px solid;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-/* À réaliser */
-.examen-encart.a-faire {
-  background: #f5faff;
-  border-left-color: #0d6efd;
-}
-
-/* Réalisé */
-.examen-encart.realise {
-  background: #e8fff1;
-  border-left-color: #32c671;
-}
-
-.examen-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.examen-badge.a-faire {
-  background: #dceaff;
-  color: #0d6efd;
-}
-
-.examen-badge.realise {
-  background: #cbf7d5;
-  color: #146c2e;
-}
-.btn-loupe{
-  all: unset;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-loupe:hover{
-  transform: scale(1.15);
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-.btn-loupe:focus,
-.btn-loupe:focus-visible,
-.btn-loupe:active{
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-.exam-badges {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-  align-items: center;
-}
-
-.badge-circle {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.badge-circle.green {
-  background: #28a745;
-}
-
-.badge-circle.blue {
-  background: #0d6efd;
-}
-.badge-circle.red {
-  background: #fd0d0d;
-}
-#panel-historique{
-    display:none;
-    flex-direction:column;
-    flex:1;
-    min-height:0;
-}
-
-#panel-historique.active{
-    display:flex;
-}
-
-#historiqueFrame{
-    flex:1;
-    width:100%;
-    min-height:0;
-    border:none;
-    border-radius:10px;
-}
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-}
-
-.modal-box {
-    width: 450px;
-    max-width: calc(100vw - 40px);
-    background: white;
-    border-radius: 16px;
-    padding: 30px;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-.modal-box h2 {
-    margin: 10px 0 15px;
-    font-size: 22px;
-}
-
-.modal-box p {
-    color: #555;
-    line-height: 1.5;
-}
-
-.modal-icon {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 15px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-}
-
-.modal-icon.warning {
-    background: #fff3cd;
-}
-
-.modal-icon.success {
-    background: #d4edda;
-    color: #28a745;
-    font-weight: bold;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 25px;
-}
-
-.modal-actions button {
-    border: none;
-    border-radius: 8px;
-    padding: 11px 22px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-primary {
-    background: #0078d4;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #0069b8;
-}
-
-.btn-secondary {
-    background: #e9ecef;
-    color: #333;
-}
-
-.btn-secondary:hover {
-    background: #dfe3e6;
-}
-
-.emails-envoyes {
-    margin: 20px 0;
-    padding: 15px;
-    background: #f5f7fa;
-    border-radius: 10px;
-    text-align: left;
-}
-
-.emails-envoyes .email-titre {
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.emails-envoyes .email-ligne {
-    padding: 5px 0;
-    color: #333;
-    word-break: break-all;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-</style>
-
-<style id="ipad-fixes">
-/* ===== iPAD / TABLETTES ===== */
-
-/* Hauteur réelle visible (évite que le bas soit masqué par la barre Safari) */
-.app{
-  height:calc(100vh - 90px);
-  height:calc(100dvh - 90px);
-}
-
-/* Menu latéral : ascenseur vertical quand la hauteur ne suffit pas */
-nav{
-  overflow-y:auto;
-  overflow-x:hidden;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
-  box-sizing:border-box;
-  padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));
-  /* Ascenseur invisible (le défilement reste possible) */
-  scrollbar-width:none;          /* Firefox */
-  -ms-overflow-style:none;       /* anciens Edge/IE */
-}
-nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
+/* =====================================================================
+   FICHE PATIENT — THÈME MODERNE HOSPITALIER
+   Identité reprise de medsurgences.html (tokens, composants, modales)
+   Fond blanc · bleu clinique · cartes à bordure fine
+   ===================================================================== */
+
+/* ---------- TOKENS ---------- */
+:root{
+  --font:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --bg:#ffffff;
+  --surface:#ffffff;
+  --ink:#112336;
+  --muted:#586a7e;
+  --line:#d8e1ea;
+  --line-soft:#e9eff5;
+  --field:#f6f9fc;
+
+  --primary:#0b6fa4;
+  --primary-d:#085a86;
+  --primary-soft:#e3f1f9;
+
+  --ok:#16784a;    --ok-soft:#e1f4e9;
+  --late:#b92a30;  --late-soft:#fdecec;
+  --plan:#4a5b6e;  --plan-soft:#eceff3;
+  --warn:#7a4f00;  --warn-soft:#fff5da; --warn-line:#f0d98f;
+
+  --shadow:0 1px 2px rgba(17,35,54,.05), 0 8px 24px rgba(17,35,54,.07);
+  --shadow-sm:0 1px 2px rgba(17,35,54,.06);
+  --ring:0 0 0 4px rgba(11,111,164,.15);
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+
+  --head-h:64px;
+  --nav-w:76px;
+  --nav-w-open:288px;
+  --gutter:clamp(16px,3vw,32px);
+  --maxw:1100px;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%;margin:0;padding:0}
+body{
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  font-family:var(--font);
+  font-size:16px;line-height:1.45;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.sm{width:16px;height:16px}
+.i.lg{width:24px;height:24px}
+
+hr{border:0;height:1px;background:var(--line);margin:22px 0}
+
+/* ---------- EN-TÊTE ---------- */
+body > header{
+  flex:none;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:var(--head-h);
+  padding:calc(8px + var(--safe-t)) calc(20px + var(--safe-r)) 8px calc(20px + var(--safe-l));
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  z-index:5;
+}
+.left-header{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand{
+  width:38px;height:38px;flex:none;
+  display:grid;place-items:center;
+  color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));
+  border-radius:11px;
+  box-shadow:0 4px 10px rgba(11,111,164,.25);
+}
+.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#patientName{
+  margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.right-header{display:flex;align-items:center;gap:10px;flex:none}
+#currentTime{
   display:none;
-  width:0;
-  height:0;
+  font-size:14px;font-weight:600;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+#currentTime:not(:empty){display:inline-flex;align-items:center;padding:6px 12px;background:var(--field);border:1px solid var(--line);border-radius:999px}
+
+.icon-button{
+  appearance:none;
+  width:44px;height:44px;flex:none;
+  display:inline-grid;place-items:center;padding:0;margin:0;
+  color:var(--primary);background:#fff;
+  border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s;
+}
+.icon-button:active{background:var(--primary-soft)}
+@media (hover:hover){.icon-button:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.icon-button:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+
+.menu-toggle{
+  display:none;appearance:none;
+  width:44px;height:44px;flex:none;padding:0;margin:0;
+  place-items:center;color:var(--primary);background:#fff;
+  border:1px solid var(--line);border-radius:12px;cursor:pointer;
+  touch-action:manipulation;
+}
+.menu-toggle:active{background:var(--primary-soft)}
+
+/* ---------- STRUCTURE ---------- */
+.app{flex:1;min-height:0;display:flex;overflow:hidden;background:#fff}
+
+.content{
+  flex:1;min-width:0;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  background:#fff;
 }
 
-/* Écrans tactiles : plus d'ouverture au survol (le :hover reste "collé" sur iPad)
-   -> ouverture / fermeture par un tap (classe .expanded gérée en JS) */
+/* ---------- MENU LATÉRAL (compact, se déploie au survol) ---------- */
+nav{
+  flex:none;
+  width:var(--nav-w);
+  display:flex;flex-direction:column;
+  padding:14px 12px calc(14px + var(--safe-b));
+  background:#fff;
+  border-right:1px solid var(--line);
+  overflow-x:hidden;overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  transition:width .25s ease, box-shadow .25s ease;
+  z-index:10;
+}
+nav::-webkit-scrollbar{display:none;width:0;height:0}
+nav:hover{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.08)}
+
+.nav-title{
+  padding:4px 12px 12px;margin-bottom:8px;
+  font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);white-space:nowrap;
+  border-bottom:1px solid var(--line-soft);
+  opacity:0;transition:opacity .2s ease;
+}
+nav:hover .nav-title{opacity:1}
+#navItems{display:flex;flex-direction:column;gap:4px}
+
+.nav-item{
+  position:relative;
+  display:flex;align-items:center;gap:14px;
+  min-height:48px;padding:0 12px;
+  border-radius:12px;
+  color:var(--ink);font-weight:600;font-size:15px;
+  white-space:nowrap;
+  cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  transition:background .15s,color .15s;
+}
+.nav-item > .i{color:var(--muted);transition:color .15s}
+.nav-label{opacity:0;transition:opacity .2s ease;overflow:hidden;text-overflow:ellipsis}
+nav:hover .nav-label{opacity:1}
+.nav-item .exam-badges{opacity:0;transition:opacity .2s ease}
+nav:hover .nav-item .exam-badges{opacity:1}
+@media (hover:hover){.nav-item:hover{background:var(--primary-soft)}.nav-item:hover > .i{color:var(--primary)}}
+.nav-item:active{background:var(--primary-soft)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d)}
+.nav-item.active > .i{color:var(--primary)}
+.nav-item.active::before{
+  content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;
+  background:var(--primary);border-radius:0 4px 4px 0;
+}
+
+.exam-badges{display:flex;align-items:center;gap:5px;margin-left:auto;flex:none}
+.badge-circle{
+  min-width:22px;height:22px;padding:0 6px;
+  display:inline-grid;place-items:center;
+  font-size:12px;font-weight:700;line-height:1;color:#fff;
+  border-radius:999px;
+}
+.badge-circle.green{background:var(--ok)}
+.badge-circle.blue{background:var(--primary)}
+.badge-circle.red{background:var(--late)}
+
+/* Tablettes tactiles : déploiement par tap (classe .expanded gérée en JS) */
 @media (hover:none){
-  nav:hover{width:65px}
-  nav:hover .nav-item span{opacity:0}
-
-  nav.expanded{width:260px}
-  nav.expanded .nav-item span{opacity:1}
-
-  /* mode tiroir (largeur <= 900px) : menu ouvert = menu entièrement déployé */
-  nav.open{width:260px}
-  nav.open .nav-item span{opacity:1}
-}
-/* ===== MODE TÉLÉPHONE / TIROIR (<= 900px) ===== */
-@media (max-width:900px){
-
-  /* Bouton hamburger : fini le gros rectangle bleu */
-  .menu-toggle{
-    position:relative;
-    display:inline-flex;
-    flex-shrink:0;
-    box-sizing:border-box;
-    width:42px;
-    min-width:42px;
-    max-width:42px;
-    height:42px;
-    min-height:42px;
-    padding:0;
-    font-size:0;
-    color:transparent;
-    background:#fff;
-    border:1px solid rgba(0,120,212,.22);
-    border-radius:12px;
-    box-shadow:0 2px 8px rgba(0,0,0,.08);
-    -webkit-tap-highlight-color:transparent;
-    transition:background .2s ease, box-shadow .2s ease, transform .1s ease;
-  }
-  .menu-toggle::before{
-    content:"";
-    position:absolute;
-    left:12px; right:12px; top:50%;
-    height:2px; margin-top:-1px;
-    border-radius:2px;
-    background:#0078d4;
-    box-shadow:0 -7px 0 #0078d4, 0 7px 0 #0078d4;
-  }
-  .menu-toggle,
-  .menu-toggle:hover,
-  .menu-toggle:focus{
-    margin-right:0;
-    background:#fff;
-    outline:none;
-  }
-  .menu-toggle:active{
-    background:#eaf4ff;
-    transform:scale(.94);
-  }
-
-  /* Tiroir : plus large, coins arrondis, ombre douce */
-  nav,
-  nav:hover,
-  nav.open{
-    width:min(320px, 86vw);
-  }
-  nav{
-    left:calc(-1 * min(320px, 86vw) - 30px);
-    padding:calc(18px + env(safe-area-inset-top, 0px)) 14px calc(24px + env(safe-area-inset-bottom, 0px));
-    border-right:none;
-    border-radius:0 22px 22px 0;
-    box-shadow:none;
-    transition:left .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
-  }
-  nav.open{
-    left:0;
-    box-shadow:6px 0 30px rgba(15,30,60,.25);
-  }
-  nav .nav-item span{opacity:1}
-
-  .nav-title{
-    font-size:1.15rem;
-    letter-spacing:.3px;
-    padding:4px 10px 14px;
-    margin-bottom:10px;
-    border-bottom:1px solid #e6eef8;
-  }
-  .nav-item{
-    padding:13px 14px;
-    margin-bottom:4px;
-    border-radius:12px;
-    font-size:1rem;
-  }
-  .nav-item:hover{transform:none}
-  .nav-item:active{background:#eaf4ff}
-
-  /* Voile derrière le tiroir */
-  .nav-backdrop{
-    position:fixed;
-    inset:0;
-    z-index:1999;
-    background:rgba(15,30,60,.38);
-    backdrop-filter:blur(2px);
-    -webkit-backdrop-filter:blur(2px);
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .3s ease;
-  }
-  .nav-backdrop.show{
-    opacity:1;
-    pointer-events:auto;
-  }
-}
-@media (min-width:901px){
-  .nav-backdrop{display:none}
+  nav:hover{width:var(--nav-w);box-shadow:none}
+  nav:hover .nav-label,nav:hover .nav-title,nav:hover .nav-item .exam-badges{opacity:0}
+  nav.expanded{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.1)}
+  nav.expanded .nav-label,nav.expanded .nav-title,nav.expanded .nav-item .exam-badges{opacity:1}
+  nav.open{width:var(--nav-w-open)}
+  nav.open .nav-label,nav.open .nav-title,nav.open .nav-item .exam-badges{opacity:1}
 }
 
-/* ===== Modale "Ouvrir sur cet appareil" (signature) ===== */
+/* ---------- PANNEAUX ---------- */
+section.panel{
+  display:none;
+  flex:1;min-height:0;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  background:#fff;
+}
+section.panel.active{display:block}
+
+.panel-head{
+  position:sticky;top:0;z-index:4;
+  padding:22px max(var(--gutter),calc((100% - var(--maxw))/2)) 16px;
+  background:rgba(255,255,255,.94);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.panel-title{
+  display:flex;align-items:center;gap:12px;
+  font-size:22px;font-weight:700;letter-spacing:-.015em;color:var(--ink);
+}
+.panel-title .ico{
+  width:40px;height:40px;flex:none;display:grid;place-items:center;
+  color:var(--primary);background:var(--primary-soft);border-radius:12px;
+}
+.hint{margin-top:6px;font-size:14px;color:var(--muted)}
+.panel-head .hint{margin-left:52px}
+
+.panel-body{padding:22px max(var(--gutter),calc((100% - var(--maxw))/2)) 48px}
+
+/* Panneaux contenant une iframe : occupent toute la hauteur */
+#panel-medsurgences,#panel-constantes,#panel-actes,#panel-historique,#panel-documents{overflow:hidden;flex-direction:column}
+#panel-medsurgences.active,#panel-constantes.active,#panel-actes.active,#panel-historique.active,#panel-documents.active{display:flex !important}
+.frame-panel .panel-head{position:static;padding-top:14px;padding-bottom:12px}
+.frame-panel .panel-title{font-size:19px}
+.frame-panel .panel-title .ico{width:34px;height:34px;border-radius:10px}
+.frame-panel iframe,#docsFrame,#historiqueFrame{
+  flex:1;min-height:0;width:100%;height:auto;
+  border:0;border-radius:0;background:#fff;overflow:auto;
+}
+
+/* ---------- CARTES / SECTIONS ---------- */
+.card-sec{
+  margin-bottom:16px;padding:20px;
+  background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);
+}
+.card-title{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.card-title .i{color:var(--primary);width:18px;height:18px}
+.card-title .push{margin-left:auto}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fact{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;min-width:0}
+.fact label{margin:0 0 3px;font-size:13px;font-weight:500;color:var(--muted)}
+.fact > span{display:block;min-height:22px;font-weight:600;overflow-wrap:anywhere}
+.fact.wide{grid-column:1/-1}
+
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.form-grid .full{grid-column:1/-1}
+.field{position:relative;min-width:0}
+.field > label,.lbl{
+  display:flex;align-items:center;gap:8px;
+  margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink);
+}
+.field > label .i,.lbl .i{color:var(--primary);width:17px;height:17px}
+
+/* ---------- CHAMPS ---------- */
+label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],input[type=date],input[type=email],input[type=tel],input[type=password],input[type=datetime-local],
+select,textarea{
+  width:100%;min-height:48px;
+  margin:0;padding:12px 14px;
+  font:inherit;font-size:16px;color:var(--ink);
+  background:var(--field);
+  border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+input.text1,input.text2,select.text2{width:100%;display:block}
+input::placeholder,textarea::placeholder{color:#8a9bad}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+input:disabled,input[disabled]{color:var(--muted);background:var(--line-soft);cursor:not-allowed}
+select{
+  appearance:none;-webkit-appearance:none;
+  padding-right:42px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23586a7e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+textarea{resize:vertical;line-height:1.5;min-height:92px}
+#questionnaire,#antecedents,#traitements{height:150px}
+#histoire,#auscultation{height:260px}
+#evolutionTexte{height:420px}
+#medtraitant{height:96px}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.45);cursor:pointer}
+input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;height:18px;flex:none;margin:0}
+
+.input-wrapper{position:relative;width:100%}
+.input-wrapper input{padding-right:44px}
+.clear-btn{
+  appearance:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;display:grid;place-items:center;padding:0;
+  color:var(--muted);background:transparent;border:0;border-radius:8px;cursor:pointer;
+}
+.clear-btn:hover{color:var(--late);background:var(--late-soft)}
+.clear-btn:focus-visible{outline:3px solid rgba(11,111,164,.4)}
+.alerte-orange{margin-top:6px;font-size:14px;color:var(--warn)}
+.alerte-orange:not(:empty){padding:8px 12px;background:var(--warn-soft);border:1px solid var(--warn-line);border-radius:10px}
+
+/* Interrupteur */
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  min-height:52px;padding:8px 14px;margin-top:12px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+}
+.toggle-row > label:not(.switch){margin:0;display:flex;align-items:center;gap:10px;font-weight:600}
+.toggle-row > label:not(.switch) .i{color:var(--late)}
+.switch{position:relative;display:inline-block;width:50px;height:30px;flex:none;margin:0;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.slider{position:absolute;inset:0;background:#c2cedb;border-radius:999px;transition:background .2s}
+.slider::before{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.switch input:checked + .slider{background:var(--late)}
+.switch input:checked + .slider::before{transform:translateX(20px)}
+.switch input:focus-visible + .slider{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+
+/* Suggestions (autocomplétion) */
+.suggestions,.suggestions-box,#pdcSuggestions{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;width:auto !important;
+  z-index:50;max-height:220px;overflow-y:auto;
+  margin:0 !important;padding:6px !important;list-style:none;
+  background:#fff !important;
+  border:1px solid var(--line) !important;border-radius:14px !important;
+  box-shadow:0 12px 32px rgba(17,35,54,.14);
+}
+.suggestions,.suggestions-box{display:none}
+.suggestions li,.suggestion-item,#pdcSuggestions li{
+  padding:10px 12px;border-radius:9px;cursor:pointer;font-size:15px;
+}
+.suggestions li:hover,.suggestion-item:hover,#pdcSuggestions li:hover{background:var(--primary-soft)}
+.ac-wrap{position:relative}
+
+/* ---------- BOUTONS ---------- */
+.btn-id,.btn{
+  appearance:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 18px;
+  font:600 15px/1 var(--font);color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
+}
+.btn-id .i{width:18px;height:18px}
+.btn-id:active{background:var(--line-soft)}
+.btn-id:focus-visible,.nav-item:focus-visible,.docs-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:hover){.btn-id:hover{background:var(--primary-soft);border-color:#b5d6ea;color:var(--primary-d)}}
+.btn-id-v,.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-id-v:active,.btn-primary:active{background:var(--primary-d)}
+@media (hover:hover){.btn-id-v:hover,.btn-primary:hover{background:var(--primary-d);border-color:var(--primary-d);color:#fff}}
+.btn-id-c{color:var(--late);background:#fff;border-color:#f0c3c5}
+@media (hover:hover){.btn-id-c:hover{background:var(--late-soft);border-color:#e7a9ac;color:var(--late)}}
+.btn-id-c:active{background:#fbdcdc}
+.btn-secondary{
+  appearance:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:46px;padding:0 18px;font:600 15px/1 var(--font);color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;
+}
+.btn-secondary:hover{background:var(--line-soft)}
+.btn-primary{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;font:600 15px/1 var(--font);border-radius:12px;cursor:pointer}
+.btn-block{width:100%}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.actions.end{justify-content:flex-end}
+
+.bouton-horloge,.bouton-ancienne{
+  appearance:none;
+  display:inline-grid;place-items:center;
+  width:30px;height:30px;margin:0 0 0 6px;padding:0;vertical-align:middle;
+  color:var(--primary);background:var(--primary-soft);
+  border:1px solid transparent;border-radius:9px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.bouton-horloge .i,.bouton-ancienne .i{width:16px;height:16px}
+.bouton-horloge:hover,.bouton-ancienne:hover{background:var(--primary);color:#fff}
+.bouton-horloge:focus-visible,.bouton-ancienne:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.doc-field{margin-bottom:20px}
+.doc-field > label{display:flex;align-items:center;gap:0;margin-bottom:8px}
+.doc-field > label .lbl-text{margin-right:4px}
+
+/* ---------- CHOIX (radio / cases en tuiles) ---------- */
+.choice-grid,.radio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.choice,.radio-card{
+  position:relative;
+  display:flex;align-items:center;gap:12px;
+  min-height:56px;padding:10px 14px;margin:0;
+  font-size:15px;font-weight:600;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.choice .i,.radio-card .i{color:var(--muted);transition:color .15s}
+.choice input,.radio-card input{position:absolute;opacity:0;width:100%;height:100%;inset:0;margin:0;cursor:pointer}
+.choice > span,.radio-card > span{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+@media (hover:hover){.choice:hover,.radio-card:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.choice:has(input:checked),.radio-card:has(input:checked){
+  background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d);
+  box-shadow:inset 0 0 0 1px var(--primary);
+}
+.choice:has(input:checked) .i,.radio-card:has(input:checked) .i{color:var(--primary)}
+.choice:has(input:focus-visible),.radio-card:has(input:focus-visible){outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.radio-card input:checked + span{font-weight:700;color:var(--primary-d)}
+.choice-check{
+  width:22px;height:22px;flex:none;margin-left:auto;display:grid;place-items:center;
+  color:transparent;border:2px solid var(--line);border-radius:50%;
+  transition:all .15s;
+}
+.choice:has(input:checked) .choice-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.choice-check .i{width:13px;height:13px;stroke-width:3.2}
+.choice.sq .choice-check{border-radius:7px}
+.sub-input{margin-top:10px}
+
+#optionsSpecifiques{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 20px}
+#optionsSpecifiques:empty{display:none}
+#optionsSpecifiques label{margin-bottom:6px}
+#optionsSpecifiques input,#optionsSpecifiques select{margin-bottom:0}
+
+#sortieListe{
+  margin-top:4px;padding:14px 16px;
+  background:var(--field);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:12px;
+}
+#sortieListe p{margin:0 0 6px;font-size:15px;overflow-wrap:anywhere}
+#sortieListe p:last-child{margin-bottom:0}
+#sortieListe p strong{color:var(--muted);font-weight:600}
+
+/* ---------- ONGLETS DOCUMENTS ---------- */
+.docs-tabs{
+  flex:none;display:flex;gap:8px;
+  padding:12px max(var(--gutter),calc((100% - var(--maxw))/2));
+  overflow-x:auto;scrollbar-width:none;
+  border-bottom:1px solid var(--line);background:#fff;
+}
+.docs-tabs::-webkit-scrollbar{display:none}
+.docs-tab{
+  flex:none;display:inline-flex;align-items:center;
+  min-height:42px;padding:0 16px;
+  font:600 14px/1 var(--font);color:var(--ink);white-space:nowrap;
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  cursor:pointer;user-select:none;touch-action:manipulation;
+  transition:background .15s,border-color .15s,color .15s;
+}
+@media (hover:hover){.docs-tab:hover{background:var(--primary-soft);border-color:#b5d6ea}}
+.docs-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* ---------- EXAMENS ---------- */
+#examensListe{margin-top:6px}
+#examensListe > i{display:block;padding:28px 12px;text-align:center;font-style:normal;color:var(--muted);font-size:15px}
+.examen-encart{
+  margin-bottom:10px;padding:14px 14px 14px 16px;
+  background:linear-gradient(90deg,var(--st-soft,var(--primary-soft)),#fff 45%);
+  border:1px solid var(--line);border-left:6px solid var(--st,var(--primary));border-radius:12px;
+}
+.examen-encart.a-faire{--st:var(--primary);--st-soft:var(--primary-soft)}
+.examen-encart.realise{--st:var(--ok);--st-soft:var(--ok-soft)}
+.examen-encart strong{font-size:17px;font-weight:700;letter-spacing:-.005em;overflow-wrap:anywhere}
+.examen-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;font-size:14px;font-weight:700;line-height:1;white-space:nowrap;
+  color:var(--st);background:var(--st-soft);
+  border:1px solid color-mix(in srgb,var(--st) 25%,transparent);border-radius:999px;
+}
+.examen-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--st)}
+.examen-badge.a-faire{--st:var(--primary);--st-soft:var(--primary-soft)}
+.examen-badge.realise{--st:var(--ok);--st-soft:var(--ok-soft)}
+.btn-loupe{
+  appearance:none;width:44px;height:44px;display:inline-grid;place-items:center;padding:0;
+  color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;
+}
+.btn-loupe:hover{background:var(--primary-soft);border-color:#b5d6ea}
+.empty-state{padding:28px 12px;text-align:center;color:var(--muted)}
+
+#modalExamen #searchExamen{margin-bottom:10px}
+#modalExamen h4,#modal-examen-details h4{margin:14px 0 8px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#resultatsExamens{
+  flex:1 1 40%;min-height:80px;overflow-y:auto;
+  border:1px solid var(--line);border-radius:12px;background:#fff;
+}
+#resultatsExamens:empty{display:none}
+#resultatsExamens > div{padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line-soft);font-size:15px}
+#resultatsExamens > div:last-child{border-bottom:0}
+#resultatsExamens > div:hover{background:var(--primary-soft)}
+.result-item{display:flex;align-items:center;gap:10px}
+.result-item span{flex:none}
+.result-item small{margin-left:auto;color:var(--muted);font-size:13px}
+#examensSelectionnes{flex:1 1 40%;min-height:60px;overflow-y:auto}
+#examensSelectionnes > div{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:8px;padding:10px 12px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+}
+#examensSelectionnes strong{flex:none;max-width:40%;font-weight:700;overflow-wrap:anywhere}
+#examensSelectionnes input{flex:1;min-width:0;min-height:42px;padding:8px 12px;background:#fff}
+.delete-examen-btn{
+  appearance:none;flex:none;width:42px;height:42px;display:grid;place-items:center;padding:0;
+  color:var(--late);background:var(--late-soft);border:1px solid #f0c3c5;border-radius:12px;cursor:pointer;
+}
+.delete-examen-btn:hover{background:#fbdcdc}
+
+/* ---------- MODALES ---------- */
+.modal-overlay{
+  position:fixed;inset:0;display:none;
+  align-items:center;justify-content:center;
+  padding:calc(16px + var(--safe-t)) calc(16px + var(--safe-r)) calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+  background:rgba(10,25,41,.5);
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  z-index:99999;
+  animation:fade .15s ease-out;
+}
+.modal{
+  width:min(560px,100%);max-height:100%;
+  display:block;overflow-y:auto;overflow-x:hidden;
+  padding:22px 24px 24px;
+  background:#fff;border-radius:18px;
+  box-shadow:0 20px 50px rgba(10,25,41,.3);
+  animation:rise .2s ease-out;
+  -webkit-overflow-scrolling:touch;
+}
+.modal h3{
+  display:flex;align-items:center;gap:10px;
+  margin:0 0 16px;padding-bottom:14px;
+  font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  border-bottom:1px solid var(--line);
+}
+.modal h3 .i{color:var(--primary)}
+.modal h2{
+  display:flex;align-items:center;gap:10px;
+  margin:6px 0 12px;
+  font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.modal h2 .i{color:var(--primary);width:18px;height:18px}
+.modal h4{margin:14px 0 8px;font-size:14px;font-weight:700;color:var(--muted)}
+.modal label{margin-top:14px}
+.modal .field > label,.modal .toggle-row > label,.modal .choice,.modal .check-line{margin-top:0}
+.modal p{margin:0 0 10px;color:var(--ink)}
+.modal-buttons,.modal-actions{
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
+}
+.modal-actions button{min-width:0}
+
+/* tailles spécifiques */
+#modalAdmin.modal-overlay{
+  display:flex;z-index:2000;opacity:0;visibility:hidden;
+  transition:opacity .2s ease,visibility .2s;animation:none;
+}
+#modalAdmin.modal-overlay.show{opacity:1;visibility:visible}
+#modalAdmin .modal{width:min(820px,100%);max-height:94dvh;transform:scale(.97);opacity:0;transition:transform .2s ease,opacity .2s ease;animation:none}
+#modalAdmin.show .modal{transform:none;opacity:1}
+#modalCloture.modal-overlay,#modalVerificationIdentite,#modalSignaturePatient{z-index:3000}
+#modalExamen.modal-overlay{z-index:9999}
+#modalExamen.active{display:flex !important}
+#modalExamen .modal{width:min(820px,100%);height:min(86dvh,760px);display:flex;flex-direction:column}
+#modalExamen .modal-actions{margin-top:12px}
+#modalCodeCloture .modal{width:min(440px,100%);text-align:center;border-top:6px solid var(--primary)}
+#modalCodeCloture .modal h3{justify-content:center}
+#modalCodeCloture input[type="password"]{text-align:center;letter-spacing:.12em}
+#modalCodeCloture #cloturePanelCode label{margin-top:0}
+#modalCodeCloture .modal-buttons{justify-content:center}
+#modalCloture .modal{width:min(420px,100%)}
+#modalSignaturePatient .modal{text-align:center}
+#modalSignaturePatient .modal .btn-id{margin:4px 0}
+#qrcodeSignature,#qrcodeLectureIdentiteImage,#qrcodeVerificationIdentite{display:flex;justify-content:center;margin:14px 0;padding:14px;background:#fff;border:1px solid var(--line);border-radius:14px;width:fit-content;margin-inline:auto}
+#etatSignature{margin:12px 0;padding:12px;border-radius:12px;background:var(--primary-soft);color:var(--primary-d);font-weight:600}
+#etatLectureIdentiteImage,#etatVerificationIdentiteQR{border-radius:12px !important;background:var(--primary-soft) !important;color:var(--primary-d) !important;font-weight:600}
+
+/* Modales de confirmation (avertissement / réussite) */
+.modal-box{
+  width:min(450px,100%);padding:30px 28px 26px;text-align:center;
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+  animation:rise .2s ease-out;max-height:100%;overflow:auto;
+}
+.modal-box h2{margin:0 0 12px;font-size:21px;font-weight:700;letter-spacing:-.01em;text-transform:none;color:var(--ink);display:block}
+.modal-box p{margin:0 0 8px;color:var(--muted);line-height:1.5}
+.modal-box .modal-actions{justify-content:center;border-top:0;padding-top:0;margin-top:22px}
+.modal-icon{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;font-size:0}
+.modal-icon .i{width:28px;height:28px}
+.modal-icon.warning{background:var(--warn-soft);color:var(--warn)}
+.modal-icon.success{background:var(--ok-soft);color:var(--ok)}
+.emails-envoyes{margin:18px 0 0;padding:14px 16px;text-align:left;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.emails-envoyes:empty{display:none}
+.emails-envoyes .email-titre{margin-bottom:6px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.emails-envoyes .email-ligne{padding:4px 0;font-weight:600;word-break:break-all}
+
+/* Accès refusé / erreur */
+.modalna{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(10,25,41,.5);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);z-index:9999;
+}
+.modalna .card{
+  width:min(440px,100%);padding:30px 28px 28px;text-align:center;
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.3);
+}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico .i{width:28px;height:28px}
+.modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
+.modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
+.modalna p:last-child{margin-bottom:0}
+
+/* Administratif */
+.admin-email-list{margin:0 0 10px;max-height:220px;overflow-y:auto;overflow-x:hidden}
+.admin-email-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 8px;margin-bottom:8px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+}
+.admin-email-item input[type="email"]{flex:1;min-width:0;margin:0 !important;min-height:42px;padding:8px 12px;background:#fff}
+.admin-email-item input[type="email"]:invalid:not(:placeholder-shown){border-color:var(--late)}
+.admin-email-item button{
+  appearance:none;width:38px;height:38px;flex:none;display:grid;place-items:center;padding:0;
+  font-size:14px;line-height:1;color:var(--muted);background:transparent;border:0;border-radius:10px;cursor:pointer;
+}
+.admin-email-item button:hover{color:var(--late);background:var(--late-soft)}
+.admin-email-vide,.verification-vide{margin:4px 0 10px;font-size:14px;font-style:normal;color:var(--muted)}
+.historique-verifications{margin-top:10px}
+#historiqueVerifications h4{margin:14px 0 8px}
+.verification-item{padding:10px 14px;margin-bottom:8px;font-size:14px;background:var(--field);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:10px}
+.verification-item:last-child{margin-bottom:0}
+#btnAjouterEmail{margin-bottom:6px}
+#suggestionsadd{
+  display:none;position:absolute;top:100%;left:0;right:0;width:auto;max-width:none;margin-top:6px;
+  overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(17,35,54,.14);
+  z-index:9999;
+}
+#suggestionsadd.active{display:block}
+#suggestionsadd div{padding:12px 16px;font-size:15px;cursor:pointer;border-bottom:1px solid var(--line-soft)}
+#suggestionsadd div:last-child{border-bottom:0}
+#suggestionsadd div:hover{background:var(--primary-soft)}
+.check-line{
+  display:flex;align-items:flex-start;gap:12px;
+  margin:16px 0 0;padding:12px 14px;font-weight:500;line-height:1.4;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;cursor:pointer;
+}
+.check-line input{margin-top:2px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 4px}
+.info-grid p{margin:0;padding:10px 12px;background:var(--field);border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--muted)}
+.info-grid p strong{display:block;margin-bottom:2px;font-size:13px;font-weight:500;color:var(--muted)}
+.info-grid p span{font-weight:600;color:var(--ink)}
+
+/* Clôture par badge / code */
+.idcheck-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:16px;background:var(--line-soft);border-radius:14px}
+.idcheck-tab{
+  appearance:none;min-height:44px;padding:0 10px;font:600 15px/1 var(--font);
+  color:var(--muted);background:transparent;border:0;border-radius:10px;cursor:pointer;
+}
+.idcheck-tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(17,35,54,.15)}
+.idcheck-panel{display:none;text-align:left}
+.idcheck-panel.active{display:block}
+.idcheck-badge-iframe-wrapper{width:100%;max-width:320px;height:200px;margin:0 auto;overflow:hidden;position:relative;border-radius:12px}
+.idcheck-badge-anim{width:100%;height:200px;border:0;display:block;overflow:hidden;margin:0 auto}
+.idcheck-badge-hint{margin:8px 0 0;font-size:14px;color:var(--muted);text-align:center}
+.idcheck-badge-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;opacity:0;min-height:0}
+#clotureIdcheckError{min-height:18px;margin-top:10px;font-size:14px;line-height:18px;text-align:center;color:var(--late)}
+.progress{height:10px;margin:18px 0 0;background:var(--line-soft);border-radius:999px;overflow:hidden}
+.progress-bar{height:100%;width:0;background:var(--primary);border-radius:999px;transition:width .3s ease}
+.progress-text{margin-top:10px;font-size:14px;color:var(--muted);text-align:center}
+.muted{color:var(--muted) !important}
+
+/* Signature sur l'appareil */
 .sig-device-overlay{
-  position:fixed;
-  inset:0;
-  z-index:3100;                       /* au-dessus de modalSignaturePatient (3000) */
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:12px;
-  box-sizing:border-box;
-  background:rgba(15,30,60,.55);
-  backdrop-filter:blur(3px);
-  -webkit-backdrop-filter:blur(3px);
+  position:fixed;inset:0;z-index:3100;display:flex;align-items:center;justify-content:center;
+  padding:12px;background:rgba(10,25,41,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
 }
 .sig-device-box{
-  display:flex;
-  flex-direction:column;
-  width:min(640px, 100%);
-  height:min(92vh, 860px);
-  height:min(92dvh, 860px);
-  background:#fff;
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 20px 50px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;width:min(640px,100%);height:min(92vh,860px);height:min(92dvh,860px);
+  background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(10,25,41,.35);
 }
-.sig-device-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 12px 10px 18px;
-  border-bottom:1px solid #e6eef8;
-  flex-shrink:0;
-}
-.sig-device-title{
-  font-weight:700;
-  color:#0078d4;
-  font-size:1.05rem;
-}
+.sig-device-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 12px 20px;border-bottom:1px solid var(--line);flex:none}
+.sig-device-title{font-size:18px;font-weight:700;color:var(--ink)}
 .sig-device-close{
-  all:unset;
-  box-sizing:border-box;
-  width:38px;
-  height:38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:50%;
-  font-size:18px;
-  line-height:1;
-  color:#475569;
-  background:#f1f5f9;
-  cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-  transition:background .2s ease, color .2s ease;
+  appearance:none;width:44px;height:44px;display:grid;place-items:center;padding:0;
+  font-size:18px;color:var(--muted);background:transparent;border:0;border-radius:12px;cursor:pointer;
 }
-.sig-device-close:hover,
-.sig-device-close:active{
-  background:#fee2e2;
-  color:#dc2626;
+.sig-device-close:hover,.sig-device-close:active{background:var(--late-soft);color:var(--late)}
+.sig-device-frame{flex:1;width:100%;border:0;background:#fff}
+
+/* Loaders */
+.spinner{
+  width:48px;height:48px;margin:auto;
+  border:5px solid var(--line-soft);border-top-color:var(--primary);border-radius:50%;
+  animation:spin 1s linear infinite;
 }
-.sig-device-frame{
-  flex:1;
-  width:100%;
-  border:none;
-  background:#fff;
+#vitaleModal > div,#facturationModale > div{border-radius:18px !important;box-shadow:0 20px 50px rgba(10,25,41,.3) !important}
+#vitaleModal,#facturationModale{background:rgba(10,25,41,.5) !important;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+
+/* Voile du tiroir mobile */
+.nav-backdrop{display:none}
+
+/* ---------- ANIMATIONS ---------- */
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .modal-overlay,.modal,.modal-box,nav,.nav-label,.slider,.slider::before{animation:none !important;transition:none !important}
 }
+
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+/* =====================================================================
+   RESPONSIVE
+   ===================================================================== */
+
+/* Tablette portrait & téléphone : menu en tiroir */
+@media (max-width:900px){
+  .menu-toggle{display:inline-grid}
+  body > header{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}
+  .head-kicker{display:none}
+
+  nav,nav:hover,nav.open{width:min(320px,86vw)}
+  nav{
+    position:fixed;top:0;bottom:0;left:calc(-1 * min(320px,86vw) - 30px);
+    padding:calc(18px + var(--safe-t)) 14px calc(24px + var(--safe-b));
+    border-right:0;border-radius:0 22px 22px 0;box-shadow:none;
+    z-index:2000;
+    transition:left .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease;
+  }
+  nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}
+  nav .nav-label,nav .nav-title,nav .nav-item .exam-badges{opacity:1}
+  .nav-title{padding-left:10px}
+  .nav-item{min-height:52px}
+  .nav-item.active::before{left:-14px}
+
+  .nav-backdrop{
+    display:block;position:fixed;inset:0;z-index:1999;
+    background:rgba(10,25,41,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .3s ease;
+  }
+  .nav-backdrop.show{opacity:1;pointer-events:auto}
+}
+
+/* Téléphone */
+@media (max-width:700px){
+  .form-grid{grid-template-columns:1fr}
+  .panel-head{padding-top:16px;padding-bottom:12px}
+  .panel-title{font-size:19px}
+  .panel-head .hint{margin-left:0}
+  .panel-body{padding-top:16px}
+  .card-sec{padding:16px;border-radius:14px}
+  .choice-grid,.radio-grid{grid-template-columns:1fr}
+  #optionsSpecifiques{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal,#modalAdmin .modal,#modalExamen .modal{
+    width:100%;max-height:92dvh;border-radius:20px 20px 0 0;
+    padding-bottom:calc(24px + var(--safe-b));
+  }
+  #modalExamen .modal{height:92dvh}
+  .modal-box{border-radius:20px}
+  #modalAvertissementEmail,#modalSuccesCloture,#modalCodeCloture,#modalCloture{align-items:center;padding:16px}
+  #modalCodeCloture .modal,#modalCloture .modal{border-radius:20px;width:100%}
+  .modal-buttons .btn-id,.modal-actions .btn-id,.modal-actions button{flex:1 1 auto}
+  .sig-device-overlay{padding:0;align-items:flex-end}
+  .sig-device-box{width:100%;height:94dvh;border-radius:20px 20px 0 0}
+}
+@media (max-height:520px){
+  .modal{padding-top:14px;padding-bottom:14px}
+  .modal h3{margin-bottom:10px;padding-bottom:10px}
+  .panel-head{padding-top:12px;padding-bottom:10px}
+}
+
+/* ---------- COMPLÉMENTS ---------- */
+.field-group{position:relative}
+.equipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.equipe-grid .field-group{margin:0}
+.role{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.role-ico{width:42px;height:42px;flex:none;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:50%}
+.role-ico .i{width:22px;height:22px}
+.role label{margin:0;font-size:16px;font-weight:700}
+.role small{display:block;font-size:13px;font-weight:500;color:var(--muted)}
+.search{position:relative}
+.search .i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search input{padding-left:44px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.toolbar .card-title{margin:0}
+.btn-ok{color:var(--ok);border-color:#b7dfc8}
+@media (hover:hover){.btn-ok:hover{background:var(--ok-soft) !important;border-color:#8fcfaa !important;color:var(--ok) !important}}
+.btn-id svg{vertical-align:middle}
+.sep-title{margin:22px 0 12px}
+
 </style>
 </head>
+
 <body>
 
-
-
-
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 14h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+  <symbol id="i-syringe" viewBox="0 0 24 24"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-.9-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M12 8v4M10 10h4"/></symbol>
+  <symbol id="i-transfer" viewBox="0 0 24 24"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+  <symbol id="i-ambulance" viewBox="0 0 24 24"><path d="M10 17h4V5H2v12h3M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+  <symbol id="i-user-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></symbol>
+  <symbol id="i-heart-pulse" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/><path d="M3.2 12h4l1.3-2 3 6 2-4h4"/></symbol>
+  <symbol id="i-grad" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M4 10h12M4 14h9M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1M4.93 4.93l.7.7"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M12 4v6M2 18h20"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v7m0 0-3 7m3-7 3 7M8 10h8"/></symbol>
+  <symbol id="i-chair" viewBox="0 0 24 24"><circle cx="16" cy="4" r="1"/><path d="m18 19 1-7-6 1"/><path d="m5 8 3-3 5.5 3-2.36 3.5"/><path d="M4.24 14.5a5 5 0 0 0 6.88 6"/><path d="M13.76 17.5a5 5 0 0 0-6.88-6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+</svg>
 
 <header>
   <div class="left-header">
-	  <button id="menu-toggle" class="menu-toggle">☰</button>
- <h2 id="patientName">Fiche Urgences</h2>
-<button class="icon-button" onclick="location.reload();">🔄</button>
-
-
-	   <span id="currentTime"></span>
-		
+    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Ouvrir le menu"><svg class="i lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
+    <div class="brand" aria-hidden="true"><svg class="i" aria-hidden="true"><use href="#i-cross"/></svg></div>
+    <div class="head-text">
+      <span class="head-kicker">Dossier patient</span>
+      <h2 id="patientName">Fiche Urgences</h2>
+    </div>
   </div>
-  
+  <div class="right-header">
+    <span id="currentTime"></span>
+    <button class="icon-button" type="button" onclick="location.reload();" aria-label="Actualiser la page" title="Actualiser"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+  </div>
 </header>
 
 <div class="app">
 
  <div id="modal-no-access" class="modalna">
   <div class="card">
-    <h2>⛔️ Accès refusé</h2>
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></div>
+    <h2>Accès refusé</h2>
     <p>Vous n’avez pas accès à cette page.</p>
-        <p>veuillez contacter un administrateur pour plus d'informations.</p>
-
+    <p>Veuillez contacter un administrateur pour plus d'informations.</p>
   </div>
 </div>
 <div id="modal-error" class="modalna">
   <div class="card">
-    <h2>😞 Oups, une erreur est survenue</h2>
-    <p>Veuillez re-essayer un peu plus tard</p>
-        <p>Si le problème persiste, contactez un administrateur</p>
-
+    <div class="state-ico"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
+    <h2>Oups, une erreur est survenue</h2>
+    <p>Veuillez réessayer un peu plus tard.</p>
+    <p>Si le problème persiste, contactez un administrateur.</p>
   </div>
 </div>
-<nav>
-    <div class="nav-title">Menu</div>
+
+<nav aria-label="Navigation du dossier">
+    <div class="nav-title">Dossier patient</div>
     <div id="navItems">
-      <div class="nav-item" data-module="patient">🫆 <span>Identité Patient</span></div>
-      <div class="nav-item" data-module="equipe">🥼<span>Équipe référente</span></div>
-<div class="nav-item" data-module="admission">🗂️ <span>Admission et orientation</span></div>
-<div class="nav-item" data-module="dossier">📋 <span>Dossier Médical</span></div>
-<div class="nav-item" data-module="constantes">🩺 <span>Constantes</span></div>
-<div class="nav-item" data-module="medsurgences">
-  💊 <span>Traitements</span>
-
-  <span class="exam-badges">
-    <span id="meds-done" class="badge-circle green">0</span>
-    <span id="meds-pending" class="badge-circle blue">0</span>
-    <span id="meds-late" class="badge-circle red">0</span>
-  </span>
-</div>
-<div class="nav-item" data-module="examens">
-  🩻 <span>Examens</span>
-
-  <span class="exam-badges">
-    <span id="exam-done" class="badge-circle green">0</span>
-    <span id="exam-pending" class="badge-circle blue">0</span>
-  </span>
-</div>
-<div class="nav-item" data-module="actes">💉 <span>Actes</span>
-<span class="exam-badges">
-  <span id="actes-done" class="badge-circle green">0</span>
-  <span id="actes-pending" class="badge-circle blue">0</span>
-  <span id="actes-late" class="badge-circle red">0</span>
-</span>
-</div>
-<div class="nav-item" data-module="documents">📑 <span>Documents</span></div>
-<div class="nav-item" data-module="sortie">🚪 <span>Sortie</span></div>
-<div class="nav-item" data-module="historique">📜 <span>Historique</span></div>
-
-
+      <div class="nav-item" data-module="patient" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg><span class="nav-label">Identité Patient</span></div>
+      <div class="nav-item" data-module="equipe" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg><span class="nav-label">Équipe référente</span></div>
+      <div class="nav-item" data-module="admission" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg><span class="nav-label">Admission et orientation</span></div>
+      <div class="nav-item" data-module="dossier" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg><span class="nav-label">Dossier Médical</span></div>
+      <div class="nav-item" data-module="constantes" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-activity"/></svg><span class="nav-label">Constantes</span></div>
+      <div class="nav-item" data-module="medsurgences" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-pill"/></svg><span class="nav-label">Traitements</span><span class="exam-badges"><span id="meds-done" class="badge-circle green" title="Terminé">0</span><span id="meds-pending" class="badge-circle blue" title="À faire">0</span><span id="meds-late" class="badge-circle red" title="En retard">0</span></span></div>
+      <div class="nav-item" data-module="examens" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg><span class="nav-label">Examens</span><span class="exam-badges"><span id="exam-done" class="badge-circle green" title="Terminé">0</span><span id="exam-pending" class="badge-circle blue" title="À faire">0</span></span></div>
+      <div class="nav-item" data-module="actes" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-syringe"/></svg><span class="nav-label">Actes</span><span class="exam-badges"><span id="actes-done" class="badge-circle green" title="Terminé">0</span><span id="actes-pending" class="badge-circle blue" title="À faire">0</span><span id="actes-late" class="badge-circle red" title="En retard">0</span></span></div>
+      <div class="nav-item" data-module="documents" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><span class="nav-label">Documents</span></div>
+      <div class="nav-item" data-module="sortie" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg><span class="nav-label">Sortie</span></div>
+      <div class="nav-item" data-module="historique" role="button" tabindex="0"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg><span class="nav-label">Historique</span></div>
     </div>
   </nav>
 
-<div class="content">	
-<section id="panel-patient" class="panel" style="display:none;">
- 
-    <h3>🫆 Identité patient</h3>
-    
- <div>
-  <label>CIP (Code d'Identification Patient)</label>
-  <span id="idPatient"></span>
-</div>
+<div class="content">
+<section id="panel-patient" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg></span>Identité patient</h3><p class="hint">Informations d’état civil et points de vigilance.</p></div>
+  <div class="panel-body">
 
-<div>
-  <label>Nom</label>
-  <span id="nom"></span>
-</div>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> État civil</div>
+      <div class="facts">
+        <div class="fact"><label>CIP (Code d'Identification Patient)</label><span id="idPatient"></span></div>
+        <div class="fact"><label>Nom</label><span id="nom"></span></div>
+        <div class="fact"><label>Prénom</label><span id="prenom"></span></div>
+        <div class="fact"><label>Sexe</label><span id="sexe"></span></div>
+        <div class="fact"><label>Civilité</label><span id="civilite"></span></div>
+        <div class="fact"><label>Âge</label><span id="age"></span></div>
+      </div>
+    </div>
 
-<div>
-  <label>Prénom</label>
-  <span id="prenom"></span>
-</div>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg> Suivi et vigilances</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="medtraitant"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>Médecin(s) traitant(s)</label>
 
-<div>
-  <label>Sexe</label>
-  <span id="sexe"></span>
-</div>
-<div>
-  <label>Civilité</label>
-  <span id="civilite"></span>
-</div>
-<div>
-  <label>Âge</label>
-  <span id="age"></span>
-</div>
+          <!-- faux champs anti-autofill -->
+          <input type="text" name="fake_user" autocomplete="username" tabindex="-1" style="position:absolute; left:-9999px; opacity:0;">
+          <input type="password" name="fake_pass" autocomplete="new-password" tabindex="-1" style="position:absolute; left:-9999px; opacity:0;">
 
-<div>
-  <label>Médecin(s) traitant(s)</label>
+          <textarea id="medtraitant" name="medtraitant_x82k" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');"></textarea>
+        </div>
 
-  <!-- faux champs anti-autofill -->
-  <input
-    type="text"
-    name="fake_user"
-    autocomplete="username"
-    tabindex="-1"
-    style="position:absolute; left:-9999px; opacity:0;"
-  >
+        <div class="field">
+          <label for="vigilances"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Vigilance(s)</label>
+          <input type="text" id="vigilances" name="vig_x91p" class="text2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" />
+        </div>
 
-  <input
-    type="password"
-    name="fake_pass"
-    autocomplete="new-password"
-    tabindex="-1"
-    style="position:absolute; left:-9999px; opacity:0;"
-  >
+        <div class="field">
+          <label for="allergies"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Allergie(s)</label>
+          <input type="text" id="allergies" name="all_x73m" placeholder="Ex : Pénicilline, arachides..." class="text2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" />
+        </div>
 
-  <textarea
-    id="medtraitant"
-    name="medtraitant_x82k"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    spellcheck="false"
-    readonly
-    onfocus="this.removeAttribute('readonly');"
-  ></textarea>
-</div>
+        <div class="field full">
+          <div class="toggle-row">
+            <label for="importanceAllergies"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Allergie(s) importante(s)</label>
+            <label class="switch">
+              <input type="checkbox" id="importanceAllergies" autocomplete="off">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<div>
-  <label>Vigilance(s)</label>
+    <div class="actions">
+      <button id="btnAdmin" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Gestion administrative</button>
+    </div>
 
-  <input
-    type="text"
-    id="vigilances"
-    name="vig_x91p"
-    class="text2"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    spellcheck="false"
-    readonly
-    onfocus="this.removeAttribute('readonly');"
-  />
-</div>
-
-<div>
-  <label>Allergie(s)</label>
-
-  <input
-    type="text"
-    id="allergies"
-    name="all_x73m"
-    placeholder="Ex : Pénicilline, arachides..."
-    class="text2"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    spellcheck="false"
-    readonly
-    onfocus="this.removeAttribute('readonly');"
-  />
-
-  <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-    <label style="margin:0;">Allergie(s) importante(s)</label>
-
-    <label class="switch" style="margin:0;">
-      <input
-        type="checkbox"
-        id="importanceAllergies"
-        autocomplete="off"
-      >
-      <span class="slider"></span>
-    </label>
   </div>
-</div>
-
-
-  <br>
-  <button id="btnAdmin" class="btn-id">🛠 Gestion Administrative</button>
-
-
-
 </section>
 
-<section id="panel-medsurgences" class="panel" style="display:none;">
-    <h3>💊 Gestion des traitements administrés aux Urgences</h3>
-
-  <iframe
-  id="medsurgencesFrame"
-  style="width:100%; height:calc(100vh - 60px); border:none; border-radius:10px; overflow:hidden;">
-</iframe>
-
+<section id="panel-medsurgences" class="panel frame-panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-pill"/></svg></span>Traitements administrés aux Urgences</h3></div>
+  <iframe id="medsurgencesFrame" title="Traitements administrés aux Urgences"></iframe>
 </section>
 
-
-<section id="panel-constantes" class="panel" style="display:none;">
-  <h3>🩺 Constantes</h3>
-  <iframe
-    id="constantesFrame"
-    style="width:100%; border:none; border-radius:10px; overflow:hidden;">
-  </iframe>
+<section id="panel-constantes" class="panel frame-panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-activity"/></svg></span>Constantes</h3></div>
+  <iframe id="constantesFrame" title="Constantes"></iframe>
 </section>
 
-
-<section id="panel-historique" class="panel" style="display:none;">
-
-  <h3>📜 Historique complet des hospitalisations du patient</h3>
-<iframe
-    id="historiqueFrame"
-    >
-  </iframe>
+<section id="panel-historique" class="panel frame-panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg></span>Historique complet des hospitalisations du patient</h3></div>
+  <iframe id="historiqueFrame" title="Historique des hospitalisations"></iframe>
 </section>
 
-<section id="panel-admission" class="panel" style="display:none;">
-  
-  <h3> 🗂️ Admission et orientation</h3>
-   <label for="motif">🤕 Motif d'entrée</label>
-  <input type="text" id="motif" placeholder="Motif d'entrée" class="text2"spellcheck="true"
-          lang="fr" />
+<section id="panel-admission" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-route"/></svg></span>Admission et orientation</h3><p class="hint">Motif, mode d’arrivée et orientation du patient.</p></div>
+  <div class="panel-body">
 
- <label for="moyen">🚑 Moyen d'entrée</label>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg> Arrivée</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="motif"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Motif d'entrée</label>
+          <input type="text" id="motif" placeholder="Motif d'entrée" class="text2" spellcheck="true" lang="fr" />
+        </div>
+        <div class="field">
+          <label for="moyen"><svg class="i" aria-hidden="true"><use href="#i-ambulance"/></svg>Moyen d'entrée</label>
+          <div class="ac-wrap">
+            <input type="text" id="moyen" placeholder="Moyen d'entrée" class="text2" autocomplete="off" />
+            <div id="suggestionsMoyen" class="suggestions-box"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="gravite"><svg class="i" aria-hidden="true"><use href="#i-siren"/></svg>Gravité</label>
+          <select id="gravite" class="text2">
+            <option value="P0">P0</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+            <option value="P3">P3</option>
+            <option value="Urgences_Vitales">Urgences Vitales</option>
+            <option value="Administratif">Administratif</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-<div style="width:300px; position:relative;">
-  <input
-    type="text"
-    id="moyen"
-    placeholder="Moyen d'entrée"
-    class="text2"
-    autocomplete="off"
-  />
-  <div id="suggestionsMoyen" class="suggestions-box"></div>
-</div>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg> Orientation</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="service"><svg class="i" aria-hidden="true"><use href="#i-building"/></svg>Service idéal</label>
+          <select id="service" class="text2"><option value="">Chargement...</option></select>
+        </div>
+        <div class="field">
+          <label for="circuit"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg>Circuit particulier</label>
+          <select id="circuit" class="text2">
+            <option value=""></option>
+            <option value="Pédiatrie">Pédiatrie</option>
+            <option value="Traumatologie">Traumatologie</option>
+            <option value="Gynécologie">Gynécologie</option>
+            <option value="Psychiatrie">Psychiatrie</option>
+            <option value="Ophtalmologie">Ophtalomologie</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="pdcStatut"><svg class="i" aria-hidden="true"><use href="#i-flag"/></svg>Statut PEC</label>
+          <div class="ac-wrap">
+            <input type="text" id="pdcStatut" class="text2" placeholder="Rechercher un statut PEC..." autocomplete="off" />
+            <ul id="pdcSuggestions" style="display:none;"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-bed"/></svg> Position du patient</div>
+      <div class="choice-grid" id="positionPatient">
+        <label class="radio-card"><input type="radio" name="positionPatient" value="debout"><span><svg class="i" aria-hidden="true"><use href="#i-person"/></svg>Debout</span></label>
+        <label class="radio-card"><input type="radio" name="positionPatient" value="chaise"><span><svg class="i" aria-hidden="true"><use href="#i-chair"/></svg>Sur chaise</span></label>
+        <label class="radio-card"><input type="radio" name="positionPatient" value="allonge"><span><svg class="i" aria-hidden="true"><use href="#i-bed"/></svg>Allongé</span></label>
+      </div>
+    </div>
 
-  <label for="service" >🏥 Service idéal</label>
-  <select id="service" class="text2"><option value="">Chargement...</option></select>
-<label for="circuit">🧭 Circuit particulier</label>
-<select id="circuit" class="text2">
-  <option value=""></option>
-  <option value="Pédiatrie">Pédiatrie</option>
-  <option value="Traumatologie">Traumatologie</option>
-  <option value="Gynécologie">Gynécologie</option>
-  <option value="Psychiatrie">Psychiatrie</option>
-  <option value="Ophtalmologie">Ophtalomologie</option>
+  </div>
+</section>
 
-</select>
- 
-
-  <label for="gravite" >🚨 Gravité</label>
-  <select id="gravite"class="text2" >
-    <option value="P0">P0</option>
-    <option value="P1">P1</option>
-    <option value="P2">P2</option>
-    <option value="P3">P3</option>
-    <option value="Urgences_Vitales">Urgences Vitales</option>
-    <option value="Administratif">Administratif</option>
-  </select>
-
-<label for="pdcStatut">🧾 Statut PEC</label>
-
-<div style="width:300px; position:relative;">
-  <input 
-      type="text" 
-      id="pdcStatut" 
-      class="text2" 
-      placeholder="Rechercher un statut PEC..."
-    
-  />
-
-  <ul id="pdcSuggestions"
-      style="
-          position:absolute;
-          width:300px;
-          background:white;
-          border:1px solid #ccc;
-          list-style:none;
-          padding:5px;
-          margin-top:2px;
-          border-radius:6px;
-          display:none;
-          max-height:150px;
-          overflow-y:auto;
-          z-index:999;
-      ">
-  </ul>
-</div>
-<label>🛏️ Position du patient</label>
-
-<div class="radio-grid" id="positionPatient">
-
-
-
-  <label class="radio-card">
-    <input type="radio" name="positionPatient" value="debout">
-    <span>🧍Debout</span>
-  </label>
-
-  <label class="radio-card">
-    <input type="radio" name="positionPatient" value="chaise">
-    <span>🦽 Sur chaise</span>
-  </label>
-  <label class="radio-card">
-    <input type="radio" name="positionPatient" value="allonge">
-    <span>🛌 Allongé</span>
-  </label>
-</div>
-    </section>
-
-
-<section id="panel-equipe" class="panel" style="display:none;">
-
-<h3>👥 Équipe référente</h3>
-
+<section id="panel-equipe" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg></span>Équipe référente</h3><p class="hint">Professionnels en charge du patient pendant l’hospitalisation.</p></div>
+  <div class="panel-body">
 <div class="equipe-grid">
-
-  <div class="field-group field-with-clear">
-    <label>👨‍⚕️ Médecin référent</label>
+  <div class="card-sec field-group field-with-clear">
+    <div class="role"><span class="role-ico"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg></span><div><label for="medecinReferent">Médecin référent</label><small>Médecin senior</small></div></div>
     <div class="input-wrapper">
       <input type="text" id="medecinReferent" placeholder="Rechercher un médecin..." autocomplete="off">
-      <button type="button" class="clear-btn" id="clearMedecin">✖</button>
+      <button type="button" class="clear-btn" id="clearMedecin" aria-label="Effacer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <ul id="medecinSuggestions" class="suggestions"></ul>
     </div>
-    <ul id="medecinSuggestions" class="suggestions"></ul>
     <div id="alerteMedecin" class="alerte-orange"></div>
   </div>
-
-  <div class="field-group field-with-clear">
-    <label>👩‍⚕️ Infirmier référent</label>
+  <div class="card-sec field-group field-with-clear">
+    <div class="role"><span class="role-ico"><svg class="i" aria-hidden="true"><use href="#i-heart-pulse"/></svg></span><div><label for="infirmierReferent">Infirmier référent</label><small>Soins infirmiers</small></div></div>
     <div class="input-wrapper">
       <input type="text" id="infirmierReferent" placeholder="Rechercher un infirmier..." autocomplete="off">
-      <button type="button" class="clear-btn" id="clearInfirmier">✖</button>
+      <button type="button" class="clear-btn" id="clearInfirmier" aria-label="Effacer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <ul id="infirmierSuggestions" class="suggestions"></ul>
     </div>
-    <ul id="infirmierSuggestions" class="suggestions"></ul>
     <div id="alerteInfirmier" class="alerte-orange"></div>
   </div>
-
-  <div class="field-group field-with-clear">
-    <label>🧑‍⚕️ Interne</label>
+  <div class="card-sec field-group field-with-clear">
+    <div class="role"><span class="role-ico"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg></span><div><label for="interneReferent">Interne</label><small>Interne en médecine</small></div></div>
     <div class="input-wrapper">
       <input type="text" id="interneReferent" placeholder="Rechercher un interne..." autocomplete="off">
-      <button type="button" class="clear-btn" id="clearInterne">✖</button>
+      <button type="button" class="clear-btn" id="clearInterne" aria-label="Effacer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <ul id="interneSuggestions" class="suggestions"></ul>
     </div>
-    <ul id="interneSuggestions" class="suggestions"></ul>
     <div id="alerteInterne" class="alerte-orange"></div>
   </div>
-
-  <div class="field-group field-with-clear">
-    <label>🎓 Externe</label>
+  <div class="card-sec field-group field-with-clear">
+    <div class="role"><span class="role-ico"><svg class="i" aria-hidden="true"><use href="#i-grad"/></svg></span><div><label for="externeReferent">Externe</label><small>Étudiant hospitalier</small></div></div>
     <div class="input-wrapper">
       <input type="text" id="externeReferent" placeholder="Rechercher un externe..." autocomplete="off">
-      <button type="button" class="clear-btn" id="clearExterne">✖</button>
+      <button type="button" class="clear-btn" id="clearExterne" aria-label="Effacer"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <ul id="externeSuggestions" class="suggestions"></ul>
     </div>
-    <ul id="externeSuggestions" class="suggestions"></ul>
     <div id="alerteExterne" class="alerte-orange"></div>
   </div>
-
 </div>
-
+  </div>
 </section>
 
-<section id="panel-dossier" class="panel" style="display:none;">
+<section id="panel-dossier" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg></span>Dossier médical</h3><p class="hint">Recueil initial et évolution aux urgences.</p></div>
+  <div class="panel-body">
 
-    <h3>📋 Dossier Médical</h3>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg> Recueil initial</div>
+      <div class="doc-field">
+        <label for="questionnaire"><span class="lbl-text">Questionnaire IAO</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('questionnaire')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button></label>
+        <textarea id="questionnaire" spellcheck="true" lang="fr"></textarea>
+      </div>
+      <div class="doc-field">
+        <label for="antecedents"><span class="lbl-text">Antécédents</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('antecedents')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button><button class="bouton-ancienne" type="button" title="Reprendre depuis une ancienne hospitalisation" aria-label="Reprendre depuis une ancienne hospitalisation" onclick="remplirDepuisAncienneHospi('antecedents')"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg></button></label>
+        <textarea id="antecedents" spellcheck="true" lang="fr"></textarea>
+      </div>
+      <div class="doc-field">
+        <label for="traitements"><span class="lbl-text">Traitements en cours</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('traitements')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button><button class="bouton-ancienne" type="button" title="Reprendre depuis une ancienne hospitalisation" aria-label="Reprendre depuis une ancienne hospitalisation" onclick="remplirDepuisAncienneHospi('traitements')"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg></button></label>
+        <textarea id="traitements" spellcheck="true" lang="fr"></textarea>
+      </div>
+      <div class="doc-field">
+        <label for="histoire"><span class="lbl-text">Histoire de la maladie</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('histoire')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button></label>
+        <textarea id="histoire" spellcheck="true" lang="fr"></textarea>
+      </div>
+      <div class="doc-field">
+        <label for="auscultation"><span class="lbl-text">CR Auscultation Init.</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('auscultation')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button></label>
+        <textarea id="auscultation" spellcheck="true" lang="fr"></textarea>
+      </div>
 
-      <label>Questionnaire IAO <button class="bouton-horloge" onclick="ajouterHorodatageDans('questionnaire')">⏰</button></label>
-      <textarea id="questionnaire"spellcheck="true"
-          lang="fr"></textarea>
-      <label>Antécédents <button class="bouton-horloge" onclick="ajouterHorodatageDans('antecedents')">⏰</button>
-	  <button class="bouton-ancienne" onclick="remplirDepuisAncienneHospi('antecedents')">📂</button>
-</label>
-      <textarea id="antecedents" spellcheck="true"
-          lang="fr"></textarea>
-      <label>Traitements en cours <button class="bouton-horloge" onclick="ajouterHorodatageDans('traitements')">⏰</button>
-	  <button class="bouton-ancienne" onclick="remplirDepuisAncienneHospi('traitements')">📂</button>
-</label>
-      <textarea id="traitements" spellcheck="true"
-          lang="fr" ></textarea>
-	  
-      <label>Histoire de la maladie <button class="bouton-horloge" onclick="ajouterHorodatageDans('histoire')">⏰</button></label>
-      <textarea id="histoire" spellcheck="true"
-          lang="fr"></textarea>
-	  
-      <label>CR Auscultation Init.<button class="bouton-horloge" onclick="ajouterHorodatageDans('auscultation')">⏰</button></label>
-      <textarea id="auscultation"spellcheck="true"
-          lang="fr"></textarea>
-	<br>
-      <button onclick="enregistrerDossierMedical()" class="btn-id btn-id-v">💾 Enregistrer</button>
-     
-    	<br>
-  <hr>
+      <div class="actions end">
+        <button onclick="enregistrerDossierMedical()" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
+      </div>
+    </div>
 
-  
-    <h3>📈 Évolution aux urgences <button class="bouton-horloge" onclick="ajouterHorodatageDans('evolutionTexte')">⏰</button></h3>
-    <textarea id="evolutionTexte"spellcheck="true"
-          lang="fr"></textarea>
-    <br>
-    <button onclick="enregistrerEvolution()" class="btn-id btn-id-v">💾 Enregistrer</button>
- 
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg> Évolution aux urgences</div>
+      <div class="doc-field">
+        <label for="evolutionTexte"><span class="lbl-text">Notes d’évolution</span><button class="bouton-horloge" type="button" title="Insérer la date et l’heure" aria-label="Insérer la date et l’heure" onclick="ajouterHorodatageDans('evolutionTexte')"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg></button></label>
+        <textarea id="evolutionTexte" spellcheck="true" lang="fr"></textarea>
+      </div>
+
+      <div class="actions end">
+        <button onclick="enregistrerEvolution()" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
+      </div>
+    </div>
+
+  </div>
 </section>
 
-
-<section id="panel-actes" class="panel" style="display:none;">
-
-
-    <h3>💉 Gestion des actes</h3>
-
-  <iframe
-  id="actesFrame"
-  style="width:100%; height:calc(100vh - 198px); border:none; border-radius:10px; overflow:hidden;">
-</iframe>
-</section>
-<section id="panel-examens" class="panel" style="display:none;">
-
-    <h3>☢️ Examens</h3>
-   
-   <button id="btnOuvrirModaleDemande" class="btn-id">➕ Nouvelle demande d’examen</button>
-
-  
-	<label>Examens demandés / réalisés</label>
-
-<div id="examensListe" class="mt-2 p-2 border rounded bg-gray-50">Aucun examen enregistré</div>
- 
-  
+<section id="panel-actes" class="panel frame-panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-syringe"/></svg></span>Gestion des actes</h3></div>
+  <iframe id="actesFrame" title="Gestion des actes"></iframe>
 </section>
 
+<section id="panel-examens" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg></span>Examens</h3><p class="hint">Demandes d’examens complémentaires et résultats.</p></div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg> Examens demandés / réalisés</div>
+      <button id="btnOuvrirModaleDemande" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Nouvelle demande d’examen</button>
+    </div>
+    <div id="examensListe"><i>Aucun examen enregistré</i></div>
+  </div>
+</section>
 
 <div class="modal-overlay" id="modalExamen" style="display:none;">
   <div class="modal">
-    <h3>Demande d’examen</h3>
-    
-<input type="text" id="searchExamen" placeholder="🔍 Rechercher un examen..." />
-
-<div id="resultatsExamens"></div>
-
-<h4>Examens sélectionnés :</h4>
-<div id="examensSelectionnes"></div>
-     <div class="modal-actions">
-  <button id="btnCancelExamen" class=btn-id btn-id-c>❌ Fermer</button>
-  <button id="btnSaveExamen" class="btn-id btn-id-v">✅ Valider</button>
-</div>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg>Demande d’examen</h3>
+    <div class="search">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input type="text" id="searchExamen" placeholder="Rechercher un examen..." autocomplete="off" />
     </div>
+    <div id="resultatsExamens"></div>
+    <h4>Examens sélectionnés</h4>
+    <div id="examensSelectionnes"></div>
+    <div class="modal-actions">
+      <button id="btnCancelExamen" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
+      <button id="btnSaveExamen" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Valider</button>
+    </div>
+  </div>
 </div>
 
 <div id="modal-examen-details" class="modal-overlay">
   <div class="modal">
-
-
-    <h3>Détails de l'examen</h3>
-
+    <h3><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg>Détails de l'examen</h3>
     <div id="examen-detail-content"></div>
-
-    <div style="display:flex;justify-content:flex-end;margin-top:15px;gap:10px;">
-        <button
-    id="btnDeleteExamen"
-    class="btn-id btn-id-c"
-    style="display:none;">
-    🗑️ Annuler la demande
-  </button>
-      <button class="btn-id btn-id-c"
-              onclick="closeExamenDetails()">
-        ❌ Fermer
-      </button>
+    <div class="modal-actions">
+      <button id="btnDeleteExamen" class="btn-id btn-id-c" type="button" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Annuler la demande</button>
+      <button class="btn-id" type="button" onclick="closeExamenDetails()"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
     </div>
-
   </div>
 </div>
-<section id="panel-sortie" class="panel" style="display:none;">
-  
-    <h3>🚪 Sortie</h3>
 
+<section id="panel-sortie" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg></span>Sortie</h3><p class="hint">Orientation de fin de prise en charge.</p></div>
+  <div class="panel-body">
 
-<h3>Type de sortie</h3>
-    <label><input type="radio" name="typeSortie" value="Retour à domicile" /> 🏡 Domicile</label><br/>
-    <label><input type="radio" name="typeSortie" value="Hospitalisation" /> 🏥 Hospitalisation</label><br/>
-    <label><input type="radio" name="typeSortie" value="Transfert" /> ↔️ Transfert</label><br/>
-	    <label><input type="radio" name="typeSortie" value="Décès" />⚰️ Décès</label><br/>
-    <label>
-      <input type="radio" name="typeSortie" value="autre" /> 🔤 Autre
-      <input type="text" id="champAutreSortie" placeholder="Précisez..." style="margin-top: 8px; display:none;" />
-    </label>
-
-  
-
-    <h3>Options supplémentaires</h3>
-    <label><input type="checkbox" name="optionsSortie" value="Suivi a domicile" /> 📋 Suivi à domicile</label><br/>
-    <label><input type="checkbox" name="optionsSortie" value="Avis specialiste" /> 👩‍⚕️ Avis spécialiste</label><br/>
-    <label><input type="checkbox" name="optionsSortie" value="Transport  en ambulance" /> 🚑 Transport ambulance</label><br/>
-    <label>
-      <input type="checkbox" name="optionsSortie" value="autreOption" /> 🔤 Autre option
-      <input type="text" id="champAutreOption" placeholder="Précisez..." style="margin-top: 8px; display:none;" />
-    </label>
-
-<h3>💊 Traitement de sortie</h3>
-<textarea id="champTraitementSortie"	 rows="3" style="width:100%; margin-bottom: 10px;"></textarea>
- <div id="sortieListe"></div> 
-<div class="modal-buttons">
-      <button id="btnAnnulerSortie" class="btn-id btn-id-c">❌ Annuler</button>
-      <button id="btnValiderSortie" class="btn-id btn-id-v">✅ Valider</button>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg> Type de sortie</div>
+      <div class="choice-grid">
+      <label class="choice"><input type="radio" name="typeSortie" value="Retour à domicile"><span><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Domicile</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="radio" name="typeSortie" value="Hospitalisation"><span><svg class="i" aria-hidden="true"><use href="#i-building"/></svg>Hospitalisation</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="radio" name="typeSortie" value="Transfert"><span><svg class="i" aria-hidden="true"><use href="#i-transfer"/></svg>Transfert</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="radio" name="typeSortie" value="Décès"><span><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg>Décès</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice"><input type="radio" name="typeSortie" value="autre"><span><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg>Autre</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      </div>
+      <input type="text" id="champAutreSortie" class="sub-input" placeholder="Précisez..." style="display:none;" />
     </div>
-  
-   
-    
 
-  
-</section>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg> Options supplémentaires</div>
+      <div class="choice-grid">
+      <label class="choice sq"><input type="checkbox" name="optionsSortie" value="Suivi a domicile"><span><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg>Suivi à domicile</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice sq"><input type="checkbox" name="optionsSortie" value="Avis specialiste"><span><svg class="i" aria-hidden="true"><use href="#i-user-check"/></svg>Avis spécialiste</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice sq"><input type="checkbox" name="optionsSortie" value="Transport  en ambulance"><span><svg class="i" aria-hidden="true"><use href="#i-ambulance"/></svg>Transport ambulance</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      <label class="choice sq"><input type="checkbox" name="optionsSortie" value="autreOption"><span><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg>Autre option</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      </div>
+      <input type="text" id="champAutreOption" class="sub-input" placeholder="Précisez..." style="display:none;" />
+      <div id="optionsSpecifiques" class="sub-input"></div>
+    </div>
 
-<section id="panel-documents" class="panel" style="display:none;">
- 
- <h3>📑 Documents</h3>
-  <div class="docs-tabs">
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-pill"/></svg> Traitement de sortie</div>
+      <textarea id="champTraitementSortie" rows="3"></textarea>
+    </div>
 
-        <div id="tab-docs" class="docs-tab active" onclick="openDocsTab('tab-docs','docs.html')">Documents du patient</div>
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-file-text"/></svg> Récapitulatif enregistré</div>
+      <div id="sortieListe"></div>
+    </div>
 
-    <div id="tab-ordo" class="docs-tab active" onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">Ordonnancier</div>
-    <div id="tab-cert" class="docs-tab" onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">Certificats</div>
-    <div id="tab-exams" class="docs-tab" onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">Examens</div>
-    <!--    <div id="tab-rapport" class="docs-tab active" onclick="openDocsTab('tab-rapport','rapporthospitalisation.html')">Rapport d'hospitalisation</div>-->
-
-    <div id="tab-fiches" class="docs-tab" onclick="openDocsTab('tab-fiches','fichesconseilf.html')">Fiches Conseils</div>
-
-   <!-- <div id="tab-pdf" class="docs-tab" onclick="openDocsTab('tab-pdf','uploadpdff.html')">PDF patient</div>-->
-    <div id="tab-etiq" class="docs-tab" onclick="openDocsTab('tab-etiq','etiquettesf.html')">Étiquettes</div>
-        <div id="tab-mail" class="docs-tab" onclick="openDocsTab('tab-mail','mailtof.html')">Mails</div>
-        <div id="tab-secours" class="docs-tab" onclick="openDocsTab('tab-secours','recuperationfichesecours.html')">Fiche Secours</div>
+    <div class="actions end">
+      <button id="btnAnnulerSortie" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Annuler</button>
+      <button id="btnValiderSortie" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Valider</button>
+    </div>
 
   </div>
-
-<iframe id="docsFrame" scrolling="auto"></iframe>
-
 </section>
 
-
-
-
+<section id="panel-documents" class="panel frame-panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg></span>Documents</h3></div>
+  <div class="docs-tabs">
+    <div id="tab-docs" class="docs-tab active" role="button" tabindex="0" onclick="openDocsTab('tab-docs','docs.html')">Documents du patient</div>
+    <div id="tab-ordo" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-ordo','Ordonnancierf.html')">Ordonnancier</div>
+    <div id="tab-cert" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-cert','Certificatmedicalf.html')">Certificats</div>
+    <div id="tab-exams" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-exams','prescriptionexamensf.html')">Examens</div>
+    <div id="tab-fiches" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-fiches','fichesconseilf.html')">Fiches Conseils</div>
+    <div id="tab-etiq" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-etiq','etiquettesf.html')">Étiquettes</div>
+    <div id="tab-mail" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-mail','mailtof.html')">Mails</div>
+    <div id="tab-secours" class="docs-tab" role="button" tabindex="0" onclick="openDocsTab('tab-secours','recuperationfichesecours.html')">Fiche Secours</div>
+  </div>
+  <iframe id="docsFrame" scrolling="auto" title="Documents"></iframe>
+</section>
 
 <!-- Modal Clôture -->
 <div class="modal-overlay" id="modalCloture">
   <div class="modal" style="text-align: center;">
-    <h3>⏳Clôture en cours...</h3>
-    <div style="background:#eee; border-radius: 10px; overflow:hidden; margin-top: 15px;">
-      <div id="clotureBar" style="height: 12px; background-color: #0078d4; width: 0%; transition: width 0.3s;"></div>
-    </div>
-    <div
-    id="clotureProgressText"
-    style="
-        margin-top:10px;
-        text-align:center;
-        color:#666;
-        font-size:14px;
-    "
->
-    Préparation...
-</div>
-    <p style="margin-top:10px; color:#666;">Merci de patienter</p>
+    <h3 style="justify-content:center;">Clôture en cours…</h3>
+    <div class="progress"><div id="clotureBar" class="progress-bar"></div></div>
+    <div id="clotureProgressText" class="progress-text">Préparation...</div>
+    <p class="muted" style="margin-top:12px;">Merci de patienter</p>
   </div>
 </div>
 <!-- ========================================= -->
@@ -3444,9 +1278,7 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 <div id="modalAvertissementEmail" class="modal-overlay" style="display:none;">
     <div class="modal-box">
 
-        <div class="modal-icon warning">
-            ⚠️
-        </div>
+        <div class="modal-icon warning"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
 
         <h2>Adresse e-mail absente</h2>
 
@@ -3489,9 +1321,7 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 <div id="modalSuccesCloture" class="modal-overlay" style="display:none;">
     <div class="modal-box">
 
-        <div class="modal-icon success">
-            ✓
-        </div>
+        <div class="modal-icon success"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></div>
 
         <h2>Hospitalisation clôturée</h2>
 
@@ -3517,115 +1347,93 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 
 <!-- Modal Gestion Administrative -->
 <div class="modal-overlay" id="modalAdmin">
-
   <div class="modal">
-    <h3>🛠 Gestion Administrative</h3>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Gestion administrative</h3>
 
+    <h2><svg class="i" aria-hidden="true"><use href="#i-id"/></svg>Identité</h2>
+    <button type="button" id="btnRemplirInfosImage" class="btn-id" style="margin:0 0 16px 0;"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg>Remplir les infos depuis une image</button>
+    <div class="form-grid">
+      <div class="field"><label for="adminId">ID Patient</label><input type="text" id="adminId" disabled /></div>
+      <div class="field"><label for="adminNom">Nom</label><input type="text" id="adminNom" /></div>
+      <div class="field"><label for="adminPrenom">Prénom</label><input type="text" id="adminPrenom" /></div>
+      <div class="field"><label for="adminNaissance">Date de naissance</label><input type="date" id="adminNaissance" /></div>
+      <div class="field"><label for="adminSexe">Sexe</label><select id="adminSexe"><option value="">-- Sélectionnez --</option><option value="H">Homme</option><option value="F">Femme</option></select></div>
+      <div class="field"><label for="adminCivilite">Civilité</label><select id="adminCivilite"><option value="">-- Sélectionnez --</option><option value="M">M</option><option value="Mme">Mme</option><option value="L'enfant">L'enfant</option></select></div>
+    </div>
 
-<h2>🫆 Identité</h2>
+    <hr>
+    <h2><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg>Contact</h2>
+    <div class="form-grid">
+      <div class="field full">
+        <label for="adminAdresse">Adresse</label>
+        <input type="text" id="adminAdresse" />
+        <div id="suggestionsadd"></div>
+      </div>
+      <div class="field full">
+        <label for="adminTelephone">Téléphone</label>
+        <input type="tel" id="adminTelephone" />
+      </div>
+      <div class="field full">
+        <label>Email(s)</label>
+        <div id="adminEmailList" class="admin-email-list"></div>
+        <button type="button" id="btnAjouterEmail" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter un email</button>
+      </div>
+    </div>
 
-    <button type="button" id="btnRemplirInfosImage" class="btn-id" style="margin:0 0 14px 0;">📷 Remplir les infos depuis une image</button>
+    <hr>
+    <h2><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Vérification de l'identité</h2>
+    <button id="btnAjouterVerification" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter une vérification</button>
+    <div id="historiqueVerifications">
+      <h4>Dernières vérifications</h4>
+      <div id="listeVerifications" class="historique-verifications"></div>
+    </div>
 
-    <label for="adminId">ID Patient</label>
-    <input type="text" id="adminId" disabled />
-	
-	<label for="adminNom">Nom</label>
-    <input type="text" id="adminNom" />
-	<label for="adminPrenom">Prénom</label>
-<input type="text" id="adminPrenom" />
+    <hr>
+    <h2><svg class="i" aria-hidden="true"><use href="#i-list"/></svg>Actions</h2>
+    <div class="actions" style="margin-top:0;">
+      <button id="readVitaleBtn" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg>Lecture Carte Vitale</button>
+      <button id="btnFacturer" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-euro"/></svg>Facturer</button>
+      <button id="btnCloturer" class="btn-id btn-ok" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Clôturer l’hospitalisation</button>
+    </div>
 
-	
-	
-	<label for="adminSexe">Sexe</label>
-	<select id="adminSexe" >
-  <option value="">-- Sélectionnez --</option>
-  <option value="H">Homme</option>
-  <option value="F">Femme</option>
-</select>
-	
-	<label for="adminCivilite">Civilité</label>
-	<select id="adminCivilite" >
-  <option value="">-- Sélectionnez --</option>
-  <option value="M">M</option>
-  <option value="Mme">Mme</option>
-  <option value="L'enfant">L'enfant</option>
-</select>
-	<label for="adminNaissance">Date de naissance</label>
-<input type="date" id="adminNaissance"  />
-
-	<hr>
-
-<h2>📞 Contact</h2>
-    <label for="adminAdresse">Adresse</label>
-    <input type="text" id="adminAdresse" />
-    <div id="suggestionsadd"></div>
-
-    <label for="adminTelephone">Téléphone</label>
-    <input type="tel" id="adminTelephone" />
-
-    <label>Email(s)</label>
-    <div id="adminEmailList" class="admin-email-list"></div>
-    <button type="button" id="btnAjouterEmail" class="btn-id">➕ Ajouter un email</button>
-<hr>
-
-<h2>🪪 Vérification de l'identité</h2>
-
-<button id="btnAjouterVerification" class="btn-id">
-  ➕ Ajouter une vérification
-</button>
-
-<div id="historiqueVerifications">
-  <h4>Dernières vérifications :</h4>
-
-  <div id="listeVerifications" class="historique-verifications">
-  </div>
-</div>
-
-<hr>
     <div class="modal-buttons">
-	    <button  id="readVitaleBtn" class="btn-id" >🆔 Lecture Carte Vitale</button>
-      <button id="btnFacturer" class="btn-id">💶 Facturer</button>
-	    <button id="btnCloturer" class="btn-id">✅ Clôturer hospitalisation</button>
-            <br><br>
-			<button id="btnFermerAdmin" class="btn-id btn-id-c">❌Fermer</button>
-	  <button id="btnEnregistrerAdmin" class="btn-id btn-id-v">💾Enregistrer</button>
-
+      <button id="btnFermerAdmin" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
+      <button id="btnEnregistrerAdmin" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>
-
 <!-- Modal Lecture identité par QR -->
 <div id="modalLectureIdentiteImage" class="modal-overlay" style="z-index:3100;">
   <div class="modal" style="max-width:700px;">
-    <h3 id="titreLectureIdentiteImage">📷 Lecture de pièce d'identité</h3>
+    <h3 id="titreLectureIdentiteImage"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg> Lecture de pièce d'identité</h3>
     <div id="qrcodeLectureIdentiteImage" style="display:flex;justify-content:center;margin:15px 0;"></div>
     <p id="texteLectureIdentiteImage" style="text-align:center;">Scannez ce QR Code avec le téléphone.</p>
-    <div id="etatLectureIdentiteImage" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;">⏳ En attente de lecture…</div>
+    <div id="etatLectureIdentiteImage" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;"> En attente de lecture…</div>
     <div id="resultatLectureIdentiteImage" style="margin-top:15px;display:none;"></div>
     <div class="modal-buttons" style="margin-top:15px;">
-      <button type="button" id="btnFermerLectureIdentiteImage" class="btn-id btn-id-c">❌ Annuler</button>
-      <button type="button" id="btnAppliquerLectureIdentiteImage" class="btn-id btn-id-v" style="display:none;">✅ Remplacer les champs sélectionnés</button>
+      <button type="button" id="btnFermerLectureIdentiteImage" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button type="button" id="btnAppliquerLectureIdentiteImage" class="btn-id btn-id-v" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Remplacer les champs sélectionnés</button>
     </div>
   </div>
 </div>
 
 <div id="modalVerificationIdentiteQR" class="modal-overlay" style="z-index:3100;">
   <div class="modal" style="max-width:700px;">
-    <h3>🪪 Vérification par pièce d'identité</h3>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> Vérification par pièce d'identité</h3>
     <div id="qrcodeVerificationIdentite" style="display:flex;justify-content:center;margin:15px 0;"></div>
     <p style="text-align:center;">Scannez ce QR Code avec le téléphone puis présentez la pièce d'identité.</p>
-    <div id="etatVerificationIdentiteQR" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;">⏳ En attente de lecture…</div>
+    <div id="etatVerificationIdentiteQR" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;"> En attente de lecture…</div>
     <div id="resultatVerificationIdentiteQR" style="margin-top:15px;display:none;"></div>
     <div class="modal-buttons" style="margin-top:15px;">
-      <button type="button" id="btnAnnulerVerificationQR" class="btn-id btn-id-c">❌ Annuler</button>
-      <button type="button" id="btnContinuerVerificationQR" class="btn-id btn-id-v" style="display:none;">➡️ Continuer la vérification</button>
+      <button type="button" id="btnAnnulerVerificationQR" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button type="button" id="btnContinuerVerificationQR" class="btn-id btn-id-v" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg> Continuer la vérification</button>
     </div>
   </div>
 </div>
 
  <div id="modalVerificationIdentite" class="modal-overlay">
   <div class="modal">
-    <h3>🪪 Vérification de l'identité</h3>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> Vérification de l'identité</h3>
 
     <label>Type de pièce présentée</label>
     <select id="typePieceIdentite">
@@ -3638,7 +1446,7 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
       <option value="Autre">Autre</option>
     </select>
 
-    <button type="button" id="btnLectureQRVerification" class="btn-id" style="margin-top:12px;">📷 Vérifier depuis une image</button>
+    <button type="button" id="btnLectureQRVerification" class="btn-id" style="margin-top:12px;"><svg class="i" aria-hidden="true"><use href="#i-camera"/></svg> Vérifier depuis une image</button>
     <input type="hidden" id="verifNumeroDocument" value="">
 
     <hr>
@@ -3656,23 +1464,23 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 
     <div class="modal-buttons">
       <button onclick="fermerVerificationIdentite()" class="btn-id btn-id-c">
-        ❌ Annuler
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler
       </button>
 
       <button onclick="enregistrerVerificationIdentite()" class="btn-id btn-id-v">
-        ✔️ Enregistrer
+        <svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Enregistrer
       </button>
     </div>
   </div>
 </div>
-<!-- 🏁 Modale de saisie du code de clôture -->
+<!--  Modale de saisie du code de clôture -->
 <div class="modal-overlay" id="modalCodeCloture" style="display:none;">
   <div class="modal">
-    <h3>🔒 Clôture de l’hospitalisation</h3>
+    <h3><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg> Clôture de l’hospitalisation</h3>
 
     <div class="idcheck-switch" id="clotureSwitch" style="display:none;">
-      <button type="button" id="clotureTabBadge" class="idcheck-tab" onclick="switchClotureTab('badge')">🪪 Badge</button>
-      <button type="button" id="clotureTabCode" class="idcheck-tab" onclick="switchClotureTab('code')">🔑 Code</button>
+      <button type="button" id="clotureTabBadge" class="idcheck-tab" onclick="switchClotureTab('badge')"><svg class="i" aria-hidden="true"><use href="#i-id"/></svg> Badge</button>
+      <button type="button" id="clotureTabCode" class="idcheck-tab" onclick="switchClotureTab('code')"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg> Code</button>
     </div>
 
     <!-- VOLET BADGE -->
@@ -3705,8 +1513,8 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
     <div id="clotureIdcheckError"></div>
 
     <div class="modal-buttons">
-      <button id="btnAnnulerCode" class="btn-id btn-id-c">❌ Annuler</button>
-      <button id="btnValiderCode" class="btn-id btn-id-v">✅ Valider</button>
+      <button id="btnAnnulerCode" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button id="btnValiderCode" class="btn-id btn-id-v"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Valider</button>
     </div>
   </div>
 </div>
@@ -3728,20 +1536,20 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
       ou faites signer le patient depuis cet appareil : 
     </p>
     <button id="btnSignerCetAppareil" class="btn-id" style="margin:6px 0 12px;">
-      📲 Signer sur cet appareil
+      <svg class="i" aria-hidden="true"><use href="#i-phone"/></svg> Signer sur cet appareil
     </button>
     <div id="etatSignature">
-      ⏳ En attente de signature...
+       En attente de signature...
     </div>
 <button id="btnRefusSignature" class="btn-id btn-id-c">
-  ⛔ Refus de signer
+  <svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> Refus de signer
 </button>
     <button
       id="btnContinuerCloture"
       style="display:none"
       class="btn-id btn-id-v">
 
-     ✔️ Valider la clôture
+     <svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Valider la clôture
 
     </button>
 <button
@@ -3749,7 +1557,7 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
     class="btn-id btn-id-c"
     style="margin-top:10px;">
 
-  ❌ Annuler
+  <svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler
 
 </button>
   </div>
@@ -3758,8 +1566,8 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 <div id="modalSignatureAppareil" class="sig-device-overlay" style="display:none;">
   <div class="sig-device-box" role="dialog" aria-modal="true" aria-label="Signature du patient">
     <div class="sig-device-header">
-      <span class="sig-device-title">✍️ Signature du patient</span>
-      <button id="btnFermerSignatureAppareil" class="sig-device-close" type="button" aria-label="Fermer">✕</button>
+      <span class="sig-device-title"><svg class="i" aria-hidden="true"><use href="#i-pen"/></svg> Signature du patient</span>
+      <button id="btnFermerSignatureAppareil" class="sig-device-close" type="button" aria-label="Fermer"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <iframe id="frameSignatureAppareil" class="sig-device-frame" title="Signature du patient"></iframe>
   </div>
@@ -3767,100 +1575,19 @@ nav::-webkit-scrollbar{          /* Chrome, Edge, Safari, Electron */
 <div id="vitaleModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
     <div class="spinner" style="margin-bottom:15px;"></div>
-    <div style="font-size:18px; font-weight:600;">⏳Lecture Carte Vitale en cours...</div>
+    <div style="font-size:18px; font-weight:600;">Lecture Carte Vitale en cours...</div>
   </div>
 </div>
 
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999;"></div>
-<style>
-.spinner {
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #007bff;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: auto;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
- ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-</style>
 <div id="facturationModale" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:12px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
     <div class="spinner" style="margin-bottom:15px;"></div>
-    <div style="font-size:18px; font-weight:600;">⏳Chargement des informations...</div>
+    <div style="font-size:18px; font-weight:600;">Chargement des informations...</div>
   </div>
 </div>
 
-<style>
-.spinner {
-  border: 6px solid #f3f3f3;
-  border-top: 6px solid #007bff;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: auto;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
- ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-</style>
-
-
-
- </div>
+</div>
 </div>
 <script type="module">
      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -5032,7 +2759,7 @@ function afficherExamensSelectionnes() {
       <input type="text" placeholder="Commentaire..." 
         value="${ex.commentaire}" 
         onchange="modifierCommentaire(${index}, this.value)" />
-      <button class="delete-examen-btn" onclick="supprimerExamen(${index})">❌</button>
+      <button class="delete-examen-btn" onclick="supprimerExamen(${index})"><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
     `;
 
     container.appendChild(div);
@@ -6621,7 +4348,7 @@ async function chargerExamens() {
           <div style="display:flex;justify-content:space-between;align-items:center;">
             
             <div>
-              <strong>☢️ ${ex.type || "N/A"}</strong>
+              <strong>${ex.type || "N/A"}</strong>
             </div>
 
             <div style="display:flex;align-items:center;gap:8px;">
@@ -6631,7 +4358,7 @@ async function chargerExamens() {
               </span>
 
               <button class="btn-loupe" onclick="showExamenDetails(${index})">
-                🔎
+                <svg class="i" aria-hidden="true"><use href="#i-eye"/></svg>
               </button>
 
             </div>
@@ -6658,49 +4385,23 @@ currentExamenIndex = index;
   if (!ex) return;
 
   document.getElementById("examen-detail-content").innerHTML = `
-  
-    <p><b>☢️ Type :</b> ${ex.type || "N/A"}</p>
-
-    <p><b>📅 Date demande :</b>
-      ${ex.dateDemande || "Non renseignée"}
-    </p>
-
-    <p><b>📊 Statut :</b>
-      ${ex.realise ? "Réalisé" : "À réaliser"}
-    </p>
+    <div class="info-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+      <p><strong>Type</strong><span>${ex.type || "N/A"}</span></p>
+      <p><strong>Date de demande</strong><span>${ex.dateDemande || "Non renseignée"}</span></p>
+      <p><strong>Statut</strong><span class="examen-badge ${ex.realise ? "realise" : "a-faire"}">${ex.realise ? "Réalisé" : "À réaliser"}</span></p>
+      ${ex.realise ? `<p><strong>Date de réalisation</strong><span>${ex.dateRealisation || "Non renseignée"}</span></p>` : ""}
+    </div>
 
     ${
       ex.realise
       ? `
-          <p><b>✅ Date réalisation :</b>
-            ${ex.dateRealisation || "Non renseignée"}
-          </p>
-
-          <p><b>📄 Compte-rendu :</b></p>
-
-          <div style="
-            background:#f7f9fc;
-            padding:12px;
-            border-radius:8px;
-            border:1px solid #e0e6ef;
-            white-space:pre-wrap;
-          ">
-            ${ex.compteRendu || "Aucun compte-rendu"}
-          </div>
+          <h4>Compte-rendu</h4>
+          <div style="background:#f6f9fc;padding:14px;border-radius:12px;border:1px solid #d8e1ea;border-left:4px solid #0b6fa4;white-space:pre-wrap;overflow-wrap:anywhere;">${ex.compteRendu || "Aucun compte-rendu"}</div>
         `
       : `
-          <div style="
-            background:#fff3cd;
-            color:#664d03;
-            border:1px solid #ffecb5;
-            padding:12px;
-            border-radius:8px;
-          ">
-            Examen non réalisé.
-          </div>
+          <div style="margin-top:12px;background:#fff5da;color:#7a4f00;border:1px solid #f0d98f;padding:12px 14px;border-radius:12px;">Examen non réalisé.</div>
         `
     }
-
   `;
 const deleteBtn = document.getElementById("btnDeleteExamen");
 

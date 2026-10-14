@@ -2330,7 +2330,7 @@ document.getElementById('menuOutils').classList.remove("open");
 function setActive(id){
   activeTab=id;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id==id));
-  document.querySelectorAll('iframe').forEach(f=>f.style.display=f.dataset.id==id?'block':'none');
+  document.querySelectorAll('iframe[data-id]').forEach(f=>f.style.display=f.dataset.id==id?'block':'none');
 }
 document.getElementById("btnLogout").addEventListener("click", () => {
     signOut(auth)
@@ -2629,7 +2629,7 @@ window.addEventListener("blur", () => {
 function closeAllTabs() {
   tabs = [];
   document.querySelectorAll(".tab").forEach(t => t.remove());
-  document.querySelectorAll("iframe").forEach(f => f.remove());
+  document.querySelectorAll("iframe[data-id]").forEach(f => f.remove());
 
   activeTab = null;
   document.getElementById('home').style.display = 'flex';
@@ -3623,19 +3623,12 @@ window.lockSession = async function() {
             ? "badge"
             : "password";
 
-// Sélection du panneau
-switchLockTab(animationType);
-
-// Affichage de la modale
+// Affichage de la modale (doit être visible AVANT de charger l'animation)
 document.body.classList.add("locked");
 overlay.classList.add("active");
 
-// Laisse le navigateur effectuer le rendu
-requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-        signalerPanelVisible(animationType);
-    });
-});
+// Sélection du volet : recharge l'animation maintenant que le panneau est visible
+switchLockTab(animationType);
 
     // --------------------------------------------------
     // Verrouillage des iframes
@@ -3698,9 +3691,12 @@ window.switchLockTab = function(tab) {
     // PUIS on signale à l'iframe qu'elle est visible.
     // --------------------------------------------------
 
-    signalerPanelVisible(
-        isBadge ? "badge" : "password"
-    );
+    if (document.getElementById("lockOverlay").classList.contains("active")) {
+        // Modale visible : on (re)charge l'animation dans un panneau affiché
+        relancerAnimation(isBadge ? "badge" : "password");
+    } else {
+        signalerPanelVisible(isBadge ? "badge" : "password");
+    }
 
     // --------------------------------------------------
     // Focus
@@ -4109,6 +4105,18 @@ function signalerPanelVisible(type) {
     });
 }
 
+
+// Recharge l'animation à chaque affichage de la veille.
+// Une iframe chargée dans un panneau masqué (display:none) peut ne jamais
+// démarrer son animation ; on la recharge donc une fois le panneau visible.
+// L'écouteur "load" ci-dessous renvoie ensuite APP_READY puis PANEL_VISIBLE.
+function relancerAnimation(type) {
+    const iframe = animationFrames[type];
+    if (!iframe) return;
+
+    animationReady[type] = false;
+    iframe.src = iframe.getAttribute("src");
+}
 
 // Chargement des deux animations
 Object.entries(animationFrames).forEach(([type, iframe]) => {

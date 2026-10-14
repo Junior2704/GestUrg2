@@ -189,6 +189,12 @@ body{display:grid;place-items:center;min-height:100%;overflow:auto;padding:calc(
 .footer{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
 .footer strong{font-weight:600}
 .footer:has(#bureauLabel:empty){display:none}
+.bureau-statut{display:inline-flex;align-items:center;gap:6px;margin-left:auto;padding:4px 10px;font-size:12px;font-weight:700;line-height:1;border-radius:999px;border:1px solid;white-space:nowrap;text-transform:none;letter-spacing:0}
+.bureau-statut::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.bureau-statut.ouvert{color:var(--ok);background:var(--ok-soft);border-color:#b7dfc8}
+.bureau-statut.ferme{color:var(--late);background:var(--late-soft);border-color:#f0c3c5}
+.btn-toggle-bureau{margin-bottom:16px}
+.btn-id[disabled]{opacity:.55;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -247,9 +253,11 @@ body{display:grid;place-items:center;min-height:100%;overflow:auto;padding:calc(
   </div>
 
   <div class="field">
-    <label class="lbl" for="bureauSelect"><svg class="i" aria-hidden="true"><use href="#i-building"/></svg>Bureau</label>
+    <label class="lbl" for="bureauSelect"><svg class="i" aria-hidden="true"><use href="#i-building"/></svg>Bureau<span id="bureauStatutBadge" class="bureau-statut ouvert" hidden>Ouvert</span></label>
     <select id="bureauSelect" onchange="changerBureau(this.value)"></select>
   </div>
+
+  <button id="btnToggleStatut" class="btn-id btn-id-c btn-toggle-bureau" type="button" onclick="toggleStatutBureau()" hidden><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg><span id="btnToggleStatutTxt">Fermer ce bureau</span></button>
 
   <div id="infosPatient" style="display:none">
     <div class="infos">
@@ -394,6 +402,9 @@ const modal = document.getElementById("modal-no-access");
 const ORIGINE_PARENT_BULLE = "*";
 
 let bureauActuel = null;
+let bureauxData = {}; // { nomBureau: {statut, message, ...} } issu de referentiels/bureau
+const STATUT_FERME = "ferme";
+const STATUT_OUVERT = "ouvert";
 
 // ================= DOM =================
 const emailInput   = document.getElementById("email");
@@ -430,18 +441,24 @@ function initBureauxListener(){
   (docSnap)=>{
       bureauSelect.innerHTML = "";
 
-      if(!docSnap.exists) return;
+      if(!docSnap.exists()) return;
 
       const data = docSnap.data();
+      bureauxData = {};
 
       for(const bureauId in data){
-        if(typeof data[bureauId] !== "object") continue;
+        if(typeof data[bureauId] !== "object" || bureauId === "general") continue;
+
+        bureauxData[bureauId] = data[bureauId];
 
         const opt = document.createElement("option");
         opt.value = bureauId;
-        opt.textContent = bureauId;
+        opt.textContent = bureauId + (statutDuBureau(bureauId) === STATUT_FERME ? " (fermé)" : "");
         bureauSelect.appendChild(opt);
       }
+
+      // La liste est reconstruite à chaque mise à jour : on conserve le bureau choisi
+      if(bureauActuel && bureauxData[bureauActuel]) bureauSelect.value = bureauActuel;
 
       // Sélection automatique du premier bureau
       if(!bureauActuel && bureauSelect.options.length > 0){
@@ -449,14 +466,78 @@ function initBureauxListener(){
         bureauLabel.innerText = bureauActuel;
         notifierBureauParent();
       }
+
+      mettreAJourStatutBureau();
     });
 }
 
 function changerBureau(val){
   bureauActuel = val;
   bureauLabel.innerText = val;
+  mettreAJourStatutBureau();
   notifierBureauParent();
 }
+
+// ================= OUVERTURE / FERMETURE DU BUREAU =================
+// Le statut est stocké dans referentiels/bureau, champ "<bureau>.statut"
+// (même source que afficheur-bureau). Absent = ouvert.
+function statutDuBureau(id){
+  return bureauxData[id]?.statut === STATUT_FERME ? STATUT_FERME : STATUT_OUVERT;
+}
+
+function bureauEstFerme(){
+  return !!bureauActuel && statutDuBureau(bureauActuel) === STATUT_FERME;
+}
+
+function mettreAJourStatutBureau(){
+  const badge = document.getElementById("bureauStatutBadge");
+  const btn   = document.getElementById("btnToggleStatut");
+  const txt   = document.getElementById("btnToggleStatutTxt");
+
+  if(!bureauActuel || !bureauxData[bureauActuel]){
+    badge.hidden = true;
+    btn.hidden = true;
+    return;
+  }
+
+  const ferme = bureauEstFerme();
+
+  badge.hidden = false;
+  badge.className = "bureau-statut " + (ferme ? "ferme" : "ouvert");
+  badge.textContent = ferme ? "Fermé" : "Ouvert";
+
+  btn.hidden = false;
+  btn.classList.toggle("btn-id-c", !ferme);
+  btn.classList.toggle("btn-id-v", ferme);
+  btn.querySelector("use").setAttribute("href", ferme ? "#i-check" : "#i-ban");
+  txt.textContent = ferme ? "Ouvrir ce bureau" : "Fermer ce bureau";
+}
+
+async function toggleStatutBureau(){
+  if(!bureauActuel) return;
+
+  const btn = document.getElementById("btnToggleStatut");
+  const nouveau = bureauEstFerme() ? STATUT_OUVERT : STATUT_FERME;
+
+  btn.disabled = true;
+  try{
+    await updateDoc(doc(db,"referentiels","bureau"), {
+      [bureauActuel + ".statut"]: nouveau
+    });
+    // L'affichage se met à jour via l'écoute temps réel (onSnapshot)
+    afficherBulle(
+      "Bureau " + bureauActuel + (nouveau === STATUT_FERME ? " fermé" : " ouvert"),
+      "success"
+    );
+  }catch(err){
+    console.error("Erreur mise à jour du statut du bureau :", err);
+    afficher("Impossible de modifier le statut du bureau", false);
+    afficherBulle("Impossible de modifier le statut du bureau", "error");
+  }finally{
+    btn.disabled = false;
+  }
+}
+window.toggleStatutBureau = toggleStatutBureau;
 window.changerBureau=changerBureau;
 async function updateAttenteStats() {
   const totalDiv = document.querySelector(".attente-total");
@@ -540,6 +621,7 @@ window.openParams=openParams;
 function closeParams(){
   document.getElementById("modalParams").style.display = "none";
 }
+window.closeParams = closeParams;
 
 function applyParams(){
   filterMotifs.clear();
@@ -627,6 +709,11 @@ function notifierBureauParent(){
 window.notifierBureauParent = notifierBureauParent;
 // ================= FILTRAGE DANS APPELER TICKET =================
 async function appelerTicket(){
+ if(bureauEstFerme()){
+   afficher("Ce bureau est fermé : rouvrez-le pour appeler un ticket",false);
+   afficherBulle("Ce bureau est fermé", "warning");
+   return;
+ }
  try {
 
   const snap = await getDocs(

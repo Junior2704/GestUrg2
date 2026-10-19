@@ -44,8 +44,6 @@ td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}
 .state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
 .state-ico svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}.modalna p{margin-bottom:8px}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
-#toast.on{opacity:1}
 /* ---------- BARRES DE DÉFILEMENT ---------- */
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}
@@ -92,7 +90,6 @@ td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}
     </section>
   </div>
 </main>
-<div id="toast" role="status"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -108,7 +105,16 @@ const tmin=t=>{const[a,b]=t.split(':');return +a*60+ +b};
 const fmtD=s=>new Date(s+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 let rules=[],specials=[];
 
-function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
+/* ---- Notifications : bulle affichée par la page parente ---- */
+const ORIGINE_PARENT_BULLE = "*";
+const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
+function afficherBulle(message, typeBulle){
+  if(window.parent === window){
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+    return;
+  }
+  window.parent.postMessage({source:"notification-bulle", message, typeBulle}, ORIGINE_PARENT_BULLE);
+}
 
 /* ---- Loader (identique à fiche.html) ---- */
 window.afficherLoader = function() {
@@ -184,7 +190,7 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         // Document inexistant — redirection
         window.masquerLoader();
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.", BULLE.ERR);
         return;
       }
 
@@ -207,8 +213,8 @@ async function charger(){
   $('#gDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" value="${d}" ${d>=1&&d<=5?'checked':''}>${JOURS[d]}</label>`).join('');
   rendre();
 }
-const sauverG=()=>setDoc(doc(db,'rdv-config','generiques'),{rules}).then(()=>toast('Enregistré'));
-const sauverP=()=>setDoc(doc(db,'rdv-config','particuliers'),{items:specials}).then(()=>toast('Enregistré'));
+const sauverG=()=>setDoc(doc(db,'rdv-config','generiques'),{rules}).then(()=>afficherBulle('Enregistré', BULLE.OK));
+const sauverP=()=>setDoc(doc(db,'rdv-config','particuliers'),{items:specials}).then(()=>afficherBulle('Enregistré', BULLE.OK));
 const med=n=>`${n} médecin${n>1?'s':''}`;
 function rendre(){
   $('#gList').innerHTML=rules.map(r=>`<tr><td>${r.days.map(d=>JOURS[d]).join(', ')}</td><td>${esc(r.start)}–${esc(r.end)}</td><td>${r.dur} min</td><td><span class="pill">${med(r.docs)}</span></td><td><button class="btn-danger" data-r="${r.id}">Supprimer</button></td></tr>`).join('')||'<tr><td class="vide">Aucun créneau générique : les patients ne verront rien tant que vous n’en ajoutez pas.</td></tr>';
@@ -220,13 +226,13 @@ function rendre(){
 const n=id=>Math.max(1,parseInt($(id).value)||1);
 $('#gAdd').onclick=async()=>{
   const days=[...document.querySelectorAll('#gDays input:checked')].map(i=>+i.value);
-  if(!days.length||tmin($('#gEnd').value)<=tmin($('#gStart').value))return toast('Choisissez des jours et une plage valide');
+  if(!days.length||tmin($('#gEnd').value)<=tmin($('#gStart').value))return afficherBulle('Choisissez des jours et une plage valide', BULLE.WARN);
   rules.push({id:uid(),days,start:$('#gStart').value,end:$('#gEnd').value,dur:n('#gDur'),docs:n('#gDocs')});await sauverG();rendre()};
 $('#sAdd').onclick=async()=>{
-  if(!$('#sDate').value||tmin($('#sEnd').value)<=tmin($('#sStart').value))return toast('Indiquez une date et une plage valide');
+  if(!$('#sDate').value||tmin($('#sEnd').value)<=tmin($('#sStart').value))return afficherBulle('Indiquez une date et une plage valide', BULLE.WARN);
   specials.push({id:uid(),date:$('#sDate').value,start:$('#sStart').value,end:$('#sEnd').value,dur:n('#sDur'),docs:n('#sDocs')});await sauverP();rendre()};
 $('#sClose').onclick=async()=>{
-  if(!$('#sDate').value)return toast('Indiquez la date à fermer');
+  if(!$('#sDate').value)return afficherBulle('Indiquez la date à fermer', BULLE.WARN);
   specials=specials.filter(x=>x.date!==$('#sDate').value);
   specials.push({id:uid(),date:$('#sDate').value,closed:true});await sauverP();rendre()};
 </script>

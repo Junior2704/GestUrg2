@@ -65,7 +65,6 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
 .modalna .card{max-width:440px;text-align:center;padding:30px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
 /* ---------- BARRES DE DÉFILEMENT ---------- */
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}
@@ -98,7 +97,6 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
   </div>
 </main>
 <aside id="detail" hidden></aside>
-<div id="toast" role="status"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -113,7 +111,16 @@ const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultati
 const PX=120,DUR=15; // 120 px par heure, créneau affiché = 15 min
 let medecin={},rdvs=[],sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
 const tm=h=>{const[a,b]=String(h).split(':');return +a*60+ +b};
-const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2000)};
+/* ---- Notifications : bulle affichée par la page parente ---- */
+const ORIGINE_PARENT_BULLE = "*";
+const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
+function afficherBulle(message, typeBulle){
+  if(window.parent === window){
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+    return;
+  }
+  window.parent.postMessage({source:"notification-bulle", message, typeBulle}, ORIGINE_PARENT_BULLE);
+}
 
 window.afficherLoader=()=>{let l=document.getElementById("loadingScreen");if(!l){l=document.createElement("iframe");l.id="loadingScreen";l.src="loader.html?modal=true";l.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";document.body.appendChild(l)}l.style.display="block";l.style.opacity="1"};
 window.masquerLoader=()=>{const l=document.getElementById("loadingScreen");if(l){l.style.transition="opacity .3s";l.style.opacity="0";setTimeout(()=>l.style.display="none",300)}};
@@ -123,7 +130,7 @@ onAuthStateChanged(auth,async user=>{
   try{
     window.afficherLoader();
     const s=await getDoc(doc(db,"medecins",user.uid));
-    if(!s.exists()){window.masquerLoader();alert("Utilisateur non trouvé, veuillez vous reconnecter.");return}
+    if(!s.exists()){window.masquerLoader();afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.", BULLE.ERR);return}
     const data=s.data();medecin={...data,uid:user.uid};
     Object.assign(window,{medecinNom:data.nom||"",medecinSpecialite:data.specialite||"",medecinLieu:data.lieu||"",medecinType:data.type||"",medecinUid:user.uid});
     $('#who').textContent=data.nom||"";
@@ -157,7 +164,7 @@ function ecouter(){
   unsub=onSnapshot(query(collection(db,'rdv-urgences'),where('date','>=',iso(a)),where('date','<=',iso(b))),s=>{
     rdvs=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>x.heure.localeCompare(y.heure));
     rendre();if(sel&&!$('#detail').contains(document.activeElement))ouvrir();
-  },e=>{console.error(e);toast('Chargement impossible')});
+  },e=>{console.error(e);afficherBulle('Chargement impossible', BULLE.ERR)});
 }
 
 /* ---- Rendu du calendrier ---- */
@@ -237,7 +244,7 @@ async function ouvrir(){
       if(c){pid=c.value;if(pid==='new')pid=(await addDoc(collection(db,'patients'),{nom:(p.nom||'').toUpperCase(),prenom:p.prenom,sexe:p.sexe||'',civilite:'',dateNaissance:p.dateNaissance,adresse:p.adresse||'',telephone:p.telephone,email:p.email||'',
         hospitalisations:[],hospitalisationActiveId:null,hospitalisationActive:false,consultations:[],medtraitant:'',vigilances:'aucune',allergies:'aucun',searchIndex:buildSearchIndex((p.nom||'').toUpperCase(),p.prenom,p.dateNaissance)})).id}
       openConsult(await creerConsultation(r,pid),p);
-    }catch(e){console.error(e);toast('Échec de la création de la consultation');$('#go').disabled=false}
+    }catch(e){console.error(e);afficherBulle('Échec de la création de la consultation', BULLE.ERR);$('#go').disabled=false}
   };
   if($('#go'))$('#go').onclick=demarrer;
   if(r.statut==='pris'){
@@ -254,7 +261,7 @@ async function ouvrir(){
       const oref=doc(db,'rdv-occupation',r.date),o=await tx.get(oref);
       if(o.exists()){const c=o.data().counts||{};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);tx.update(oref,{counts:c})}
       tx.update(doc(db,'rdv-urgences',r.id),{statut:'annule',annuleLe:serverTimestamp()});
-    });toast('Rendez-vous annulé')}catch(e){toast('Échec de l’annulation')}
+    });afficherBulle('Rendez-vous annulé', BULLE.OK)}catch(e){afficherBulle('Échec de l’annulation', BULLE.ERR)}
   };
 }
 </script>

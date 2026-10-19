@@ -75,7 +75,6 @@ details.hc .bd{padding:0 16px 16px;display:grid;gap:10px}
 .modalna .card{max-width:440px;text-align:center;padding:30px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
 .state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}.state-ico .i{width:28px;height:28px}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:200}#toast.on{opacity:1}
 @media(max-width:768px){.form-grid{grid-template-columns:1fr}nav{width:64px}.panel-head .hint{margin-left:0}}
 </style>
 </head>
@@ -188,7 +187,6 @@ details.hc .bd{padding:0 16px 16px;display:grid;gap:10px}
 </section>
 </div>
 </div>
-<div id="toast" role="status"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -200,7 +198,16 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const consultationId=new URLSearchParams(location.search).get('id');
 let med={},cons=null,patient=null,patientId=null,histoCharge=false;
-const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2000)};
+/* ---- Notifications : bulle affichée par la page parente ---- */
+const ORIGINE_PARENT_BULLE = "*";
+const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
+function afficherBulle(message, typeBulle){
+  if(window.parent === window){
+    console.warn("afficherBulle appelée sans parent, message perdu :", message);
+    return;
+  }
+  window.parent.postMessage({source:"notification-bulle", message, typeBulle}, ORIGINE_PARENT_BULLE);
+}
 const fail=(t,x)=>{if(t)$('#errTitle').textContent=t;if(x)$('#errText').textContent=x;$('#modal-error').style.display='flex'};
 const age=d=>{const b=new Date(d);if(isNaN(b))return'';const n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a+' ans'};
 
@@ -278,7 +285,7 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         // Document inexistant — redirection
         window.masquerLoader();
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.", BULLE.ERR);
         return;
       }
 
@@ -383,17 +390,17 @@ $$('.docs-tab').forEach(t=>{t.onclick=()=>docsTab(t);t.onkeydown=e=>{if(e.key===
 /* ---- enregistrement ---- */
 const champs=()=>({motif:$('#motif').value.trim(),histoire:$('#histoire').value.trim(),examenClinique:$('#examen').value.trim(),diagnostic:$('#diagnostic').value.trim(),conduite:$('#conduite').value.trim()});
 $('#btnSave').onclick=async()=>{
-  try{await updateDoc(doc(db,'consultations',consultationId),{...champs(),modifieLe:serverTimestamp()});Object.assign(cons,champs());histoCharge=false;toast('Consultation enregistrée')}
-  catch(e){toast('Échec de l’enregistrement')}
+  try{await updateDoc(doc(db,'consultations',consultationId),{...champs(),modifieLe:serverTimestamp()});Object.assign(cons,champs());histoCharge=false;afficherBulle('Consultation enregistrée', BULLE.OK)}
+  catch(e){afficherBulle('Échec de l’enregistrement', BULLE.ERR)}
 };
 $('#btnClose').onclick=async()=>{
-  const c=champs();if(!c.motif||!c.conduite)return toast('Renseignez au moins le motif et la conduite à tenir');
+  const c=champs();if(!c.motif||!c.conduite)return afficherBulle('Renseignez au moins le motif et la conduite à tenir', BULLE.WARN);
   if(!confirm('Clôturer la consultation ? Elle ne sera plus modifiable.'))return;
   try{
     await updateDoc(doc(db,'consultations',consultationId),{...c,statut:'terminee',clotureLe:serverTimestamp()});
     if(cons.rdvId)await updateDoc(doc(db,'rdv-urgences',cons.rdvId),{statut:'termine'});
-    Object.assign(cons,c,{statut:'terminee'});histoCharge=false;afficher();toast('Consultation clôturée');
-  }catch(e){toast('Échec de la clôture')}
+    Object.assign(cons,c,{statut:'terminee'});histoCharge=false;afficher();afficherBulle('Consultation clôturée', BULLE.OK);
+  }catch(e){afficherBulle('Échec de la clôture', BULLE.ERR)}
 };
 
 /* ---- historique : ids stockés dans patients/{id}.consultations ---- */
@@ -416,13 +423,13 @@ async function chargerHisto(){
 /* ---- transfert aux urgences (même structure que ajouterpatient.html) ---- */
 $('#btnTransfert').onclick=async()=>{
   const pos=document.querySelector('input[name=tPos]:checked')?.value;
-  if(!pos)return toast('Sélectionnez la position du patient');
-  if(!$('#tMotif').value.trim())return toast('Indiquez le motif');
+  if(!pos)return afficherBulle('Sélectionnez la position du patient', BULLE.WARN);
+  if(!$('#tMotif').value.trim())return afficherBulle('Indiquez le motif', BULLE.WARN);
   if(!confirm('Transférer ce patient aux urgences ? Une hospitalisation sera créée.'))return;
   $('#btnTransfert').disabled=true;
   try{
     const pSnap=await getDoc(doc(db,'patients',patientId));
-    if(pSnap.data().hospitalisationActiveId){patient=pSnap.data();transfertEtat();return toast('Patient déjà hospitalisé')}
+    if(pSnap.data().hospitalisationActiveId){patient=pSnap.data();transfertEtat();return afficherBulle('Patient déjà hospitalisé', BULLE.INFO)}
     const n=new Date(),note=$('#tNote').value.trim();
     const hRef=await addDoc(collection(db,'hospitalisations'),{
       patientId,dateDebut:n.toLocaleString(),dateDebutTS:Timestamp.now(),
@@ -435,8 +442,8 @@ $('#btnTransfert').onclick=async()=>{
     await updateDoc(doc(db,'consultations',consultationId),{...champs(),statut:'transferee',hospitalisationId:hRef.id,transfereLe:serverTimestamp()});
     if(cons.rdvId)await updateDoc(doc(db,'rdv-urgences',cons.rdvId),{statut:'termine'});
     Object.assign(cons,{statut:'transferee',hospitalisationId:hRef.id});patient.hospitalisationActiveId=hRef.id;
-    afficher();toast('Patient transféré aux urgences');
-  }catch(e){console.error(e);toast('Échec du transfert');$('#btnTransfert').disabled=false}
+    afficher();afficherBulle('Patient transféré aux urgences', BULLE.OK);
+  }catch(e){console.error(e);afficherBulle('Échec du transfert', BULLE.ERR);$('#btnTransfert').disabled=false}
 };
 </script>
 </body>

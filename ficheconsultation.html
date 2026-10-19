@@ -323,8 +323,22 @@ function verrou(){
 function transfertEtat(){
   const d=$('#transfertDeja');d.innerHTML='';
   if(cons.hospitalisationId){
-    d.innerHTML=`<div class="alert ok"><svg class="i"><use href="#i-check"/></svg><span>Patient déjà transféré aux urgences. <a href="fiche.html?id=${encodeURIComponent(patientId)}" target="_blank" rel="noopener">Ouvrir la fiche urgences</a></span></div>`;
-    $('#transfertForm').hidden=true;
+d.innerHTML = `
+    <div class="alert ok">
+        <svg class="i"><use href="#i-check"/></svg>
+        <span>
+            Patient déjà transféré aux urgences.
+            <a href="javascript:void(0)"
+               onclick="window.parent.postMessage({
+                   type: 'OPEN_TAB',
+                   title: 'Fiche urgences ${((window.patientNom || '') + ' ' + (window.patientPrenom || '')).trim()}',
+                   url: 'fiche.html?id=${encodeURIComponent(patientId)}'
+               }, '*')">
+                Ouvrir la fiche urgences
+            </a>
+        </span>
+    </div>
+`;   $('#transfertForm').hidden=true;
   }else if(patient.hospitalisationActiveId){
     d.innerHTML=`<div class="alert late"><svg class="i"><use href="#i-warn"/></svg><span>Ce patient est déjà hospitalisé aux urgences. <a href="fiche.html?id=${encodeURIComponent(patientId)}" target="_blank" rel="noopener">Ouvrir la fiche urgences</a></span></div>`;
     $('#btnTransfert').disabled=true;

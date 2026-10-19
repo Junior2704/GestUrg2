@@ -915,6 +915,11 @@ function getIdFromURL() {
   return params.get("id");
 }
 
+// Référence de consultation (optionnelle) transmise par consultation.html
+function getConsultationId() {
+  return new URLSearchParams(window.location.search).get("consultationId") || "";
+}
+
 function calculerAge(dateNaissance) {
   const naissance = new Date(dateNaissance);
   const aujourdHui = new Date();
@@ -1448,6 +1453,7 @@ async function validatePrescription() {
 
       await setDoc(documentRef, {
         patientId: patientId,
+        consultationId: getConsultationId(),
         dateCreation: dateFormatted,
         type: "Ordonnance médicale",
         contenu: prescriptionText,
@@ -1503,7 +1509,9 @@ async function construireORD() {
   const docRef = doc(db, "patients", idP);
   const docSnap = await getDoc(docRef);
   const patient = docSnap.data();
-  const hospitalisationId = patient.hospitalisationActiveId || "";
+  const consultationId = getConsultationId();
+  // Consultation : pas d'hospitalisation, on référence la consultation à la place
+  const hospitalisationId = consultationId ? "" : (patient.hospitalisationActiveId || "");
   const firstName = document.getElementById("patient-first-name")?.value.trim() || "";
   const lastName = document.getElementById("patient-last-name")?.value.trim() || "";
   const naissance = document.getElementById("patient-birthdate")?.value.trim() || "";
@@ -1517,6 +1525,7 @@ async function construireORD() {
     lieu: window.medecinLieu || "",
     patient: { nom: lastName, prenom: firstName, date_Naissance: naissance, sexe },
     hospitalisationId: hospitalisationId,
+    consultationId: consultationId,
     medecin: {
       nom: window.medecinNom || "Dr Non renseigné",
       specialite: window.medecinSpecialite || "",

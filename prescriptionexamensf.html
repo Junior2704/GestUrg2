@@ -426,6 +426,8 @@ import { examensDisponibles } from "./examens.js";
   // 📌 RÉCUP PATIENT (V10)
 const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
+// Référence de consultation (optionnelle) transmise par consultation.html
+const consultationId = urlParams.get("consultationId") || "";
 window.patientId=patientId;
 if (patientId) {
   const docSnap = await getDoc(doc(db, "patients", patientId));
@@ -585,9 +587,8 @@ const docSnap = await getDoc(docRef);
 
       const patient = docSnap.data();
   const editor = document.getElementById("prescription-text");
-  const hospitalisationId =
-    patient.hospitalisationActiveId ||
-    "";
+  // Consultation : pas d'hospitalisation, on référence la consultation à la place
+  const hospitalisationId = consultationId ? "" : (patient.hospitalisationActiveId || "");
 if (inputDate?.value) {
   const date = new Date(inputDate.value);
   dateNaissance = date.toLocaleDateString("fr-FR");
@@ -646,6 +647,7 @@ contenu.push({ type: "newline" });
 
     contenu: contenu,
 hospitalisationId : hospitalisationId,
+consultationId : consultationId,
     signature: true
   };
 }
@@ -983,6 +985,7 @@ localStorage.setItem("pdfIdExistante", idUnique);
         doc(db, "documents", idUnique),
         {
           patientId: patientId,
+          consultationId: consultationId,
           dateCreation: dateFormatted,
 
           type: "Prescription d'examens",

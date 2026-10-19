@@ -202,22 +202,99 @@ const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');setTim
 const fail=(t,x)=>{if(t)$('#errTitle').textContent=t;if(x)$('#errText').textContent=x;$('#modal-error').style.display='flex'};
 const age=d=>{const b=new Date(d);if(isNaN(b))return'';const n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a+' ans'};
 
-// Même contrôle d'accès que fiche.html : medecins/{uid}.pages["consultation"]
-onAuthStateChanged(auth,async user=>{
-  if(!user)return;
-  try{
-    if(!consultationId)return fail('Consultation introuvable','Identifiant de consultation manquant.');
-    const m=await getDoc(doc(db,'medecins',user.uid));
-    if(!m.exists())return alert('Utilisateur non trouvé, veuillez vous reconnecter.');
-    med={...m.data(),uid:user.uid};
-    const page=location.pathname.split('/').pop().replace('.html','');
-    if(!(med.pages||{})[page]){$('#modal-no-access').style.display='flex';return}
-    const c=await getDoc(doc(db,'consultations',consultationId));
-    if(!c.exists())return fail('Consultation introuvable','Cette consultation n’existe pas.');
-    cons={id:c.id,...c.data()};patientId=cons.patientId;
-    const p=await getDoc(doc(db,'patients',patientId));patient=p.exists()?p.data():{};
-    afficher();
-  }catch(e){console.error(e);fail()}
+/* ---- Loader (identique à fiche.html) ---- */
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true";
+    loader.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";
+    document.body.appendChild(loader);
+  }
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => { loader.style.display = "none"; }, 300);
+  }
+};
+
+/* ---- Identité et droits du médecin (même logique que fiche.html) ---- */
+let medecinNom = "";
+let medecinSpecialite = "";
+let medecinLieu = "";
+let medecinType = "";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+        medecinType = data.type || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+        window.medecinType = medecinType;
+        window.medecinUid = user.uid;
+        med = { ...data, uid: user.uid };
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+          window.masquerLoader();
+          const modal = document.getElementById("modal-no-access");
+          if (modal) modal.style.display = "flex";
+          console.warn("Accès refusé à", currentPage);
+          return; // aucune donnée n'est chargée sans droit d'accès
+        }
+      } else {
+        // Document inexistant — redirection
+        window.masquerLoader();
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+
+      if (!consultationId) { window.masquerLoader(); return fail('Consultation introuvable','Identifiant de consultation manquant.'); }
+      const c = await getDoc(doc(db, 'consultations', consultationId));
+      if (!c.exists()) { window.masquerLoader(); return fail('Consultation introuvable','Cette consultation n’existe pas.'); }
+      cons = { id: c.id, ...c.data() }; patientId = cons.patientId;
+      const p = await getDoc(doc(db, 'patients', patientId));
+      patient = p.exists() ? p.data() : {};
+      afficher();
+      window.masquerLoader();
+    } catch (error) {
+      window.masquerLoader();
+      const modal = document.getElementById("modal-error");
+      if (modal) modal.style.display = "flex";
+      console.error("Erreur chargement médecin :", error);
+    }
+  }
 });
 
 function afficher(){

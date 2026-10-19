@@ -39,6 +39,11 @@ td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}
 .pill.off{background:var(--late-soft);color:var(--late)}
 .vide{color:var(--muted);padding:12px 8px}
 .msg{padding:14px 16px;border-radius:12px;background:var(--late-soft);color:var(--late);font-weight:600}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
+.modalna .card{max-width:440px;text-align:center;padding:30px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}
+.state-ico svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}.modalna p{margin-bottom:8px}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 </style>
@@ -48,6 +53,8 @@ td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}
   <div class="brand"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg></div>
   <div><div class="kicker">Urgences · Administration</div><h1>Créneaux de rendez-vous</h1></div>
 </header>
+<div id="modal-no-access" class="modalna"><div class="card"><div class="state-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></div><h2>Accès refusé</h2><p>Vous n’avez pas accès à cette page.</p><p>Veuillez contacter un administrateur pour plus d'informations.</p></div></div>
+<div id="modal-error" class="modalna"><div class="card"><div class="state-ico"><svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></div><h2>Oups, une erreur est survenue</h2><p>Veuillez réessayer un peu plus tard.</p><p>Si le problème persiste, contactez un administrateur.</p></div></div>
 <main>
   <div id="gate" class="msg">Connexion en cours…</div>
   <div id="app" hidden>
@@ -97,15 +104,95 @@ let rules=[],specials=[];
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
 
-// Même contrôle d'accès que fiche.html : medecins/{uid}.pages["rdv-admin"]
-onAuthStateChanged(auth,async user=>{
-  if(!user){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
-  try{
-    const m=await getDoc(doc(db,'medecins',user.uid));
-    const page=location.pathname.split('/').pop().replace('.html','');
-    if(!m.exists()||!(m.data().pages||{})[page]){$('#gate').textContent='Accès refusé : cette page n’est pas autorisée pour votre compte.';return}
-    $('#gate').hidden=true;$('#app').hidden=false;await charger();
-  }catch(e){$('#gate').textContent='Erreur de chargement. Rechargez la page.'}
+/* ---- Loader (identique à fiche.html) ---- */
+window.afficherLoader = function() {
+  let loader = document.getElementById("loadingScreen");
+  if (!loader) {
+    loader = document.createElement("iframe");
+    loader.id = "loadingScreen";
+    loader.src = "loader.html?modal=true";
+    loader.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";
+    document.body.appendChild(loader);
+  }
+  loader.style.display = "block";
+  loader.style.opacity = "1";
+};
+window.masquerLoader = function() {
+  const loader = document.getElementById("loadingScreen");
+  if (loader) {
+    loader.style.transition = "opacity 0.3s ease";
+    loader.style.opacity = "0";
+    setTimeout(() => { loader.style.display = "none"; }, 300);
+  }
+};
+
+/* ---- Identité et droits du médecin (même logique que fiche.html) ---- */
+let medecinNom = "";
+let medecinSpecialite = "";
+let medecinLieu = "";
+let medecinType = "";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    $('#gate').textContent='Vous devez être connecté pour accéder à cette page.';
+    return;
+  } else {
+    try {
+      window.afficherLoader();
+      const docRef = doc(db, "medecins", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        medecinNom = data.nom || "";
+        medecinSpecialite = data.specialite || "";
+        medecinLieu = data.lieu || "";
+        medecinType = data.type || "";
+
+        // Met à jour aussi les variables globales sur window
+        window.medecinNom = medecinNom;
+        window.medecinSpecialite = medecinSpecialite;
+        window.medecinLieu = medecinLieu;
+        window.medecinType = medecinType;
+        window.medecinUid = user.uid;
+
+        // Mise à jour des éléments HTML si présents
+        const nomElem = document.getElementById("nom-medecin");
+        if (nomElem) nomElem.textContent = medecinNom;
+        const specElem = document.getElementById("specialite");
+        if (specElem) specElem.textContent = medecinSpecialite;
+        const lieuElem = document.getElementById("lieu-medecin");
+        if (lieuElem) lieuElem.textContent = medecinLieu;
+
+        // --- Vérification d'accès à la page ---
+        const pages = data.pages || {};
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
+
+        if (!pages[currentPage]) {
+          window.masquerLoader();
+          const modal = document.getElementById("modal-no-access");
+          if (modal) modal.style.display = "flex";
+          console.warn("Accès refusé à", currentPage);
+          return; // aucune donnée n'est chargée sans droit d'accès
+        }
+      } else {
+        // Document inexistant — redirection
+        window.masquerLoader();
+        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
+        return;
+      }
+
+      $('#gate').hidden = true;
+      $('#app').hidden = false;
+      await charger();
+      window.masquerLoader();
+    } catch (error) {
+      window.masquerLoader();
+      const modal = document.getElementById("modal-error");
+      if (modal) modal.style.display = "flex";
+      console.error("Erreur chargement médecin :", error);
+    }
+  }
 });
 
 async function charger(){

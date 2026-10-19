@@ -1414,6 +1414,8 @@ import {
   let medecinLieu = "";
   const urlParams = new URLSearchParams(window.location.search);
 const patientId = urlParams.get("id");
+// Référence de consultation (optionnelle) transmise par consultation.html
+const consultationId = urlParams.get("consultationId") || "";
 
 if (!patientId) {
   console.error("ID patient manquant");
@@ -1622,9 +1624,8 @@ const docSnap = await getDoc(docRef);
 
       const patient = docSnap.data();
   const editor = document.getElementById("prescription-text");
-  const hospitalisationId =
-    patient.hospitalisationActiveId ||
-    "";
+  // Consultation : pas d'hospitalisation, on référence la consultation à la place
+  const hospitalisationId = consultationId ? "" : (patient.hospitalisationActiveId || "");
   return {
     type: "certificat",
     titre: "Certficat médical",
@@ -1644,7 +1645,8 @@ date_Naissance: document.getElementById('dateNaissance').value .split("-") .reve
     },
     contenu: contenu,
     dateCreation: new Date().toISOString(),
-    hospitalisationId : hospitalisationId
+    hospitalisationId : hospitalisationId,
+    consultationId : consultationId
   };
 }
   // ========== Validation & enregistrement (documents) ==========
@@ -1695,6 +1697,7 @@ date_Naissance: document.getElementById('dateNaissance').value .split("-") .reve
 const ord = await construireORDCertificat();
  await setDoc(doc(db, "documents", idUnique), {
   patientId: patientId,
+  consultationId: consultationId,
   ord: ord,
   dateCreation: dateFormatted,
   type: "Certificat médical",

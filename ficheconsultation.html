@@ -336,16 +336,7 @@ function transfertEtat() {
     const nomPatient = `${patient.nom || ''} ${patient.prenom || ''}`.trim();
     const titreOnglet = `Fiche urgences ${nomPatient}`.trim();
 
-    const ouvrirFiche = `
-        <a href="javascript:void(0)"
-           onclick="window.parent.postMessage({
-               type: 'OPEN_TAB',
-               title: ${JSON.stringify(titreOnglet)},
-               url: 'fiche.html?id=${encodeURIComponent(patientId)}'
-           }, '*')">
-            Ouvrir la fiche Urgences
-        </a>
-    `;
+    const ouvrirFiche = `<a href="javascript:void(0)" class="open-urg">Ouvrir la fiche Urgences</a>`;
 
     if (cons.hospitalisationId) {
         d.innerHTML = `
@@ -371,6 +362,10 @@ function transfertEtat() {
         `;
         $('#btnTransfert').disabled = true;
     }
+
+    // Listener JS plutôt qu'un onclick inline : le titre (JSON.stringify) contenait des guillemets qui cassaient l'attribut HTML
+    d.querySelectorAll('.open-urg').forEach(a => a.onclick = () => window.parent.postMessage(
+        { type: 'OPEN_TAB', title: titreOnglet, url: 'fiche.html?id=' + encodeURIComponent(patientId) }, '*'));
 }
 /* ---- navigation ---- */
 function ouvrirPanel(m){
@@ -436,7 +431,7 @@ $('#btnTransfert').onclick=async()=>{
       gravite:$('#tGravite').value,motif:$('#tMotif').value.trim(),moyen:'Consultation',circuit:$('#tCircuit').value,service:'',positionPatient:pos,
       historique:[{horodatage:Timestamp.now(),date:n.toLocaleDateString('fr-FR'),heure:n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
         action:'Transfert depuis consultation – '+note,auteurNom:med.nom||'',auteurType:med.type||'',auteurSpecialite:med.specialite||'',auteurId:med.uid}],
-      evolutionTexte:{},constantes:{},antecedents:{},traitements:{},histoire:{},auscultation:{},examens:[],cloturee:false,
+      evolutionTexte:{},constantes:{},antecedents:{},traitements:{},histoire:$('#histoire').value,auscultation:{},examens:[],cloturee:false,
       consultationId,noteTransfert:note});
     await updateDoc(doc(db,'patients',patientId),{hospitalisations:arrayUnion(hRef.id),hospitalisationActiveId:hRef.id,hospitalisationActive:true,position:'salle-attente'});
     await updateDoc(doc(db,'consultations',consultationId),{...champs(),statut:'transferee',hospitalisationId:hRef.id,transfereLe:serverTimestamp()});

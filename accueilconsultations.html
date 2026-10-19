@@ -71,7 +71,7 @@ input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--
       <div class="field" style="flex:1 1 280px"><label for="q">Rechercher (nom, prénom, numéro, téléphone, naissance, e-mail)</label><input id="q" type="search" autocomplete="off" placeholder="Ex. Martin Léa, 0612…, RDV-1234"></div>
       <div class="field" style="width:170px"><label for="portee">Période</label><select id="portee"><option value="jour">Un jour précis</option><option value="tous">Aujourd'hui et à venir</option></select></div>
       <div class="field" style="width:170px" id="fjour"><label for="jour">Date</label><input id="jour" type="date"></div>
-      <div class="field" style="width:200px"><label for="fstat">Statut</label><select id="fstat"><option value="">Tous</option><option value="pris">Réservé</option><option value="attente">En salle d'attente</option><option value="encours">En consultation</option><option value="termine">Terminé</option><option value="annule">Annulé</option></select></div>
+      <div class="field" style="width:200px"><label for="fstat">Statut</label><select id="fstat"><option value="">Tous</option><option value="pris">Réservé</option><option value="attente">En salle d'attente</option><option value="encours">En consultation</option><option value="annule">Annulé</option></select></div>
     </div>
     <div class="split">
       <div id="liste"></div>
@@ -139,6 +139,7 @@ function ecouter(){
 function visibles(){
   const t=norm($('#q').value).split(/\s+/).filter(Boolean),st=$('#fstat').value;
   return rdvs.filter(r=>{
+    if(r.statut==='termine')return false; // consultations terminées : jamais affichées
     if(st&&r.statut!==st)return false;
     const p=r.patient||{},d=p.dateNaissance?new Date(p.dateNaissance):null;
     const fr=d&&!isNaN(d)?d.toLocaleDateString('fr-FR'):'';

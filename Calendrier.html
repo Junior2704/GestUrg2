@@ -245,70 +245,33 @@ async function ouvrir(r){
     fiche.innerHTML=(cands.length?`<p class="mut" style="margin-bottom:10px">Fiches correspondantes trouvées :</p>`+cands.map((c,i)=>`<label class="choice ${i===0?'on':''}"><input type="radio" name="f" value="${c.id}" ${i===0?'checked':''}><span><b>${esc(c.nom)} ${esc(c.prenom)}</b><br><small class="mut">Né(e) le ${esc(c.dateNaissance||'—')} · ${esc(c.telephone||'—')} · CIP ${esc(c.id)}</small></span></label>`).join(''):'<p class="mut" style="margin-bottom:10px">Aucune fiche existante ne correspond.</p>')+
       `<label class="choice ${cands.length?'':'on'}"><input type="radio" name="f" value="new" ${cands.length?'':'checked'}><span><b>Créer une nouvelle fiche patient</b></span></label><div class="actions"><button class="btn-primary" id="demarrer">Démarrer la consultation</button></div>`;
     fiche.querySelectorAll('input[name=f]').forEach(i=>i.onchange=()=>fiche.querySelectorAll('.choice').forEach(c=>c.classList.toggle('on',c.querySelector('input').checked)));
-   $('#demarrer').onclick = async () => {
-    const bouton = $('#demarrer');
-    bouton.disabled = true;
-
-    const choix = fiche.querySelector('input[name="f"]:checked')?.value;
-
-    if (!choix) {
-        toast('Sélectionnez une fiche patient.');
-        bouton.disabled = false;
-        return;
-    }
-
-    try {
-        let patientId = choix;
-
-        if (choix === 'new') {
-            // Création d'une nouvelle fiche patient
-            const nom = p.nom.toUpperCase();
-
-            const patientRef = await addDoc(collection(db, 'patients'), {
-                nom,
-                prenom: p.prenom,
-                sexe: '',
-                civilite: '',
-                dateNaissance: p.dateNaissance,
-                adresse: '',
-                telephone: p.telephone,
-                email: p.email || '',
-                hospitalisations: [],
-                hospitalisationActiveId: null,
-                hospitalisationActive: false,
-                consultations: [],
-                medtraitant: '',
-                vigilances: 'aucune',
-                allergies: 'aucun',
-                searchIndex: buildSearchIndex(
-                    nom,
-                    p.prenom,
-                    p.dateNaissance
-                )
-            });
-
-            patientId = patientRef.id;
+    $('#demarrer').onclick=async()=>{
+      $('#demarrer').disabled=true;
+      const v=fiche.querySelector('input[name=f]:checked').value;
+      try{
+        let pid=v;
+        if(v==='new'){
+          // Même structure que ajouterpatient.html, sans hospitalisation
+          const nom=p.nom.toUpperCase();
+          pid=(await addDoc(collection(db,'patients'),{nom,prenom:p.prenom,sexe:'',civilite:'',dateNaissance:p.dateNaissance,adresse:'',telephone:p.telephone,email:p.email||'',
+            hospitalisations:[],hospitalisationActiveId:null,hospitalisationActive:false,consultations:[],
+            medtraitant:'',vigilances:'aucune',allergies:'aucun',searchIndex:buildSearchIndex(nom,p.prenom,p.dateNaissance)})).id;
         }
+     
+const cid = await creerConsultation(r, pid);
 
-        // Création de la consultation et association au patient
-        await creerConsultation(r, patientId);
+// Ouvrir la consultation dans un nouvel onglet GestUrg2
+window.parent.postMessage(
+    {
+        type: "OPEN_TAB",
+        title: `Consultation ${p.prenom || ""} ${p.nom || ""}`,
+        url: `fichedconsultation.html?id=${encodeURIComponent(cid)}`
+    },
+    "*"
+);
 
-        // Ouvrir la fiche patient dans un nouvel onglet GestUrg2
-        window.parent.postMessage(
-            {
-                type: "OPEN_TAB",
-                title: `Fiche Patient ${p.prenom || ""} ${p.nom || ""}`,
-                url: `fichepatient.html?id=${encodeURIComponent(patientId)}`
-            },
-            "*"
-        );
-
-    } catch (e) {
-        console.error("Erreur lors de l'ouverture de la fiche patient :", e);
-        toast("Échec de l'opération");
-        bouton.disabled = false;
-    }
-};
+      }catch(e){console.error(e);toast('Échec de la création de la consultation');$('#demarrer').disabled=false}
+    };
   }
   if($('#cancel'))$('#cancel').onclick=async()=>{
     if(!confirm('Annuler ce rendez-vous ? Le créneau sera libéré.'))return;

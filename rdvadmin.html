@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Gestion des créneaux d'urgence</title>
+<link rel="icon" type="image/png" href="logog2.png">
+<style>
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--late:#b92a30;--late-soft:#fdecec;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--ring:0 0 0 4px rgba(11,111,164,.15)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
+h1,h2,h3,p{margin:0}
+header{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
+.brand{width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25)}
+.brand svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+main{max-width:980px;margin:0 auto;padding:24px clamp(16px,3vw,32px) 48px}
+.card-sec{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-bottom:20px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.hint{font-size:14px;color:var(--muted);margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.row>.field{flex:1 1 120px}
+.field label,.lbl{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;min-height:44px;padding:0 12px;font:500 15px var(--font);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px}
+input:focus{outline:0;border-color:var(--primary);box-shadow:var(--ring);background:#fff}
+.days{display:flex;flex-wrap:wrap;gap:8px;flex-basis:100%}
+.days label{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;margin:0;font-size:14px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.days input{width:auto;min-height:0}
+.btn-primary,.btn-secondary,.btn-danger{appearance:none;min-height:44px;padding:0 18px;font:600 15px var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:active{background:var(--primary-d)}
+.btn-secondary{background:#fff;color:var(--primary);border-color:var(--line)}.btn-secondary:hover{background:var(--primary-soft)}
+.btn-danger{background:#fff;color:var(--late);border-color:#f0c3c5;min-height:38px;padding:0 12px;font-size:14px}.btn-danger:hover{background:var(--late-soft)}
+.btn-primary:focus-visible,.btn-secondary:focus-visible,.btn-danger:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:15px}
+td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}td:last-child{text-align:right}
+.pill{display:inline-block;padding:3px 10px;font-size:13px;font-weight:700;border-radius:999px;background:var(--primary-soft);color:var(--primary-d)}
+.pill.off{background:var(--late-soft);color:var(--late)}
+.vide{color:var(--muted);padding:12px 8px}
+.msg{padding:14px 16px;border-radius:12px;background:var(--late-soft);color:var(--late);font-weight:600}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg></div>
+  <div><div class="kicker">Urgences · Administration</div><h1>Créneaux de rendez-vous</h1></div>
+</header>
+<main>
+  <div id="gate" class="msg">Connexion en cours…</div>
+  <div id="app" hidden>
+    <section class="card-sec">
+      <h2 class="card-title">Créneaux génériques</h2>
+      <p class="hint">Plages hebdomadaires qui se répètent. Le nombre de médecins fixe combien de patients peuvent réserver le même horaire.</p>
+      <div class="row">
+        <div class="days" id="gDays"></div>
+        <div class="field"><label for="gStart">Début</label><input id="gStart" type="time" value="08:00"></div>
+        <div class="field"><label for="gEnd">Fin</label><input id="gEnd" type="time" value="18:00"></div>
+        <div class="field"><label for="gDur">Durée (min)</label><input id="gDur" type="number" min="5" step="5" value="20"></div>
+        <div class="field"><label for="gDocs">Médecins disponibles</label><input id="gDocs" type="number" min="1" value="2"></div>
+        <button class="btn-primary" id="gAdd">Ajouter</button>
+      </div>
+      <table><tbody id="gList"></tbody></table>
+    </section>
+    <section class="card-sec">
+      <h2 class="card-title">Créneaux particuliers</h2>
+      <p class="hint">Pour une date précise. Dès qu’une date a un créneau particulier, il remplace les créneaux génériques de ce jour.</p>
+      <div class="row">
+        <div class="field"><label for="sDate">Date</label><input id="sDate" type="date"></div>
+        <div class="field"><label for="sStart">Début</label><input id="sStart" type="time" value="08:00"></div>
+        <div class="field"><label for="sEnd">Fin</label><input id="sEnd" type="time" value="12:00"></div>
+        <div class="field"><label for="sDur">Durée (min)</label><input id="sDur" type="number" min="5" step="5" value="20"></div>
+        <div class="field"><label for="sDocs">Médecins disponibles</label><input id="sDocs" type="number" min="1" value="3"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn-primary" id="sAdd">Ajouter le créneau</button><button class="btn-secondary" id="sClose">Fermer cette date</button></div>
+      <table><tbody id="sList"></tbody></table>
+    </section>
+  </div>
+</main>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+const auth=getAuth(app),db=getFirestore(app);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const JOURS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const tmin=t=>{const[a,b]=t.split(':');return +a*60+ +b};
+const fmtD=s=>new Date(s+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+let rules=[],specials=[];
+
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
+
+// Même contrôle d'accès que fiche.html : medecins/{uid}.pages["rdv-admin"]
+onAuthStateChanged(auth,async user=>{
+  if(!user){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
+  try{
+    const m=await getDoc(doc(db,'medecins',user.uid));
+    const page=location.pathname.split('/').pop().replace('.html','');
+    if(!m.exists()||!(m.data().pages||{})[page]){$('#gate').textContent='Accès refusé : cette page n’est pas autorisée pour votre compte.';return}
+    $('#gate').hidden=true;$('#app').hidden=false;await charger();
+  }catch(e){$('#gate').textContent='Erreur de chargement. Rechargez la page.'}
+});
+
+async function charger(){
+  const [g,p]=await Promise.all([getDoc(doc(db,'rdv-config','generiques')),getDoc(doc(db,'rdv-config','particuliers'))]);
+  rules=g.exists()?g.data().rules||[]:[];specials=p.exists()?p.data().items||[]:[];
+  $('#gDays').innerHTML=[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" value="${d}" ${d>=1&&d<=5?'checked':''}>${JOURS[d]}</label>`).join('');
+  rendre();
+}
+const sauverG=()=>setDoc(doc(db,'rdv-config','generiques'),{rules}).then(()=>toast('Enregistré'));
+const sauverP=()=>setDoc(doc(db,'rdv-config','particuliers'),{items:specials}).then(()=>toast('Enregistré'));
+const med=n=>`${n} médecin${n>1?'s':''}`;
+function rendre(){
+  $('#gList').innerHTML=rules.map(r=>`<tr><td>${r.days.map(d=>JOURS[d]).join(', ')}</td><td>${esc(r.start)}–${esc(r.end)}</td><td>${r.dur} min</td><td><span class="pill">${med(r.docs)}</span></td><td><button class="btn-danger" data-r="${r.id}">Supprimer</button></td></tr>`).join('')||'<tr><td class="vide">Aucun créneau générique : les patients ne verront rien tant que vous n’en ajoutez pas.</td></tr>';
+  const sp=[...specials].sort((a,b)=>a.date.localeCompare(b.date)||(a.start||'').localeCompare(b.start||''));
+  $('#sList').innerHTML=sp.map(r=>`<tr><td>${esc(fmtD(r.date))}</td><td>${r.closed?'<span class="pill off">Fermé</span>':esc(r.start)+'–'+esc(r.end)}</td><td>${r.closed?'':r.dur+' min'}</td><td>${r.closed?'':'<span class="pill">'+med(r.docs)+'</span>'}</td><td><button class="btn-danger" data-s="${r.id}">Supprimer</button></td></tr>`).join('')||'<tr><td class="vide">Aucun créneau particulier.</td></tr>';
+  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{rules=rules.filter(x=>x.id!==b.dataset.r);await sauverG();rendre()});
+  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{specials=specials.filter(x=>x.id!==b.dataset.s);await sauverP();rendre()});
+}
+const n=id=>Math.max(1,parseInt($(id).value)||1);
+$('#gAdd').onclick=async()=>{
+  const days=[...document.querySelectorAll('#gDays input:checked')].map(i=>+i.value);
+  if(!days.length||tmin($('#gEnd').value)<=tmin($('#gStart').value))return toast('Choisissez des jours et une plage valide');
+  rules.push({id:uid(),days,start:$('#gStart').value,end:$('#gEnd').value,dur:n('#gDur'),docs:n('#gDocs')});await sauverG();rendre()};
+$('#sAdd').onclick=async()=>{
+  if(!$('#sDate').value||tmin($('#sEnd').value)<=tmin($('#sStart').value))return toast('Indiquez une date et une plage valide');
+  specials.push({id:uid(),date:$('#sDate').value,start:$('#sStart').value,end:$('#sEnd').value,dur:n('#sDur'),docs:n('#sDocs')});await sauverP();rendre()};
+$('#sClose').onclick=async()=>{
+  if(!$('#sDate').value)return toast('Indiquez la date à fermer');
+  specials=specials.filter(x=>x.date!==$('#sDate').value);
+  specials.push({id:uid(),date:$('#sDate').value,closed:true});await sauverP();rendre()};
+</script>
+</body>
+</html>

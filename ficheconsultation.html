@@ -322,45 +322,49 @@ function verrou(){
   ['motif','histoire','examen','diagnostic','conduite'].forEach(i=>$('#'+i).disabled=ferme);
   $('#btnSave').disabled=$('#btnClose').disabled=ferme;
 }
-function transfertEtat(){
-  const d=$('#transfertDeja');d.innerHTML='';
-  if(cons.hospitalisationId){
-d.innerHTML = `
-    <div class="alert ok">
-        <svg class="i"><use href="#i-check"/></svg>
-        <span>
-            Patient déjà transféré aux urgences.
-            <a href="javascript:void(0)"
-               onclick="window.parent.postMessage({
-                   type: 'OPEN_TAB',
-                   title: 'Fiche urgences ${((window.patientNom || '') + ' ' + (window.patientPrenom || '')).trim()}',
-                   url: 'fiche.html?id=${encodeURIComponent(patientId)}'
-               }, '*')">
-                Ouvrir la fiche Urgences
-            </a>
-        </span>
-    </div>
-`;   $('#transfertForm').hidden=true;
-  }else if(patient.hospitalisationActiveId){
-d.innerHTML = `
-    <div class="alert ok">
-        <svg class="i"><use href="#i-check"/></svg>
-        <span>
-            Patient déjà transféré aux urgences.
-            <a href="javascript:void(0)"
-               onclick="window.parent.postMessage({
-                   type: 'OPEN_TAB',
-                   title: 'Fiche urgences ${((window.patientNom || '') + ' ' + (window.patientPrenom || '')).trim()}',
-                   url: 'fiche.html?id=${encodeURIComponent(patientId)}'
-               }, '*')">
-                Ouvrir la fiche Urgences
-            </a>
-        </span>
-    </div>
-`;      $('#btnTransfert').disabled=true;
-  }
-}
+function transfertEtat() {
+    const d = $('#transfertDeja');
+    d.innerHTML = '';
 
+    const nomPatient = `${patient.nom || ''} ${patient.prenom || ''}`.trim();
+    const titreOnglet = `Fiche urgences ${nomPatient}`.trim();
+
+    const ouvrirFiche = `
+        <a href="javascript:void(0)"
+           onclick="window.parent.postMessage({
+               type: 'OPEN_TAB',
+               title: ${JSON.stringify(titreOnglet)},
+               url: 'fiche.html?id=${encodeURIComponent(patientId)}'
+           }, '*')">
+            Ouvrir la fiche Urgences
+        </a>
+    `;
+
+    if (cons.hospitalisationId) {
+        d.innerHTML = `
+            <div class="alert ok">
+                <svg class="i"><use href="#i-check"/></svg>
+                <span>
+                    Patient déjà transféré aux urgences.
+                    ${ouvrirFiche}
+                </span>
+            </div>
+        `;
+        $('#transfertForm').hidden = true;
+
+    } else if (patient.hospitalisationActiveId) {
+        d.innerHTML = `
+            <div class="alert ok">
+                <svg class="i"><use href="#i-check"/></svg>
+                <span>
+                    Patient déjà transféré aux urgences.
+                    ${ouvrirFiche}
+                </span>
+            </div>
+        `;
+        $('#btnTransfert').disabled = true;
+    }
+}
 /* ---- navigation ---- */
 function ouvrirPanel(m){
   $$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.module===m));

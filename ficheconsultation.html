@@ -7,7 +7,7 @@
 <title>Fiche Consultation</title>
 <link rel="icon" type="image/png" href="logog2.png">
 <style>
-:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--surface:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--surface:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--safe-t:env(safe-area-inset-top,0px);--safe-r:env(safe-area-inset-right,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{height:100%;margin:0;padding:0}
 body{display:flex;flex-direction:column;overflow:hidden;font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
@@ -24,14 +24,33 @@ body>header{flex:none;display:flex;align-items:center;justify-content:space-betw
 .icon-button{appearance:none;width:44px;height:44px;display:inline-grid;place-items:center;padding:0;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}.icon-button:hover{background:var(--primary-soft)}
 .app{flex:1;min-height:0;display:flex;overflow:hidden}
 .content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
-nav{flex:none;width:var(--nav-w);display:flex;flex-direction:column;padding:14px 12px;background:#fff;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto;transition:width .25s ease,box-shadow .25s ease;z-index:10}
+/* ---------- MENU LATÉRAL (identique à fiche.html) ---------- */
+.menu-toggle{display:none;appearance:none;width:44px;height:44px;flex:none;padding:0;margin:0;place-items:center;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;touch-action:manipulation}
+.menu-toggle:active{background:var(--primary-soft)}
+nav{flex:none;width:var(--nav-w);display:flex;flex-direction:column;padding:14px 12px calc(14px + var(--safe-b));background:#fff;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;transition:width .25s ease,box-shadow .25s ease;z-index:10}
+nav::-webkit-scrollbar{display:none;width:0;height:0}
 nav:hover{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.08)}
-.nav-title{padding:4px 12px 12px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--line-soft);opacity:0;transition:opacity .2s}nav:hover .nav-title{opacity:1}
+.nav-title{padding:4px 12px 12px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--line-soft);opacity:0;transition:opacity .2s ease}
+nav:hover .nav-title{opacity:1}
 #navItems{display:flex;flex-direction:column;gap:4px}
-.nav-item{display:flex;align-items:center;gap:14px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none}
-.nav-item>.i{color:var(--muted)}.nav-label{opacity:0;transition:opacity .2s}nav:hover .nav-label{opacity:1}
-.nav-item:hover{background:var(--primary-soft)}.nav-item:hover>.i{color:var(--primary)}
-.nav-item.active{background:var(--primary);color:#fff}.nav-item.active>.i{color:#fff}
+.nav-item{position:relative;display:flex;align-items:center;gap:14px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:background .15s,color .15s}
+.nav-item>.i{color:var(--muted);transition:color .15s}
+.nav-label{opacity:0;transition:opacity .2s ease;overflow:hidden;text-overflow:ellipsis}
+nav:hover .nav-label{opacity:1}
+@media (hover:hover){.nav-item:hover{background:var(--primary-soft)}.nav-item:hover>.i{color:var(--primary)}}
+.nav-item:active{background:var(--primary-soft)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d)}
+.nav-item.active>.i{color:var(--primary)}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;background:var(--primary);border-radius:0 4px 4px 0}
+@media (hover:none){
+  nav:hover{width:var(--nav-w);box-shadow:none}
+  nav:hover .nav-label,nav:hover .nav-title{opacity:0}
+  nav.expanded{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.1)}
+  nav.expanded .nav-label,nav.expanded .nav-title{opacity:1}
+  nav.open{width:var(--nav-w-open)}
+  nav.open .nav-label,nav.open .nav-title{opacity:1}
+}
+.nav-backdrop{display:none}
 .nav-item:focus-visible,.docs-tab:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,.btn-danger:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
 section.panel{display:none;flex:1;min-height:0;overflow-y:auto;background:#fff}section.panel.active{display:block}
 .panel-head{position:sticky;top:0;z-index:4;padding:22px var(--gutter) 16px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -76,6 +95,21 @@ details.hc .bd{padding:0 16px 16px;display:grid;gap:10px}
 .state-ico{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:var(--late-soft);color:var(--late)}.state-ico .i{width:28px;height:28px}
 .modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}
 @media(max-width:768px){.form-grid{grid-template-columns:1fr}nav{width:64px}.panel-head .hint{margin-left:0}}
+/* Tablette portrait & téléphone : menu en tiroir (comme fiche.html) */
+@media (max-width:900px){
+  .menu-toggle{display:inline-grid}
+  body>header{padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r))}
+  .head-kicker{display:none}
+  nav,nav:hover,nav.open{width:min(320px,86vw)}
+  nav{position:fixed;top:0;bottom:0;left:calc(-1 * min(320px,86vw) - 30px);padding:calc(18px + var(--safe-t)) 14px calc(24px + var(--safe-b));border-right:0;border-radius:0 22px 22px 0;box-shadow:none;z-index:2000;transition:left .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease}
+  nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}
+  nav .nav-label,nav .nav-title{opacity:1}
+  .nav-title{padding-left:10px}
+  .nav-item{min-height:52px}
+  .nav-item.active::before{left:-14px}
+  .nav-backdrop{display:block;position:fixed;inset:0;z-index:1999;background:rgba(10,25,41,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s ease}
+  .nav-backdrop.show{opacity:1;pointer-events:auto}
+}
 </style>
 </head>
 <body>
@@ -93,10 +127,12 @@ details.hc .bd{padding:0 16px 16px;display:grid;gap:10px}
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
 </svg>
 
 <header>
   <div class="left-header">
+    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Ouvrir le menu"><svg class="i lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <div class="brand" aria-hidden="true"><svg class="i"><use href="#i-cross"/></svg></div>
     <div class="head-text"><span class="head-kicker">Consultation</span><h2 id="patientName">Fiche consultation</h2></div>
     <span id="statutPill" class="pill" hidden></span>
@@ -440,6 +476,24 @@ $('#btnTransfert').onclick=async()=>{
     afficher();afficherBulle('Patient transféré aux urgences', BULLE.OK);
   }catch(e){console.error(e);afficherBulle('Échec du transfert', BULLE.ERR);$('#btnTransfert').disabled=false}
 };
+/* ---- Menu responsive (identique à fiche.html) ---- */
+(function(){
+  const nav=document.querySelector('nav'),toggle=$('#menu-toggle');if(!nav)return;
+  toggle.addEventListener('click',()=>nav.classList.toggle('open'));
+  $$('.nav-item').forEach(i=>i.addEventListener('click',()=>{if(innerWidth<=900)nav.classList.remove('open')}));
+  const voile=document.createElement('div');voile.className='nav-backdrop';document.body.appendChild(voile);
+  new MutationObserver(()=>voile.classList.toggle('show',nav.classList.contains('open'))).observe(nav,{attributes:true,attributeFilter:['class']});
+  voile.addEventListener('click',()=>nav.classList.remove('open'));
+  // Tablette tactile : le menu compact se déploie / se replie par tap
+  const tactile=matchMedia('(hover: none)');
+  nav.addEventListener('click',e=>{
+    if(!tactile.matches||innerWidth<=900)return;
+    if(!nav.classList.contains('expanded')){e.stopPropagation();e.preventDefault();nav.classList.add('expanded');return}
+    if(e.target.closest('.nav-item'))requestAnimationFrame(()=>nav.classList.remove('expanded'));
+  },true);
+  document.addEventListener('click',e=>{if(nav.classList.contains('expanded')&&!nav.contains(e.target))nav.classList.remove('expanded')});
+  addEventListener('orientationchange',()=>nav.classList.remove('expanded'));
+})();
 </script>
 </body>
 </html>

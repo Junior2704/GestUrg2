@@ -1,1211 +1,645 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Facturation RPO</title>
-  <link rel="icon" type="image/png" href="logo.png" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    :root {
-      --bg:#eef2f7;
-      --card:#fff;
-      --line:#dde3eb;
-      --text:#1f2937;
-      --primary:#0d6efd;
-      --success:#1f9d55;
-      --warning:#f59e0b;
-      --danger:#dc3545;
-      --muted:#6b7280;
-    }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:"Segoe UI", Arial, sans-serif; color:var(--text); background:linear-gradient(120deg,#eef2f7,#f7f9fc); }
-    .container { max-width:1300px; margin:20px auto; padding:0 14px; }
-    h1 { text-align:center; margin:8px 0 16px; }
-    h2 { margin:0 0 12px; font-size:1.15rem; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 5px 20px rgba(15,23,42,.06); padding:16px; margin-bottom:14px; }
-    .card.disabled-section { opacity:.5; pointer-events:none; }
-    .grid { display:grid; gap:10px; }
-    .grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .grid-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
-    .grid-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
-    .grid-5 { grid-template-columns:repeat(5,minmax(0,1fr)); }
-    label { display:block; font-size:.88rem; font-weight:700; margin-bottom:4px; }
-    input, select, button, textarea { font:inherit; }
-    input, select, textarea { width:100%; border:1px solid #cfd8e3; border-radius:10px; padding:9px; background:#fff; }
-    input:disabled, select:disabled { background:#f7f9fc; color:#475569; }
-    .line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .btn { border:none; border-radius:10px; padding:9px 12px; font-weight:700; cursor:pointer; }
-    .btn-primary { background:var(--primary); color:#fff; }
-    .btn-success { background:var(--success); color:#fff; }
-    .btn-warning { background:var(--warning); color:#fff; }
-    .btn-danger { background:var(--danger); color:#fff; }
-    .btn-light { background:#e5e7eb; color:#111827; }
-    .btn:disabled { opacity:.55; cursor:not-allowed; }
-    .muted { color:var(--muted); font-size:.85rem; }
-    .error-text { color:var(--danger); font-size:.85rem; font-weight:700; }
-    .ok-text { color:var(--success); font-size:.85rem; font-weight:700; }
-
-    table { width:100%; border-collapse:collapse; }
-    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; vertical-align:middle; }
-    th { background:#f8fafc; font-size:.9rem; }
-    td.left { text-align:left; }
-
-    .kpis { display:grid; gap:8px; grid-template-columns:repeat(5,minmax(0,1fr)); margin-top:10px; }
-    .kpi { border:1px solid #e5e7eb; border-radius:10px; background:#f8fafc; padding:8px; }
-    .kpi b { display:block; margin-top:4px; font-size:1rem; }
-
-    .service-cell { position:relative; }
-    .serviceSuggestions {
-      position:absolute; left:0; right:0; top:100%;
-      border:1px solid #d1d5db; border-radius:8px; background:#fff;
-      max-height:180px; overflow:auto; display:none; z-index:25;
-      box-shadow:0 8px 22px rgba(0,0,0,.08);
-    }
-    .serviceSuggestions div { padding:8px; cursor:pointer; text-align:left; }
-    .serviceSuggestions div:hover { background:#eff6ff; }
-
-    .history-header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-    .history-table-wrap { max-height:280px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; }
-
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.75rem; font-weight:800; }
-    .badge-complet { background:#dcfce7; color:#166534; }
-    .badge-incomplet { background:#fee2e2; color:#991b1b; }
-    .type-tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:.72rem; font-weight:800; background:#e0e7ff; color:#3730a3; }
-
-    @media (max-width:1000px) {
-      .grid-2,.grid-3,.grid-4,.grid-5,.kpis { grid-template-columns:1fr; }
-    }
-    .btn-id {
-      all: unset;
-      background: transparent;
-      color: #000;
-      border: 1.5px solid rgba(0, 0, 0, 0.2);
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(2px);
-    }
-    .btn-id:disabled { opacity:.5; cursor:not-allowed; }
-    .btn-id:hover {
-      background: rgba(0, 120, 255, 0.12);
-      border-color: rgba(0, 120, 255, 0.6);
-      color: #0078ff;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 15px rgba(0, 120, 255, 0.15);
-    }
-    .btn-id:active { transform: translateY(0px); box-shadow: 0 3px 8px rgba(0, 120, 255, 0.1); }
-    .btn-id:focus {
-      outline: none;
-      border-color: rgba(0, 120, 255, 0.8);
-      box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
-    }
-    .btn-id-c:hover { background: rgba(255, 0, 0, 0.10); border-color: rgba(255, 0, 0, 0.6); color: #e60000; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(255, 0, 0, 0.15); }
-    .btn-id-c:focus { border-color: rgba(255, 0, 0, 0.8); box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15); }
-    .btn-id-v:hover { background: rgba(0, 200, 80, 0.12); border-color: rgba(0, 200, 80, 0.6); color: #00b35a; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0, 200, 80, 0.15); }
-    .btn-id-v:focus { border-color: rgba(0, 200, 80, 0.8); box-shadow: 0 0 0 3px rgba(0, 200, 80, 0.15); }
-
-    ::-webkit-scrollbar { width: 12px; height: 12px; }
-    ::-webkit-scrollbar-track { background: #eef3ff; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #2196f3, #1565c0); border-radius: 10px; border: 2px solid #eef3ff; }
-    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #42a5f5, #1976d2); }
-    * { scrollbar-width: thin; scrollbar-color: #2196f3 #eef3ff; }
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Facturation RPO</title>
+<link rel="icon" type="image/png" href="logo.png" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--bg:#eef2f7;--card:#fff;--line:#dde3eb;--text:#1f2937;--primary:#0d6efd;--success:#1f9d55;--warning:#f59e0b;--danger:#dc3545;--muted:#6b7280}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;color:var(--text);background:linear-gradient(120deg,#eef2f7,#f7f9fc)}
+.container{max-width:1300px;margin:20px auto;padding:0 14px}
+h1{text-align:center;margin:8px 0 6px}h2{margin:0 0 12px;font-size:1.15rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 20px rgba(15,23,42,.06);padding:16px;margin-bottom:14px}
+.disabled-section{opacity:.45;pointer-events:none}
+.grid{display:grid;gap:10px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+label{display:block;font-size:.88rem;font-weight:700;margin-bottom:4px}
+input,select,button{font:inherit}
+input,select{width:100%;border:1px solid #cfd8e3;border-radius:10px;padding:9px;background:#fff}
+input[type=checkbox]{width:auto}
+input:disabled{background:#f7f9fc;color:#475569}
+.line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}.btn-danger{background:var(--danger);color:#fff}
+.btn-id{background:transparent;color:#000;border:1.5px solid rgba(0,0,0,.2);padding:10px 16px;border-radius:10px;cursor:pointer;transition:.2s}
+.btn-id:hover{background:rgba(0,120,255,.12);border-color:rgba(0,120,255,.6);color:#0078ff}
+.btn-id:disabled{opacity:.5;cursor:not-allowed}
+.btn-id-v:hover{background:rgba(0,200,80,.12);border-color:rgba(0,200,80,.6);color:#00b35a}
+.btn-id-c:hover{background:rgba(255,0,0,.1);border-color:rgba(255,0,0,.6);color:#e60000}
+.muted{color:var(--muted);font-size:.85rem}.error-text{color:var(--danger);font-size:.85rem;font-weight:700}.ok-text{color:var(--success);font-size:.85rem;font-weight:700}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:6px;text-align:center;vertical-align:middle}th{background:#f8fafc;font-size:.9rem}td.left{text-align:left}
+tr.unpriced input.u{border-color:var(--danger);background:#fff1f2}
+.kpis{display:grid;gap:8px;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:10px}
+.kpi{border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;padding:8px}.kpi b{display:block;margin-top:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:800}
+.b-complet{background:#dcfce7;color:#166534}.b-incomplet{background:#fee2e2;color:#991b1b}.b-annulee{background:#e5e7eb;color:#374151}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:800;background:#e0e7ff;color:#3730a3}
+.reason{border-radius:12px;padding:12px 14px;font-weight:700;margin-bottom:10px;background:#e0e7ff;color:#3730a3}
+.reason.none{background:#fee2e2;color:#991b1b}.reason.warn{background:#fef3c7;color:#92400e}
+.enc{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-weight:400;cursor:pointer}
+.enc.off{opacity:.55;cursor:not-allowed;background:#f8fafc}
+.hist{max-height:280px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px}
+#blocker{display:none;position:fixed;inset:0;z-index:99;background:rgba(255,255,255,.96);align-items:center;justify-content:center;text-align:center;font-size:1.1rem;padding:20px}
+@media(max-width:1000px){.g2,.g3,.g4,.kpis{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<div id="blocker"></div>
 <div class="container">
   <h1>🧾 Facturation RPO</h1>
-
-  <div id="connStatus" class="muted" style="text-align:center;margin-bottom:10px;">Connexion à Firestore…</div>
-
-  <div class="card">
-    <h2>Type de facture</h2>
-    <div class="grid grid-4">
-      <div>
-        <label>Type</label>
-        <select id="invoiceType">
-          <option value="urgences">Urgences</option>
-          <option value="hospitalisation">Hospitalisation</option>
-          <option value="consultation">Consultation</option>
-        </select>
-      </div>
-      <div>
-        <label>Service</label>
-        <input id="serviceLabel" placeholder="ex: Urgences, Chirurgie, Cardiologie..." />
-      </div>
-      <div>
-        <label>Date d'entrée</label>
-        <input id="dateEntree" type="date" />
-      </div>
-      <div>
-        <label>Date de sortie</label>
-        <input id="dateSortie" type="date" />
-      </div>
-    </div>
-    <div class="grid grid-4" style="margin-top:10px;">
-      <div>
-        <label>Chambre / Lit</label>
-        <input id="chambre" placeholder="ex: 204B" />
-      </div>
-      <div>
-        <label>Médecin référent</label>
-        <input id="medecin" placeholder="Dr ..." />
-      </div>
-      <div>
-        <label>Nombre de jours</label>
-        <input id="nbJours" disabled />
-      </div>
-      <div></div>
-    </div>
-  </div>
+  <div id="connStatus" class="muted" style="text-align:center;margin-bottom:10px">Connexion à Firestore…</div>
 
   <div class="card">
-    <h2>Patient</h2>
-    <div class="grid grid-4">
-      <div>
-        <label>ID patient</label>
-        <input id="patientId" placeholder="ID Firestore (optionnel)" />
-      </div>
-      <div>
-        <label>Nom</label>
-        <input id="nom" />
-      </div>
-      <div>
-        <label>Prénom</label>
-        <input id="prenom" />
-      </div>
-      <div>
-        <label>Date de naissance</label>
-        <input id="naissance" type="date" />
-      </div>
-    </div>
-    <div class="line" style="margin-top:10px;">
-      <button id="loadPatientBtn" type="button" class="btn-id">👤 Charger le patient depuis son ID</button>
-      <span id="patientMsg" class="muted"></span>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="history-header">
-      <h2>Retrouver une ancienne facture</h2>
-    </div>
-
-    <div class="grid grid-4" style="margin-bottom:10px;">
-      <div>
-        <label>ID facture</label>
-        <input id="historyInvoiceId" placeholder="ex: AbCd1234" />
-      </div>
-      <div>
-        <label>Nom patient</label>
-        <input id="historyNom" placeholder="filtre nom" />
-      </div>
-      <div>
-        <label>Date mini</label>
-        <input id="historyDateMin" type="date" />
-      </div>
-      <div>
-        <label>Date maxi</label>
-        <input id="historyDateMax" type="date" />
-      </div>
-    </div>
-
-    <div class="line" style="margin-bottom:10px;">
-      <button id="searchInvoicesBtn" type="button" class="btn-id">🔎 Rechercher des factures</button>
-      <button id="loadInvoiceByIdBtn" type="button" class="btn-id">📂 Charger l'ID saisi</button>
-      <span class="muted" id="historyInfo">Aucune recherche lancée.</span>
-    </div>
-
-    <div class="history-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Date MAJ</th>
-            <th>Patient</th>
-            <th>Total (€)</th>
-            <th>Reste patient (€)</th>
-            <th>Statut</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="historyBody">
-          <tr><td colspan="8" class="muted">Aucun résultat pour le moment.</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Prestations (chargées depuis Firestore)</h2>
-    <div class="line" style="margin-bottom:8px;">
-      <button id="addLineBtn" type="button" class="btn-id">➕ Ajouter une ligne</button>
+    <h2>Motif de facturation <span id="invoiceBadge" class="tag" style="margin-left:8px">nouvelle</span></h2>
+    <div id="reasonBox" class="reason none">Chargement…</div>
+    <div id="encList"></div>
+    <div class="line" style="margin-top:8px">
+      <button id="detectBtn" type="button" class="btn-id">🔍 Détecter les prestations à facturer</button>
       <button id="reloadFacturablesBtn" type="button" class="btn-id">🔄 Recharger le référentiel</button>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:46%;">Prestation</th>
-          <th>Qté</th>
-          <th>PU (€)</th>
-          <th>Total (€)</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="linesBody"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3" style="text-align:right;font-weight:700;">Total global</td>
-          <td id="totalGlobal">0.00</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
   </div>
 
-  <div class="card">
-    <h2>Calcul Sécu / Mutuelle / Patient</h2>
-    <div class="grid grid-4">
-      <div>
-        <label>Régime sécu</label>
-        <select id="regimeSecu">
-          <option value="70">Régime général (70%)</option>
-          <option value="80">Hospitalisation (80%)</option>
-          <option value="90">Alsace-Moselle (90%)</option>
-          <option value="100">100% (ALD/CMU/AME)</option>
-          <option value="0">Aucun remboursement</option>
-        </select>
+  <div id="editArea">
+    <div class="card">
+      <h2>Patient</h2>
+      <div class="grid g4">
+        <div><label>ID patient</label><input id="patientId" disabled /></div>
+        <div><label>Nom</label><input id="nom" /></div>
+        <div><label>Prénom</label><input id="prenom" /></div>
+        <div><label>Date de naissance</label><input id="naissance" type="date" /></div>
       </div>
-      <div>
-        <label>Taux mutuelle (%) sur le reste</label>
-        <input id="mutuellePct" type="number" min="0" max="100" value="100" />
+      <div class="grid g4" style="margin-top:10px">
+        <div><label>Service</label><input id="serviceLabel" /></div>
+        <div><label>Médecin référent</label><input id="medecin" /></div>
+        <div><label>Date d’entrée / consultation</label><input id="dateEntree" type="date" /></div>
+        <div class="hosp"><label>Date de sortie</label><input id="dateSortie" type="date" /></div>
       </div>
-      <div>
-        <label>Part sécu (€)</label>
-        <input id="partSecu" disabled />
-      </div>
-      <div>
-        <label>Part mutuelle (€)</label>
-        <input id="partMutuelle" disabled />
+      <div class="grid g4 hosp" style="margin-top:10px">
+        <div><label>Chambre / lit</label><input id="chambre" /></div>
+        <div><label>Nombre de nuits</label><input id="nbJours" disabled /></div>
       </div>
     </div>
 
-    <div class="kpis">
-      <div class="kpi">Part patient<b id="partPatient">0.00 €</b></div>
-      <div class="kpi">Déjà payé<b id="dejaPaye">0.00 €</b></div>
-      <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
-      <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
-      <div class="kpi">Facture courante<b id="invoiceBadge">nouvelle</b></div>
+    <div class="card">
+      <h2>Prestations</h2>
+      <datalist id="dl"></datalist>
+      <div class="line" style="margin-bottom:8px"><button id="addLineBtn" type="button" class="btn-id">➕ Ajouter une ligne</button><span class="muted">Les lignes en rouge n’ont pas de tarif dans le référentiel.</span></div>
+      <table>
+        <thead><tr><th style="width:44%">Prestation</th><th>Origine</th><th>Qté</th><th>PU (€)</th><th>Total (€)</th><th></th></tr></thead>
+        <tbody id="linesBody"></tbody>
+        <tfoot><tr><td colspan="4" style="text-align:right;font-weight:700">Total global</td><td id="totalGlobal">0.00</td><td></td></tr></tfoot>
+      </table>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Paiements fractionnés</h2>
-    <table>
-      <thead><tr><th>Date</th><th>Mode</th><th>Montant (€)</th><th></th></tr></thead>
-      <tbody id="paymentsBody"></tbody>
-    </table>
-    <button id="addPaymentBtn" type="button" class="btn-id" style="margin-top:8px;">➕ Ajouter un paiement</button>
+    <div class="card">
+      <h2>Assurance maladie</h2>
+      <div class="grid g4">
+        <div><label>Régime</label><select id="regime"></select></div>
+        <div><label>N° de sécurité sociale</label><input id="numeroSecu" /></div>
+        <div><label>Mutuelle</label><input id="mutuelle" placeholder="Nom / n° adhérent" /></div>
+        <div><label>Taux mutuelle (%) sur le reste</label><input id="mutuellePct" type="number" min="0" max="100" value="100" /></div>
+      </div>
+      <div class="line" style="margin:10px 0"><label style="margin:0"><input id="tiersPayant" type="checkbox" checked /> Tiers payant (le patient ne règle que sa part)</label></div>
+      <div class="grid g3">
+        <div><label>Part sécu (€)</label><input id="partSecu" disabled /></div>
+        <div><label>Part mutuelle (€)</label><input id="partMutuelle" disabled /></div>
+        <div><label>Part patient (€)</label><input id="partPatient" disabled /></div>
+      </div>
+      <div class="kpis">
+        <div class="kpi">À régler par le patient<b id="aRegler">0.00 €</b></div>
+        <div class="kpi">Encaissé<b id="dejaPaye">0.00 €</b></div>
+        <div class="kpi">Échéances prévues<b id="prevu">0.00 €</b></div>
+        <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
+        <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Paiements fractionnés</h2>
+      <table>
+        <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="paymentsBody"></tbody>
+      </table>
+      <div class="line" style="margin-top:8px">
+        <button id="addPaymentBtn" type="button" class="btn-id">➕ Ajouter un paiement</button>
+        <button id="settleBtn" type="button" class="btn-id">💶 Solder le reste</button>
+        <button id="scheduleBtn" type="button" class="btn-id">📅 Créer un échéancier</button>
+      </div>
+    </div>
   </div>
 
   <div class="card">
     <div class="line">
-      <button id="saveBtn" type="button" class="btn-id btn-id-v">💾 Valider / Enregistrer la facture</button>
+      <button id="saveBtn" type="button" class="btn-id btn-id-v">💾 Valider / enregistrer la facture</button>
       <button id="pdfBtn" type="button" class="btn-id">📄 Générer le PDF</button>
-      <button id="deleteBtn" type="button" class="btn-id btn-id-c">🗑 Supprimer cette facture</button>
+      <button id="cancelBtn" type="button" class="btn-id btn-id-c">🚫 Annuler cette facture</button>
       <button id="resetBtn" type="button" class="btn-id btn-id-c">♻️ Nouvelle facture</button>
       <span id="saveMsg" class="muted"></span>
     </div>
   </div>
+
+  <div class="card">
+    <h2>Retrouver une facture</h2>
+    <div class="grid g4" style="margin-bottom:10px">
+      <div><label>N° ou ID facture</label><input id="historyInvoiceId" /></div>
+      <div><label>Nom patient</label><input id="historyNom" /></div>
+      <div><label>Date mini</label><input id="historyDateMin" type="date" /></div>
+      <div><label>Date maxi</label><input id="historyDateMax" type="date" /></div>
+    </div>
+    <div class="line" style="margin-bottom:10px">
+      <button id="searchInvoicesBtn" type="button" class="btn-id">🔎 Rechercher</button>
+      <button id="loadInvoiceByIdBtn" type="button" class="btn-id">📂 Charger le n° saisi</button>
+      <span class="muted" id="historyInfo"></span>
+    </div>
+    <div class="hist"><table>
+      <thead><tr><th>N°</th><th>Type</th><th>Date MAJ</th><th>Patient</th><th>Total (€)</th><th>Reste (€)</th><th>Statut</th><th></th></tr></thead>
+      <tbody id="historyBody"></tbody>
+    </table></div>
+  </div>
 </div>
 
 <script type="module">
-  // ---------------------------------------------------------------------
-  // Firebase init (SDK modulaire v10)
-  // ---------------------------------------------------------------------
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-  import {
-    getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc,
-    query, where, orderBy, limit
-  } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, query, where, orderBy, limit, runTransaction, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
-    authDomain: "urgences-a8ed4.firebaseapp.com",
-    projectId: "urgences-a8ed4",
-    storageBucket: "urgences-a8ed4.appspot.com",
-    messagingSenderId: "392921498200",
-    appId: "1:392921498200:web:7ccce767332c67c697c02d"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const FACTURE_COLLECTION = 'facture';
+const app = initializeApp({
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo", authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4", storageBucket: "urgences-a8ed4.appspot.com",
+  messagingSenderId: "392921498200", appId: "1:392921498200:web:7ccce767332c67c697c02d"
+});
+const db = getFirestore(app), auth = getAuth(app);
+const COL = 'facture';
 
-  const state = {
-    currentInvoiceId: null,
-    facturables: {},
-    historyDocs: [],
-    saving: false
-  };
+// ---------- Constantes (surchargeables dans referentiels/facturationConfig) ----------
+const REGIMES = [
+  { id: 'general', label: 'Régime général (70 %)', taux: 70 },
+  { id: 'hospi', label: 'Hospitalisation (80 %)', taux: 80 },
+  { id: 'alsace', label: 'Alsace-Moselle (90 %)', taux: 90 },
+  { id: 'ald', label: '100 % (ALD / maternité / AME)', taux: 100 },
+  { id: 'none', label: 'Aucun remboursement', taux: 0 }
+];
+const MODES = ['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile money', 'Autre'];
+const TYPES = { consultation: 'Consultation', hospitalisation: 'Hospitalisation (urgences)', mixte: 'Consultation + hospitalisation', urgences: 'Urgences' };
+const SRC = { consultation: 'Consultation', passage: 'Passage', sejour: 'Séjour', acte: 'Acte', examen: 'Examen', transport: 'Transport', manuel: 'Manuel' };
 
-  const $ = (id) => document.getElementById(id);
-  const linesBody = $('linesBody');
-  const paymentsBody = $('paymentsBody');
+const S = { id: null, numero: null, statut: null, type: null, pid: null, patient: null, fact: {}, regles: {}, regimes: REGIMES, etab: {},
+  consults: [], hospis: [], sel: { c: new Set(), h: new Set() }, invoices: [], billed: {}, calc: {}, saving: false, assurLoaded: false };
 
-  const euro = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
-  };
-  const numFromEuroText = (txt) => {
-    const n = Number(String(txt || '').replace('€', '').trim());
-    return Number.isFinite(n) ? n : 0;
-  };
+const $ = id => document.getElementById(id);
+const linesBody = $('linesBody'), paymentsBody = $('paymentsBody');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+const euro = v => r2(v).toFixed(2);
+const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const pad = n => String(n).padStart(2, '0');
+const tsOf = v => v?.toDate ? v.toDate() : (v ? new Date(v) : null);
+const isoL = d => d && !isNaN(d) ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '';
+const fmt = d => d && !isNaN(d) ? d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-';
+const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const nights = (a, b) => a && b ? Math.max(0, Math.round((dayStart(b) - dayStart(a)) / 864e5)) : 0;
+const hasHosp = () => ['hospitalisation', 'mixte', 'urgences'].includes(S.type);
+const setMsg = (t, k) => { const e = $('saveMsg'); e.textContent = t; e.className = k === 'error' ? 'error-text' : k === 'ok' ? 'ok-text' : 'muted'; };
 
-  function setInvoiceBadge() {
-    $('invoiceBadge').textContent = state.currentInvoiceId || 'nouvelle';
+// ---------- Référentiels ----------
+async function loadConfig() {
+  try {
+    const s = await getDoc(doc(db, 'referentiels', 'facturationConfig'));
+    const c = s.exists() ? s.data() : {};
+    S.regles = c.regles || {}; S.etab = c.etablissement || {};
+    S.regimes = Array.isArray(c.regimes) && c.regimes.length ? c.regimes : REGIMES;
+  } catch (e) { console.error(e); }
+  $('regime').innerHTML = S.regimes.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');
+}
+async function loadFacturables() {
+  try { const s = await getDoc(doc(db, 'referentiels', 'Facturables')); S.fact = s.exists() ? s.data() : {}; }
+  catch (e) { console.error(e); S.fact = {}; setMsg('⚠️ Référentiel des prestations indisponible.', 'error'); }
+  $('dl').innerHTML = Object.keys(S.fact).map(n => `<option value="${esc(n)}">${euro(S.fact[n])} €</option>`).join('');
+}
+function findFact(...keys) {
+  const names = Object.keys(S.fact);
+  for (const k of keys) {
+    const n = norm(k); if (!n) continue;
+    const m = names.find(x => norm(x) === n) || names.find(x => norm(x).includes(n)) || names.find(x => norm(x).length >= 4 && n.includes(norm(x)));
+    if (m) return [m, Number(S.fact[m]) || 0];
   }
+  return null;
+}
+const rule = (key, kws, def) => { const m = findFact(S.regles[key], ...kws); return [m ? m[0] : def, m]; };
+const regime = () => S.regimes.find(r => r.id === $('regime').value) || S.regimes[0];
 
-  function setSaveMsg(text, kind) {
-    const el = $('saveMsg');
-    el.textContent = text;
-    el.className = kind === 'error' ? 'error-text' : (kind === 'ok' ? 'ok-text' : 'muted');
+// ---------- Patient, consultations, hospitalisations ----------
+async function loadPatient(pid) {
+  S.pid = pid; $('patientId').value = pid;
+  const p = await getDoc(doc(db, 'patients', pid));
+  S.patient = p.exists() ? p.data() : null;
+  if (S.patient) {
+    $('nom').value = S.patient.nom || ''; $('prenom').value = S.patient.prenom || '';
+    const d = tsOf(S.patient.dateNaissance); if (d && !isNaN(d)) $('naissance').value = isoL(d);
   }
-
-  function setBusy(busy) {
-    state.saving = busy;
-    ['saveBtn', 'pdfBtn', 'deleteBtn', 'resetBtn', 'searchInvoicesBtn', 'loadInvoiceByIdBtn', 'loadPatientBtn']
-      .forEach(id => { const b = $(id); if (b) b.disabled = busy; });
-  }
-
-  // ---------------------------------------------------------------------
-  // Hospitalisation fields visibility + nombre de jours auto
-  // ---------------------------------------------------------------------
-  function updateTypeFieldsVisibility() {
-    const type = $('invoiceType').value;
-    const showDates = type === 'hospitalisation';
-    ['dateEntree', 'dateSortie', 'chambre', 'medecin', 'nbJours'].forEach(id => {
-      $(id).closest('div').style.display = showDates ? '' : (id === 'nbJours' ? '' : '');
-    });
-    computeNbJours();
-  }
-
-  function computeNbJours() {
-    const dIn = $('dateEntree').value;
-    const dOut = $('dateSortie').value;
-    if (!dIn || !dOut) { $('nbJours').value = ''; return; }
-    const a = new Date(dIn);
-    const b = new Date(dOut);
-    const diffDays = Math.round((b - a) / 86400000);
-    $('nbJours').value = diffDays >= 0 ? diffDays : '';
-  }
-
-  // ---------------------------------------------------------------------
-  // Autocomplete prestations (référentiel Facturables)
-  // ---------------------------------------------------------------------
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('.serviceSuggestions').forEach(box => {
-      const input = box.parentElement.querySelector('.serviceInput');
-      if (box.style.display !== 'none' && e.target !== input && !box.contains(e.target)) {
-        box.style.display = 'none';
-      }
-    });
+  const get = async (col, ids) => (await Promise.all((ids || []).map(i => getDoc(doc(db, col, i))))).filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() }));
+  S.consults = await get('consultations', S.patient?.consultations);
+  S.hospis = await get('hospitalisations', S.patient?.hospitalisations);
+  S.consults.sort((a, b) => (tsOf(b.dateTS) || 0) - (tsOf(a.dateTS) || 0));
+  S.hospis.sort((a, b) => (tsOf(b.dateDebutTS) || 0) - (tsOf(a.dateDebutTS) || 0));
+  await refreshInvoices();
+}
+async function fetchInvoices(pid) {
+  const col = collection(db, COL);
+  const snap = await getDocs(pid ? query(col, where('patientId', '==', pid), limit(200)) : query(col, orderBy('updatedAt', 'desc'), limit(120)));
+  return snap.docs.map(d => ({ id: d.id, data: d.data() })).sort((a, b) => String(b.data.updatedAt || '').localeCompare(String(a.data.updatedAt || '')));
+}
+function computeBilled() {
+  S.billed = {};
+  S.invoices.forEach(({ id, data }) => {
+    if (id === S.id || data.statut === 'annulee') return;
+    const lab = data.numero || id;
+    (data.sources?.consultationIds || []).forEach(i => S.billed['c' + i] = lab);
+    (data.sources?.hospitalisationIds || []).forEach(i => S.billed['h' + i] = lab);
   });
+}
+async function refreshInvoices() { S.invoices = S.pid ? await fetchInvoices(S.pid) : []; computeBilled(); }
+function defaultSel(only) {
+  S.sel = { c: new Set(), h: new Set() };
+  S.consults.forEach(c => { if (!S.billed['c' + c.id] && c.statut !== 'encours' && (!only.c.length || only.c.includes(c.id))) S.sel.c.add(c.id); });
+  S.hospis.forEach(h => { if (!S.billed['h' + h.id] && (!only.h.length || only.h.includes(h.id))) S.sel.h.add(h.id); });
+}
+const selList = k => (k === 'c' ? S.consults : S.hospis).filter(x => S.sel[k].has(x.id));
+const reason = () => { const c = S.sel.c.size, h = S.sel.h.size; return c && h ? 'mixte' : h ? 'hospitalisation' : c ? 'consultation' : null; };
 
-  function bindServiceAutocomplete(input, box, onSelect) {
-    input.addEventListener('input', () => {
-      const q = input.value.trim().toLowerCase();
-      box.innerHTML = '';
-      if (!q) { box.style.display = 'none'; return; }
-
-      const keys = Object.keys(state.facturables)
-        .filter(k => k.toLowerCase().includes(q))
-        .slice(0, 20);
-
-      keys.forEach(name => {
-        const pu = Number(state.facturables[name] || 0);
-        const row = document.createElement('div');
-        row.textContent = `${name} — ${euro(pu)} €`;
-        row.addEventListener('click', () => {
-          onSelect(name, pu);
-          box.style.display = 'none';
-        });
-        box.appendChild(row);
-      });
-
-      box.style.display = keys.length ? 'block' : 'none';
+// ---------- Moteur de détection des prestations ----------
+function detect() {
+  const map = new Map();
+  const add = (desc, m, qty, src, ref) => {
+    const pu = m ? m[1] : 0, k = desc + '|' + pu + '|' + src, o = map.get(k);
+    if (o) { o.quantity += qty; return; }
+    map.set(k, { description: desc, quantity: qty, unitPrice: pu, source: src, auto: true, ref });
+  };
+  const cs = selList('c'), hs = selList('h');
+  cs.forEach(c => { const [d, m] = rule('consultation', ['consultation'], 'Consultation'); add(d, m, 1, 'consultation', c.id); });
+  hs.forEach(h => {
+    const [d, m] = rule('passageUrgences', ['passage aux urgences', 'passage', 'urgences'], 'Passage aux urgences'); add(d, m, 1, 'passage', h.id);
+    const n = hs.length === 1 && $('nbJours').value !== '' ? Number($('nbJours').value) : nights(tsOf(h.dateDebutTS), tsOf(h.dateFinTS) || new Date());
+    if (n > 0) { const [dj, mj] = rule('journee', ['journee', 'hospitalisation', 'sejour'], 'Journée d’hospitalisation'); add(dj, mj, n, 'sejour', h.id); }
+    (h.actes || []).filter(a => norm(a.status) === 'realise').forEach(a => {
+      const nm = a.nom || a.acte || a.libelle || a.type || a.name || 'Acte réalisé'; const f = findFact(nm); add(f ? f[0] : nm, f, 1, 'acte', h.id);
     });
-  }
-
-  // ---------------------------------------------------------------------
-  // Lignes de prestations
-  // ---------------------------------------------------------------------
-  function addLine(line = { description: '', quantity: 1, unitPrice: 0 }) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="left service-cell">
-        <input class="serviceInput" placeholder="Rechercher une prestation..." value="${escapeAttr(line.description || '')}" />
-        <div class="serviceSuggestions"></div>
-      </td>
-      <td><input class="qty" type="number" min="1" step="1" value="${Number(line.quantity) > 0 ? Number(line.quantity) : 1}" /></td>
-      <td><input class="unitPrice" type="number" min="0" step="0.01" value="${Number(line.unitPrice) >= 0 ? Number(line.unitPrice) : 0}" /></td>
-      <td class="lineTotal">0.00</td>
-      <td><button type="button" class="btn btn-danger delLine">🗑</button></td>
-    `;
-
-    linesBody.appendChild(tr);
-
-    const serviceInput = tr.querySelector('.serviceInput');
-    const box = tr.querySelector('.serviceSuggestions');
-    const unitPriceInput = tr.querySelector('.unitPrice');
-
-    bindServiceAutocomplete(serviceInput, box, (name, pu) => {
-      serviceInput.value = name;
-      unitPriceInput.value = pu;
-      recompute();
-    });
-
-    tr.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
-      if (i.classList.contains('qty') && Number(i.value) < 1) i.value = 1;
-      if (i.classList.contains('unitPrice') && Number(i.value) < 0) i.value = 0;
-      recompute();
-    }));
-    tr.querySelector('.delLine').addEventListener('click', () => {
-      tr.remove();
-      recompute();
-    });
-
-    recompute();
-  }
-
-  function escapeAttr(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function addPayment(payment = {}) {
-    const now = new Date().toISOString().slice(0, 10);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input class="pDate" type="date" value="${payment.date || now}" /></td>
-      <td>
-        <select class="pMode">
-          <option>Espèces</option>
-          <option>Carte bancaire</option>
-          <option>Chèque</option>
-          <option>Virement</option>
-          <option>Autre</option>
-        </select>
-      </td>
-      <td><input class="pAmount" type="number" min="0" step="0.01" value="${Number(payment.amount) >= 0 ? Number(payment.amount) : 0}" /></td>
-      <td><button type="button" class="btn btn-danger delPayment">🗑</button></td>
-    `;
-    paymentsBody.appendChild(tr);
-    if (payment.mode) tr.querySelector('.pMode').value = payment.mode;
-
-    tr.querySelectorAll('input,select').forEach(i => i.addEventListener('input', () => {
-      if (i.classList.contains('pAmount') && Number(i.value) < 0) i.value = 0;
-      recompute();
-    }));
-    tr.querySelector('.delPayment').addEventListener('click', () => {
-      tr.remove();
-      recompute();
-    });
-    recompute();
-  }
-
-  function readPrestations() {
-    return [...linesBody.querySelectorAll('tr')].map(tr => {
-      const description = tr.querySelector('.serviceInput').value.trim();
-      const quantity = Math.max(0, Number(tr.querySelector('.qty').value || 0));
-      const unitPrice = Math.max(0, Number(tr.querySelector('.unitPrice').value || 0));
-      return {
-        description,
-        quantity,
-        unitPrice,
-        lineTotal: Number((quantity * unitPrice).toFixed(2))
-      };
-    }).filter(x => x.description && x.quantity > 0);
-  }
-
-  function readPayments() {
-    return [...paymentsBody.querySelectorAll('tr')].map(tr => ({
-      date: tr.querySelector('.pDate').value,
-      mode: tr.querySelector('.pMode').value,
-      amount: Math.max(0, Number(tr.querySelector('.pAmount').value || 0))
-    })).filter(x => x.amount > 0);
-  }
-
-  function recompute() {
-    let total = 0;
-
-    [...linesBody.querySelectorAll('tr')].forEach(tr => {
-      const qty = Math.max(0, Number(tr.querySelector('.qty').value || 0));
-      const unitPrice = Math.max(0, Number(tr.querySelector('.unitPrice').value || 0));
-      const lt = qty * unitPrice;
-      tr.querySelector('.lineTotal').textContent = euro(lt);
-      total += lt;
-    });
-
-    $('totalGlobal').textContent = euro(total);
-
-    const secuRate = Math.min(1, Math.max(0, Number($('regimeSecu').value || 0) / 100));
-    const mutuelleRate = Math.min(1, Math.max(0, Number($('mutuellePct').value || 0) / 100));
-
-    const partSecu = total * secuRate;
-    const afterSecu = Math.max(total - partSecu, 0);
-    const partMutuelle = afterSecu * mutuelleRate;
-    const partPatient = Math.max(total - partSecu - partMutuelle, 0);
-
-    const paid = readPayments().reduce((sum, p) => sum + p.amount, 0);
-    const remaining = Math.max(partPatient - paid, 0);
-
-    $('partSecu').value = euro(partSecu);
-    $('partMutuelle').value = euro(partMutuelle);
-    $('partPatient').textContent = `${euro(partPatient)} €`;
-    $('dejaPaye').textContent = `${euro(paid)} €`;
-    $('restePayer').textContent = `${euro(remaining)} €`;
-    $('statusP').textContent = remaining <= 0.009 ? 'COMPLET' : 'INCOMPLET';
-  }
-
-  function extractIsoDate(value) {
-    if (!value) return '';
-    return String(value).slice(0, 10);
-  }
-
-  // ---------------------------------------------------------------------
-  // Sérialisation / désérialisation de la facture
-  // ---------------------------------------------------------------------
-  function serializeInvoice() {
-    recompute();
-    const totals = {
-      total: Number($('totalGlobal').textContent || 0),
-      partSecu: Number($('partSecu').value || 0),
-      partMutuelle: Number($('partMutuelle').value || 0),
-      partPatient: numFromEuroText($('partPatient').textContent),
-      dejaPaye: numFromEuroText($('dejaPaye').textContent),
-      restePayer: numFromEuroText($('restePayer').textContent)
-    };
-
-    const type = $('invoiceType').value;
-
-    return {
-      type,
-      service: $('serviceLabel').value.trim(),
-      hospitalisation: type === 'hospitalisation' ? {
-        dateEntree: $('dateEntree').value || null,
-        dateSortie: $('dateSortie').value || null,
-        chambre: $('chambre').value.trim(),
-        medecin: $('medecin').value.trim(),
-        nbJours: $('nbJours').value ? Number($('nbJours').value) : null
-      } : null,
-      patientId: $('patientId').value.trim() || null,
-      patient: {
-        nom: $('nom').value.trim(),
-        prenom: $('prenom').value.trim(),
-        naissance: $('naissance').value
-      },
-      regimeSecuPct: Number($('regimeSecu').value || 0),
-      mutuellePct: Number($('mutuellePct').value || 0),
-      prestations: readPrestations(),
-      payments: readPayments(),
-      totals,
-      statutPaiement: totals.restePayer <= 0.009 ? 'complet' : 'incomplet',
-      // Traçabilité : facture rattachée au compte connecté
-      creePar: window.medecinUid || null,
-      updatedAt: new Date().toISOString()
-    };
-  }
-
-  function applyInvoiceToForm(f) {
-    $('invoiceType').value = f.type || 'urgences';
-    $('serviceLabel').value = f.service || '';
-    const h = f.hospitalisation || {};
-    $('dateEntree').value = h.dateEntree || '';
-    $('dateSortie').value = h.dateSortie || '';
-    $('chambre').value = h.chambre || '';
-    $('medecin').value = h.medecin || '';
-
-    $('patientId').value = f.patientId || '';
-    $('nom').value = f.patient?.nom || '';
-    $('prenom').value = f.patient?.prenom || '';
-    $('naissance').value = f.patient?.naissance || '';
-    $('regimeSecu').value = String(f.regimeSecuPct ?? 70);
-    $('mutuellePct').value = String(f.mutuellePct ?? 100);
-
-    linesBody.innerHTML = '';
-    paymentsBody.innerHTML = '';
-    (f.prestations || []).forEach(addLine);
-    (f.payments || []).forEach(addPayment);
-    if (!(f.prestations || []).length) addLine();
-    if (!(f.payments || []).length) addPayment();
-
-    updateTypeFieldsVisibility();
-    recompute();
-  }
-
-  // ---------------------------------------------------------------------
-  // Patient
-  // ---------------------------------------------------------------------
-  async function loadPatientById(patientId, { silent } = {}) {
-    if (!patientId) return;
-    try {
-      const snap = await getDoc(doc(db, 'patients', patientId));
-      if (!snap.exists()) {
-        if (!silent) $('patientMsg').textContent = "❌ Aucun patient trouvé pour cet ID.";
-        return;
-      }
-      const p = snap.data();
-      $('nom').value = p.nom || '';
-      $('prenom').value = p.prenom || '';
-      if (p.dateNaissance) {
-        const d = p.dateNaissance.toDate ? p.dateNaissance.toDate() : new Date(p.dateNaissance);
-        if (!Number.isNaN(d.getTime())) $('naissance').value = d.toISOString().slice(0, 10);
-      }
-      if (!silent) $('patientMsg').textContent = `✅ Patient chargé (${p.prenom || ''} ${p.nom || ''}).`;
-    } catch (err) {
-      console.error(err);
-      if (!silent) $('patientMsg').textContent = "⚠️ Erreur lors du chargement du patient.";
-    }
-  }
-
-  async function loadPatientFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const patientId = params.get('id');
-    if (!patientId) return;
-    $('patientId').value = patientId;
-    await loadPatientById(patientId, { silent: true });
-  }
-
-  async function loadFacturables() {
-    try {
-      const snap = await getDoc(doc(db, 'referentiels', 'Facturables'));
-      state.facturables = snap.exists() ? (snap.data() || {}) : {};
-    } catch (err) {
-      console.error(err);
-      state.facturables = {};
-      setSaveMsg("⚠️ Impossible de charger le référentiel des prestations.", 'error');
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Historique / recherche
-  // ---------------------------------------------------------------------
-  function formatDateDisplay(iso) {
-    if (!iso) return '-';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso).slice(0, 19).replace('T', ' ');
-    return d.toLocaleString('fr-FR');
-  }
-
-  function typeLabel(type) {
-    return { urgences: 'Urgences', hospitalisation: 'Hospitalisation', consultation: 'Consultation' }[type] || (type || '-');
-  }
-
-  function setHistoryRows(rows) {
-    const body = $('historyBody');
-    if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="8" class="muted">Aucun résultat.</td></tr>';
-      return;
-    }
-
-    body.innerHTML = rows.map(({ id, data }) => `
-      <tr>
-        <td>${id}</td>
-        <td><span class="type-tag">${typeLabel(data.type)}</span></td>
-        <td>${formatDateDisplay(data.updatedAt || data.createdAt)}</td>
-        <td class="left">${escapeAttr(data.patient?.prenom || '')} ${escapeAttr(data.patient?.nom || '')}</td>
-        <td>${euro(data.totals?.total)}</td>
-        <td>${euro(data.totals?.restePayer)}</td>
-        <td><span class="badge ${data.statutPaiement === 'complet' ? 'badge-complet' : 'badge-incomplet'}">${(data.statutPaiement || '').toUpperCase()}</span></td>
-        <td><button class="btn-id" onclick="window.__loadInvoice('${id}')">Charger</button></td>
-      </tr>
-    `).join('');
-  }
-
-  function applyHistoryFilters(items) {
-    const filterNom = $('historyNom').value.trim().toLowerCase();
-    const dateMin = $('historyDateMin').value;
-    const dateMax = $('historyDateMax').value;
-
-    return items.filter(({ data }) => {
-      const fullName = `${data.patient?.prenom || ''} ${data.patient?.nom || ''}`.toLowerCase();
-      if (filterNom && !fullName.includes(filterNom)) return false;
-
-      const invoiceDate = extractIsoDate(data.updatedAt || data.createdAt);
-      if (dateMin && invoiceDate < dateMin) return false;
-      if (dateMax && invoiceDate > dateMax) return false;
-
-      return true;
-    });
-  }
-
-  async function searchInvoices() {
-    const historyInfo = $('historyInfo');
-    historyInfo.textContent = 'Recherche en cours...';
-
-    try {
-      const patientId = $('patientId').value.trim();
-      const col = collection(db, FACTURE_COLLECTION);
-      let snap;
-      if (patientId) {
-        // Un filtre where() sur patientId sans orderBy évite un index composite;
-        // le tri est ensuite fait côté client.
-        snap = await getDocs(query(col, where('patientId', '==', patientId), limit(200)));
-      } else {
-        snap = await getDocs(query(col, orderBy('updatedAt', 'desc'), limit(120)));
-      }
-
-      state.historyDocs = snap.docs.map(d => ({ id: d.id, data: d.data() }));
-      state.historyDocs.sort((a, b) => {
-        const da = a.data.updatedAt || a.data.createdAt || '';
-        const db_ = b.data.updatedAt || b.data.createdAt || '';
-        return da < db_ ? 1 : (da > db_ ? -1 : 0);
-      });
-
-      const filtered = applyHistoryFilters(state.historyDocs);
-      setHistoryRows(filtered);
-      historyInfo.textContent = `${filtered.length} facture(s) affichée(s)${patientId ? ` (patient ${patientId})` : ''}.`;
-    } catch (err) {
-      console.error(err);
-      historyInfo.textContent = "⚠️ Erreur lors de la recherche des factures.";
-    }
-  }
-
-  async function loadInvoiceById(id) {
-    if (!id) return;
-    try {
-      const snap = await getDoc(doc(db, FACTURE_COLLECTION, id));
-      if (!snap.exists()) {
-        alert('Facture introuvable.');
-        return;
-      }
-      const f = snap.data();
-      state.currentInvoiceId = id;
-      setInvoiceBadge();
-      applyInvoiceToForm(f);
-      setSaveMsg(`📂 Facture chargée : ${id}`, 'ok');
-    } catch (err) {
-      console.error(err);
-      setSaveMsg("⚠️ Erreur lors du chargement de la facture.", 'error');
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Enregistrement / suppression
-  // ---------------------------------------------------------------------
-  function validateBeforeSave(payload) {
-    if (!payload.patient.nom || !payload.patient.prenom || !payload.patient.naissance) {
-      return "Merci de compléter les informations patient (nom, prénom, date de naissance).";
-    }
-    if (!payload.prestations.length) {
-      return "Ajoute au moins une prestation valide (description + quantité > 0).";
-    }
-    if (payload.type === 'hospitalisation' && payload.hospitalisation) {
-      const { dateEntree, dateSortie } = payload.hospitalisation;
-      if (dateEntree && dateSortie && dateSortie < dateEntree) {
-        return "La date de sortie ne peut pas être avant la date d'entrée.";
-      }
-    }
-    return null;
-  }
-
-  async function saveInvoice() {
-    if (state.saving) return;
-    const payload = serializeInvoice();
-
-    const error = validateBeforeSave(payload);
-    if (error) {
-      alert(error);
-      return;
-    }
-
-    setBusy(true);
-    setSaveMsg('Enregistrement en cours...');
-
-    try {
-      if (state.currentInvoiceId) {
-        // La facture existe déjà : on met à jour le même document.
-        await setDoc(doc(db, FACTURE_COLLECTION, state.currentInvoiceId), payload, { merge: true });
-      } else {
-        // Nouvelle facture : Firestore génère l'ID, qu'on conserve ensuite comme identifiant de la facture.
-        payload.createdAt = payload.updatedAt;
-        const ref = await addDoc(collection(db, FACTURE_COLLECTION), payload);
-        state.currentInvoiceId = ref.id;
-      }
-
-      setInvoiceBadge();
-      setSaveMsg(`✅ Facture enregistrée : ${state.currentInvoiceId}`, 'ok');
-      await searchInvoices();
-    } catch (err) {
-      console.error(err);
-      setSaveMsg("❌ Erreur lors de l'enregistrement de la facture.", 'error');
-      alert("Erreur lors de l'enregistrement : " + (err.message || err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deleteInvoice() {
-    if (!state.currentInvoiceId) {
-      alert("Aucune facture chargée à supprimer.");
-      return;
-    }
-    if (!confirm(`Supprimer définitivement la facture ${state.currentInvoiceId} ?`)) return;
-
-    setBusy(true);
-    try {
-      await deleteDoc(doc(db, FACTURE_COLLECTION, state.currentInvoiceId));
-      setSaveMsg(`🗑 Facture ${state.currentInvoiceId} supprimée.`, 'ok');
-      resetForm();
-      await searchInvoices();
-    } catch (err) {
-      console.error(err);
-      setSaveMsg("❌ Erreur lors de la suppression.", 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // PDF
-  // ---------------------------------------------------------------------
-  async function generatePdf() {
-    const f = serializeInvoice();
-    const factureId = state.currentInvoiceId || `temp-${Date.now()}`;
-    const dateEdition = new Date().toLocaleString('fr-FR');
-
-    const hospitalisationBlock = (f.type === 'hospitalisation' && f.hospitalisation) ? `
-      <div style="border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff; margin-top:12px;">
-        <div style="font-size:12px; color:#64748b;">Séjour</div>
-        <div style="font-size:12px;">Service : <b>${f.service || '-'}</b></div>
-        <div style="font-size:12px;">Entrée : ${f.hospitalisation.dateEntree || '-'} — Sortie : ${f.hospitalisation.dateSortie || '-'} (${f.hospitalisation.nbJours ?? '-'} jour(s))</div>
-        <div style="font-size:12px;">Chambre : ${f.hospitalisation.chambre || '-'} — Médecin : ${f.hospitalisation.medecin || '-'}</div>
-      </div>
-    ` : '';
-
-    const html = `
-      <div style="font-family:Segoe UI,Arial,sans-serif; color:#0f172a; padding:24px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #0d6efd; padding-bottom:12px;">
-          <div style="display:flex; gap:12px; align-items:center;">
-            <div>
-              <div style="font-size:18px; font-weight:800; color:#0d6efd;">Facture RPO — ${typeLabelPdf(f.type)}</div>
-              <div style="font-size:12px; color:#334155;">${f.service || 'Service non renseigné'}</div>
-            </div>
-          </div>
-          <div style="text-align:right; font-size:12px;">
-            <div><b>Facture n°</b> ${factureId}</div>
-            <div><b>Édition :</b> ${dateEdition}</div>
-          </div>
-        </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;">
-          <div style="flex:1; min-width:240px; border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
-            <div style="font-size:12px; color:#64748b;">Patient</div>
-            <div style="font-size:15px; font-weight:700;">${f.patient.prenom} ${f.patient.nom}</div>
-            <div style="font-size:12px;">Né(e) le : ${f.patient.naissance || '-'}</div>
-            <div style="font-size:12px;">ID patient : ${f.patientId || '-'}</div>
-          </div>
-          <div style="flex:1; min-width:240px; border:1px solid #dbe3ef; border-radius:8px; padding:10px; background:#f8fbff;">
-            <div style="font-size:12px; color:#64748b;">Répartition</div>
-            <div style="font-size:12px;">Sécu (${f.regimeSecuPct}%) : <b>${euro(f.totals.partSecu)} €</b></div>
-            <div style="font-size:12px;">Mutuelle (${f.mutuellePct}%) : <b>${euro(f.totals.partMutuelle)} €</b></div>
-            <div style="font-size:12px;">Part patient : <b>${euro(f.totals.partPatient)} €</b></div>
-            <div style="font-size:12px;">Reste patient : <b>${euro(f.totals.restePayer)} €</b> (${f.statutPaiement.toUpperCase()})</div>
-          </div>
-        </div>
-
-        ${hospitalisationBlock}
-
-        <h3 style="margin:18px 0 8px; color:#0d6efd;">Prestations</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:12px;">
-          <thead>
-            <tr style="background:#f1f5f9;">
-              <th style="border:1px solid #dbe3ef; padding:7px; text-align:left;">Prestation</th>
-              <th style="border:1px solid #dbe3ef; padding:7px;">Qté</th>
-              <th style="border:1px solid #dbe3ef; padding:7px;">PU (€)</th>
-              <th style="border:1px solid #dbe3ef; padding:7px;">Total (€)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${f.prestations.map(p => `
-              <tr>
-                <td style="border:1px solid #dbe3ef; padding:7px;">${p.description}</td>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.quantity}</td>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.unitPrice)}</td>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.lineTotal)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-          <tfoot>
-            <tr style="background:#eff6ff; font-weight:700;">
-              <td colspan="3" style="border:1px solid #dbe3ef; padding:7px; text-align:right;">Total global</td>
-              <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(f.totals.total)} €</td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <h3 style="margin:18px 0 8px; color:#0d6efd;">Paiements</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:12px;">
-          <thead>
-            <tr style="background:#f8fafc;">
-              <th style="border:1px solid #dbe3ef; padding:7px;">Date</th>
-              <th style="border:1px solid #dbe3ef; padding:7px;">Mode</th>
-              <th style="border:1px solid #dbe3ef; padding:7px;">Montant (€)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(f.payments.length ? f.payments : [{ date: '-', mode: '-', amount: 0 }]).map(p => `
-              <tr>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.date}</td>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:center;">${p.mode}</td>
-                <td style="border:1px solid #dbe3ef; padding:7px; text-align:right;">${euro(p.amount)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div style="margin-top:24px; font-size:11px; color:#64748b; text-align:center; border-top:1px dashed #cbd5e1; padding-top:8px;">
-          Document généré à partir des données Firestore de la facture (facture n° ${factureId}).
-        </div>
-      </div>
-    `;
-
-    const container = document.createElement('div');
-    container.id = 'pdf-container';
-    container.innerHTML = html;
-    container.style.width = '794px';
-    container.style.background = 'white';
-    container.style.padding = '20px';
-    container.style.opacity = '0';
-    container.style.position = 'absolute';
-    container.style.top = '0';
-    document.body.appendChild(container);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      await html2pdf()
-        .set({
-          margin: 10,
-          filename: `Facture_RPO_${factureId}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(container)
-        .save();
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de la génération du PDF.");
-    } finally {
-      container.remove();
-    }
-  }
-
-  function typeLabelPdf(type) {
-    return { urgences: 'Urgences', hospitalisation: 'Hospitalisation', consultation: 'Consultation' }[type] || 'Facture';
-  }
-
-  // ---------------------------------------------------------------------
-  // Reset
-  // ---------------------------------------------------------------------
-  function resetForm() {
-    state.currentInvoiceId = null;
-    setInvoiceBadge();
-
-    $('invoiceType').value = 'urgences';
-    $('serviceLabel').value = '';
-    $('dateEntree').value = '';
-    $('dateSortie').value = '';
-    $('chambre').value = '';
-    $('medecin').value = '';
-    $('nbJours').value = '';
-
-    $('patientId').value = '';
-    $('nom').value = '';
-    $('prenom').value = '';
-    $('naissance').value = '';
-    $('patientMsg').textContent = '';
-
-    linesBody.innerHTML = '';
-    paymentsBody.innerHTML = '';
-    addLine();
-    addPayment();
-
-    $('regimeSecu').value = '70';
-    $('mutuellePct').value = '100';
-    setSaveMsg('');
-    updateTypeFieldsVisibility();
-    recompute();
-  }
-
-  window.__loadInvoice = (id) => loadInvoiceById(id);
-
-  // ---------------------------------------------------------------------
-  // Liaison des événements + démarrage de l'app (une seule fois, après auth)
-  // ---------------------------------------------------------------------
-  let eventsBound = false;
-  function bindEvents() {
-    if (eventsBound) return; // évite les doublons si onAuthStateChanged se redéclenche
-    eventsBound = true;
-
-    $('addLineBtn').addEventListener('click', () => addLine());
-    $('addPaymentBtn').addEventListener('click', () => addPayment());
-    $('reloadFacturablesBtn').addEventListener('click', async () => {
-      await loadFacturables();
-      setSaveMsg('🔄 Référentiel des prestations rechargé.', 'ok');
-    });
-    $('regimeSecu').addEventListener('change', recompute);
-    $('mutuellePct').addEventListener('input', recompute);
-    $('invoiceType').addEventListener('change', updateTypeFieldsVisibility);
-    $('dateEntree').addEventListener('input', computeNbJours);
-    $('dateSortie').addEventListener('input', computeNbJours);
-
-    $('loadPatientBtn').addEventListener('click', async () => {
-      const id = $('patientId').value.trim();
-      if (!id) { alert("Renseigne un ID patient."); return; }
-      await loadPatientById(id);
-    });
-
-    $('loadInvoiceByIdBtn').addEventListener('click', async () => {
-      const id = $('historyInvoiceId').value.trim();
-      if (!id) { alert('Renseigne un ID facture.'); return; }
-      await loadInvoiceById(id);
-    });
-
-    $('searchInvoicesBtn').addEventListener('click', searchInvoices);
-    $('saveBtn').addEventListener('click', saveInvoice);
-    $('pdfBtn').addEventListener('click', generatePdf);
-    $('deleteBtn').addEventListener('click', deleteInvoice);
-    $('resetBtn').addEventListener('click', () => {
-      if (confirm('Repartir sur une nouvelle facture vierge ?')) resetForm();
-    });
-  }
-
-  async function startApp() {
-    bindEvents();
-
-    const connStatus = $('connStatus');
-    try {
-      await loadFacturables();
-      connStatus.textContent = '🟢 Connecté à Firestore.';
-      connStatus.style.color = 'var(--success)';
-    } catch (err) {
-      console.error(err);
-      connStatus.textContent = '🔴 Connexion Firestore impossible — vérifie ta configuration.';
-      connStatus.style.color = 'var(--danger)';
-    }
-
-    await loadPatientFromUrl();
-
-    addLine();
-    addPayment();
-    setInvoiceBadge();
-    updateTypeFieldsVisibility();
-    recompute();
-
-    const params = new URLSearchParams(window.location.search);
-    const factureId = params.get('factureId');
-    if (factureId) await loadInvoiceById(factureId);
-
-    await searchInvoices();
-  }
-
-  // ---------------------------------------------------------------------
-  // Authentification — la facturation ne démarre qu'une fois l'utilisateur
-  // identifié et autorisé sur cette page
-  // ---------------------------------------------------------------------
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      // Pas d'utilisateur connecté : redirige vers la page de connexion.
-      window.location.href = "login.html";
-      return;
-    }
-
-    try {
-      if (typeof window.afficherLoader === 'function') window.afficherLoader();
-
-      const docRef = doc(db, "medecins", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        window.medecinNom = data.nom || "";
-        window.medecinSpecialite = data.specialite || "";
-        window.medecinLieu = data.lieu || "";
-        window.medecinType = data.type || "";
-        window.medecinUid = user.uid;
-
-        const nomElem = document.getElementById("nom-medecin");
-        if (nomElem) nomElem.textContent = window.medecinNom;
-
-        const specElem = document.getElementById("specialite");
-        if (specElem) specElem.textContent = window.medecinSpecialite;
-
-        const lieuElem = document.getElementById("lieu-medecin");
-        if (lieuElem) lieuElem.textContent = window.medecinLieu;
-
-        // --- Vérification d'accès à la page ---
-        const pages = data.pages || {};
-        const currentPath = window.location.pathname;
-        const currentPage = currentPath.substring(currentPath.lastIndexOf("/") + 1).replace(".html", "");
-
-        if (!pages[currentPage]) {
-          const modal = document.getElementById("modal-no-access");
-          if (typeof window.masquerLoader === 'function') window.masquerLoader();
-          if (modal) modal.style.display = "flex";
-          console.warn("Accès refusé à", currentPage);
-          return; // on n'initialise pas la facturation si l'accès est refusé
-        }
-      } else {
-        alert("Utilisateur non trouvé, veuillez vous reconnecter.");
-        return;
-      }
-
-      // Utilisateur authentifié et autorisé : on démarre la facturation
-      await startApp();
-
-      if (typeof window.masquerLoader === 'function') window.masquerLoader();
-    } catch (error) {
-      const modal = document.getElementById("modal-error");
-      if (typeof window.masquerLoader === 'function') window.masquerLoader();
-      if (modal) modal.style.display = "flex";
-      console.error("Erreur chargement médecin :", error);
-    }
+    (h.examens || []).filter(e => e.realise).forEach(e => { const f = findFact(e.type); add(f ? f[0] : (e.type || 'Examen'), f, 1, 'examen', h.id); });
+    if ((h.sortie?.options || []).some(o => /ambulance/i.test(o))) { const [da, ma] = rule('ambulance', ['ambulance', 'transport'], 'Transport en ambulance'); add(da, ma, 1, 'transport', h.id); }
   });
+  return [...map.values()];
+}
+
+function applyContext() {
+  const cs = selList('c'), hs = selList('h');
+  const r = reason(); if (r) S.type = r;
+  const starts = [...hs.map(h => tsOf(h.dateDebutTS)), ...cs.map(c => tsOf(c.dateTS))].filter(Boolean).sort((a, b) => a - b);
+  const ends = hs.map(h => tsOf(h.dateFinTS)).filter(Boolean).sort((a, b) => b - a);
+  $('dateEntree').value = isoL(starts[0]);
+  $('dateSortie').value = hs.length && ends.length === hs.length ? isoL(ends[0]) : '';
+  computeNbJours();
+  $('serviceLabel').value = hs.length ? (hs.find(h => h.service)?.service || 'Urgences') : (cs.length ? 'Consultation' : $('serviceLabel').value);
+  $('medecin').value = cs[0]?.medecinNom || hs[0]?.clotureAuteur || hs[0]?.historique?.[0]?.auteurNom || $('medecin').value;
+  if (!S.id && !S.assurLoaded) $('regime').value = hs.length ? 'hospi' : 'general';
+  [...linesBody.children].filter(tr => tr.dataset.auto).forEach(tr => tr.remove());
+  detect().forEach(addLine);
+  if (!linesBody.children.length) addLine();
+  refreshUI(); recompute();
+}
+function prefillAssurance() {
+  const last = S.invoices.find(i => i.data.assurance && i.data.statut !== 'annulee')?.data.assurance;
+  const a = S.patient?.assurance || last; if (!a) return;
+  S.assurLoaded = true; setAssurance(a);
+}
+function setAssurance(a) {
+  if (a.regimeId && S.regimes.some(r => r.id === a.regimeId)) $('regime').value = a.regimeId;
+  $('numeroSecu').value = a.numeroSecu || ''; $('mutuelle').value = a.mutuelle || '';
+  $('mutuellePct').value = a.mutuellePct ?? 100; $('tiersPayant').checked = a.tiersPayant !== false;
+}
+
+// ---------- UI contexte ----------
+function renderEnc() {
+  const row = (k, x, title, sub, off, note) => `<label class="enc ${off ? 'off' : ''}"><input type="checkbox" data-k="${k}" data-id="${esc(x.id)}" ${S.sel[k].has(x.id) ? 'checked' : ''} ${off ? 'disabled' : ''}>
+    <span class="tag">${k === 'c' ? 'Consultation' : 'Hospitalisation'}</span><span><b>${esc(title)}</b> ${esc(sub)}</span><span class="muted">${esc(note)}</span></label>`;
+  const html = [
+    ...S.consults.map(c => { const b = S.billed['c' + c.id]; return row('c', c, `${c.date || ''} ${c.heure || ''}`, c.motif || '', !!b || c.statut === 'encours', b ? `déjà facturée (${b})` : c.statut === 'encours' ? 'non clôturée' : ''); }),
+    ...S.hospis.map(h => { const b = S.billed['h' + h.id], fin = tsOf(h.dateFinTS); return row('h', h, `${fmt(tsOf(h.dateDebutTS))} → ${fin ? fmt(fin) : 'en cours'}`, h.motif || '', !!b, b ? `déjà facturée (${b})` : ''); })
+  ];
+  $('encList').innerHTML = html.join('') || '<div class="muted">Aucune consultation ni hospitalisation rattachée à ce patient.</div>';
+}
+function refreshUI() {
+  const r = reason(); if (r) S.type = r;
+  const box = $('reasonBox'), has = S.sel.c.size + S.sel.h.size > 0, cancelled = S.statut === 'annulee';
+  const open = selList('h').some(h => !h.dateFinTS);
+  if (cancelled) { box.className = 'reason none'; box.textContent = `Facture ${S.numero || ''} annulée — lecture seule.`; }
+  else if (S.type && (has || S.id)) { box.className = 'reason' + (open ? ' warn' : ''); box.textContent = `Motif détecté : ${TYPES[S.type] || S.type}${open ? ' — séjour non clôturé, facture provisoire' : ''}`; }
+  else { box.className = 'reason none'; box.textContent = S.pid ? 'Aucune consultation ni hospitalisation à facturer pour ce patient : la facturation est impossible.' : 'Ouvrez la facturation depuis la fiche d’un patient, ou chargez une facture existante.'; }
+  document.querySelectorAll('.hosp').forEach(e => e.style.display = hasHosp() ? '' : 'none');
+  const ok = (has || S.id) && !cancelled;
+  $('editArea').classList.toggle('disabled-section', !ok);
+  ['saveBtn', 'detectBtn'].forEach(id => $(id).disabled = !ok || S.saving);
+  $('cancelBtn').disabled = !S.id || cancelled || S.saving;
+  $('pdfBtn').disabled = !(has || S.id);
+  $('invoiceBadge').textContent = S.numero || (S.id ? S.id : 'nouvelle');
+  renderEnc();
+}
+$('encList').addEventListener('change', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  e.target.checked ? S.sel[k].add(e.target.dataset.id) : S.sel[k].delete(e.target.dataset.id);
+  if (!S.id) applyContext(); else refreshUI();
+});
+
+// ---------- Lignes / paiements ----------
+function computeNbJours() {
+  const a = $('dateEntree').value, b = $('dateSortie').value;
+  $('nbJours').value = a && b ? Math.max(0, Math.round((new Date(b) - new Date(a)) / 864e5)) : '';
+}
+function addLine(l = {}) {
+  const tr = document.createElement('tr');
+  Object.assign(tr.dataset, { src: l.source || 'manuel', auto: l.auto ? '1' : '', ref: l.ref || '' });
+  tr.innerHTML = `<td class="left"><input class="d" list="dl" placeholder="Prestation…" value="${esc(l.description || '')}"></td>
+    <td><span class="tag">${esc(SRC[l.source] || 'Manuel')}</span></td>
+    <td><input class="q" type="number" min="1" step="1" value="${l.quantity > 0 ? l.quantity : 1}"></td>
+    <td><input class="u" type="number" min="0" step="0.01" value="${l.unitPrice >= 0 ? l.unitPrice : 0}"></td>
+    <td class="lt">0.00</td><td><button type="button" class="btn btn-danger x">🗑</button></td>`;
+  linesBody.appendChild(tr);
+  tr.addEventListener('input', recompute);
+  tr.querySelector('.d').addEventListener('change', e => { const n = e.target.value; if (S.fact[n] !== undefined) tr.querySelector('.u').value = S.fact[n]; recompute(); });
+  tr.querySelector('.x').onclick = () => { tr.remove(); recompute(); };
+}
+function addPayment(p = {}) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input class="pd" type="date" value="${p.date || isoL(new Date())}"></td>
+    <td><select class="pm">${MODES.map(m => `<option>${m}</option>`).join('')}</select></td>
+    <td><input class="pr" placeholder="n° chèque, transaction…" value="${esc(p.ref || '')}"></td>
+    <td><input class="pa" type="number" min="0" step="0.01" value="${Number(p.amount) >= 0 ? Number(p.amount) : 0}"></td>
+    <td><select class="ps"><option value="encaisse">Encaissé</option><option value="prevu">Prévu</option></select></td>
+    <td><button type="button" class="btn btn-danger x">🗑</button></td>`;
+  paymentsBody.appendChild(tr);
+  if (p.mode) tr.querySelector('.pm').value = p.mode;
+  if (p.statut) tr.querySelector('.ps').value = p.statut;
+  tr.addEventListener('input', recompute); tr.addEventListener('change', recompute);
+  tr.querySelector('.x').onclick = () => { tr.remove(); recompute(); };
+}
+const readLines = () => [...linesBody.children].map(tr => {
+  const q = Math.max(0, +tr.querySelector('.q').value || 0), u = Math.max(0, +tr.querySelector('.u').value || 0);
+  return { description: tr.querySelector('.d').value.trim(), quantity: q, unitPrice: u, lineTotal: r2(q * u), source: tr.dataset.src, auto: !!tr.dataset.auto, ref: tr.dataset.ref };
+}).filter(x => x.description && x.quantity > 0);
+const readPayments = () => [...paymentsBody.children].map(tr => ({
+  date: tr.querySelector('.pd').value, mode: tr.querySelector('.pm').value, ref: tr.querySelector('.pr').value.trim(),
+  amount: Math.max(0, r2(tr.querySelector('.pa').value)), statut: tr.querySelector('.ps').value
+})).filter(p => p.amount > 0);
+
+function recompute() {
+  let total = 0;
+  [...linesBody.children].forEach(tr => {
+    const q = Math.max(0, +tr.querySelector('.q').value || 0), u = Math.max(0, +tr.querySelector('.u').value || 0);
+    tr.querySelector('.lt').textContent = euro(q * u);
+    tr.classList.toggle('unpriced', !!tr.querySelector('.d').value.trim() && u === 0);
+    total += q * u;
+  });
+  total = r2(total);
+  const reg = regime() || { taux: 0 };
+  let secu = r2(total * (reg.taux || 0) / 100); if (reg.plafond > 0) secu = Math.min(secu, r2(reg.plafond));
+  const mp = Math.min(100, Math.max(0, +$('mutuellePct').value || 0));
+  const mut = r2((total - secu) * mp / 100), pat = r2(total - secu - mut);
+  const aReg = $('tiersPayant').checked ? pat : total;
+  const pays = readPayments();
+  const sum = st => r2(pays.filter(p => p.statut === st).reduce((s, p) => s + p.amount, 0));
+  const paid = sum('encaisse'), prevu = sum('prevu'), reste = Math.max(r2(aReg - paid), 0);
+  S.calc = { total, secu, mut, pat, aReg, paid, prevu, reste };
+  $('totalGlobal').textContent = euro(total);
+  $('partSecu').value = euro(secu); $('partMutuelle').value = euro(mut); $('partPatient').value = euro(pat);
+  $('aRegler').textContent = euro(aReg) + ' €'; $('dejaPaye').textContent = euro(paid) + ' €';
+  $('prevu').textContent = euro(prevu) + ' €'; $('restePayer').textContent = euro(reste) + ' €';
+  $('statusP').textContent = S.statut === 'annulee' ? 'ANNULÉE' : (reste <= 0.009 && total > 0 ? 'COMPLET' : 'INCOMPLET');
+}
+function settle() { recompute(); if (S.calc.reste <= 0) return alert('Rien à solder.'); addPayment({ amount: S.calc.reste, statut: 'encaisse' }); recompute(); }
+function schedule() {
+  const n = parseInt(prompt('Nombre d’échéances (2 à 12) ?', '3'), 10);
+  if (!(n >= 2 && n <= 12)) return;
+  [...paymentsBody.children].filter(tr => tr.querySelector('.ps').value === 'prevu').forEach(tr => tr.remove());
+  recompute();
+  const base = r2(S.calc.reste); if (base <= 0) return alert('Rien à échelonner.');
+  const part = r2(base / n), now = new Date();
+  for (let i = 1; i <= n; i++) addPayment({ date: isoL(new Date(now.getFullYear(), now.getMonth() + i, now.getDate())), statut: 'prevu', amount: i === n ? r2(base - part * (n - 1)) : part });
+  recompute();
+}
+
+// ---------- Sérialisation ----------
+function serialize() {
+  recompute();
+  const c = S.calc, reg = regime(), pays = readPayments();
+  const hs = hasHosp();
+  return {
+    type: S.type || 'consultation', numero: S.numero || null, statut: S.statut || 'validee',
+    service: $('serviceLabel').value.trim(),
+    sejour: { dateEntree: $('dateEntree').value || null, dateSortie: hs ? ($('dateSortie').value || null) : null, chambre: hs ? $('chambre').value.trim() : '', medecin: $('medecin').value.trim(), nbJours: hs && $('nbJours').value !== '' ? Number($('nbJours').value) : null },
+    sources: { consultationIds: [...S.sel.c], hospitalisationIds: [...S.sel.h] },
+    patientId: S.pid || null,
+    patient: { nom: $('nom').value.trim(), prenom: $('prenom').value.trim(), naissance: $('naissance').value },
+    assurance: { regimeId: reg.id, regimeLabel: reg.label, regimeSecuPct: reg.taux, tiersPayant: $('tiersPayant').checked, numeroSecu: $('numeroSecu').value.trim(), mutuelle: $('mutuelle').value.trim(), mutuellePct: Number($('mutuellePct').value) || 0 },
+    regimeSecuPct: reg.taux, mutuellePct: Number($('mutuellePct').value) || 0,
+    prestations: readLines(), payments: pays,
+    totals: { total: c.total, partSecu: c.secu, partMutuelle: c.mut, partPatient: c.pat, aRegler: c.aReg, dejaPaye: c.paid, prevu: c.prevu, restePayer: c.reste },
+    statutPaiement: c.reste <= 0.009 && c.total > 0 ? 'complet' : 'incomplet',
+    creePar: window.medecinUid || null, updatedAt: new Date().toISOString()
+  };
+}
+function applyInvoice(f) {
+  S.type = f.type || 'consultation';
+  const s = f.sejour || f.hospitalisation || {};
+  $('serviceLabel').value = f.service || ''; $('dateEntree').value = s.dateEntree || ''; $('dateSortie').value = s.dateSortie || '';
+  $('chambre').value = s.chambre || ''; $('medecin').value = s.medecin || '';
+  $('nom').value = f.patient?.nom || ''; $('prenom').value = f.patient?.prenom || ''; $('naissance').value = f.patient?.naissance || '';
+  const a = f.assurance || {};
+  if (!a.regimeId) { const r = S.regimes.find(x => x.taux === f.regimeSecuPct); if (r) a.regimeId = r.id; }
+  a.mutuellePct = a.mutuellePct ?? f.mutuellePct; setAssurance(a); S.assurLoaded = true;
+  linesBody.innerHTML = ''; paymentsBody.innerHTML = '';
+  (f.prestations || []).forEach(addLine); (f.payments || []).forEach(p => addPayment({ ...p, statut: p.statut || 'encaisse' }));
+  if (!linesBody.children.length) addLine(); if (!paymentsBody.children.length) addPayment();
+  computeNbJours(); recompute();
+}
+
+// ---------- Enregistrement / annulation ----------
+function validate(p) {
+  if (!p.patient.nom || !p.patient.prenom || !p.patient.naissance) return 'Complétez nom, prénom et date de naissance du patient.';
+  if (!S.id && !p.sources.consultationIds.length && !p.sources.hospitalisationIds.length) return 'Sélectionnez au moins une consultation ou une hospitalisation à facturer.';
+  if (!p.prestations.length) return 'Ajoutez au moins une prestation (description et quantité > 0).';
+  const { dateEntree, dateSortie } = p.sejour; if (dateEntree && dateSortie && dateSortie < dateEntree) return 'La date de sortie précède la date d’entrée.';
+  if (S.calc.paid + S.calc.prevu > S.calc.aReg + 0.009) return `Les paiements (${euro(S.calc.paid + S.calc.prevu)} €) dépassent le montant dû (${euro(S.calc.aReg)} €).`;
+  return null;
+}
+const audit = (action, p) => ({ date: new Date().toISOString(), action, auteur: window.medecinNom || '', uid: window.medecinUid || null, total: p?.totals?.total ?? null });
+function setBusy(b) { S.saving = b; ['resetBtn', 'searchInvoicesBtn', 'loadInvoiceByIdBtn'].forEach(id => $(id).disabled = b); refreshUI(); }
+
+async function saveInvoice() {
+  if (S.saving) return;
+  const p = serialize(), err = validate(p); if (err) return alert(err);
+  const bad = p.prestations.filter(x => x.unitPrice === 0).length;
+  if (bad && !confirm(`${bad} ligne(s) sans tarif (0 €). Enregistrer quand même ?`)) return;
+  setBusy(true); setMsg('Enregistrement…');
+  try {
+    if (S.id) {
+      await setDoc(doc(db, COL, S.id), { ...p, numero: S.numero || null, historique: arrayUnion(audit('Modification', p)) }, { merge: true });
+    } else {
+      await refreshInvoices();
+      const dup = [...S.sel.c].find(i => S.billed['c' + i]) || [...S.sel.h].find(i => S.billed['h' + i]);
+      if (dup) { renderEnc(); throw new Error('Une des consultations ou hospitalisations vient d’être facturée par ailleurs.'); }
+      const ref = doc(collection(db, COL)), year = new Date().getFullYear();
+      await runTransaction(db, async tx => {
+        const cRef = doc(db, 'compteurs', 'facture-' + year), s = await tx.get(cRef);
+        const n = (s.exists() ? s.data().dernier || 0 : 0) + 1;
+        p.numero = `F${year}-${String(n).padStart(6, '0')}`;
+        tx.set(cRef, { dernier: n }, { merge: true });
+        tx.set(ref, { ...p, createdAt: p.updatedAt, historique: [audit('Création', p)] });
+      });
+      S.id = ref.id; S.numero = p.numero; S.statut = 'validee';
+    }
+    await refreshInvoices(); setBusy(false); setMsg(`✅ Facture enregistrée : ${S.numero || S.id}`, 'ok'); await searchInvoices();
+  } catch (e) { console.error(e); setBusy(false); setMsg('❌ ' + (e.message || 'Erreur d’enregistrement'), 'error'); alert('Erreur : ' + (e.message || e)); }
+}
+async function cancelInvoice() {
+  if (!S.id) return;
+  const motif = (prompt(`Motif d’annulation de la facture ${S.numero || S.id} :`) || '').trim();
+  if (!motif) return;
+  if (!confirm('Annuler cette facture ? Le numéro est conservé, et les consultations ou hospitalisations redeviennent facturables.')) return;
+  setBusy(true);
+  try {
+    await setDoc(doc(db, COL, S.id), { statut: 'annulee', annulation: { motif, date: new Date().toISOString(), par: window.medecinNom || '' }, updatedAt: new Date().toISOString(), historique: arrayUnion(audit('Annulation : ' + motif)) }, { merge: true });
+    S.statut = 'annulee'; await refreshInvoices(); setBusy(false); recompute(); setMsg('🚫 Facture annulée.', 'ok'); await searchInvoices();
+  } catch (e) { console.error(e); setBusy(false); setMsg('❌ Annulation impossible.', 'error'); }
+}
+
+// ---------- Historique ----------
+async function searchInvoices() {
+  const info = $('historyInfo'); info.textContent = 'Recherche…';
+  try {
+    const pid = $('patientId').value.trim();
+    const all = pid && pid === S.pid && S.invoices.length ? S.invoices : await fetchInvoices(pid || null);
+    const nom = $('historyNom').value.trim().toLowerCase(), dMin = $('historyDateMin').value, dMax = $('historyDateMax').value;
+    const rows = all.filter(({ data: d }) => {
+      if (nom && !`${d.patient?.prenom || ''} ${d.patient?.nom || ''}`.toLowerCase().includes(nom)) return false;
+      const day = String(d.updatedAt || d.createdAt || '').slice(0, 10);
+      return !(dMin && day < dMin) && !(dMax && day > dMax);
+    });
+    $('historyBody').innerHTML = rows.map(({ id, data: d }) => {
+      const st = d.statut === 'annulee' ? 'annulee' : (d.statutPaiement === 'complet' ? 'complet' : 'incomplet');
+      return `<tr><td>${esc(d.numero || id)}</td><td><span class="tag">${esc(TYPES[d.type] || d.type || '-')}</span></td><td>${fmt(tsOf(d.updatedAt || d.createdAt))}</td>
+        <td class="left">${esc(d.patient?.prenom)} ${esc(d.patient?.nom)}</td><td>${euro(d.totals?.total)}</td><td>${euro(d.totals?.restePayer)}</td>
+        <td><span class="badge b-${st}">${st.toUpperCase()}</span></td><td><button class="btn-id" data-load="${esc(id)}">Charger</button></td></tr>`;
+    }).join('') || '<tr><td colspan="8" class="muted">Aucun résultat.</td></tr>';
+    info.textContent = `${rows.length} facture(s)${pid ? ` pour ce patient` : ''}.`;
+  } catch (e) { console.error(e); info.textContent = '⚠️ Erreur de recherche.'; }
+}
+$('historyBody').addEventListener('click', e => { const id = e.target.dataset.load; if (id) loadInvoiceById(id); });
+
+async function loadInvoiceById(ref) {
+  if (!ref) return;
+  try {
+    let snap = await getDoc(doc(db, COL, ref));
+    if (!snap.exists()) { const q = await getDocs(query(collection(db, COL), where('numero', '==', ref), limit(1))); if (!q.empty) snap = q.docs[0]; }
+    if (!snap.exists()) return alert('Facture introuvable.');
+    const f = snap.data();
+    S.id = snap.id; S.numero = f.numero || null; S.statut = f.statut || 'validee';
+    if (f.patientId && f.patientId !== S.pid) await loadPatient(f.patientId); else { computeBilled(); }
+    S.sel = { c: new Set(f.sources?.consultationIds || []), h: new Set(f.sources?.hospitalisationIds || []) };
+    computeBilled(); applyInvoice(f); refreshUI(); recompute();
+    setMsg(`📂 Facture chargée : ${S.numero || S.id}`, 'ok');
+  } catch (e) { console.error(e); setMsg('⚠️ Chargement impossible.', 'error'); }
+}
+
+function newInvoice() {
+  S.id = S.numero = S.statut = null; S.assurLoaded = false; S.type = null;
+  linesBody.innerHTML = ''; paymentsBody.innerHTML = ''; addPayment();
+  computeBilled(); defaultSel({ c: [], h: [] }); prefillAssurance(); applyContext(); setMsg('');
+}
+
+// ---------- PDF ----------
+async function generatePdf() {
+  const f = serialize(), e = S.etab, a = f.assurance, t = f.totals, s = f.sejour;
+  const td = 'border:1px solid #dbe3ef;padding:7px;', box = 'flex:1;min-width:240px;border:1px solid #dbe3ef;border-radius:8px;padding:10px;background:#f8fbff;font-size:12px;line-height:1.6;';
+  const cancelled = S.statut === 'annulee', num = S.numero || 'BROUILLON';
+  const sejour = hasHosp() ? `<div>Entrée : ${esc(s.dateEntree || '-')} — Sortie : ${esc(s.dateSortie || 'en cours')} (${s.nbJours ?? '-'} nuit(s))</div>${s.chambre ? `<div>Chambre : ${esc(s.chambre)}</div>` : ''}` : `<div>Date : ${esc(s.dateEntree || '-')}</div>`;
+  const html = `<div style="font-family:Segoe UI,Arial,sans-serif;color:#0f172a;padding:24px;position:relative">
+    <div style="display:flex;justify-content:space-between;border-bottom:3px solid #0d6efd;padding-bottom:12px">
+      <div><div style="font-size:18px;font-weight:800;color:#0d6efd">${esc(e.nom || window.medecinLieu || 'Établissement')}</div>
+        <div style="font-size:12px">${esc(e.adresse || '')}</div><div style="font-size:12px">${e.siret ? 'SIRET : ' + esc(e.siret) : ''}</div></div>
+      <div style="text-align:right;font-size:12px"><div style="font-size:16px;font-weight:800">Facture n° ${esc(num)}</div>
+        <div>${esc(TYPES[f.type] || '')} — ${esc(f.service || '')}</div><div>Édition : ${new Date().toLocaleString('fr-FR')}</div></div>
+    </div>
+    ${cancelled ? `<div style="margin-top:10px;padding:8px;background:#fee2e2;color:#991b1b;font-weight:800;text-align:center">FACTURE ANNULÉE</div>` : ''}
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
+      <div style="${box}"><b style="font-size:15px">${esc(f.patient.prenom)} ${esc(f.patient.nom)}</b><div>Né(e) le : ${esc(f.patient.naissance || '-')}</div>
+        <div>ID patient : ${esc(f.patientId || '-')}</div>${a.numeroSecu ? `<div>N° sécu : ${esc(a.numeroSecu)}</div>` : ''}${a.mutuelle ? `<div>Mutuelle : ${esc(a.mutuelle)}</div>` : ''}</div>
+      <div style="${box}"><b>Prise en charge</b><div>${esc(a.regimeLabel)}${a.tiersPayant ? ' — tiers payant' : ''}</div><div>Part assurance maladie : <b>${euro(t.partSecu)} €</b></div>
+        <div>Part mutuelle (${a.mutuellePct} %) : <b>${euro(t.partMutuelle)} €</b></div><div>Part patient : <b>${euro(t.partPatient)} €</b></div></div>
+    </div>
+    <div style="${box};margin-top:12px"><b>${hasHosp() ? 'Séjour' : 'Consultation'}</b>${sejour}${s.medecin ? `<div>Médecin : ${esc(s.medecin)}</div>` : ''}</div>
+    <h3 style="margin:18px 0 8px;color:#0d6efd">Prestations</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f1f5f9"><th style="${td};text-align:left">Prestation</th><th style="${td}">Qté</th><th style="${td}">PU (€)</th><th style="${td}">Total (€)</th></tr></thead><tbody>
+      ${f.prestations.map(p => `<tr><td style="${td}">${esc(p.description)}</td><td style="${td};text-align:center">${p.quantity}</td><td style="${td};text-align:right">${euro(p.unitPrice)}</td><td style="${td};text-align:right">${euro(p.lineTotal)}</td></tr>`).join('')}
+    </tbody><tfoot><tr style="background:#eff6ff;font-weight:700"><td colspan="3" style="${td};text-align:right">Total</td><td style="${td};text-align:right">${euro(t.total)} €</td></tr>
+      <tr><td colspan="3" style="${td};text-align:right">Montant à la charge du patient${a.tiersPayant ? '' : ' (avance des frais)'}</td><td style="${td};text-align:right">${euro(t.aRegler)} €</td></tr></tfoot></table>
+    <h3 style="margin:18px 0 8px;color:#0d6efd">Règlements</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc"><th style="${td}">Date</th><th style="${td}">Mode</th><th style="${td}">Réf.</th><th style="${td}">Montant (€)</th><th style="${td}">Statut</th></tr></thead><tbody>
+      ${(f.payments.length ? f.payments : [{ date: '-', mode: '-', ref: '', amount: 0, statut: '' }]).map(p => `<tr><td style="${td};text-align:center">${esc(p.date)}</td><td style="${td};text-align:center">${esc(p.mode)}</td><td style="${td}">${esc(p.ref)}</td><td style="${td};text-align:right">${euro(p.amount)}</td><td style="${td};text-align:center">${p.statut === 'prevu' ? 'Prévu' : p.statut ? 'Encaissé' : ''}</td></tr>`).join('')}
+    </tbody></table>
+    <div style="margin-top:10px;font-size:13px;font-weight:700">Reste à payer : ${euro(t.restePayer)} € ${f.statutPaiement === 'complet' && !cancelled ? '— FACTURE ACQUITTÉE' : ''}</div>
+    <div style="margin-top:24px;font-size:11px;color:#64748b;text-align:center;border-top:1px dashed #cbd5e1;padding-top:8px">${esc(e.mentions || 'Soins exonérés de TVA (art. 261-4-1° du CGI).')}</div></div>`;
+  const c = document.createElement('div');
+  c.innerHTML = html; Object.assign(c.style, { width: '794px', background: '#fff', position: 'absolute', top: '0', opacity: '0' });
+  document.body.appendChild(c);
+  try {
+    await new Promise(r => setTimeout(r, 300));
+    await html2pdf().set({ margin: 10, filename: `Facture_${num}.pdf`, image: { type: 'jpeg', quality: .98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(c).save();
+  } catch (err) { console.error(err); alert('Erreur lors de la génération du PDF.'); } finally { c.remove(); }
+}
+
+// ---------- Démarrage ----------
+function bindEvents() {
+  $('addLineBtn').onclick = () => { addLine(); recompute(); };
+  $('addPaymentBtn').onclick = () => { addPayment(); recompute(); };
+  $('settleBtn').onclick = settle; $('scheduleBtn').onclick = schedule;
+  $('detectBtn').onclick = () => { if (!S.sel.c.size && !S.sel.h.size) return; applyContext(); setMsg('🔍 Prestations détectées à partir du dossier.', 'ok'); };
+  $('reloadFacturablesBtn').onclick = async () => { await loadFacturables(); setMsg('🔄 Référentiel rechargé.', 'ok'); };
+  ['regime', 'mutuellePct', 'tiersPayant'].forEach(id => $(id).addEventListener('input', recompute));
+  $('dateEntree').addEventListener('input', computeNbJours); $('dateSortie').addEventListener('input', computeNbJours);
+  $('saveBtn').onclick = saveInvoice; $('pdfBtn').onclick = generatePdf; $('cancelBtn').onclick = cancelInvoice;
+  $('resetBtn').onclick = () => { if (confirm('Repartir sur une nouvelle facture ?')) newInvoice(); };
+  $('searchInvoicesBtn').onclick = searchInvoices;
+  $('loadInvoiceByIdBtn').onclick = () => loadInvoiceById($('historyInvoiceId').value.trim());
+}
+async function startApp() {
+  bindEvents();
+  await loadConfig(); await loadFacturables();
+  $('connStatus').textContent = '🟢 Connecté à Firestore.'; $('connStatus').style.color = 'var(--success)';
+  addLine(); addPayment();
+  const q = new URLSearchParams(location.search), pid = q.get('id'), fid = q.get('factureId');
+  if (fid) await loadInvoiceById(fid);
+  else if (pid) {
+    await loadPatient(pid);
+    defaultSel({ c: q.get('consultationId') ? [q.get('consultationId')] : [], h: q.get('hospitalisationId') ? [q.get('hospitalisationId')] : [] });
+    prefillAssurance(); applyContext();
+  }
+  refreshUI(); recompute(); await searchInvoices();
+}
+function block(msg) { const b = $('blocker'); b.textContent = msg; b.style.display = 'flex'; }
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    window.afficherLoader?.();
+    const snap = await getDoc(doc(db, 'medecins', user.uid));
+    if (!snap.exists()) { window.masquerLoader?.(); return block('Utilisateur non trouvé, veuillez vous reconnecter.'); }
+    const d = snap.data();
+    Object.assign(window, { medecinNom: d.nom || '', medecinSpecialite: d.specialite || '', medecinLieu: d.lieu || '', medecinType: d.type || '', medecinUid: user.uid });
+    const page = location.pathname.substring(location.pathname.lastIndexOf('/') + 1).replace('.html', '');
+    if (!(d.pages || {})[page]) { window.masquerLoader?.(); return block('Accès refusé. Veuillez contacter un administrateur.'); }
+    await startApp(); window.masquerLoader?.();
+  } catch (err) { console.error(err); window.masquerLoader?.(); block('Oups, une erreur est survenue. Veuillez réessayer plus tard.'); }
+});
 </script>
 </body>
 </html>

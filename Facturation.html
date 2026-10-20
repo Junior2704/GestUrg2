@@ -1,162 +1,230 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
 <title>Facturation RPO</title>
-<link rel="icon" type="image/png" href="logo.png" />
+<link rel="icon" type="image/png" href="logo.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-:root{--bg:#eef2f7;--card:#fff;--line:#dde3eb;--text:#1f2937;--primary:#0d6efd;--success:#1f9d55;--warning:#f59e0b;--danger:#dc3545;--muted:#6b7280}
-*{box-sizing:border-box}
-body{margin:0;font-family:"Segoe UI",Arial,sans-serif;color:var(--text);background:linear-gradient(120deg,#eef2f7,#f7f9fc)}
-.container{max-width:1300px;margin:20px auto;padding:0 14px}
-h1{text-align:center;margin:8px 0 6px}h2{margin:0 0 12px;font-size:1.15rem}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 20px rgba(15,23,42,.06);padding:16px;margin-bottom:14px}
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%;margin:0;padding:0}
+body{display:flex;flex-direction:column;overflow:hidden;font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
+h2,h3,p{margin:0}button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}.i.lg{width:24px;height:24px}
+body>header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--head-h);padding:8px 20px;background:#fff;border-bottom:1px solid var(--line);z-index:5}
+.left-header{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand{width:38px;height:38px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25)}.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#patientName{font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;padding:4px 12px;font-size:13px;font-weight:700;border-radius:999px;background:var(--primary-soft);color:var(--primary-d);white-space:nowrap}.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.late{background:var(--late-soft);color:var(--late)}
+.icon-button{appearance:none;width:44px;height:44px;display:inline-grid;place-items:center;padding:0;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}.icon-button:hover{background:var(--primary-soft)}
+.menu-toggle{display:none;appearance:none;width:44px;height:44px;flex:none;padding:0;place-items:center;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.app{flex:1;min-height:0;display:flex;overflow:hidden}
+.content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+nav{flex:none;width:var(--nav-w);display:flex;flex-direction:column;padding:14px 12px calc(14px + var(--safe-b));background:#fff;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto;scrollbar-width:none;transition:width .25s ease,box-shadow .25s ease;z-index:10}
+nav::-webkit-scrollbar{display:none}
+nav:hover{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.08)}
+.nav-title{padding:4px 12px 12px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--line-soft);opacity:0;transition:opacity .2s}nav:hover .nav-title{opacity:1}
+#navItems{display:flex;flex-direction:column;gap:4px}
+.nav-item{position:relative;display:flex;align-items:center;gap:14px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none;touch-action:manipulation}
+.nav-item>.i{color:var(--muted)}.nav-label{opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis}nav:hover .nav-label{opacity:1}
+@media (hover:hover){.nav-item:hover{background:var(--primary-soft)}.nav-item:hover>.i{color:var(--primary)}}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d)}.nav-item.active>.i{color:var(--primary)}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;background:var(--primary);border-radius:0 4px 4px 0}
+.nav-item:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,.btn-danger:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:none){nav:hover{width:var(--nav-w);box-shadow:none}nav:hover .nav-label,nav:hover .nav-title{opacity:0}nav.expanded{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.1)}nav.expanded .nav-label,nav.expanded .nav-title{opacity:1}}
+.nav-backdrop{display:none}
+section.panel{display:none;flex:1;min-height:0;overflow-y:auto;background:#fff}section.panel.active{display:block}
+.panel-head{position:sticky;top:0;z-index:4;padding:22px var(--gutter) 16px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.panel-title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;letter-spacing:-.015em}
+.panel-title .ico{width:40px;height:40px;flex:none;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:12px}
+.hint{margin:6px 0 0 52px;font-size:14px;color:var(--muted)}
+.panel-body{padding:22px var(--gutter) 48px}
+.card-sec{margin-bottom:16px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+.card-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.card-title .i{color:var(--primary);width:18px;height:18px}
 .disabled-section{opacity:.45;pointer-events:none}
-.grid{display:grid;gap:10px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-label{display:block;font-size:.88rem;font-weight:700;margin-bottom:4px}
-input,select,button{font:inherit}
-input,select{width:100%;border:1px solid #cfd8e3;border-radius:10px;padding:9px;background:#fff}
-input[type=checkbox]{width:auto}
-input:disabled{background:#f7f9fc;color:#475569}
-.line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{border:none;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}.btn-danger{background:var(--danger);color:#fff}
-.btn-id{background:transparent;color:#000;border:1.5px solid rgba(0,0,0,.2);padding:10px 16px;border-radius:10px;cursor:pointer;transition:.2s}
-.btn-id:hover{background:rgba(0,120,255,.12);border-color:rgba(0,120,255,.6);color:#0078ff}
-.btn-id:disabled{opacity:.5;cursor:not-allowed}
-.btn-id-v:hover{background:rgba(0,200,80,.12);border-color:rgba(0,200,80,.6);color:#00b35a}
-.btn-id-c:hover{background:rgba(255,0,0,.1);border-color:rgba(255,0,0,.6);color:#e60000}
-.muted{color:var(--muted);font-size:.85rem}.error-text{color:var(--danger);font-size:.85rem;font-weight:700}.ok-text{color:var(--success);font-size:.85rem;font-weight:700}
-table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:6px;text-align:center;vertical-align:middle}th{background:#f8fafc;font-size:.9rem}td.left{text-align:left}
-tr.unpriced input.u{border-color:var(--danger);background:#fff1f2}
-.kpis{display:grid;gap:8px;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:10px}
-.kpi{border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;padding:8px}.kpi b{display:block;margin-top:4px}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:800}
-.b-complet{background:#dcfce7;color:#166534}.b-incomplet{background:#fee2e2;color:#991b1b}.b-annulee{background:#e5e7eb;color:#374151}
-.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:800;background:#e0e7ff;color:#3730a3}
-.reason{border-radius:12px;padding:12px 14px;font-weight:700;margin-bottom:10px;background:#e0e7ff;color:#3730a3}
-.reason.none{background:#fee2e2;color:#991b1b}.reason.warn{background:#fef3c7;color:#92400e}
-.enc{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-weight:400;cursor:pointer}
-.enc.off{opacity:.55;cursor:not-allowed;background:#f8fafc}
-.hist{max-height:280px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px}
-#blocker{display:none;position:fixed;inset:0;z-index:99;background:rgba(255,255,255,.96);align-items:center;justify-content:center;text-align:center;font-size:1.1rem;padding:20px}
-@media(max-width:1000px){.g2,.g3,.g4,.kpis{grid-template-columns:1fr}}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}.form-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid .full{grid-column:1/-1}
+.field{min-width:0}label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+input:disabled{opacity:.75;cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;margin:0;font-weight:600;cursor:pointer}.check input{width:20px;height:20px;min-height:0}
+.btn-primary,.btn-secondary,.btn-danger{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;font:600 15px/1 var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:active{background:var(--primary-d)}
+.btn-secondary{background:#fff;color:var(--primary);border-color:var(--line)}.btn-secondary:hover{background:var(--primary-soft)}
+.btn-danger{background:#fff;color:var(--late);border-color:#f0c3c5}.btn-danger:hover{background:var(--late-soft)}
+button:disabled{opacity:.5;cursor:not-allowed}
+td .btn-danger{min-height:38px;padding:0 12px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.actionbar{flex:none;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px var(--gutter) calc(12px + var(--safe-b));background:#fff;border-top:1px solid var(--line)}
+.muted{color:var(--muted);font-size:14px}.error-text{color:var(--late);font-size:14px;font-weight:600}.ok-text{color:var(--ok);font-size:14px;font-weight:600}
+.reason{display:flex;gap:10px;padding:12px 14px;margin-bottom:16px;border-radius:12px;font-weight:600;background:var(--primary-soft);color:var(--primary-d);border:1px solid #b5d6ea}
+.reason.none{background:var(--late-soft);border-color:#f0c3c5;color:var(--late)}.reason.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.enc{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-weight:400;cursor:pointer}
+.enc input{width:20px;height:20px;min-height:0}.enc.off{opacity:.6;cursor:not-allowed}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--primary-soft);color:var(--primary-d)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}.b-complet{background:var(--ok-soft);color:var(--ok)}.b-incomplet{background:var(--late-soft);color:var(--late)}.b-annulee{background:var(--line-soft);color:var(--muted)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:8px 10px;border-bottom:1px solid var(--line-soft);text-align:center;vertical-align:middle}
+th{background:var(--field);font-size:13px;font-weight:700;color:var(--muted)}td.left{text-align:left}tfoot td{font-weight:700;background:var(--field)}
+td input,td select{min-height:40px;padding:8px 10px;font-size:15px}
+tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:16px}
+.kpi{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:500;color:var(--muted)}.kpi b{display:block;margin-top:3px;font-size:18px;color:var(--ink)}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:18px;font-weight:600;color:var(--late);background:rgba(255,255,255,.96)}
+@media(max-width:768px){.form-grid,.form-grid.c3{grid-template-columns:1fr}.hint{margin-left:0}nav{width:64px}}
+@media (max-width:900px){
+  .menu-toggle{display:inline-grid}.head-kicker{display:none}
+  nav,nav:hover,nav.open{width:min(320px,86vw)}
+  nav{position:fixed;top:0;bottom:0;left:calc(-1*min(320px,86vw) - 30px);padding:calc(18px + var(--safe-t)) 14px calc(24px + var(--safe-b));border-right:0;border-radius:0 22px 22px 0;box-shadow:none;z-index:2000;transition:left .3s cubic-bezier(.22,1,.36,1)}
+  nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}nav .nav-label,nav .nav-title{opacity:1}
+  .nav-backdrop{display:block;position:fixed;inset:0;z-index:1999;background:rgba(10,25,41,.45);opacity:0;pointer-events:none;transition:opacity .3s}.nav-backdrop.show{opacity:1;pointer-events:auto}
+}
 </style>
 </head>
 <body>
-<div id="blocker"></div>
-<div class="container">
-  <h1>🧾 Facturation RPO</h1>
-  <div id="connStatus" class="muted" style="text-align:center;margin-bottom:10px">Connexion à Firestore…</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 2v20l3-2 2 2 2-2 2 2 2-2 3 2V2l-3 2-2-2-2 2-2-2-2 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 14h3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</svg>
 
-  <div class="card">
-    <h2>Motif de facturation <span id="invoiceBadge" class="tag" style="margin-left:8px">nouvelle</span></h2>
+<header>
+  <div class="left-header">
+    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Ouvrir le menu"><svg class="i lg"><use href="#i-menu"/></svg></button>
+    <div class="brand" aria-hidden="true"><svg class="i"><use href="#i-receipt"/></svg></div>
+    <div class="head-text"><span class="head-kicker">Facturation</span><h2 id="patientName">Facturation</h2></div>
+    <span id="statutPill" class="pill" hidden></span>
+    <span id="invoiceBadge" class="tag">nouvelle</span>
+  </div>
+  <button class="icon-button" type="button" onclick="location.reload()" aria-label="Actualiser la page" title="Actualiser"><svg class="i"><use href="#i-refresh"/></svg></button>
+</header>
+
+<div class="app">
+<div id="blocker" class="modalna"></div>
+<span id="connStatus" hidden></span>
+
+<nav aria-label="Navigation de la facturation">
+  <div class="nav-title">Facturation</div>
+  <div id="navItems">
+    <div class="nav-item active" data-module="motif" role="button" tabindex="0"><svg class="i"><use href="#i-id"/></svg><span class="nav-label">Motif et patient</span></div>
+    <div class="nav-item" data-module="prestations" role="button" tabindex="0"><svg class="i"><use href="#i-list"/></svg><span class="nav-label">Prestations</span></div>
+    <div class="nav-item" data-module="assurance" role="button" tabindex="0"><svg class="i"><use href="#i-shield"/></svg><span class="nav-label">Assurance maladie</span></div>
+    <div class="nav-item" data-module="paiements" role="button" tabindex="0"><svg class="i"><use href="#i-wallet"/></svg><span class="nav-label">Paiements</span></div>
+    <div class="nav-item" data-module="historique" role="button" tabindex="0"><svg class="i"><use href="#i-history"/></svg><span class="nav-label">Historique des factures</span></div>
+  </div>
+</nav>
+
+<div class="content">
+
+<section id="panel-motif" class="panel active">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-id"/></svg></span>Motif et patient</h3><p class="hint">Le motif est détecté à partir des consultations et hospitalisations du patient.</p></div>
+  <div class="panel-body">
     <div id="reasonBox" class="reason none">Chargement…</div>
-    <div id="encList"></div>
-    <div class="line" style="margin-top:8px">
-      <button id="detectBtn" type="button" class="btn-id">🔍 Détecter les prestations à facturer</button>
-      <button id="reloadFacturablesBtn" type="button" class="btn-id">🔄 Recharger le référentiel</button>
-    </div>
+    <div class="card-sec"><div class="card-title"><svg class="i"><use href="#i-file"/></svg> À facturer</div>
+      <div id="encList"></div>
+      <div class="actions"><button id="detectBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-refresh"/></svg>Détecter les prestations</button>
+        <button id="reloadFacturablesBtn" type="button" class="btn-secondary">Recharger le référentiel</button></div></div>
+    <div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-id"/></svg> Patient et séjour</div>
+      <div class="form-grid">
+        <div class="field"><label for="patientId">ID patient</label><input id="patientId" type="text" disabled></div>
+        <div class="field"><label for="naissance">Date de naissance</label><input id="naissance" type="date"></div>
+        <div class="field"><label for="nom">Nom</label><input id="nom" type="text"></div>
+        <div class="field"><label for="prenom">Prénom</label><input id="prenom" type="text"></div>
+        <div class="field"><label for="serviceLabel">Service</label><input id="serviceLabel" type="text"></div>
+        <div class="field"><label for="medecin">Médecin référent</label><input id="medecin" type="text"></div>
+        <div class="field"><label for="dateEntree">Date d’entrée / consultation</label><input id="dateEntree" type="date"></div>
+        <div class="field hosp"><label for="dateSortie">Date de sortie</label><input id="dateSortie" type="date"></div>
+        <div class="field hosp"><label for="chambre">Chambre / lit</label><input id="chambre" type="text"></div>
+        <div class="field hosp"><label for="nbJours">Nombre de nuits</label><input id="nbJours" type="text" disabled></div>
+      </div></div>
   </div>
+</section>
 
-  <div id="editArea">
-    <div class="card">
-      <h2>Patient</h2>
-      <div class="grid g4">
-        <div><label>ID patient</label><input id="patientId" disabled /></div>
-        <div><label>Nom</label><input id="nom" /></div>
-        <div><label>Prénom</label><input id="prenom" /></div>
-        <div><label>Date de naissance</label><input id="naissance" type="date" /></div>
-      </div>
-      <div class="grid g4" style="margin-top:10px">
-        <div><label>Service</label><input id="serviceLabel" /></div>
-        <div><label>Médecin référent</label><input id="medecin" /></div>
-        <div><label>Date d’entrée / consultation</label><input id="dateEntree" type="date" /></div>
-        <div class="hosp"><label>Date de sortie</label><input id="dateSortie" type="date" /></div>
-      </div>
-      <div class="grid g4 hosp" style="margin-top:10px">
-        <div><label>Chambre / lit</label><input id="chambre" /></div>
-        <div><label>Nombre de nuits</label><input id="nbJours" disabled /></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Prestations</h2>
-      <datalist id="dl"></datalist>
-      <div class="line" style="margin-bottom:8px"><button id="addLineBtn" type="button" class="btn-id">➕ Ajouter une ligne</button><span class="muted">Les lignes en rouge n’ont pas de tarif dans le référentiel.</span></div>
-      <table>
-        <thead><tr><th style="width:44%">Prestation</th><th>Origine</th><th>Qté</th><th>PU (€)</th><th>Total (€)</th><th></th></tr></thead>
-        <tbody id="linesBody"></tbody>
-        <tfoot><tr><td colspan="4" style="text-align:right;font-weight:700">Total global</td><td id="totalGlobal">0.00</td><td></td></tr></tfoot>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>Assurance maladie</h2>
-      <div class="grid g4">
-        <div><label>Régime</label><select id="regime"></select></div>
-        <div><label>N° de sécurité sociale</label><input id="numeroSecu" /></div>
-        <div><label>Mutuelle</label><input id="mutuelle" placeholder="Nom / n° adhérent" /></div>
-        <div><label>Taux mutuelle (%) sur le reste</label><input id="mutuellePct" type="number" min="0" max="100" value="100" /></div>
-      </div>
-      <div class="line" style="margin:10px 0"><label style="margin:0"><input id="tiersPayant" type="checkbox" checked /> Tiers payant (le patient ne règle que sa part)</label></div>
-      <div class="grid g3">
-        <div><label>Part sécu (€)</label><input id="partSecu" disabled /></div>
-        <div><label>Part mutuelle (€)</label><input id="partMutuelle" disabled /></div>
-        <div><label>Part patient (€)</label><input id="partPatient" disabled /></div>
-      </div>
-      <div class="kpis">
-        <div class="kpi">À régler par le patient<b id="aRegler">0.00 €</b></div>
-        <div class="kpi">Encaissé<b id="dejaPaye">0.00 €</b></div>
-        <div class="kpi">Échéances prévues<b id="prevu">0.00 €</b></div>
-        <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
-        <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Paiements fractionnés</h2>
-      <table>
-        <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead>
-        <tbody id="paymentsBody"></tbody>
-      </table>
-      <div class="line" style="margin-top:8px">
-        <button id="addPaymentBtn" type="button" class="btn-id">➕ Ajouter un paiement</button>
-        <button id="settleBtn" type="button" class="btn-id">💶 Solder le reste</button>
-        <button id="scheduleBtn" type="button" class="btn-id">📅 Créer un échéancier</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="line">
-      <button id="saveBtn" type="button" class="btn-id btn-id-v">💾 Valider / enregistrer la facture</button>
-      <button id="pdfBtn" type="button" class="btn-id">📄 Générer le PDF</button>
-      <button id="cancelBtn" type="button" class="btn-id btn-id-c">🚫 Annuler cette facture</button>
-      <button id="resetBtn" type="button" class="btn-id btn-id-c">♻️ Nouvelle facture</button>
-      <span id="saveMsg" class="muted"></span>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Retrouver une facture</h2>
-    <div class="grid g4" style="margin-bottom:10px">
-      <div><label>N° ou ID facture</label><input id="historyInvoiceId" /></div>
-      <div><label>Nom patient</label><input id="historyNom" /></div>
-      <div><label>Date mini</label><input id="historyDateMin" type="date" /></div>
-      <div><label>Date maxi</label><input id="historyDateMax" type="date" /></div>
-    </div>
-    <div class="line" style="margin-bottom:10px">
-      <button id="searchInvoicesBtn" type="button" class="btn-id">🔎 Rechercher</button>
-      <button id="loadInvoiceByIdBtn" type="button" class="btn-id">📂 Charger le n° saisi</button>
-      <span class="muted" id="historyInfo"></span>
-    </div>
-    <div class="hist"><table>
-      <thead><tr><th>N°</th><th>Type</th><th>Date MAJ</th><th>Patient</th><th>Total (€)</th><th>Reste (€)</th><th>Statut</th><th></th></tr></thead>
-      <tbody id="historyBody"></tbody>
+<section id="panel-prestations" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-list"/></svg></span>Prestations</h3><p class="hint">Les lignes en rouge n’ont pas de tarif dans le référentiel.</p></div>
+  <div class="panel-body"><div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-list"/></svg> Lignes de facturation</div>
+    <datalist id="dl"></datalist>
+    <div class="table-wrap"><table>
+      <thead><tr><th style="width:42%">Prestation</th><th>Origine</th><th>Qté</th><th>PU (€)</th><th>Total (€)</th><th></th></tr></thead>
+      <tbody id="linesBody"></tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right">Total global</td><td id="totalGlobal">0.00</td><td></td></tr></tfoot>
     </table></div>
-  </div>
+    <div class="actions"><button id="addLineBtn" type="button" class="btn-secondary">Ajouter une ligne</button></div></div></div>
+</section>
+
+<section id="panel-assurance" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-shield"/></svg></span>Assurance maladie</h3><p class="hint">Répartition entre assurance maladie, mutuelle et patient.</p></div>
+  <div class="panel-body"><div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-shield"/></svg> Prise en charge</div>
+    <div class="form-grid">
+      <div class="field"><label for="regime">Régime</label><select id="regime"></select></div>
+      <div class="field"><label for="numeroSecu">N° de sécurité sociale</label><input id="numeroSecu" type="text"></div>
+      <div class="field"><label for="mutuelle">Mutuelle</label><input id="mutuelle" type="text" placeholder="Nom / n° adhérent"></div>
+      <div class="field"><label for="mutuellePct">Taux mutuelle (%) sur le reste</label><input id="mutuellePct" type="number" min="0" max="100" value="100"></div>
+      <div class="field full"><label class="check"><input id="tiersPayant" type="checkbox" checked>Tiers payant : le patient ne règle que sa part</label></div>
+    </div>
+    <div class="form-grid c3" style="margin-top:16px">
+      <div class="field"><label for="partSecu">Part assurance maladie (€)</label><input id="partSecu" type="text" disabled></div>
+      <div class="field"><label for="partMutuelle">Part mutuelle (€)</label><input id="partMutuelle" type="text" disabled></div>
+      <div class="field"><label for="partPatient">Part patient (€)</label><input id="partPatient" type="text" disabled></div>
+    </div></div></div>
+</section>
+
+<section id="panel-paiements" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-wallet"/></svg></span>Paiements</h3><p class="hint">Paiements fractionnés, échéancier et suivi du reste à payer.</p></div>
+  <div class="panel-body"><div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-wallet"/></svg> Règlements</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead>
+      <tbody id="paymentsBody"></tbody></table></div>
+    <div class="actions"><button id="addPaymentBtn" type="button" class="btn-secondary">Ajouter un paiement</button>
+      <button id="settleBtn" type="button" class="btn-secondary">Solder le reste</button>
+      <button id="scheduleBtn" type="button" class="btn-secondary">Créer un échéancier</button></div>
+    <div class="kpis">
+      <div class="kpi">À régler par le patient<b id="aRegler">0.00 €</b></div>
+      <div class="kpi">Encaissé<b id="dejaPaye">0.00 €</b></div>
+      <div class="kpi">Échéances prévues<b id="prevu">0.00 €</b></div>
+      <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
+      <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
+    </div></div></div>
+</section>
+
+<section id="panel-historique" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-history"/></svg></span>Historique des factures</h3><p class="hint" id="historyInfo"></p></div>
+  <div class="panel-body"><div class="card-sec"><div class="card-title"><svg class="i"><use href="#i-history"/></svg> Retrouver une facture</div>
+    <div class="form-grid c3">
+      <div class="field"><label for="historyInvoiceId">N° ou ID facture</label><input id="historyInvoiceId" type="text"></div>
+      <div class="field"><label for="historyNom">Nom patient</label><input id="historyNom" type="text"></div>
+      <div class="field"></div>
+      <div class="field"><label for="historyDateMin">Date mini</label><input id="historyDateMin" type="date"></div>
+      <div class="field"><label for="historyDateMax">Date maxi</label><input id="historyDateMax" type="date"></div>
+    </div>
+    <div class="actions"><button id="searchInvoicesBtn" type="button" class="btn-secondary">Rechercher</button>
+      <button id="loadInvoiceByIdBtn" type="button" class="btn-secondary">Charger le n° saisi</button></div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>N°</th><th>Type</th><th>Date MAJ</th><th>Patient</th><th>Total (€)</th><th>Reste (€)</th><th>Statut</th><th></th></tr></thead>
+      <tbody id="historyBody"></tbody></table></div></div>
+</section>
+
+<div class="actionbar">
+  <button id="saveBtn" type="button" class="btn-primary"><svg class="i"><use href="#i-save"/></svg>Valider la facture</button>
+  <button id="pdfBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-file"/></svg>Générer le PDF</button>
+  <button id="cancelBtn" type="button" class="btn-danger"><svg class="i"><use href="#i-ban"/></svg>Annuler la facture</button>
+  <button id="resetBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-refresh"/></svg>Nouvelle facture</button>
+  <span id="saveMsg" class="muted"></span>
+</div>
+</div>
 </div>
 
 <script type="module">
@@ -252,6 +320,8 @@ async function fetchInvoices(pid) {
 }
 function computeBilled() {
   S.billed = {};
+  S.consults.forEach(c => { if (c.facturee) S.billed['c' + c.id] = c.factureRef || 'initialisation'; });
+  S.hospis.forEach(h => { if (h.facturee) S.billed['h' + h.id] = h.factureRef || 'initialisation'; });
   S.invoices.forEach(({ id, data }) => {
     if (id === S.id || data.statut === 'annulee') return;
     const lab = data.numero || id;
@@ -337,11 +407,14 @@ function refreshUI() {
   else { box.className = 'reason none'; box.textContent = S.pid ? 'Aucune consultation ni hospitalisation à facturer pour ce patient : la facturation est impossible.' : 'Ouvrez la facturation depuis la fiche d’un patient, ou chargez une facture existante.'; }
   document.querySelectorAll('.hosp').forEach(e => e.style.display = hasHosp() ? '' : 'none');
   const ok = (has || S.id) && !cancelled;
-  $('editArea').classList.toggle('disabled-section', !ok);
+  document.querySelectorAll('.gated').forEach(e => e.classList.toggle('disabled-section', !ok));
   ['saveBtn', 'detectBtn'].forEach(id => $(id).disabled = !ok || S.saving);
   $('cancelBtn').disabled = !S.id || cancelled || S.saving;
   $('pdfBtn').disabled = !(has || S.id);
   $('invoiceBadge').textContent = S.numero || (S.id ? S.id : 'nouvelle');
+  const nm = `${$('nom').value} ${$('prenom').value}`.trim(); $('patientName').textContent = nm || 'Facturation';
+  const pl = $('statutPill'); pl.hidden = !(S.id || has);
+  pl.textContent = cancelled ? 'Annulée' : S.id ? 'Enregistrée' : 'Brouillon'; pl.className = 'pill ' + (cancelled ? 'late' : S.id ? 'ok' : '');
   renderEnc();
 }
 $('encList').addEventListener('change', e => {
@@ -528,7 +601,7 @@ async function searchInvoices() {
       const st = d.statut === 'annulee' ? 'annulee' : (d.statutPaiement === 'complet' ? 'complet' : 'incomplet');
       return `<tr><td>${esc(d.numero || id)}</td><td><span class="tag">${esc(TYPES[d.type] || d.type || '-')}</span></td><td>${fmt(tsOf(d.updatedAt || d.createdAt))}</td>
         <td class="left">${esc(d.patient?.prenom)} ${esc(d.patient?.nom)}</td><td>${euro(d.totals?.total)}</td><td>${euro(d.totals?.restePayer)}</td>
-        <td><span class="badge b-${st}">${st.toUpperCase()}</span></td><td><button class="btn-id" data-load="${esc(id)}">Charger</button></td></tr>`;
+        <td><span class="badge b-${st}">${st.toUpperCase()}</span></td><td><button class="btn-secondary" data-load="${esc(id)}">Charger</button></td></tr>`;
     }).join('') || '<tr><td colspan="8" class="muted">Aucun résultat.</td></tr>';
     info.textContent = `${rows.length} facture(s)${pid ? ` pour ce patient` : ''}.`;
   } catch (e) { console.error(e); info.textContent = '⚠️ Erreur de recherche.'; }
@@ -640,6 +713,29 @@ onAuthStateChanged(auth, async user => {
     await startApp(); window.masquerLoader?.();
   } catch (err) { console.error(err); window.masquerLoader?.(); block('Oups, une erreur est survenue. Veuillez réessayer plus tard.'); }
 });
+
+// ---------- Navigation latérale (comme fiche.html) ----------
+const $$ = s => [...document.querySelectorAll(s)];
+function ouvrirPanel(m) {
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.module === m));
+  $$('section.panel').forEach(s => s.classList.toggle('active', s.id === 'panel-' + m));
+}
+$$('.nav-item').forEach(n => { n.onclick = () => ouvrirPanel(n.dataset.module); n.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.click(); } }; });
+(function () {
+  const nav = document.querySelector('nav'), toggle = $('menu-toggle'), voile = document.createElement('div');
+  voile.className = 'nav-backdrop'; document.body.appendChild(voile);
+  toggle.onclick = () => nav.classList.toggle('open');
+  $$('.nav-item').forEach(i => i.addEventListener('click', () => { if (innerWidth <= 900) nav.classList.remove('open'); }));
+  new MutationObserver(() => voile.classList.toggle('show', nav.classList.contains('open'))).observe(nav, { attributes: true, attributeFilter: ['class'] });
+  voile.onclick = () => nav.classList.remove('open');
+  const tactile = matchMedia('(hover: none)');
+  nav.addEventListener('click', e => {
+    if (!tactile.matches || innerWidth <= 900) return;
+    if (!nav.classList.contains('expanded')) { e.stopPropagation(); e.preventDefault(); nav.classList.add('expanded'); return; }
+    if (e.target.closest('.nav-item')) requestAnimationFrame(() => nav.classList.remove('expanded'));
+  }, true);
+  document.addEventListener('click', e => { if (nav.classList.contains('expanded') && !nav.contains(e.target)) nav.classList.remove('expanded'); });
+})();
 </script>
 </body>
 </html>

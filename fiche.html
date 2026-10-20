@@ -814,6 +814,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 .btn-id svg{vertical-align:middle}
 .sep-title{margin:22px 0 12px}
 
+.save-state{font-size:13px;font-weight:600;color:var(--muted);margin-right:auto;align-self:center}
+.save-state.ok{color:var(--ok,#16784a)}.save-state.dirty{color:var(--warn,#7a4f00)}.save-state.err{color:var(--late,#b92a30)}
 </style>
 </head>
 
@@ -1145,7 +1147,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
       </div>
 
       <div class="actions end">
-        <button onclick="enregistrerDossierMedical()" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
+        <span id="etatDossier" class="save-state" aria-live="polite"></span>
+        <button onclick="sauvegarderMaintenant('dossier')" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
       </div>
     </div>
 
@@ -1157,7 +1160,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
       </div>
 
       <div class="actions end">
-        <button onclick="enregistrerEvolution()" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
+        <span id="etatEvolution" class="save-state" aria-live="polite"></span>
+        <button onclick="sauvegarderMaintenant('evolution')" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
       </div>
     </div>
 
@@ -1191,7 +1195,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <h4>Examens sélectionnés</h4>
     <div id="examensSelectionnes"></div>
     <div class="modal-actions">
-      <button id="btnCancelExamen" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
+      <button id="btnCancelExamen" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
       <button id="btnSaveExamen" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Valider</button>
     </div>
   </div>
@@ -1202,7 +1206,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <h3><svg class="i" aria-hidden="true"><use href="#i-scan"/></svg>Détails de l'examen</h3>
     <div id="examen-detail-content"></div>
     <div class="modal-actions">
-      <button id="btnDeleteExamen" class="btn-id btn-id-c" type="button" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Annuler la demande</button>
+      <button id="btnDeleteExamen" class="btn-id btn-id-c" type="button" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer la demande</button>
       <button class="btn-id" type="button" onclick="closeExamenDetails()"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
     </div>
   </div>
@@ -1247,8 +1251,17 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     </div>
 
     <div class="actions end">
-      <button id="btnAnnulerSortie" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Annuler</button>
-      <button id="btnValiderSortie" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Valider</button>
+      <button id="btnAnnulerSortie" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer la sortie</button>
+      <button id="btnValiderSortie" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Enregistrer la sortie</button>
+    </div>
+
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-euro"/></svg> Fin de prise en charge</div>
+      <p class="hint" style="margin:0 0 12px">Enregistrez la sortie avant de clôturer l’hospitalisation.</p>
+      <div class="actions">
+        <button id="btnFacturerSortie" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-euro"/></svg>Facturer</button>
+        <button id="btnCloturerSortie" class="btn-id btn-ok" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Clôturer l’hospitalisation</button>
+      </div>
     </div>
 
   </div>
@@ -1404,7 +1417,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     </div>
 
     <div class="modal-buttons">
-      <button id="btnFermerAdmin" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
+      <button id="btnFermerAdmin" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Fermer</button>
       <button id="btnEnregistrerAdmin" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg>Enregistrer</button>
     </div>
   </div>
@@ -1418,7 +1431,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <div id="etatLectureIdentiteImage" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;"> En attente de lecture…</div>
     <div id="resultatLectureIdentiteImage" style="margin-top:15px;display:none;"></div>
     <div class="modal-buttons" style="margin-top:15px;">
-      <button type="button" id="btnFermerLectureIdentiteImage" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button type="button" id="btnFermerLectureIdentiteImage" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
       <button type="button" id="btnAppliquerLectureIdentiteImage" class="btn-id btn-id-v" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Remplacer les champs sélectionnés</button>
     </div>
   </div>
@@ -1432,7 +1445,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <div id="etatVerificationIdentiteQR" style="text-align:center;padding:12px;border-radius:10px;background:#eef5ff;color:#1557a6;"> En attente de lecture…</div>
     <div id="resultatVerificationIdentiteQR" style="margin-top:15px;display:none;"></div>
     <div class="modal-buttons" style="margin-top:15px;">
-      <button type="button" id="btnAnnulerVerificationQR" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button type="button" id="btnAnnulerVerificationQR" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
       <button type="button" id="btnContinuerVerificationQR" class="btn-id btn-id-v" style="display:none;"><svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg> Continuer la vérification</button>
     </div>
   </div>
@@ -1520,7 +1533,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     <div id="clotureIdcheckError"></div>
 
     <div class="modal-buttons">
-      <button id="btnAnnulerCode" class="btn-id btn-id-c"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
+      <button id="btnAnnulerCode" class="btn-id"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg> Annuler</button>
       <button id="btnValiderCode" class="btn-id btn-id-v"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Valider</button>
     </div>
   </div>
@@ -1695,6 +1708,7 @@ const modal = document.getElementById("modal-no-access");
       chargerPatient(patientId);
       rafraichirChampsSortie();
       chargerEquipeReferente();
+      if (document.getElementById("modal-no-access")?.style.display !== "flex") chargerToutesLesIframes();
     } catch (error) {
       const modal = document.getElementById("modal-error");
           if (modal) masquerLoader();
@@ -2006,6 +2020,7 @@ document.getElementById("btnValiderSortie").addEventListener("click", async () =
 });
 
 document.getElementById("btnAnnulerSortie").addEventListener("click", async() => {
+  if (!confirm("Supprimer définitivement la sortie enregistrée pour ce patient ?")) return;
   champAutreSortie.value = "";
   champAutreOption.value = "";
   champTraitementSortie.value = "";
@@ -2279,7 +2294,7 @@ document.getElementById("importanceAllergies").addEventListener("change", async 
   );
 });
 
-async function updateHospitalisationField(field, value) {
+async function updateHospitalisationField(field, value, opts = {}) {
   try {
     if (!patientId) return;
 
@@ -2330,11 +2345,13 @@ async function updateHospitalisationField(field, value) {
       ? "mis à jour"
       : `: ${value}`;
 
-    ajouterEntreeHistorique(`Modification de ${libelle} ${resume}`, { hospitalisationId, silencieux: true });
+    if (!opts.auto) ajouterEntreeHistorique(`Modification de ${libelle} ${resume}`, { hospitalisationId, silencieux: true });
+    return true;
 
   } catch (err) {
     console.error(`Erreur mise à jour ${field} :`, err);
-    afficherBulle("❌ Erreur d’enregistrement", "error");
+    if (!opts.auto && !opts.silentError) afficherBulle("❌ Erreur d’enregistrement", "error");
+    return false;
   }
 }
 
@@ -4262,12 +4279,14 @@ const insertion = `${horodatage} - ${window.medecinNom}\n`;
 
   const nouvellePosition = start + insertion.length;
   textarea.selectionStart = textarea.selectionEnd = nouvellePosition;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
   textarea.focus();
 }
 window.ajouterHorodatageDans = ajouterHorodatageDans;
 
 
- window.enregistrerDossierMedical = async function() {
+window.enregistrerDossierMedical = async function(auto) {
+  const silencieux = auto === true;
   const dossierMedical = {
     questionnaire: document.getElementById("questionnaire").value.trim(),
     antecedents: document.getElementById("antecedents").value.trim(),
@@ -4275,29 +4294,70 @@ window.ajouterHorodatageDans = ajouterHorodatageDans;
     histoire: document.getElementById("histoire").value.trim(),
     auscultation: document.getElementById("auscultation").value.trim()
   };
+  const ok = (await updateHospitalisationField("dossierMedical", dossierMedical, { auto: silencieux, silentError: true })) === true;
+  if (!silencieux) afficherBulle(ok ? "✔️ Dossier médical enregistré" : "❌ Erreur lors de l’enregistrement du dossier médical", ok ? "success" : "error");
+  return ok;
+};
 
-  try {
-    await updateHospitalisationField("dossierMedical", dossierMedical);
-    afficherBulle("✔️ Dossier médical enregistré", "success");
-  } catch (err) {
-    console.error("Erreur enregistrement dossier médical :", err);
-    afficherBulle("❌ Erreur lors de l’enregistrement du dossier médical", "error");
-  }
-}
-
-
-
-window.enregistrerEvolution = async function() {
+window.enregistrerEvolution = async function(auto) {
+  const silencieux = auto === true;
   const evolution = document.getElementById("evolutionTexte").value.trim();
+  const ok = (await updateHospitalisationField("evolution", evolution, { auto: silencieux, silentError: true })) === true;
+  if (!silencieux) afficherBulle(ok ? "✔️ Évolution enregistrée" : "❌ Erreur lors de l’enregistrement de l’évolution", ok ? "success" : "error");
+  return ok;
+};
 
-  try {
-    await updateHospitalisationField("evolution", evolution);
-    afficherBulle("✔️ Évolution enregistrée", "success");
-  } catch (err) {
-    console.error("Erreur enregistrement évolution :", err);
-    afficherBulle("❌ Erreur lors de l’enregistrement de l’évolution", "error");
+// ---------- Enregistrement automatique des notes + indicateur d'état ----------
+// Les champs sont enregistrés 2,5 s après la dernière frappe, ou dès qu'on quitte le champ.
+// L'historique de l'hospitalisation n'est alimenté que par l'enregistrement manuel.
+const SAUV = {
+  dossier:   { ids: ["questionnaire", "antecedents", "traitements", "histoire", "auscultation"], save: auto => window.enregistrerDossierMedical(auto), etat: "etatDossier" },
+  evolution: { ids: ["evolutionTexte"], save: auto => window.enregistrerEvolution(auto), etat: "etatEvolution" }
+};
+Object.values(SAUV).forEach(g => Object.assign(g, { version: 0, saved: 0, timer: null, saving: false }));
+function majEtatSauvegarde(g, texte, classe) {
+  const el = document.getElementById(g.etat);
+  if (el) { el.textContent = texte; el.className = "save-state " + (classe || ""); }
+}
+async function lancerSauvegarde(cle, manuel) {
+  const g = SAUV[cle]; clearTimeout(g.timer);
+  if (g.saving) { g.timer = setTimeout(() => lancerSauvegarde(cle, manuel), 800); return; }
+  if (g.version === g.saved && !manuel) return;
+  const v = g.version; g.saving = true; majEtatSauvegarde(g, "Enregistrement…", "");
+  let ok = false;
+  try { ok = await g.save(!manuel); } catch (e) { console.error(e); }
+  g.saving = false;
+  if (ok) {
+    g.saved = Math.max(g.saved, v);
+    if (g.version === g.saved) majEtatSauvegarde(g, "✓ Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), "ok");
+    else majEtatSauvegarde(g, "● Modifications non enregistrées", "dirty");
+  } else {
+    majEtatSauvegarde(g, "⚠ Échec de l’enregistrement, nouvel essai en cours…", "err");
+    g.timer = setTimeout(() => lancerSauvegarde(cle, false), 5000);
   }
 }
+async function sauvegarderTout() {
+  for (const cle of Object.keys(SAUV)) if (SAUV[cle].version !== SAUV[cle].saved) await lancerSauvegarde(cle, false);
+}
+window.sauvegarderMaintenant = cle => lancerSauvegarde(cle, true);
+Object.entries(SAUV).forEach(([cle, g]) => g.ids.forEach(id => {
+  const el = document.getElementById(id); if (!el) return;
+  el.addEventListener("input", () => {
+    g.version++; majEtatSauvegarde(g, "● Modifications non enregistrées", "dirty");
+    clearTimeout(g.timer); g.timer = setTimeout(() => lancerSauvegarde(cle, false), 2500);
+  });
+  el.addEventListener("blur", () => { if (g.version !== g.saved) lancerSauvegarde(cle, false); });
+}));
+window.addEventListener("beforeunload", e => {
+  if (Object.values(SAUV).some(g => g.version !== g.saved || g.saving)) { e.preventDefault(); e.returnValue = ""; }
+});
+
+// Copies des boutons Facturer / Clôturer dans l'onglet Sortie
+document.getElementById("btnFacturerSortie")?.addEventListener("click", () => document.getElementById("btnFacturer").click());
+document.getElementById("btnCloturerSortie")?.addEventListener("click", async () => {
+  await sauvegarderTout();
+  document.getElementById("btnCloturer").click();
+});
 
 
 async function chargerExamens() {
@@ -4424,7 +4484,7 @@ async function deleteExamen(){
 
   if(currentExamenIndex === null) return;
 
-  if(!confirm("Annuler cette demande d'examen ?")){
+  if(!confirm("Supprimer cette demande d'examen ? Cette action est définitive.")){
     return;
   }
 
@@ -4748,22 +4808,7 @@ function openSection(panelId) {
         if (item.dataset.module === panelId.replace("panel-", "")) {
             item.classList.add("active");
         }
-        if (panelId === "panel-medsurgences") {
-    const url = "medsurgences.html?id=" + patientId;
-    document.getElementById("medsurgencesFrame").src = url;
-}
-        if (panelId === "panel-actes") {
-    const url = "actes.html?id=" + patientId;
-    document.getElementById("actesFrame").src = url;
-}
-if (panelId === "panel-constantes") {
-    const url = "constantes.html?id=" + patientId;
-    document.getElementById("constantesFrame").src = url;
-}
-if (panelId === "panel-historique") {
-    const url = "historique.html?id=" + patientId;
-    document.getElementById("historiqueFrame").src = url;
-}
+        // (les iframes sont chargées une fois au démarrage : voir chargerToutesLesIframes)
     });
 }
 window.openSection = openSection;
@@ -5421,19 +5466,7 @@ function initNavigation() {
     });
   });
   // Gestion spéciale de l'ouverture de la section Documents
-document.querySelector('[data-module="documents"]').addEventListener('click', () => {
 
-    const last = localStorage.getItem("lastDocsTab");
-
-    if (last) {
-        // 🔁 Revenir sur le dernier onglet visité
-        const { tabId, url } = JSON.parse(last);
-        openDocsTab(tabId, url);
-    } else {
-        // 🆕 1er lancement : ouvrir l’onglet par défaut
-        openDocsTab('tab-docs', 'docs.html');   // mets ici ton onglet par défaut
-    }
-});
 
 }
 
@@ -5567,60 +5600,21 @@ document.addEventListener('click', () => {
         afficherBulle("Erreur de déconnexion" ,"error");
       });
   }
-document.addEventListener("DOMContentLoaded", () => {
-
-    const btnOrdo = document.querySelector('[data-module="medsurgences"]');
-
-    btnOrdo.addEventListener("click", () => {
-
-        const iframemedsurgences = document.getElementById("medsurgencesFrame");
-        iframemedsurgences.src = "medsurgences.html?id=" + patientId;
+// Tous les écrans en iframe sont chargés une seule fois au démarrage :
+// changer d'onglet ne les recharge plus, donc les saisies en cours y sont conservées.
+function chargerToutesLesIframes() {
+  if (!patientId) return;
+  [["medsurgencesFrame", "medsurgences.html"], ["actesFrame", "actes.html"], ["constantesFrame", "constantes.html"], ["historiqueFrame", "historique.html"]]
+    .forEach(([frameId, page]) => {
+      const f = document.getElementById(frameId);
+      if (f && !f.getAttribute("src")) f.src = page + "?id=" + patientId;
     });
-     const btnActes = document.querySelector('[data-module="actes"]');
-
-    btnActes.addEventListener("click", () => {
-        const iframeactes = document.getElementById("actesFrame");
-        iframeactes.src = "actes.html?id=" + patientId;
-    });
-    const btnConstantes = document.querySelector('[data-module="constantes"]');
-
-    btnConstantes.addEventListener("click", () => {
-      
-        const iframeconstantes = document.getElementById("constantesFrame");
-        iframeconstantes.src = "constantes.html?id=" + patientId;
-    });
-    const btnHistorique = document.querySelector('[data-module="historique"]');
-    btnHistorique.addEventListener("click", () => {
-      
-        const iframeconstantes = document.getElementById("historiqueFrame");
-        iframeconstantes.src = "historique.html?id=" + patientId;
-    });
-});
+  const docs = document.getElementById("docsFrame");
+  if (docs && !docs.getAttribute("src")) openDocsTab("tab-docs", "docs.html");
+}
 
 
-document.addEventListener("DOMContentLoaded", () => {
-  const panelDocs = document.getElementById("panel-documents");
 
-  const observer = new MutationObserver(() => {
-    if (panelDocs.style.display !== "none") {
-
-      // attendre que patientId soit disponible
-      const waitForPatientId = setInterval(() => {
-        if (typeof patientId !== "undefined" && patientId !== null && patientId !== "") {
-
-          clearInterval(waitForPatientId);
-
-          // ouvrir l’onglet correctement AVEC l'id
-          openDocsTab("tab-docs", "docs.html");
-
-          observer.disconnect();
-        }
-      }, 50); // vérifie toutes les 50 ms
-    }
-  });
-
-  observer.observe(panelDocs, { attributes: true, attributeFilter: ["style"] });
-});
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -5663,10 +5657,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 // Quand on ouvre l'onglet Documents, on charge automatiquement l'historique
-document.querySelector('[data-module="documents"]').addEventListener('click', () => {
-    // sélectionne automatiquement le bon onglet
-    openDocsTab('tab-docs', 'docs.html');
-});
+
 
 window.addEventListener("message", (event) => {
 

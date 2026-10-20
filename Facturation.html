@@ -84,6 +84,69 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
   nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}nav .nav-label,nav .nav-title{opacity:1}
   .nav-backdrop{display:block;position:fixed;inset:0;z-index:1999;background:rgba(10,25,41,.45);opacity:0;pointer-events:none;transition:opacity .3s}.nav-backdrop.show{opacity:1;pointer-events:auto}
 }
+
+/* Section « À facturer » repliable */
+.facturables-toggle {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  margin: 0 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.facturables-toggle .card-title {
+  margin: 0;
+}
+
+.facturables-toggle .chevron {
+  color: var(--muted);
+  transition: transform .25s ease;
+}
+
+.facturables-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+}
+
+.facturables-toggle[aria-expanded="false"] .chevron {
+  transform: rotate(-90deg);
+}
+
+#facturablesContent {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows .25s ease,
+    opacity .2s ease;
+}
+
+#facturablesContent > #encList {
+  min-height: 0;
+}
+
+#facturablesContent.collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#facturablesContent.collapsed > #encList {
+  overflow: hidden;
+}
+
+/* Le contenu doit pouvoir être masqué proprement */
+#facturablesContent.collapsed {
+  display: none;
+}
+
 /* ---------- BARRES DE DÉFILEMENT ---------- */
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}
@@ -139,10 +202,41 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
   <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-id"/></svg></span>Motif et patient</h3><p class="hint">Le motif est détecté à partir des consultations et hospitalisations du patient.</p></div>
   <div class="panel-body">
     <div id="reasonBox" class="reason none">Chargement…</div>
-    <div class="card-sec"><div class="card-title"><svg class="i"><use href="#i-file"/></svg> À facturer</div>
-      <div id="encList"></div>
-      <div class="actions"><button id="detectBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-refresh"/></svg>Détecter les prestations</button>
-        <button id="reloadFacturablesBtn" type="button" class="btn-secondary">Recharger le référentiel</button></div></div>
+    
+<div class="card-sec facturables-card">
+  <button
+    id="toggleFacturables"
+    class="facturables-toggle"
+    type="button"
+    aria-expanded="true"
+    aria-controls="facturablesContent"
+  >
+    <span class="card-title">
+      <svg class="i"><use href="#i-file"/></svg>
+      À facturer
+    </span>
+
+    <svg class="i chevron" id="facturablesChevron">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </button>
+
+  <div id="facturablesContent">
+    <div id="encList"></div>
+
+    <div class="actions">
+      <button id="detectBtn" type="button" class="btn-secondary">
+        <svg class="i"><use href="#i-refresh"/></svg>
+        Détecter les prestations
+      </button>
+
+      <button id="reloadFacturablesBtn" type="button" class="btn-secondary">
+        Recharger le référentiel
+      </button>
+    </div>
+  </div>
+</div>
+
     <div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-id"/></svg> Patient et séjour</div>
       <div class="form-grid">
         <div class="field"><label for="patientId">ID patient</label><input id="patientId" type="text" disabled></div>
@@ -689,6 +783,17 @@ function bindEvents() {
   $('resetBtn').onclick = () => { if (confirm('Repartir sur une nouvelle facture ?')) newInvoice(); };
   $('searchInvoicesBtn').onclick = searchInvoices;
   $('loadInvoiceByIdBtn').onclick = () => loadInvoiceById($('historyInvoiceId').value.trim());
+  
+$('toggleFacturables').addEventListener('click', () => {
+  const btn = $('toggleFacturables');
+  const content = $('facturablesContent');
+
+  const ouvert = btn.getAttribute('aria-expanded') === 'true';
+
+  btn.setAttribute('aria-expanded', String(!ouvert));
+  content.classList.toggle('collapsed', ouvert);
+});
+
 }
 async function startApp() {
   bindEvents();

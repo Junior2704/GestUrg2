@@ -1,34 +1,45 @@
 (function () {
 
-// ==============================
-// RÉGLAGES DE PAGINATION
-// ==============================
-// Marge HAUT/BAS appliquée sur CHAQUE page du PDF (mm). La marge gauche/droite
-// reste gérée par le padding de #ordonnance (sinon html2pdf rétrécit le contenu).
-const PDF_MARGE_VERTICALE_MM = 15;
+// =====================================================================
+// PAGINATION "VRAI PDF"
+// =====================================================================
+//
+// Principe : au lieu de laisser html2pdf couper l'image au hasard (ou de
+// repousser des blocs entiers, ce qui laisse de grands vides), le document
+// est PAGINÉ ICI, page par page, avant d'être converti :
+//
+//   1. le contenu est découpé en lignes ;
+//   2. il est mesuré une fois (rendu invisible) pour connaître la position
+//      de chaque ligne ;
+//   3. on choisit pour chaque page le DERNIER endroit où l'on peut couper
+//      (entre deux lignes, ou entre deux lignes d'un long paragraphe) ;
+//   4. chaque page est une "fenêtre" A4 de hauteur exacte (marges incluses)
+//      qui montre sa portion du document.
+//
+// Règles de coupure :
+//   - jamais au milieu d'une ligne de texte ;
+//   - le trait bleu n'est jamais en haut d'une page : s'il tombe à la
+//     coupure, il reste en bas de la page précédente (ou, s'il n'y a pas la
+//     place, il est supprimé) ;
+//   - un titre de section reste avec la ligne qui le suit ;
+//   - un libellé "xxx :" reste avec sa valeur ;
+//   - une ligne numérotée ("1. ...") reste avec ses détails ;
+//   - pas de ligne seule (veuve/orpheline) en haut ou en bas d'un paragraphe ;
+//   - une page ne commence jamais par une ligne vide.
+//
+// Les marges haut/bas sont dans la page elle-même : l'appelant doit donc
+// utiliser html2pdf avec margin: 0 (c'est déjà le cas partout).
+// =====================================================================
 
-// Un bloc de plus de MAX_LIGNES_BLOC lignes n'est pas gardé d'un seul tenant :
-// il est coupé ligne par ligne (voir decouperEnGroupes). Les petits blocs
-// restent entiers. La page peut donc changer au milieu d'une catégorie, mais
-// jamais au milieu d'une ligne, et sans grand vide en bas de page.
-const MAX_LIGNES_BLOC = 3;
+const PDF_MARGE_VERTICALE_MM = 15;
+const PDF_MARGE_LATERALE_MM = 18;
+const MM_PX = 96 / 25.4;
+// hauteur utile d'une page (297 mm - 2 marges), arrondie vers le bas (-1 px de sécurité)
+const HAUTEUR_UTILE_PX = Math.floor((297 - 2 * PDF_MARGE_VERTICALE_MM) * MM_PX) - 1;
 
 const NEWLINE_HTML = `<div class="newline"></div>`;
 const SEPARATOR_HTML = `<div class="separator"></div>`;
 
-// ==============================
-// CONTENU RENDER
-// ==============================
-//
-// Le contenu structuré est découpé en "blocs" indépendants, chacun avec
-// page-break-inside: avoid (html2pdf, mode 'css').
-//
-//  - "separator"  : trait bleu. Il est collé au bloc SUIVANT (jamais seul en
-//                   bas de page, "keep with next").
-//  - "break"      : frontière silencieuse entre deux blocs (l'auteur du
-//                   document choisit ainsi la granularité).
-//  - blocs longs  : redécoupés automatiquement en groupes de lignes.
-// ==============================
 function echapper(txt) {
     return String(txt)
         .replaceAll("&", "&amp;")
@@ -36,188 +47,477 @@ function echapper(txt) {
         .replaceAll(">", "&gt;");
 }
 
-// Une "ligne" = texte + saut de ligne. Pour un bloc long, chaque ligne devient
-// une unité qui ne sera jamais coupée par un saut de page, avec ces exceptions
-// (ce qui doit rester collé) :
-//  - une ligne "libellé :" reste avec la ligne qui la suit (libellé + valeur) ;
-//  - titre de section (juste après un séparateur) : séparateur + titre + premier
-//    élément restent ensemble (pas de titre seul en bas de page) ;
-//  - lignes numérotées ("1. ...", "2) ...") : chacune ouvre un groupe (un
-//    médicament et ses détails restent ensemble) ;
-//  - une ligne vide reste attachée à la ligne précédente (pas de page qui
-//    commence par un blanc) ;
-//  - jamais une ligne orpheline seule sur la dernière page du bloc.
-function decouperEnGroupes(lignes, apresSeparateur) {
+const texteDe = h => String(h).replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
-    const texteDe = l => l.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
-    const estNumerotee = l => /^\d+\s*[.)]\s/.test(texteDe(l));
-    const estLibelle = l => /[:：]$/.test(texteDe(l));
-    const estVide = l => texteDe(l) === "";
-    const groupes = [];
 
-    if (lignes.some(estNumerotee)) {
+// ==============================
+// CONTENU -> LIGNES
+// ==============================
 
-        lignes.forEach((l, i) => {
-            if (i === 0 || (estNumerotee(l) && groupes[groupes.length - 1].some(estNumerotee))) {
-                groupes.push([l]);
-            } else {
-                groupes[groupes.length - 1].push(l);
-            }
-        });
+function creerLigne(html, avecNewline, sep) {
 
-    } else {
+    const t = texteDe(html);
 
-        lignes.forEach(l => {
-            const prec = groupes[groupes.length - 1];
-            if (prec && (estVide(l) || (prec.length === 1 && estLibelle(prec[0])))) {
-                prec.push(l);
-            } else {
-                groupes.push([l]);
-            }
-        });
-
-        // séparateur + titre + premier élément : un seul groupe
-        if (apresSeparateur && groupes.length > 1) {
-            groupes[0].push(...groupes.splice(1, 1)[0]);
-        }
-
-    }
-
-    if (groupes.length > 1 && groupes[groupes.length - 1].length === 1) {
-        const dernier = groupes.pop();
-        groupes[groupes.length - 1].push(...dernier);
-    }
-
-    return groupes;
+    return {
+        html: html + (avecNewline ? NEWLINE_HTML : ""),
+        sep: sep,                                   // un trait bleu précède cette ligne
+        seulSep: false,
+        vide: t === "",
+        label: /[:：]$/.test(t),                    // "Libellé :"
+        numerote: /^\d+\s*[.)]\s/.test(t),          // "1. ..." / "2) ..."
+        // lignes contenant du HTML "lourd" (tableau, image...) : jamais coupées en interne
+        decoupable: !/<(table|img|tr|ul|ol|pre|svg|canvas)\b/i.test(html)
+    };
 }
 
-function renderContenu(contenu) {
+function parseLignes(contenu) {
 
-    // ---- Contenu texte simple ----
+    // ---- contenu texte simple ----
     if (typeof contenu === "string") {
 
-        return `
-    <div class="bloc">
-        <div class="line">${echapper(contenu).replaceAll("\n", "<br>")}</div>
-    </div>
-`;
+        const l = creerLigne(echapper(contenu).replaceAll("\n", "<br>"), false, false);
+        return [l];
 
     }
 
-    // ---- Contenu vide ----
     if (!Array.isArray(contenu)) {
-
-        return "";
-
+        return [];
     }
 
-    // ---- Contenu structuré -> blocs ----
-    let html = "";
-    let lignes = [];            // lignes terminées du bloc courant
-    let ligneCourante = "";     // texte de la ligne en cours
-    let separateurEnAttente = false;
+    const lignes = [];
+    let courante = "";
+    let sepEnAttente = false;
 
-    const bloc = (contenuHTML, avecSeparateur) => `
-            <div class="bloc">
-                ${avecSeparateur ? SEPARATOR_HTML : ""}
-                <div class="line">${contenuHTML}</div>
-            </div>
-        `;
+    const pousser = (html, avecNewline) => {
+        lignes.push(creerLigne(html, avecNewline, sepEnAttente));
+        sepEnAttente = false;
+    };
 
-    function emettreSeparateurSeul() {
-        html += `<div class="bloc separator-bloc">${SEPARATOR_HTML}</div>`;
-        separateurEnAttente = false;
-    }
-
-    function flushBloc() {
-
-        if (ligneCourante.trim() !== "") {
-            lignes.push(ligneCourante);
+    const finir = () => {
+        if (courante.trim() !== "") {
+            pousser(courante, false);
         }
-        ligneCourante = "";
+        courante = "";
+    };
 
-        // lignes "vides" seules (que des sauts de ligne) : on les ignore
-        const aDuTexte = lignes.some(l => l.replace(/<[^>]*>/g, "").trim() !== "");
-
-        if (!aDuTexte) {
-            lignes = [];
-            return;
-        }
-
-        const groupes = lignes.length > MAX_LIGNES_BLOC
-            ? decouperEnGroupes(lignes, separateurEnAttente)
-            : [lignes];
-
-        groupes.forEach(g => {
-            html += bloc(g.join(""), separateurEnAttente);
-            separateurEnAttente = false;   // le séparateur n'est posé qu'avant le 1er groupe
-        });
-
-        lignes = [];
-    }
+    const sepSeul = () => {
+        const l = creerLigne("", false, true);
+        l.seulSep = true;
+        lignes.push(l);
+        sepEnAttente = false;
+    };
 
     contenu.forEach(item => {
 
         switch (item.type) {
 
             case "text":
-
-                ligneCourante += item.value || "";
-
+                courante += item.value || "";
                 break;
-
 
             case "bold":
-
-                ligneCourante += `<b>${item.value || ""}</b>`;
-
+                courante += `<b>${item.value || ""}</b>`;
                 break;
-
 
             case "newline":
-
-                // Le saut de ligne reste À L'INTÉRIEUR du bloc courant
-                // (un label et sa valeur restent ensemble).
-                lignes.push(ligneCourante + NEWLINE_HTML);
-                ligneCourante = "";
-
+                pousser(courante, true);
+                courante = "";
                 break;
-
 
             case "separator":
-
-                flushBloc();
-
-                // deux séparateurs d'affilée : le premier part seul
-                if (separateurEnAttente) {
-                    emettreSeparateurSeul();
-                }
-
-                separateurEnAttente = true;   // sera collé au prochain bloc
-
+                finir();
+                if (sepEnAttente) sepSeul();   // deux traits d'affilée
+                sepEnAttente = true;
                 break;
 
-
             case "break":
-
-                flushBloc();
-
+                finir();
                 break;
 
         }
 
     });
 
-    flushBloc();
+    finir();
 
-    // séparateur final sans contenu derrière lui
-    if (separateurEnAttente) {
-        emettreSeparateurSeul();
-    }
+    if (sepEnAttente) sepSeul();
 
-    return html;
+    return lignes;
+}
+
+function renderLigne(l) {
+
+    return `<div class="bloc">${l.sep ? SEPARATOR_HTML : ""}${l.seulSep ? "" : `<div class="line">${l.html}</div>`}</div>`;
 
 }
+
+// Compatibilité : ancien rendu "à plat" du contenu
+function renderContenu(contenu) {
+
+    return parseLignes(contenu).map(renderLigne).join("");
+
+}
+
+
+// ==============================
+// CSS
+// ==============================
+
+function cssOrd() {
+
+    return `
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: white;
+        }
+
+        #ordonnance {
+            width: 210mm;
+            color: #1f2937;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 16px;
+            line-height: normal;
+            text-align: left;
+        }
+
+        /* une page = une feuille A4 de hauteur exacte, marges incluses */
+        .ord-page {
+            width: 210mm;
+            height: 297mm;
+            box-sizing: border-box;
+            padding: ${PDF_MARGE_VERTICALE_MM}mm ${PDF_MARGE_LATERALE_MM}mm;
+            overflow: hidden;
+            background: white;
+        }
+
+        .ord-fen {
+            width: ${210 - 2 * PDF_MARGE_LATERALE_MM}mm;
+            overflow: hidden;
+        }
+
+        .ord-flux {
+            width: ${210 - 2 * PDF_MARGE_LATERALE_MM}mm;
+            display: flow-root;
+        }
+
+        /* repli (si la mesure est impossible) : ancien mode, coupures gérées par html2pdf */
+        #ordonnance.ord-simple {
+            padding: ${PDF_MARGE_VERTICALE_MM}mm ${PDF_MARGE_LATERALE_MM}mm;
+            box-sizing: border-box;
+        }
+        .ord-simple .bloc { page-break-inside: avoid; break-inside: avoid; }
+        .ord-simple table, .ord-simple tr { page-break-inside: avoid; break-inside: avoid; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+        }
+
+        .logo { height: 70px; }
+
+        .titre {
+            text-align: center;
+            font-size: 24px;
+            margin: 20px 0;
+            color: #2563eb;
+        }
+
+        .patient {
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .signature {
+            margin-top: 30px;
+            text-align: right;
+        }
+
+        .contenu {
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: normal;
+        }
+
+        .bloc {
+            margin: 0;
+        }
+
+        .line {
+            display: block;
+            white-space: pre-wrap;
+        }
+
+        b {
+            font-weight: bold;
+            display: inline;
+        }
+
+        .bold {
+            font-weight: bold;
+            display: inline;
+            white-space: pre-wrap;
+        }
+
+        .newline {
+            height: 1em;
+        }
+
+        .separator {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #2563eb;
+            margin: 12px 0;
+        }
+
+        .signature-img {
+            max-height: 60px;
+            max-width: 150px;
+            margin-top: 8px;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(33, 150, 243, 0.35);
+            border-radius: 20px;
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
+        }
+    `;
+
+}
+
+
+// ==============================
+// FLUX COMPLET (en-tête + contenu + signature), sans pagination
+// ==============================
+
+function fluxHTML(ord, lignes) {
+
+    const patient = ord.patient || {};
+    const medecin = ord.medecin || {};
+
+    return `<div class="header">
+                <img src="${ord.logo || 'logo.png'}" class="logo">
+                <div>Le ${ord.date}, ${ord.lieu}</div>
+            </div>
+            <div class="titre">${ord.titre}</div>
+            <div class="patient">
+                <strong>Patient :</strong> ${patient.prenom} ${patient.nom}<br>
+                Né(e) le : ${patient.date_Naissance}
+            </div>
+            <div class="contenu">${lignes.map(renderLigne).join("")}</div>
+            <div class="signature"${medecin.signature ? ' style="min-height:110px"' : ""}>
+                ${medecin.nom}<br>
+                ${medecin.specialite || ""}
+                ${medecin.signature ? `<br><img src="${medecin.signature}" class="signature-img">` : ""}
+            </div>`;
+
+}
+
+
+// ==============================
+// MESURE (rendu invisible dans la page)
+// ==============================
+
+function mesurerLignes(ord, lignes, css) {
+
+    if (typeof document === "undefined" || !document.body) return null;
+
+    const wrap = document.createElement("div");
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.style.cssText = "position:absolute;left:-100000px;top:0;visibility:hidden;pointer-events:none;";
+    wrap.innerHTML = `<style>${css}</style><div id="ordonnance"><div class="ord-flux" id="ord-mesure">${fluxHTML(ord, lignes)}</div></div>`;
+    document.body.appendChild(wrap);
+
+    try {
+
+        const flux = wrap.querySelector("#ord-mesure");
+        const fr = flux.getBoundingClientRect();
+        const y = el => el.getBoundingClientRect().top - fr.top;
+        const bas = el => el.getBoundingClientRect().bottom - fr.top;
+
+        const blocs = flux.querySelectorAll(".contenu > .bloc");
+        if (blocs.length !== lignes.length) return null;
+
+        const contenuEl = flux.querySelector(".contenu");
+        const LH = parseFloat(getComputedStyle(contenuEl).lineHeight) || 24;
+
+        const mesures = Array.from(blocs).map(b => {
+
+            const ligne = b.querySelector(":scope > .line");
+            const bTop = y(b);
+            const bBas = bas(b);
+            const lTop = ligne ? y(ligne) : bBas;
+            const nl = ligne ? ligne.querySelector(":scope > .newline:last-child") : null;
+            const texteBas = ligne ? (nl ? y(nl) : bas(ligne)) : lTop;
+
+            return { bTop, bBas, lTop, texteH: texteBas - lTop };
+
+        });
+
+        return { total: fr.height, LH, mesures };
+
+    } finally {
+
+        wrap.remove();
+
+    }
+
+}
+
+
+// ==============================
+// CHOIX DES COUPURES
+// ==============================
+
+function calculerPages(lignes, m, hauteurUtile) {
+
+    const HC = hauteurUtile || HAUTEUR_UTILE_PX;
+    const LH = m.LH;
+    const cands = [];       // { y : endroit de la coupure, skip : début de la page suivante }
+
+    lignes.forEach((l, i) => {
+
+        const M = m.mesures[i];
+        const prev = lignes[i - 1];
+
+        const interdit =
+            l.vide ||
+            i === lignes.length - 1 ||                           // pas de dernière ligne seule sur la dernière page
+            !!(prev && (
+                (prev.sep && !prev.vide && !prev.seulSep) ||     // titre -> ligne suivante
+                prev.label ||                                    // libellé -> valeur
+                (prev.numerote && !l.numerote && !l.sep)         // "1. xxx" -> détails
+            ));
+
+        if (l.sep) {
+
+            // (b) le trait reste en bas de la page précédente
+            cands.push({ y: M.lTop, skip: M.lTop });
+            // (a) pas la place pour le trait : coupure avant, le trait est supprimé
+            cands.push({ y: M.bTop, skip: M.lTop });
+
+        } else if (!interdit && i > 0) {
+
+            cands.push({ y: M.bTop, skip: M.bTop });
+
+        }
+
+        // coupure possible entre deux lignes d'un long paragraphe (2 lignes mini de chaque côté)
+        if (l.decoupable && !l.seulSep) {
+
+            const n = Math.round(M.texteH / LH);
+
+            if (n >= 4 && Math.abs(M.texteH - n * LH) < 2) {
+                for (let j = 2; j <= n - 2; j++) {
+                    const yy = M.lTop + j * LH;
+                    cands.push({ y: yy, skip: yy });
+                }
+            }
+
+        }
+
+    });
+
+    const pages = [];
+    let y0 = 0;
+
+    for (let garde = 0; garde < 500; garde++) {
+
+        const limite = y0 + HC;
+
+        if (m.total - y0 <= HC + 0.5) {
+            pages.push({ y0: y0, y1: m.total });
+            break;
+        }
+
+        let best = null;
+
+        cands.forEach(c => {
+            if (c.y > y0 + LH && c.y <= limite + 0.5 && (!best || c.y > best.y)) best = c;
+        });
+
+        if (!best) {
+            // rien de coupable (bloc géant) : coupure forcée
+            pages.push({ y0: y0, y1: limite });
+            y0 = limite;
+        } else {
+            pages.push({ y0: y0, y1: best.y });
+            y0 = best.skip;
+        }
+
+    }
+
+    return pages;
+
+}
+
+
+// ==============================
+// ASSEMBLAGE : une feuille A4 par page
+// ==============================
+
+function assemblerPages(ord, lignes, pages, css) {
+
+    const flux = fluxHTML(ord, lignes);
+    const N = pages.length;
+
+    // La dernière feuille est raccourcie de quelques px (prélevés sur sa marge
+    // du bas) : évite qu'un arrondi d'html2pdf ajoute une page blanche.
+    const reduc = (4 + 1.5 * N).toFixed(1);
+
+    const feuilles = pages.map((p, i) => {
+
+        const h = Math.max(1, p.y1 - p.y0).toFixed(2);
+        const derniere = i === N - 1;
+        const styleFeuille = derniere
+            ? ` style="height:calc(297mm - ${reduc}px);padding-bottom:calc(${PDF_MARGE_VERTICALE_MM}mm - ${reduc}px)"`
+            : "";
+
+        return `<div class="ord-page"${styleFeuille}><div class="ord-fen" style="height:${h}px"><div class="ord-flux" style="margin-top:-${p.y0.toFixed(2)}px">${flux}</div></div></div>`;
+
+    }).join("");
+
+    return `
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>${css}</style>
+    </head>
+    <body>
+        <div id="ordonnance">${feuilles}</div>
+    </body>
+    </html>
+    `;
+
+}
+
+function htmlSimple(ord, lignes, css) {
+
+    return `
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>${css}</style>
+    </head>
+    <body>
+        <div id="ordonnance" class="ord-simple">${fluxHTML(ord, lignes)}</div>
+    </body>
+    </html>
+    `;
+
+}
+
 
 // ==============================
 // HTML GENERATOR
@@ -225,209 +525,25 @@ function renderContenu(contenu) {
 
 function generateHTML(ord) {
 
-    const contenuHTML = renderContenu(ord.contenu);
+    const lignes = parseLignes(ord.contenu);
+    const css = cssOrd();
 
-    return `
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
+    try {
 
-            body {
-                margin: 0;
-                font-family: "Segoe UI", Arial;
-                background: white;
-            }
+        const m = mesurerLignes(ord, lignes, css);
 
-            #ordonnance {
-                width: 210mm;
-                padding: 0 18mm;
-                box-sizing: border-box;
-                color: #1f2937;
-            }
+        if (m) {
+            return assemblerPages(ord, lignes, calculerPages(lignes, m), css);
+        }
 
-            .header {
-                display: flex;
-                justify-content: space-between;
-                border-bottom: 2px solid #2563eb;
-                padding-bottom: 10px;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
+    } catch (e) {
 
-            .logo { height: 70px; }
+        console.warn("Pagination avancée indisponible, mode simple :", e);
 
-            .titre {
-                text-align: center;
-                font-size: 24px;
-                margin: 20px 0;
-                color: #2563eb;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
+    }
 
-        .patient {
-    background: #f3f4f6;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
+    return htmlSimple(ord, lignes, css);
 
-
-            .signature {
-                margin-top: 30px;
-                text-align: right;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-.separator {
-    border-top: 2px solid #2563eb;
-    margin: 12px 0;
-}
-.contenu {
-    font-size: 15px;
-    line-height: 1.6;
-    white-space: normal;
-}
-
-.line {
-    display: block;
-    white-space: pre-wrap;
-}
-
-b {
-    font-weight: bold;
-}
-    .bold {
-    font-weight: bold;
-    display: inline;
-    white-space: pre-wrap;
-}
-
-
-/* ==============================
-   CORRECTIF PAGINATION
-   Chaque bloc (section / paragraphe) ne doit jamais
-   être coupé au milieu par un saut de page. S'il ne
-   tient pas dans l'espace restant, il bascule entier
-   sur la page suivante.
-   ============================== */
-.bloc {
-    page-break-inside: avoid;
-    break-inside: avoid;
-    margin-bottom: 4px;
-}
-
-.bloc.separator-bloc {
-    margin-bottom: 8px;
-}
-
-.line {
-    display: inline;
-}
-
-b {
-    font-weight: bold;
-    display: inline;
-}
-   .newline {
-    height: 1em;
-}
-
-.separator {
-    display: block;
-    width: 100%;
-    height: 2px;
-    background: #2563eb;
-    margin: 12px 0;
-}
-    .signature-img {
-    max-height: 60px;
-    max-width: 150px;
-    margin-top: 8px;
-}
-
-/* Tableaux (constantes, actes, médicaments, documents, journal) :
-   jamais coupés au milieu d'une ligne */
-table {
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
-}
-    .line {
-    display: block;
-}
-
-b {
-    font-weight: bold;
-}
-
-.newline {
-    height: 1em;
-}
-        ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(33, 150, 243, 0.35);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(21, 101, 192, 0.6);
-}
-
-/* Firefox */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(33, 150, 243, 0.35) transparent;
-}
-</style>
-    </head>
-    <body>
-
-        <div id="ordonnance">
-
-            <div class="header">
-                <img src="${ord.logo || 'logo.png'}" class="logo">
-                <div>Le ${ord.date}, ${ord.lieu}</div>
-            </div>
-
-            <div class="titre">${ord.titre}</div>
-
-             <div class="patient">
-                <strong>Patient :</strong> ${ord.patient.prenom} ${ord.patient.nom}<br>
-                Né(e) le : ${ord.patient.date_Naissance}
-            </div>
-
-            <div class="contenu">
-                ${contenuHTML}
-            </div>
-
-            <div class="signature">
-                ${ord.medecin.nom}<br>
-                ${ord.medecin.specialite || ""}
-                ${ord.medecin.signature ? `<br><img src="${ord.medecin.signature}" class="signature-img">` : ""}
-            </div>
-
-        </div>
-
-    </body>
-    </html>
-    `;
 }
 
 
@@ -441,16 +557,14 @@ function cleanContainer() {
 
 
 // ==============================
-// UNIVERSAL ORD TO PDF
+// OPTIONS html2pdf pour generateHTML()
 // ==============================
+// margin: 0 -> les marges sont dans les pages elles-mêmes.
 
-// Options html2pdf à utiliser PARTOUT où l'on génère un PDF depuis generateHTML()
-// (ex. : html2pdf().set(ordPdfOptions()).from(container)).
-// margin = [haut, gauche, bas, droite] en mm : haut/bas sur CHAQUE page.
 function ordPdfOptions() {
 
     return {
-        margin: [PDF_MARGE_VERTICALE_MM, 0, PDF_MARGE_VERTICALE_MM, 0],
+        margin: 0,
         html2canvas: {
             scale: 2,
             scrollY: 0,
@@ -467,6 +581,11 @@ function ordPdfOptions() {
     };
 
 }
+
+
+// ==============================
+// UNIVERSAL ORD TO PDF
+// ==============================
 
 async function ordToPDF(ord) {
 
@@ -494,76 +613,37 @@ window.ordToPDF = ordToPDF;
 // ==============================
 // PATCH html2pdf (COMPAT MODE)
 // ==============================
-//
-// Tout rendu d'une ordonnance (élément #ordonnance issu de generateHTML) reçoit
-// automatiquement les marges haut/bas par page et la pagination CSS, même si
-// l'appelant passe margin: 0 ou aucune option de saut de page.
-//
-// Le patch est posé sur le PROTOTYPE du worker html2pdf : un patch posé sur
-// une instance est perdu dès le premier appel chaîné (.set().from()...).
-// Si html2pdf n'est pas encore chargé quand ce fichier s'exécute, le patch
-// s'installe au moment où il est défini.
-// ==============================
 
-function estRenduOrdonnance(src) {
-    return !!(src && src.nodeType === 1 && src.querySelector &&
-        (src.id === "ordonnance" || src.querySelector("#ordonnance")));
-}
+const _oldHtml2pdf = window.html2pdf;
 
-function patcherHtml2pdf(h2p) {
+if (_oldHtml2pdf) {
 
-    let instance;
-    try { instance = h2p(); } catch (e) { return; }
+    window.html2pdf = function () {
 
-    const proto = instance && Object.getPrototypeOf(instance);
+        const instance = _oldHtml2pdf();
 
-    if (!proto || proto.__ordPatche ||
-        typeof proto.from !== "function" || typeof proto.set !== "function") {
-        return;
-    }
+        const oldSet = instance.set;
 
-    const oldFrom = proto.from;
-    const oldSet = proto.set;
+        instance.set = function (opts) {
 
-    proto.from = function (src, type) {
+            const r = oldSet.call(this, opts);
 
-        const worker = estRenduOrdonnance(src)
-            ? oldSet.call(this, {
-                margin: ordPdfOptions().margin,
-                pagebreak: ordPdfOptions().pagebreak
-            })
-            : this;
+            const oldFrom = this.from;
 
-        return oldFrom.call(worker, src, type);
+            this.from = function (el) {
+
+                // 🔥 CLEAN AUTO (évite page blanche)
+                cleanContainer();
+
+                return oldFrom.call(this, el);
+            };
+
+            return r;
+        };
+
+        return instance;
     };
-
-    proto.__ordPatche = true;
 }
-
-(function installerPatchHtml2pdf() {
-
-    if (typeof window.html2pdf === "function") {
-        patcherHtml2pdf(window.html2pdf);
-        return;
-    }
-
-    let valeur = window.html2pdf;
-
-    try {
-        Object.defineProperty(window, "html2pdf", {
-            configurable: true,
-            enumerable: true,
-            get() { return valeur; },
-            set(v) {
-                valeur = v;
-                if (typeof v === "function") {
-                    try { patcherHtml2pdf(v); } catch (e) { /* non bloquant */ }
-                }
-            }
-        });
-    } catch (e) { /* non bloquant */ }
-
-})();
 
 
 // ==============================

@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#ffffff">
 <title>Facturation RPO</title>
 <link rel="icon" type="image/png" href="logo.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
 *{box-sizing:border-box}[hidden]{display:none!important}
@@ -319,7 +318,7 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
 
 <div class="actionbar">
   <button id="saveBtn" type="button" class="btn-primary"><svg class="i"><use href="#i-save"/></svg>Valider la facture</button>
-  <button id="pdfBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-file"/></svg>Générer le PDF</button>
+  <button id="pdfBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-file"/></svg>Ouvrir la facture</button>
   <button id="cancelBtn" type="button" class="btn-danger"><svg class="i"><use href="#i-ban"/></svg>Annuler la facture</button>
   <button id="resetBtn" type="button" class="btn-secondary"><svg class="i"><use href="#i-refresh"/></svg>Nouvelle facture</button>
   <span id="saveMsg" class="muted"></span>
@@ -510,7 +509,7 @@ function refreshUI() {
   document.querySelectorAll('.gated').forEach(e => e.classList.toggle('disabled-section', !ok));
   ['saveBtn', 'detectBtn'].forEach(id => $(id).disabled = !ok || S.saving);
   $('cancelBtn').disabled = !S.id || cancelled || S.saving;
-  $('pdfBtn').disabled = !(has || S.id);
+  $('pdfBtn').disabled = !S.id || S.saving;
   $('invoiceBadge').textContent = S.numero || (S.id ? S.id : 'nouvelle');
   const nm = `${$('nom').value} ${$('prenom').value}`.trim(); $('patientName').textContent = nm || 'Facturation';
   const pl = $('statutPill'); pl.hidden = !(S.id || has);
@@ -842,45 +841,24 @@ function newInvoice() {
   computeBilled(); defaultSel({ c: [], h: [] }); prefillAssurance(); applyContext(); setMsg('');
 }
 
-// ---------- PDF ----------
-async function generatePdf() {
-  const f = serialize(), e = S.etab, a = f.assurance, t = f.totals, s = f.sejour;
-  const td = 'border:1px solid #dbe3ef;padding:7px;', box = 'flex:1;min-width:240px;border:1px solid #dbe3ef;border-radius:8px;padding:10px;background:#f8fbff;font-size:12px;line-height:1.6;';
-  const cancelled = S.statut === 'annulee', num = S.numero || 'BROUILLON';
-  const sejour = hasHosp() ? `<div>Entrée : ${esc(s.dateEntree || '-')} — Sortie : ${esc(s.dateSortie || 'en cours')} (${s.nbJours ?? '-'} nuit(s))</div>${s.chambre ? `<div>Chambre : ${esc(s.chambre)}</div>` : ''}` : `<div>Date : ${esc(s.dateEntree || '-')}</div>`;
-  const html = `<div style="font-family:Segoe UI,Arial,sans-serif;color:#0f172a;padding:24px;position:relative">
-    <div style="display:flex;justify-content:space-between;border-bottom:3px solid #0d6efd;padding-bottom:12px">
-      <div><div style="font-size:18px;font-weight:800;color:#0d6efd">${esc(e.nom || window.medecinLieu || 'Établissement')}</div>
-        <div style="font-size:12px">${esc(e.adresse || '')}</div><div style="font-size:12px">${e.siret ? 'SIRET : ' + esc(e.siret) : ''}</div></div>
-      <div style="text-align:right;font-size:12px"><div style="font-size:16px;font-weight:800">Facture n° ${esc(num)}</div>
-        <div>${esc(TYPES[f.type] || '')} — ${esc(f.service || '')}</div><div>Édition : ${new Date().toLocaleString('fr-FR')}</div></div>
-    </div>
-    ${cancelled ? `<div style="margin-top:10px;padding:8px;background:#fee2e2;color:#991b1b;font-weight:800;text-align:center">FACTURE ANNULÉE</div>` : ''}
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
-      <div style="${box}"><b style="font-size:15px">${esc(f.patient.prenom)} ${esc(f.patient.nom)}</b><div>Né(e) le : ${esc(f.patient.naissance || '-')}</div>
-        <div>ID patient : ${esc(f.patientId || '-')}</div>${a.numeroSecu ? `<div>N° sécu : ${esc(a.numeroSecu)}</div>` : ''}${a.mutuelle ? `<div>Mutuelle : ${esc(a.mutuelle)}</div>` : ''}</div>
-      <div style="${box}"><b>Prise en charge</b><div>${esc(a.regimeLabel)}${a.tiersPayant ? ' — tiers payant' : ''}</div><div>Part assurance maladie : <b>${euro(t.partSecu)} €</b></div>
-        <div>Part mutuelle (${a.mutuellePct} %) : <b>${euro(t.partMutuelle)} €</b></div><div>Part patient : <b>${euro(t.partPatient)} €</b></div></div>
-    </div>
-    <div style="${box};margin-top:12px"><b>${hasHosp() ? 'Séjour' : 'Consultation'}</b>${sejour}${s.medecin ? `<div>Médecin : ${esc(s.medecin)}</div>` : ''}</div>
-    <h3 style="margin:18px 0 8px;color:#0d6efd">Prestations</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f1f5f9"><th style="${td};text-align:left">Prestation</th><th style="${td}">Qté</th><th style="${td}">PU (€)</th><th style="${td}">Total (€)</th></tr></thead><tbody>
-      ${f.prestations.map(p => `<tr><td style="${td}">${esc(p.description)}</td><td style="${td};text-align:center">${p.quantity}</td><td style="${td};text-align:right">${euro(p.unitPrice)}</td><td style="${td};text-align:right">${euro(p.lineTotal)}</td></tr>`).join('')}
-    </tbody><tfoot><tr style="background:#eff6ff;font-weight:700"><td colspan="3" style="${td};text-align:right">Total</td><td style="${td};text-align:right">${euro(t.total)} €</td></tr>
-      <tr><td colspan="3" style="${td};text-align:right">Montant à la charge du patient${a.tiersPayant ? '' : ' (avance des frais)'}</td><td style="${td};text-align:right">${euro(t.aRegler)} €</td></tr></tfoot></table>
-    <h3 style="margin:18px 0 8px;color:#0d6efd">Règlements</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc"><th style="${td}">Date</th><th style="${td}">Mode</th><th style="${td}">Réf.</th><th style="${td}">Montant (€)</th><th style="${td}">Statut</th></tr></thead><tbody>
-      ${(f.payments.length ? f.payments : [{ date: '-', mode: '-', ref: '', amount: 0, statut: '' }]).map(p => `<tr><td style="${td};text-align:center">${esc(p.date)}</td><td style="${td};text-align:center">${esc(p.mode)}</td><td style="${td}">${esc(p.ref)}</td><td style="${td};text-align:right">${euro(p.amount)}</td><td style="${td};text-align:center">${p.statut === 'prevu' ? 'Prévu' : p.statut ? 'Encaissé' : ''}</td></tr>`).join('')}
-    </tbody></table>
-    <div style="margin-top:10px;font-size:13px;font-weight:700">Reste à payer : ${euro(t.restePayer)} € ${f.statutPaiement === 'complet' && !cancelled ? '— FACTURE ACQUITTÉE' : ''}</div>
-    <div style="margin-top:24px;font-size:11px;color:#64748b;text-align:center;border-top:1px dashed #cbd5e1;padding-top:8px">${esc(e.mentions || 'Soins exonérés de TVA (art. 261-4-1° du CGI).')}</div></div>`;
-  const c = document.createElement('div');
-  c.innerHTML = html; Object.assign(c.style, { width: '794px', background: '#fff', position: 'absolute', top: '0', opacity: '0' });
-  document.body.appendChild(c);
+// ---------- Ouvrir la facture dans le viewer (onglet interne) ----------
+async function openInvoice() {
+  if (!S.id) return alert('Enregistrez d’abord la facture pour pouvoir l’ouvrir.');
+  const btn = $('pdfBtn'); btn.disabled = true;
   try {
-    await new Promise(r => setTimeout(r, 300));
-    await html2pdf().set({ margin: 10, filename: `Facture_${num}.pdf`, image: { type: 'jpeg', quality: .98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(c).save();
-  } catch (err) { console.error(err); alert('Erreur lors de la génération du PDF.'); } finally { c.remove(); }
+    const ref = doc(db, 'documents', docIdFacture(S.id));
+    // document absent (facture antérieure à la fonctionnalité) : on le crée à partir de la facture enregistrée
+    if (!(await getDoc(ref)).exists()) {
+      const snap = await getDoc(doc(db, COL, S.id));
+      if (!snap.exists()) throw new Error('Facture introuvable.');
+      await syncFactureDocument({ ...snap.data(), numero: S.numero || snap.data().numero }, { factureId: S.id });
+    }
+    const titre = `Facture ${S.numero || ''} ${$('nom').value.trim()} ${$('prenom').value.trim()}`.replace(/\s+/g, ' ').trim();
+    const url = `viewer.html?docId=${docIdFacture(S.id)}`;
+    if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'OPEN_TAB', title: titre, url }, '*');
+    else window.open(url, '_blank');
+  } catch (err) { console.error(err); alert('Impossible d’ouvrir la facture : ' + (err.message || err)); }
+  finally { refreshUI(); }
 }
 
 // ---------- Démarrage ----------
@@ -892,7 +870,7 @@ function bindEvents() {
   $('reloadFacturablesBtn').onclick = async () => { await loadFacturables(); setMsg('🔄 Référentiel rechargé.', 'ok'); };
   ['regime', 'mutuellePct', 'tiersPayant'].forEach(id => $(id).addEventListener('input', recompute));
   $('dateEntree').addEventListener('input', computeNbJours); $('dateSortie').addEventListener('input', computeNbJours);
-  $('saveBtn').onclick = saveInvoice; $('pdfBtn').onclick = generatePdf; $('cancelBtn').onclick = cancelInvoice;
+  $('saveBtn').onclick = saveInvoice; $('pdfBtn').onclick = openInvoice; $('cancelBtn').onclick = cancelInvoice;
   $('resetBtn').onclick = () => { if (confirm('Repartir sur une nouvelle facture ?')) newInvoice(); };
   $('searchInvoicesBtn').onclick = searchInvoices;
   $('loadInvoiceByIdBtn').onclick = () => loadInvoiceById($('historyInvoiceId').value.trim());

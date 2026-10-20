@@ -1,73 +1,143 @@
 (function () {
 
 // ==============================
+// RÉGLAGES DE PAGINATION
+// ==============================
+// Marge HAUT/BAS appliquée sur CHAQUE page du PDF (mm). La marge gauche/droite
+// reste gérée par le padding de #ordonnance (sinon html2pdf rétrécit le contenu).
+const PDF_MARGE_VERTICALE_MM = 15;
+
+// Un bloc de plus de MAX_LIGNES_BLOC lignes n'est plus "insécable" d'un seul
+// bloc : il est redécoupé en petits groupes (voir decouperEnGroupes) pour que
+// la pagination puisse remplir la page au lieu de laisser un grand vide.
+const MAX_LIGNES_BLOC = 5;
+const TAILLE_GROUPE_PAR_DEFAUT = 3;
+
+const NEWLINE_HTML = `<div class="newline"></div>`;
+const SEPARATOR_HTML = `<div class="separator"></div>`;
+
+// ==============================
 // CONTENU RENDER
 // ==============================
 //
-// CORRECTIF PAGINATION :
-// Le contenu structuré n'est plus injecté dans UN SEUL <span> géant
-// (impossible à protéger d'une coupure de page). Il est maintenant
-// découpé en "blocs" indépendants (un par groupe de lignes entre deux
-// "newline"/"separator"), chacun avec page-break-inside: avoid.
-// html2pdf (mode 'css') peut ainsi éviter de couper un bloc en deux
-// et le fait basculer entier sur la page suivante si besoin.
+// Le contenu structuré est découpé en "blocs" indépendants, chacun avec
+// page-break-inside: avoid (html2pdf, mode 'css').
+//
+//  - "separator"  : trait bleu. Il est collé au bloc SUIVANT (jamais seul en
+//                   bas de page, "keep with next").
+//  - "break"      : frontière silencieuse entre deux blocs (l'auteur du
+//                   document choisit ainsi la granularité).
+//  - blocs longs  : redécoupés automatiquement en groupes de lignes.
 // ==============================
+function echapper(txt) {
+    return String(txt)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
+// Une "ligne" = texte + saut de ligne. On regroupe les lignes d'un bloc long :
+//  - si des lignes numérotées ("1. ...", "2) ...") existent, chacune ouvre un
+//    groupe (un médicament et ses détails restent ensemble) ;
+//  - sinon, groupes de TAILLE_GROUPE_PAR_DEFAUT lignes.
+// Un groupe d'une seule ligne en fin de bloc est rattaché au précédent (pas de
+// ligne orpheline).
+function decouperEnGroupes(lignes) {
+
+    const texteDe = l => l.replace(/<[^>]*>/g, "").trim();
+    const estNumerotee = l => /^\d+\s*[.)]\s/.test(texteDe(l));
+    const groupes = [];
+
+    if (lignes.some(estNumerotee)) {
+
+        lignes.forEach((l, i) => {
+            if (i === 0 || (estNumerotee(l) && groupes[groupes.length - 1].some(estNumerotee))) {
+                groupes.push([l]);
+            } else {
+                groupes[groupes.length - 1].push(l);
+            }
+        });
+
+    } else {
+
+        for (let i = 0; i < lignes.length; i += TAILLE_GROUPE_PAR_DEFAUT) {
+            groupes.push(lignes.slice(i, i + TAILLE_GROUPE_PAR_DEFAUT));
+        }
+
+    }
+
+    if (groupes.length > 1 && groupes[groupes.length - 1].length === 1) {
+        const dernier = groupes.pop();
+        groupes[groupes.length - 1].push(...dernier);
+    }
+
+    return groupes;
+}
+
 function renderContenu(contenu) {
 
-    // ==================================================
-    // CONTENU TEXTE SIMPLE
-    // ==================================================
-
+    // ---- Contenu texte simple ----
     if (typeof contenu === "string") {
 
-      return `
+        return `
     <div class="bloc">
-        <div class="line">
-            ${contenu
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll("\n", "<br>")
-            }
-        </div>
+        <div class="line">${echapper(contenu).replaceAll("\n", "<br>")}</div>
     </div>
 `;
 
     }
 
-
-    // ==================================================
-    // CONTENU VIDE
-    // ==================================================
-
+    // ---- Contenu vide ----
     if (!Array.isArray(contenu)) {
 
         return "";
 
     }
 
-
-    // ==================================================
-    // CONTENU STRUCTURÉ -> DÉCOUPAGE EN BLOCS
-    // ==================================================
-
+    // ---- Contenu structuré -> blocs ----
     let html = "";
-    let blocCourant = "";
+    let lignes = [];            // lignes terminées du bloc courant
+    let ligneCourante = "";     // texte de la ligne en cours
+    let separateurEnAttente = false;
 
-function flushBloc() {
-
-    if (blocCourant.trim() !== "") {
-
-        html += `
+    const bloc = (contenuHTML, avecSeparateur) => `
             <div class="bloc">
-                <div class="line">${blocCourant}</div>
+                ${avecSeparateur ? SEPARATOR_HTML : ""}
+                <div class="line">${contenuHTML}</div>
             </div>
         `;
 
+    function emettreSeparateurSeul() {
+        html += `<div class="bloc separator-bloc">${SEPARATOR_HTML}</div>`;
+        separateurEnAttente = false;
     }
 
-    blocCourant = "";
-}
+    function flushBloc() {
+
+        if (ligneCourante.trim() !== "") {
+            lignes.push(ligneCourante);
+        }
+        ligneCourante = "";
+
+        // lignes "vides" seules (que des sauts de ligne) : on les ignore
+        const aDuTexte = lignes.some(l => l.replace(/<[^>]*>/g, "").trim() !== "");
+
+        if (!aDuTexte) {
+            lignes = [];
+            return;
+        }
+
+        const groupes = lignes.length > MAX_LIGNES_BLOC
+            ? decouperEnGroupes(lignes)
+            : [lignes];
+
+        groupes.forEach(g => {
+            html += bloc(g.join(""), separateurEnAttente);
+            separateurEnAttente = false;   // le séparateur n'est posé qu'avant le 1er groupe
+        });
+
+        lignes = [];
+    }
 
     contenu.forEach(item => {
 
@@ -75,49 +145,44 @@ function flushBloc() {
 
             case "text":
 
-                blocCourant +=
-                    item.value || "";
+                ligneCourante += item.value || "";
 
                 break;
 
 
             case "bold":
 
-                blocCourant +=
-                    `<b>${item.value || ""}</b>`;
+                ligneCourante += `<b>${item.value || ""}</b>`;
 
                 break;
 
 
             case "newline":
 
-                // Un saut de ligne reste À L'INTÉRIEUR du bloc courant
-                // (on veut garder un label + sa valeur ensemble).
-                blocCourant +=
-                    `<div class="newline"></div>`;
+                // Le saut de ligne reste À L'INTÉRIEUR du bloc courant
+                // (un label et sa valeur restent ensemble).
+                lignes.push(ligneCourante + NEWLINE_HTML);
+                ligneCourante = "";
 
                 break;
 
 
             case "separator":
 
-                // Le séparateur ferme le bloc courant (nouvelle section)
-                // et devient lui-même un bloc protégé.
                 flushBloc();
 
-                html +=
-                    `<div class="bloc separator-bloc"><div class="separator"></div></div>`;
+                // deux séparateurs d'affilée : le premier part seul
+                if (separateurEnAttente) {
+                    emettreSeparateurSeul();
+                }
+
+                separateurEnAttente = true;   // sera collé au prochain bloc
 
                 break;
 
 
             case "break":
 
-                // Frontière "silencieuse" entre deux blocs : ferme le bloc
-                // courant SANS ajouter de trait visible. Permet de garder
-                // les blocs protégés petits (un champ = un bloc) pour que
-                // la pagination puisse remplir l'espace disponible au lieu
-                // de pousser un gros paquet entier sur la page suivante.
                 flushBloc();
 
                 break;
@@ -127,6 +192,11 @@ function flushBloc() {
     });
 
     flushBloc();
+
+    // séparateur final sans contenu derrière lui
+    if (separateurEnAttente) {
+        emettreSeparateurSeul();
+    }
 
     return html;
 
@@ -154,7 +224,7 @@ function generateHTML(ord) {
 
             #ordonnance {
                 width: 210mm;
-                padding: 18mm;
+                padding: 0 18mm;
                 box-sizing: border-box;
                 color: #1f2937;
             }
@@ -357,6 +427,30 @@ function cleanContainer() {
 // UNIVERSAL ORD TO PDF
 // ==============================
 
+// Options html2pdf à utiliser PARTOUT où l'on génère un PDF depuis generateHTML()
+// (ex. : html2pdf().set(ordPdfOptions()).from(container)).
+// margin = [haut, gauche, bas, droite] en mm : haut/bas sur CHAQUE page.
+function ordPdfOptions() {
+
+    return {
+        margin: [PDF_MARGE_VERTICALE_MM, 0, PDF_MARGE_VERTICALE_MM, 0],
+        html2canvas: {
+            scale: 2,
+            scrollY: 0,
+            useCORS: true
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait'
+        },
+        pagebreak: {
+            mode: ['css']
+        }
+    };
+
+}
+
 async function ordToPDF(ord) {
 
     cleanContainer();
@@ -370,22 +464,7 @@ async function ordToPDF(ord) {
     document.body.appendChild(container);
 
     const pdf = await html2pdf()
-        .set({
-            margin: 0,
-            html2canvas: {
-                scale: 2,
-                scrollY: 0,
-                useCORS: true
-            },
-            jsPDF: {
-                unit: 'mm',
-                format: 'a4',
-                orientation: 'portrait'
-            },
-           pagebreak: {
-    mode: ['css']
-}
-        })
+        .set(ordPdfOptions())
         .from(container)
         .outputPdf('blob');
 
@@ -420,6 +499,19 @@ if (_oldHtml2pdf) {
                 // 🔥 CLEAN AUTO (évite page blanche)
                 cleanContainer();
 
+                // Tout rendu issu de generateHTML() (élément #ordonnance) reçoit
+                // automatiquement les marges haut/bas par page et la pagination CSS,
+                // même si l'appelant a passé margin: 0 / pas de pagebreak.
+                const estOrdonnance = el && el.querySelector &&
+                    (el.id === "ordonnance" || el.querySelector("#ordonnance"));
+
+                if (estOrdonnance) {
+                    oldSet.call(this, {
+                        margin: ordPdfOptions().margin,
+                        pagebreak: ordPdfOptions().pagebreak
+                    });
+                }
+
                 return oldFrom.call(this, el);
             };
 
@@ -437,5 +529,6 @@ if (_oldHtml2pdf) {
 
 window.ordToPDF = ordToPDF;
 window.generateHTML = generateHTML;
+window.ordPdfOptions = ordPdfOptions;
 window.renderContenu = renderContenu;
 })();

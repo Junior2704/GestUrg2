@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Initialisation de la facturation</title>
+<link rel="icon" type="image/png" href="logo.png">
+<style>
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%;margin:0;padding:0}
+body{display:flex;flex-direction:column;overflow:hidden;font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
+h2,h3,p{margin:0}button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}.i.lg{width:24px;height:24px}
+body>header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--head-h);padding:8px 20px;background:#fff;border-bottom:1px solid var(--line);z-index:5}
+.left-header{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand{width:38px;height:38px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25)}.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#patientName{font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;padding:4px 12px;font-size:13px;font-weight:700;border-radius:999px;background:var(--primary-soft);color:var(--primary-d);white-space:nowrap}.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.late{background:var(--late-soft);color:var(--late)}
+.icon-button{appearance:none;width:44px;height:44px;display:inline-grid;place-items:center;padding:0;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}.icon-button:hover{background:var(--primary-soft)}
+.menu-toggle{display:none;appearance:none;width:44px;height:44px;flex:none;padding:0;place-items:center;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.app{flex:1;min-height:0;display:flex;overflow:hidden}
+.content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+nav{flex:none;width:var(--nav-w);display:flex;flex-direction:column;padding:14px 12px calc(14px + var(--safe-b));background:#fff;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto;scrollbar-width:none;transition:width .25s ease,box-shadow .25s ease;z-index:10}
+nav::-webkit-scrollbar{display:none}
+nav:hover{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.08)}
+.nav-title{padding:4px 12px 12px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--line-soft);opacity:0;transition:opacity .2s}nav:hover .nav-title{opacity:1}
+#navItems{display:flex;flex-direction:column;gap:4px}
+.nav-item{position:relative;display:flex;align-items:center;gap:14px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none;touch-action:manipulation}
+.nav-item>.i{color:var(--muted)}.nav-label{opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis}nav:hover .nav-label{opacity:1}
+@media (hover:hover){.nav-item:hover{background:var(--primary-soft)}.nav-item:hover>.i{color:var(--primary)}}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d)}.nav-item.active>.i{color:var(--primary)}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;background:var(--primary);border-radius:0 4px 4px 0}
+.nav-item:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,.btn-danger:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:none){nav:hover{width:var(--nav-w);box-shadow:none}nav:hover .nav-label,nav:hover .nav-title{opacity:0}nav.expanded{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.1)}nav.expanded .nav-label,nav.expanded .nav-title{opacity:1}}
+.nav-backdrop{display:none}
+section.panel{display:none;flex:1;min-height:0;overflow-y:auto;background:#fff}section.panel.active{display:block}
+.panel-head{position:sticky;top:0;z-index:4;padding:22px var(--gutter) 16px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.panel-title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;letter-spacing:-.015em}
+.panel-title .ico{width:40px;height:40px;flex:none;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:12px}
+.hint{margin:6px 0 0 52px;font-size:14px;color:var(--muted)}
+.panel-body{padding:22px var(--gutter) 48px}
+.card-sec{margin-bottom:16px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+.card-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.card-title .i{color:var(--primary);width:18px;height:18px}
+.disabled-section{opacity:.45;pointer-events:none}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}.form-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid .full{grid-column:1/-1}
+.field{min-width:0}label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+input:disabled{opacity:.75;cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;margin:0;font-weight:600;cursor:pointer}.check input{width:20px;height:20px;min-height:0}
+.btn-primary,.btn-secondary,.btn-danger{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;font:600 15px/1 var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:active{background:var(--primary-d)}
+.btn-secondary{background:#fff;color:var(--primary);border-color:var(--line)}.btn-secondary:hover{background:var(--primary-soft)}
+.btn-danger{background:#fff;color:var(--late);border-color:#f0c3c5}.btn-danger:hover{background:var(--late-soft)}
+button:disabled{opacity:.5;cursor:not-allowed}
+td .btn-danger{min-height:38px;padding:0 12px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.actionbar{flex:none;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px var(--gutter) calc(12px + var(--safe-b));background:#fff;border-top:1px solid var(--line)}
+.muted{color:var(--muted);font-size:14px}.error-text{color:var(--late);font-size:14px;font-weight:600}.ok-text{color:var(--ok);font-size:14px;font-weight:600}
+.reason{display:flex;gap:10px;padding:12px 14px;margin-bottom:16px;border-radius:12px;font-weight:600;background:var(--primary-soft);color:var(--primary-d);border:1px solid #b5d6ea}
+.reason.none{background:var(--late-soft);border-color:#f0c3c5;color:var(--late)}.reason.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.enc{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-weight:400;cursor:pointer}
+.enc input{width:20px;height:20px;min-height:0}.enc.off{opacity:.6;cursor:not-allowed}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--primary-soft);color:var(--primary-d)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}.b-complet{background:var(--ok-soft);color:var(--ok)}.b-incomplet{background:var(--late-soft);color:var(--late)}.b-annulee{background:var(--line-soft);color:var(--muted)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:8px 10px;border-bottom:1px solid var(--line-soft);text-align:center;vertical-align:middle}
+th{background:var(--field);font-size:13px;font-weight:700;color:var(--muted)}td.left{text-align:left}tfoot td{font-weight:700;background:var(--field)}
+td input,td select{min-height:40px;padding:8px 10px;font-size:15px}
+tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:16px}
+.kpi{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:500;color:var(--muted)}.kpi b{display:block;margin-top:3px;font-size:18px;color:var(--ink)}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:18px;font-weight:600;color:var(--late);background:rgba(255,255,255,.96)}
+@media(max-width:768px){.form-grid,.form-grid.c3{grid-template-columns:1fr}.hint{margin-left:0}nav{width:64px}}
+@media (max-width:900px){
+  .menu-toggle{display:inline-grid}.head-kicker{display:none}
+  nav,nav:hover,nav.open{width:min(320px,86vw)}
+  nav{position:fixed;top:0;bottom:0;left:calc(-1*min(320px,86vw) - 30px);padding:calc(18px + var(--safe-t)) 14px calc(24px + var(--safe-b));border-right:0;border-radius:0 22px 22px 0;box-shadow:none;z-index:2000;transition:left .3s cubic-bezier(.22,1,.36,1)}
+  nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}nav .nav-label,nav .nav-title{opacity:1}
+  .nav-backdrop{display:block;position:fixed;inset:0;z-index:1999;background:rgba(10,25,41,.45);opacity:0;pointer-events:none;transition:opacity .3s}.nav-backdrop.show{opacity:1;pointer-events:auto}
+}
+</style>
+<style>.wrap{flex:1;overflow-y:auto}.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:16px}.log{margin-top:12px;font-size:14px;color:var(--muted);white-space:pre-wrap}</style>
+</head>
+<body>
+<header><div class="left-header">
+  <div class="brand"><svg class="i" viewBox="0 0 24 24"><path d="M5 2v20l3-2 2 2 2-2 2 2 2-2 3 2V2l-3 2-2-2-2 2-2-2-2 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>
+  <div class="head-text"><span class="head-kicker">Administration</span><h2 id="patientName">Initialisation de la facturation</h2></div>
+</div></header>
+<div id="blocker" class="modalna"></div>
+<div class="wrap"><div class="panel-body" style="max-width:900px">
+  <div class="reason warn">Cette opération écrit dans les documents « consultations » et « hospitalisations ». Lancez d’abord l’analyse : rien n’est modifié tant que vous ne confirmez pas.</div>
+  <div class="card-sec">
+    <div class="card-title">Période conservée à facturer</div>
+    <div class="form-grid">
+      <div class="field"><label for="cutoff">Tout ce qui a commencé avant cette date est marqué « facturé »</label><input id="cutoff" type="date"></div>
+      <div class="field"><label>&nbsp;</label><span class="muted">Par défaut : hier. Les consultations et hospitalisations commencées à cette date ou après restent à facturer.</span></div>
+    </div>
+    <div class="actions">
+      <button id="analyseBtn" class="btn-secondary" type="button">Analyser (aucune modification)</button>
+      <button id="applyBtn" class="btn-primary" type="button" disabled>Marquer comme facturées</button>
+      <button id="undoBtn" class="btn-danger" type="button">Annuler une initialisation précédente</button>
+    </div>
+    <div id="stats" class="stats"></div>
+    <div id="log" class="log"></div>
+  </div>
+</div></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, writeBatch, serverTimestamp, deleteField } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+const app = initializeApp({ apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo", authDomain: "urgences-a8ed4.firebaseapp.com", projectId: "urgences-a8ed4" });
+const db = getFirestore(app), auth = getAuth(app);
+const $ = id => document.getElementById(id);
+// col : collection, field : champ date de début
+const SOURCES = [{ col: 'consultations', field: 'dateTS', label: 'Consultations' }, { col: 'hospitalisations', field: 'dateDebutTS', label: 'Hospitalisations' }];
+const pad = n => String(n).padStart(2, '0'), isoL = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const tsOf = v => v?.toDate ? v.toDate() : (v ? new Date(v) : null);
+const log = t => $('log').textContent = t;
+let plan = null, busy = false;
+
+const y = new Date(); y.setDate(y.getDate() - 1); $('cutoff').value = isoL(y);
+const cutoffDate = () => { const [a, b, c] = $('cutoff').value.split('-').map(Number); return new Date(a, b - 1, c, 0, 0, 0, 0); };
+
+async function analyse() {
+  if (!$('cutoff').value) return alert('Choisissez une date.');
+  busy = true; $('applyBtn').disabled = true; log('Analyse en cours…');
+  const cut = cutoffDate(); plan = []; let html = '';
+  for (const s of SOURCES) {
+    const snap = await getDocs(collection(db, s.col));
+    let deja = 0, garde = 0, sansDate = 0, enCours = 0; const aMarquer = [];
+    snap.docs.forEach(d => {
+      const x = d.data();
+      if (x.facturee) { deja++; return; }
+      const dt = tsOf(x[s.field]);
+      if (!dt || isNaN(dt)) { sansDate++; return; }
+      if (dt >= cut) { garde++; return; }
+      aMarquer.push(d.ref); if (s.col === 'hospitalisations' && !x.dateFinTS) enCours++;
+    });
+    plan.push({ ...s, refs: aMarquer });
+    html += `<div class="kpi">${s.label} (${snap.size})<b>${aMarquer.length} à marquer</b><span>${garde} conservées · ${deja} déjà facturées${sansDate ? ` · ${sansDate} sans date (ignorées)` : ''}${enCours ? ` · dont ${enCours} séjour(s) non clôturé(s)` : ''}</span></div>`;
+  }
+  $('stats').innerHTML = html; busy = false;
+  const n = plan.reduce((a, p) => a + p.refs.length, 0);
+  $('applyBtn').disabled = n === 0; log(n ? `${n} document(s) seront modifiés. Aucune écriture effectuée pour l’instant.` : 'Rien à marquer.');
+}
+async function chunked(refs, patch) {
+  for (let i = 0; i < refs.length; i += 400) { const b = writeBatch(db); refs.slice(i, i + 400).forEach(r => b.update(r, patch)); await b.commit(); log(`Écriture… ${Math.min(i + 400, refs.length)}/${refs.length}`); }
+}
+async function apply() {
+  if (busy || !plan) return;
+  const n = plan.reduce((a, p) => a + p.refs.length, 0);
+  if (!confirm(`Marquer ${n} document(s) comme facturés (commencés avant le ${cutoffDate().toLocaleDateString('fr-FR')}) ?`)) return;
+  busy = true; $('applyBtn').disabled = true;
+  try {
+    for (const p of plan) await chunked(p.refs, { facturee: true, factureRef: 'Initialisation', factureeInit: true, factureeLe: serverTimestamp() });
+    log(`✅ ${n} document(s) marqués comme facturés.`); plan = null; $('stats').innerHTML = '';
+  } catch (e) { console.error(e); log('❌ Erreur : ' + (e.message || e) + '\nCertains documents ont pu être modifiés : relancez l’analyse.'); }
+  busy = false;
+}
+async function undo() {
+  if (busy || !confirm('Retirer le marquage « facturée » de tous les documents posés par une initialisation ?')) return;
+  busy = true; log('Recherche…');
+  try {
+    let n = 0;
+    for (const s of SOURCES) {
+      const snap = await getDocs(collection(db, s.col));
+      const refs = snap.docs.filter(d => d.data().factureeInit).map(d => d.ref); n += refs.length;
+      await chunked(refs, { facturee: deleteField(), factureRef: deleteField(), factureeInit: deleteField(), factureeLe: deleteField() });
+    }
+    log(`↩️ ${n} document(s) rétablis.`);
+  } catch (e) { console.error(e); log('❌ Erreur : ' + (e.message || e)); }
+  busy = false;
+}
+$('analyseBtn').onclick = () => analyse().catch(e => { console.error(e); busy = false; log('❌ ' + (e.message || e)); });
+$('applyBtn').onclick = apply; $('undoBtn').onclick = undo;
+const block = m => { $('blocker').textContent = m; $('blocker').style.display = 'flex'; };
+$('analyseBtn').disabled = true; $('undoBtn').disabled = true;
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    const s = await getDoc(doc(db, 'medecins', user.uid));
+    if (!s.exists()) return block('Utilisateur non trouvé, veuillez vous reconnecter.');
+    const page = location.pathname.substring(location.pathname.lastIndexOf('/') + 1).replace('.html', '');
+    if (!(s.data().pages || {})[page]) return block('Accès refusé. Veuillez contacter un administrateur.');
+    $('analyseBtn').disabled = false; $('undoBtn').disabled = false;
+  } catch (e) { console.error(e); block('Oups, une erreur est survenue.'); }
+});
+</script>
+</body>
+</html>

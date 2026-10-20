@@ -7,11 +7,11 @@
 // reste gérée par le padding de #ordonnance (sinon html2pdf rétrécit le contenu).
 const PDF_MARGE_VERTICALE_MM = 15;
 
-// Un bloc de plus de MAX_LIGNES_BLOC lignes n'est plus "insécable" d'un seul
-// bloc : il est redécoupé en petits groupes (voir decouperEnGroupes) pour que
-// la pagination puisse remplir la page au lieu de laisser un grand vide.
-const MAX_LIGNES_BLOC = 5;
-const TAILLE_GROUPE_PAR_DEFAUT = 3;
+// Un bloc de plus de MAX_LIGNES_BLOC lignes n'est pas gardé d'un seul tenant :
+// il est coupé ligne par ligne (voir decouperEnGroupes). Les petits blocs
+// restent entiers. La page peut donc changer au milieu d'une catégorie, mais
+// jamais au milieu d'une ligne, et sans grand vide en bas de page.
+const MAX_LIGNES_BLOC = 3;
 
 const NEWLINE_HTML = `<div class="newline"></div>`;
 const SEPARATOR_HTML = `<div class="separator"></div>`;
@@ -36,16 +36,23 @@ function echapper(txt) {
         .replaceAll(">", "&gt;");
 }
 
-// Une "ligne" = texte + saut de ligne. On regroupe les lignes d'un bloc long :
-//  - si des lignes numérotées ("1. ...", "2) ...") existent, chacune ouvre un
-//    groupe (un médicament et ses détails restent ensemble) ;
-//  - sinon, groupes de TAILLE_GROUPE_PAR_DEFAUT lignes.
-// Un groupe d'une seule ligne en fin de bloc est rattaché au précédent (pas de
-// ligne orpheline).
-function decouperEnGroupes(lignes) {
+// Une "ligne" = texte + saut de ligne. Pour un bloc long, chaque ligne devient
+// une unité qui ne sera jamais coupée par un saut de page, avec ces exceptions
+// (ce qui doit rester collé) :
+//  - une ligne "libellé :" reste avec la ligne qui la suit (libellé + valeur) ;
+//  - titre de section (juste après un séparateur) : séparateur + titre + premier
+//    élément restent ensemble (pas de titre seul en bas de page) ;
+//  - lignes numérotées ("1. ...", "2) ...") : chacune ouvre un groupe (un
+//    médicament et ses détails restent ensemble) ;
+//  - une ligne vide reste attachée à la ligne précédente (pas de page qui
+//    commence par un blanc) ;
+//  - jamais une ligne orpheline seule sur la dernière page du bloc.
+function decouperEnGroupes(lignes, apresSeparateur) {
 
-    const texteDe = l => l.replace(/<[^>]*>/g, "").trim();
+    const texteDe = l => l.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
     const estNumerotee = l => /^\d+\s*[.)]\s/.test(texteDe(l));
+    const estLibelle = l => /[:：]$/.test(texteDe(l));
+    const estVide = l => texteDe(l) === "";
     const groupes = [];
 
     if (lignes.some(estNumerotee)) {
@@ -60,8 +67,18 @@ function decouperEnGroupes(lignes) {
 
     } else {
 
-        for (let i = 0; i < lignes.length; i += TAILLE_GROUPE_PAR_DEFAUT) {
-            groupes.push(lignes.slice(i, i + TAILLE_GROUPE_PAR_DEFAUT));
+        lignes.forEach(l => {
+            const prec = groupes[groupes.length - 1];
+            if (prec && (estVide(l) || (prec.length === 1 && estLibelle(prec[0])))) {
+                prec.push(l);
+            } else {
+                groupes.push([l]);
+            }
+        });
+
+        // séparateur + titre + premier élément : un seul groupe
+        if (apresSeparateur && groupes.length > 1) {
+            groupes[0].push(...groupes.splice(1, 1)[0]);
         }
 
     }
@@ -128,7 +145,7 @@ function renderContenu(contenu) {
         }
 
         const groupes = lignes.length > MAX_LIGNES_BLOC
-            ? decouperEnGroupes(lignes)
+            ? decouperEnGroupes(lignes, separateurEnAttente)
             : [lignes];
 
         groupes.forEach(g => {
@@ -477,50 +494,76 @@ window.ordToPDF = ordToPDF;
 // ==============================
 // PATCH html2pdf (COMPAT MODE)
 // ==============================
+//
+// Tout rendu d'une ordonnance (élément #ordonnance issu de generateHTML) reçoit
+// automatiquement les marges haut/bas par page et la pagination CSS, même si
+// l'appelant passe margin: 0 ou aucune option de saut de page.
+//
+// Le patch est posé sur le PROTOTYPE du worker html2pdf : un patch posé sur
+// une instance est perdu dès le premier appel chaîné (.set().from()...).
+// Si html2pdf n'est pas encore chargé quand ce fichier s'exécute, le patch
+// s'installe au moment où il est défini.
+// ==============================
 
-const _oldHtml2pdf = window.html2pdf;
-
-if (_oldHtml2pdf) {
-
-    window.html2pdf = function () {
-
-        const instance = _oldHtml2pdf();
-
-        const oldSet = instance.set;
-
-        instance.set = function (opts) {
-
-            const r = oldSet.call(this, opts);
-
-            const oldFrom = this.from;
-
-            this.from = function (el) {
-
-                // 🔥 CLEAN AUTO (évite page blanche)
-                cleanContainer();
-
-                // Tout rendu issu de generateHTML() (élément #ordonnance) reçoit
-                // automatiquement les marges haut/bas par page et la pagination CSS,
-                // même si l'appelant a passé margin: 0 / pas de pagebreak.
-                const estOrdonnance = el && el.querySelector &&
-                    (el.id === "ordonnance" || el.querySelector("#ordonnance"));
-
-                if (estOrdonnance) {
-                    oldSet.call(this, {
-                        margin: ordPdfOptions().margin,
-                        pagebreak: ordPdfOptions().pagebreak
-                    });
-                }
-
-                return oldFrom.call(this, el);
-            };
-
-            return r;
-        };
-
-        return instance;
-    };
+function estRenduOrdonnance(src) {
+    return !!(src && src.nodeType === 1 && src.querySelector &&
+        (src.id === "ordonnance" || src.querySelector("#ordonnance")));
 }
+
+function patcherHtml2pdf(h2p) {
+
+    let instance;
+    try { instance = h2p(); } catch (e) { return; }
+
+    const proto = instance && Object.getPrototypeOf(instance);
+
+    if (!proto || proto.__ordPatche ||
+        typeof proto.from !== "function" || typeof proto.set !== "function") {
+        return;
+    }
+
+    const oldFrom = proto.from;
+    const oldSet = proto.set;
+
+    proto.from = function (src, type) {
+
+        const worker = estRenduOrdonnance(src)
+            ? oldSet.call(this, {
+                margin: ordPdfOptions().margin,
+                pagebreak: ordPdfOptions().pagebreak
+            })
+            : this;
+
+        return oldFrom.call(worker, src, type);
+    };
+
+    proto.__ordPatche = true;
+}
+
+(function installerPatchHtml2pdf() {
+
+    if (typeof window.html2pdf === "function") {
+        patcherHtml2pdf(window.html2pdf);
+        return;
+    }
+
+    let valeur = window.html2pdf;
+
+    try {
+        Object.defineProperty(window, "html2pdf", {
+            configurable: true,
+            enumerable: true,
+            get() { return valeur; },
+            set(v) {
+                valeur = v;
+                if (typeof v === "function") {
+                    try { patcherHtml2pdf(v); } catch (e) { /* non bloquant */ }
+                }
+            }
+        });
+    } catch (e) { /* non bloquant */ }
+
+})();
 
 
 // ==============================

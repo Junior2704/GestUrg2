@@ -645,6 +645,110 @@ function validate(p) {
   return null;
 }
 const audit = (action, p) => ({ date: new Date().toISOString(), action, auteur: window.medecinNom || '', uid: window.medecinUid || null, total: p?.totals?.total ?? null });
+// ---------- Document patient (format ORD, collection "documents") ----------
+// Chaque facture a UN document patient (id déterministe "facture_<idFacture>") qui est
+// créé à l'enregistrement puis réécrit à chaque modification / annulation.
+const docIdFacture = id => 'facture_' + id;
+const fmtDateDoc = d => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const fmtIsoFR = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : (s || '-'); };
+
+// f = données de la facture (même forme que serialize() / document Firestore "facture")
+function buildFactureORD(f, extra = {}) {
+  const a = f.assurance || {}, t = f.totals || {}, s = f.sejour || {}, hosp = ['hospitalisation', 'mixte', 'urgences'].includes(f.type);
+  const annulee = f.statut === 'annulee';
+  const num = f.numero || 'BROUILLON';
+  const c = [];
+  const T = v => c.push({ type: 'text', value: String(v) });
+  const NL = () => c.push({ type: 'newline' });
+  const L = v => { T(v); NL(); };                       // une ligne
+  const SEC = titre => { c.push({ type: 'separator' }); L(titre.toUpperCase()); };   // même convention que l'ordonnancier
+
+  L(`FACTURE N° ${num}${annulee ? ' — ANNULÉE' : ''}`);
+  L(`${TYPES[f.type] || 'Facture'}${f.service ? ' — ' + f.service : ''}`);
+  if (annulee && f.annulation) L(`Motif d’annulation : ${f.annulation.motif || '-'} (${fmtIsoFR(f.annulation.date)}${f.annulation.par ? ', ' + f.annulation.par : ''})`);
+
+  SEC('Patient');
+  L(`${f.patient?.prenom || ''} ${f.patient?.nom || ''}`.trim());
+  L(`Né(e) le : ${fmtIsoFR(f.patient?.naissance)}`);
+  if (a.numeroSecu) L(`N° sécu : ${a.numeroSecu}`);
+  if (a.mutuelle) L(`Mutuelle : ${a.mutuelle}`);
+
+  SEC(hosp ? 'Séjour' : 'Consultation');
+  if (hosp) {
+    L(`Entrée : ${fmtIsoFR(s.dateEntree)} — Sortie : ${s.dateSortie ? fmtIsoFR(s.dateSortie) : 'en cours'}${s.nbJours != null ? ` (${s.nbJours} nuit(s))` : ''}`);
+    if (s.chambre) L(`Chambre : ${s.chambre}`);
+  } else L(`Date : ${fmtIsoFR(s.dateEntree)}`);
+  if (s.medecin) L(`Médecin : ${s.medecin}`);
+
+  SEC('Prise en charge');
+  L(`${a.regimeLabel || '-'}${a.tiersPayant ? ' — tiers payant' : ''}`);
+  L(`Part assurance maladie : ${euro(t.partSecu)} €`);
+  L(`Part mutuelle (${a.mutuellePct || 0} %) : ${euro(t.partMutuelle)} €`);
+  L(`Part patient : ${euro(t.partPatient)} €`);
+
+  SEC('Prestations');
+  (f.prestations || []).forEach((p, i) => {
+    L(`${i + 1}. ${p.description}`);
+    L(`${p.quantity} × ${euro(p.unitPrice)} € = ${euro(p.lineTotal)} €`);
+  });
+  L(`TOTAL : ${euro(t.total)} €`);
+  L(`À la charge du patient${a.tiersPayant ? '' : ' (avance des frais)'} : ${euro(t.aRegler)} €`);
+
+  SEC('Règlements');
+  if ((f.payments || []).length) (f.payments).forEach(p => L(`${fmtIsoFR(p.date)} — ${p.mode || '-'}${p.ref ? ' (' + p.ref + ')' : ''} — ${euro(p.amount)} € — ${p.statut === 'prevu' ? 'Prévu' : 'Encaissé'}`));
+  else L('Aucun règlement enregistré.');
+  L(`Déjà payé : ${euro(t.dejaPaye)} €`);
+  L(`Reste à payer : ${euro(t.restePayer)} €${f.statutPaiement === 'complet' && !annulee ? ' — FACTURE ACQUITTÉE' : ''}`);
+
+  const ord = {
+    version: '1.0',
+    type: 'facture',
+    titre: `Facture n° ${num}${annulee ? ' (annulée)' : ''}`,
+    date: new Date().toLocaleDateString('fr-FR'),
+    lieu: window.medecinLieu || '',
+    patient: { nom: f.patient?.nom || '', prenom: f.patient?.prenom || '', date_Naissance: f.patient?.naissance || '', sexe: S.patient?.sexe || '' },
+    hospitalisationId: (f.sources?.hospitalisationIds || [])[0] || '',
+    consultationId: (f.sources?.consultationIds || [])[0] || '',
+    factureId: extra.factureId || S.id || '',
+    numero: num,
+    statut: f.statut || 'validee',
+    medecin: { nom: window.medecinNom || 'Dr Non renseigné', specialite: window.medecinSpecialite || '', signature: '' },
+    contenu: c,
+    signature: false
+  };
+  // texte brut (aperçu / recherche dans l'historique des documents)
+  const texte = c.map(n => n.type === 'newline' ? '\n' : n.type === 'separator' ? '\n' : n.value).join('').replace(/\n{2,}/g, '\n').trim();
+  return { ord, texte };
+}
+
+async function syncFactureDocument(f, extra = {}) {
+  const pid = f.patientId || S.pid;
+  const fid = extra.factureId || S.id;
+  if (!pid || !fid) throw new Error('Patient ou facture manquant pour le document patient.');
+  const ref = doc(db, 'documents', docIdFacture(fid));
+  const existing = await getDoc(ref);
+  const { ord, texte } = buildFactureORD(f, { ...extra, factureId: fid });
+  const now = fmtDateDoc(new Date());
+  const data = {
+    patientId: pid,
+    consultationId: ord.consultationId,
+    hospitalisationId: ord.hospitalisationId,
+    factureId: fid,
+    numero: ord.numero,
+    statut: ord.statut,
+    type: 'Facture',
+    contenu: texte,
+    ord,
+    dateModification: now
+  };
+  // dateCreation : posée une seule fois (reprise de l'existant, sinon date de création de la facture)
+  if (!existing.exists() || !existing.data().dateCreation) {
+    const created = f.createdAt ? new Date(f.createdAt) : new Date();
+    data.dateCreation = fmtDateDoc(isNaN(created) ? new Date() : created);
+  }
+  await setDoc(ref, data, { merge: true });
+}
+
 function setBusy(b) { S.saving = b; ['resetBtn', 'searchInvoicesBtn', 'loadInvoiceByIdBtn'].forEach(id => $(id).disabled = b); refreshUI(); }
 
 async function saveInvoice() {
@@ -670,7 +774,12 @@ async function saveInvoice() {
       });
       S.id = ref.id; S.numero = p.numero; S.statut = 'validee';
     }
-    await refreshInvoices(); setBusy(false); setMsg(`✅ Facture enregistrée : ${S.numero || S.id}`, 'ok'); await searchInvoices();
+    let docOk = true;
+    try { await syncFactureDocument({ ...p, numero: S.numero || p.numero, statut: S.statut || p.statut }); } catch (e2) { docOk = false; console.error('Document patient :', e2); }
+    await refreshInvoices(); setBusy(false);
+    if (docOk) setMsg(`✅ Facture enregistrée : ${S.numero || S.id} — document ajouté/mis à jour dans le dossier patient`, 'ok');
+    else setMsg(`⚠️ Facture enregistrée : ${S.numero || S.id} — mais le document patient n’a pas pu être écrit (réessayez en enregistrant à nouveau)`, 'error');
+    await searchInvoices();
   } catch (e) { console.error(e); setBusy(false); setMsg('❌ ' + (e.message || 'Erreur d’enregistrement'), 'error'); alert('Erreur : ' + (e.message || e)); }
 }
 async function cancelInvoice() {
@@ -681,7 +790,11 @@ async function cancelInvoice() {
   setBusy(true);
   try {
     await setDoc(doc(db, COL, S.id), { statut: 'annulee', annulation: { motif, date: new Date().toISOString(), par: window.medecinNom || '' }, updatedAt: new Date().toISOString(), historique: arrayUnion(audit('Annulation : ' + motif)) }, { merge: true });
-    S.statut = 'annulee'; await refreshInvoices(); setBusy(false); recompute(); setMsg('🚫 Facture annulée.', 'ok'); await searchInvoices();
+    S.statut = 'annulee';
+    let docOk = true;
+    try { const snap = await getDoc(doc(db, COL, S.id)); await syncFactureDocument({ ...snap.data(), numero: S.numero || snap.data().numero }, { factureId: S.id }); } catch (e2) { docOk = false; console.error('Document patient :', e2); }
+    await refreshInvoices(); setBusy(false); recompute();
+    setMsg(docOk ? '🚫 Facture annulée — document patient mis à jour.' : '🚫 Facture annulée (⚠️ document patient non mis à jour).', docOk ? 'ok' : 'error'); await searchInvoices();
   } catch (e) { console.error(e); setBusy(false); setMsg('❌ Annulation impossible.', 'error'); }
 }
 

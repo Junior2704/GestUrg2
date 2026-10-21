@@ -38,6 +38,9 @@ textarea{min-height:90px;resize:vertical}
 .err{color:var(--coral);font-weight:700;margin-top:12px}
 .mut{color:var(--ink-soft)}
 .ok{text-align:center}.ok h2{font-family:var(--font-display);font-size:2rem;color:var(--teal-deep);margin:0 0 6px}.ref{display:inline-block;margin:10px 0;padding:8px 18px;background:var(--aqua);border-radius:12px;font:800 1.4rem var(--font-body);letter-spacing:2px;color:var(--teal-deep)}
+.more{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:12px 22px;border:2px solid var(--teal);border-radius:14px;background:#fff;color:var(--teal-deep);font:700 1rem var(--font-body);cursor:pointer}
+.more:hover{background:var(--aqua)}.more[hidden]{display:none}
+.picked{margin:14px 0 0;font-weight:700;color:var(--teal-deep)}.picked:empty{display:none}
 @media(max-width:600px){header h1{font-size:1.15rem}header img{height:40px}}
 
 </style>
@@ -49,7 +52,9 @@ textarea{min-height:90px;resize:vertical}
   <div id="done" hidden></div>
   <div id="flow">
     <div class="card"><h2 class="section-title">1. Choisissez un créneau</h2>
-      <div class="days" id="days"></div><div class="slots" id="slots"></div></div>
+      <div class="days" id="days"></div><div class="slots" id="slots"></div>
+      <button type="button" class="more" id="more" hidden></button>
+      <p class="picked" id="picked" aria-live="polite"></p></div>
     <div class="card" style="border-top-color:var(--coral)"><h2 class="section-title">2. Vos informations</h2>
       <div class="grid">
         <div><label for="prenom">Prénom</label><input id="prenom" autocomplete="given-name"></div>
@@ -77,6 +82,7 @@ const tmin=t=>{const[a,b]=t.split(':');return +a*60+ +b}, mt=m=>String(Math.floo
 const JOURS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 const fmtD=s=>new Date(s+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
 
+const PAGE=8;let showAll=false;
 let rules=[],specials=[],date=iso(new Date()),time=null,caps={},counts={};
 
 // Capacité (nb de médecins) par créneau : un jour « particulier » remplace les créneaux génériques
@@ -95,7 +101,7 @@ async function charger(){
   await choisirJour(date);
 }
 async function choisirJour(d){
-  date=d;time=null;caps=capacites(d);counts={};
+  date=d;time=null;showAll=false;caps=capacites(d);counts={};
   try{const o=await getDoc(doc(db,'rdv-occupation',d));if(o.exists())counts=o.data().counts||{}}catch(e){}
   rendre();
 }
@@ -105,13 +111,22 @@ function rendre(){
     const b=document.createElement('button');b.className='day';b.setAttribute('aria-pressed',s===date);
     b.innerHTML=`${i?JOURS[d.getDay()]:'Auj.'}<b>${d.getDate()}</b>${d.toLocaleDateString('fr-FR',{month:'short'})}`;
     b.onclick=()=>choisirJour(s);days.appendChild(b)}
-  const now=new Date(),nm=now.getHours()*60+now.getMinutes(),box=$('#slots'),ts=Object.keys(caps).sort();
-  box.innerHTML=ts.length?'':'<p class="mut">Aucun créneau ouvert ce jour-là. Essayez une autre date.</p>';
-  ts.forEach(t=>{const left=caps[t]-(counts[t]||0),past=date===iso(now)&&tmin(t)<=nm;
-    const b=document.createElement('button');b.className='slot';b.disabled=left<=0||past;b.setAttribute('aria-pressed',t===time);
-    b.innerHTML=`${t}<small>${past?'passé':left<=0?'complet':left+' place'+(left>1?'s':'')}</small>`;
+  const now=new Date(),nm=now.getHours()*60+now.getMinutes(),box=$('#slots'),isToday=date===iso(now),all=Object.keys(caps).sort();
+  // on ne garde que les créneaux à venir et encore libres
+  const dispo=all.filter(t=>caps[t]-(counts[t]||0)>0&&!(isToday&&tmin(t)<=nm));
+  if(time&&!dispo.includes(time))time=null;
+  box.innerHTML=dispo.length?'':`<p class="mut">${!all.length?'Aucun créneau ouvert ce jour-là. Essayez une autre date.':isToday?'Plus de créneau disponible aujourd’hui. Essayez demain ou une autre date.':'Tous les créneaux sont complets ce jour-là. Essayez une autre date.'}</p>`;
+  (showAll?dispo:dispo.slice(0,PAGE)).forEach(t=>{const left=caps[t]-(counts[t]||0);
+    const b=document.createElement('button');b.className='slot';b.setAttribute('aria-pressed',t===time);
+    b.innerHTML=t+(left===1?'<small>Dernière place</small>':'');
     b.onclick=()=>{time=t;rendre()};box.appendChild(b)});
+  const more=$('#more');more.hidden=dispo.length<=PAGE;
+  more.textContent=showAll?'Voir moins':`Voir plus de créneaux (${dispo.length-PAGE})`;
+  $('#picked').textContent=time?`Créneau choisi : ${fmtD(date)} à ${time}`:'';
 }
+$('#more').onclick=()=>{showAll=!showAll;rendre()};
+// les créneaux qui passent disparaissent sans recharger la page
+setInterval(()=>{if(!$('#flow').hidden)rendre()},60000);
 $('#go').onclick=async()=>{
   const v=id=>$('#'+id).value.trim(),err=$('#err'),miss=[];
   if(!time)miss.push('un créneau');

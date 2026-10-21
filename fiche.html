@@ -3045,6 +3045,11 @@ async function calculerResteAFacturer(patient) {
   };
 }
 
+// Ferme les modales ouvertes (ex. gestion administrative) avant de changer d'onglet
+function fermerModalesOuvertes() {
+  document.querySelectorAll(".modal-overlay.show").forEach(m => m.classList.remove("show"));
+}
+
 // Retourne true si la clôture peut continuer
 async function controlerAvantCloture() {
   let patient, hospi;
@@ -3079,7 +3084,10 @@ async function controlerAvantCloture() {
         { label: "Aller à l’onglet Sortie", valeur: "sortie", principal: true }
       ]
     });
-    if (choix === "sortie") window.openSection?.("panel-sortie");
+    if (choix === "sortie") {
+      fermerModalesOuvertes();
+      window.openSection?.("panel-sortie");
+    }
     return false;
   }
 
@@ -3107,7 +3115,11 @@ async function controlerAvantCloture() {
           { label: "Clôturer quand même", valeur: "continuer", principal: true }
         ]
       });
-      if (choix === "facturer") { document.getElementById("btnFacturer")?.click(); return false; }
+      if (choix === "facturer") {
+        fermerModalesOuvertes();
+        document.getElementById("btnFacturer")?.click();
+        return false;
+      }
       if (choix !== "continuer") return false;
     }
   } catch (err) {

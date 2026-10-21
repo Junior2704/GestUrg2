@@ -152,6 +152,44 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+/* ---------- Paiements : tableau + modales ---------- */
+td.amt{font-weight:700;white-space:nowrap}
+tr.refund td.amt{color:var(--late)}
+td .btn-secondary{min-height:38px;padding:0 12px}
+.b-prevu{background:var(--warn-soft);color:var(--warn)}
+.t-refund{background:var(--late-soft);color:var(--late)}
+.mback{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,25,41,.5);backdrop-filter:blur(2px)}
+.mbox{width:100%;max-width:560px;max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(10,25,41,.35)}
+.mbox.narrow{max-width:460px}
+.mhead{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mhead h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.mbody{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.mfoot{flex:none;display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;padding:14px 20px calc(14px + var(--safe-b,0px));border-top:1px solid var(--line)}
+.mfoot .spacer{margin-right:auto}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.seg label{position:relative;margin:0;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:9px;font-weight:700;font-size:15px;color:var(--muted)}
+.seg input:checked+span{background:#fff;color:var(--primary-d);box-shadow:var(--shadow-sm)}
+.seg input[value=remboursement]:checked+span{color:var(--late)}
+.seg input:focus-visible+span{outline:3px solid rgba(11,111,164,.4)}
+.psum{padding:10px 14px;background:var(--primary-soft);color:var(--primary-d);border-radius:12px;font-size:14px}
+.link{appearance:none;margin-left:6px;padding:0;border:0;background:none;color:var(--primary);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+textarea{width:100%;min-height:84px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+.cash{display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--field);border:1px solid var(--line);border-radius:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{appearance:none;min-height:38px;padding:0 14px;font:600 14px/1 var(--font);color:var(--primary-d);background:#fff;border:1px solid var(--line);border-radius:999px;cursor:pointer}.chip:hover{background:var(--primary-soft)}
+.change{padding:14px;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:var(--muted);background:#fff;border:1px dashed var(--line)}
+.change.ok{color:var(--ok);background:var(--ok-soft);border:1px solid #b6e0c6}
+.change.late{color:var(--late);background:var(--late-soft);border:1px solid #f0c3c5}
+.change.warn{color:var(--warn);background:var(--warn-soft);border:1px solid var(--warn-line)}
+.req{color:var(--late)}
+.srow{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:15px}.srow:last-child{border-bottom:0}
+#sPreview{border:1px solid var(--line);border-radius:12px;background:var(--field)}
+#sPreview>.muted{padding:10px 12px}
+@media(max-width:560px){.mback{align-items:flex-end;padding:0}.mbox,.mbox.narrow{max-width:none;max-height:92dvh;border-radius:18px 18px 0 0}}
 </style>
 </head>
 <body>
@@ -282,19 +320,20 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
 </section>
 
 <section id="panel-paiements" class="panel">
-  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-wallet"/></svg></span>Paiements</h3><p class="hint">Paiements fractionnés, échéancier et suivi du reste à payer.</p></div>
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-wallet"/></svg></span>Paiements</h3><p class="hint">Règlements, remboursements, échéancier et suivi du reste à payer.</p></div>
   <div class="panel-body"><div class="card-sec gated"><div class="card-title"><svg class="i"><use href="#i-wallet"/></svg> Règlements</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Mode</th><th>Référence / détail</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead>
       <tbody id="paymentsBody"></tbody></table></div>
     <div class="actions"><button id="addPaymentBtn" type="button" class="btn-secondary">Ajouter un paiement</button>
       <button id="settleBtn" type="button" class="btn-secondary">Solder le reste</button>
       <button id="scheduleBtn" type="button" class="btn-secondary">Créer un échéancier</button></div>
     <div class="kpis">
       <div class="kpi">À régler par le patient<b id="aRegler">0.00 €</b></div>
-      <div class="kpi">Encaissé<b id="dejaPaye">0.00 €</b></div>
+      <div class="kpi">Encaissé (net)<b id="dejaPaye">0.00 €</b></div>
       <div class="kpi">Échéances prévues<b id="prevu">0.00 €</b></div>
       <div class="kpi">Reste à payer<b id="restePayer">0.00 €</b></div>
+      <div class="kpi" id="kpiTrop" hidden>Trop-perçu à rembourser<b id="tropPercu" style="color:var(--late)">0.00 €</b></div>
       <div class="kpi">Statut<b id="statusP">INCOMPLET</b></div>
     </div></div></div>
 </section>
@@ -324,6 +363,58 @@ tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
   <span id="saveMsg" class="muted"></span>
 </div>
 </div>
+</div>
+
+<!-- Modale paiement / remboursement -->
+<div id="payModal" class="mback" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+    <div class="mhead"><h3 id="payTitle">Nouveau règlement</h3><button type="button" id="payClose" class="icon-button" aria-label="Fermer">✕</button></div>
+    <div class="mbody">
+      <div class="seg" role="radiogroup" aria-label="Type de règlement">
+        <label><input type="radio" name="payType" value="paiement" checked><span>Paiement</span></label>
+        <label><input type="radio" name="payType" value="remboursement"><span>Remboursement</span></label>
+      </div>
+      <div id="paySummary" class="psum"></div>
+      <div class="form-grid">
+        <div class="field"><label for="pDate">Date</label><input id="pDate" type="date"></div>
+        <div class="field" id="pStatutWrap"><label for="pStatut">Statut</label><select id="pStatut"><option value="encaisse">Encaissé</option><option value="prevu">Prévu</option></select></div>
+        <div class="field"><label for="pMode">Mode</label><select id="pMode"></select></div>
+        <div class="field"><label for="pRef">Référence</label><input id="pRef" type="text" placeholder="n° chèque, transaction…"></div>
+        <div class="field full"><label for="pAmount" id="pAmountLbl">Montant du paiement (€)</label><input id="pAmount" type="number" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div id="cashBox" class="cash" hidden>
+        <div id="cashIn"><label for="pRecu">Somme remise par le patient (€)</label><input id="pRecu" type="number" min="0" step="0.01" inputmode="decimal"><div id="pChips" class="chips"></div></div>
+        <div id="cashOut" class="change"></div>
+      </div>
+      <div class="field" id="pMotifWrap" hidden><label for="pMotif">Motif du remboursement <span class="req">*</span></label><textarea id="pMotif" placeholder="Ex. : trop-perçu, erreur de tarif, prestation non réalisée…"></textarea></div>
+      <div id="payErr" class="error-text" role="alert"></div>
+    </div>
+    <div class="mfoot">
+      <button type="button" id="payDel" class="btn-danger spacer" hidden>Supprimer</button>
+      <button type="button" id="payCancel" class="btn-secondary">Annuler</button>
+      <button type="button" id="paySave" class="btn-primary">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale échéancier -->
+<div id="schedModal" class="mback" hidden>
+  <div class="mbox narrow" role="dialog" aria-modal="true" aria-labelledby="schedTitle">
+    <div class="mhead"><h3 id="schedTitle">Créer un échéancier</h3><button type="button" id="schedClose" class="icon-button" aria-label="Fermer">✕</button></div>
+    <div class="mbody">
+      <div id="schedSummary" class="psum"></div>
+      <div class="form-grid">
+        <div class="field"><label for="sN">Nombre d’échéances (2 à 12)</label><input id="sN" type="number" min="2" max="12" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="sDate">Première échéance</label><input id="sDate" type="date"></div>
+      </div>
+      <div id="sPreview"></div>
+      <div id="schedErr" class="error-text" role="alert"></div>
+    </div>
+    <div class="mfoot">
+      <button type="button" id="schedCancel" class="btn-secondary">Annuler</button>
+      <button type="button" id="schedOk" class="btn-primary">Créer l’échéancier</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -540,28 +631,16 @@ function addLine(l = {}) {
   tr.querySelector('.d').addEventListener('change', e => { const n = e.target.value; if (S.fact[n] !== undefined) tr.querySelector('.u').value = S.fact[n]; recompute(); });
   tr.querySelector('.x').onclick = () => { tr.remove(); recompute(); };
 }
-function addPayment(p = {}) {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input class="pd" type="date" value="${p.date || isoL(new Date())}"></td>
-    <td><select class="pm">${MODES.map(m => `<option>${m}</option>`).join('')}</select></td>
-    <td><input class="pr" placeholder="n° chèque, transaction…" value="${esc(p.ref || '')}"></td>
-    <td><input class="pa" type="number" min="0" step="0.01" value="${Number(p.amount) >= 0 ? Number(p.amount) : 0}"></td>
-    <td><select class="ps"><option value="encaisse">Encaissé</option><option value="prevu">Prévu</option></select></td>
-    <td><button type="button" class="btn btn-danger x">🗑</button></td>`;
-  paymentsBody.appendChild(tr);
-  if (p.mode) tr.querySelector('.pm').value = p.mode;
-  if (p.statut) tr.querySelector('.ps').value = p.statut;
-  tr.addEventListener('input', recompute); tr.addEventListener('change', recompute);
-  tr.querySelector('.x').onclick = () => { tr.remove(); recompute(); };
-}
 const readLines = () => [...linesBody.children].map(tr => {
   const q = Math.max(0, +tr.querySelector('.q').value || 0), u = Math.max(0, +tr.querySelector('.u').value || 0);
   return { description: tr.querySelector('.d').value.trim(), quantity: q, unitPrice: u, lineTotal: r2(q * u), source: tr.dataset.src, auto: !!tr.dataset.auto, ref: tr.dataset.ref };
 }).filter(x => x.description && x.quantity > 0);
-const readPayments = () => [...paymentsBody.children].map(tr => ({
-  date: tr.querySelector('.pd').value, mode: tr.querySelector('.pm').value, ref: tr.querySelector('.pr').value.trim(),
-  amount: Math.max(0, r2(tr.querySelector('.pa').value)), statut: tr.querySelector('.ps').value
-})).filter(p => p.amount > 0);
+const readPayments = () => S.pays.map(p => {
+  const o = { date: p.date, mode: p.mode, ref: p.ref || '', amount: Math.max(0, r2(p.amount)), statut: isRefund(p) ? 'encaisse' : (p.statut || 'encaisse'), type: p.type || 'paiement' };
+  if (isRefund(p)) o.motif = p.motif || '';
+  if (p.recu > 0) { o.recu = p.recu; o.rendu = p.rendu || 0; }
+  return o;
+}).filter(p => p.amount > 0);
 
 function recompute() {
   let total = 0;
@@ -577,27 +656,223 @@ function recompute() {
   const mp = Math.min(100, Math.max(0, +$('mutuellePct').value || 0));
   const mut = r2((total - secu) * mp / 100), pat = r2(total - secu - mut);
   const aReg = $('tiersPayant').checked ? pat : total;
-  const pays = readPayments();
-  const sum = st => r2(pays.filter(p => p.statut === st).reduce((s, p) => s + p.amount, 0));
-  const paid = sum('encaisse'), prevu = sum('prevu'), reste = Math.max(r2(aReg - paid), 0);
-  S.calc = { total, secu, mut, pat, aReg, paid, prevu, reste };
+  const { paid, prevu } = payTotals(), reste = Math.max(r2(aReg - paid), 0), trop = Math.max(r2(paid - aReg), 0);
+  const rembourse = r2(S.pays.filter(isRefund).reduce((s, p) => s + (Number(p.amount) || 0), 0));
+  S.calc = { total, secu, mut, pat, aReg, paid, prevu, reste, trop, rembourse };
   $('totalGlobal').textContent = euro(total);
   $('partSecu').value = euro(secu); $('partMutuelle').value = euro(mut); $('partPatient').value = euro(pat);
   $('aRegler').textContent = euro(aReg) + ' €'; $('dejaPaye').textContent = euro(paid) + ' €';
   $('prevu').textContent = euro(prevu) + ' €'; $('restePayer').textContent = euro(reste) + ' €';
+  $('kpiTrop').hidden = trop <= 0.009; $('tropPercu').textContent = euro(trop) + ' €';
   $('statusP').textContent = S.statut === 'annulee' ? 'ANNULÉE' : (reste <= 0.009 && total > 0 ? 'COMPLET' : 'INCOMPLET');
 }
-function settle() { recompute(); if (S.calc.reste <= 0) return alert('Rien à solder.'); addPayment({ amount: S.calc.reste, statut: 'encaisse' }); recompute(); }
-function schedule() {
-  const n = parseInt(prompt('Nombre d’échéances (2 à 12) ?', '3'), 10);
-  if (!(n >= 2 && n <= 12)) return;
-  [...paymentsBody.children].filter(tr => tr.querySelector('.ps').value === 'prevu').forEach(tr => tr.remove());
-  recompute();
-  const base = r2(S.calc.reste); if (base <= 0) return alert('Rien à échelonner.');
-  const part = r2(base / n), now = new Date();
-  for (let i = 1; i <= n; i++) addPayment({ date: isoL(new Date(now.getFullYear(), now.getMonth() + i, now.getDate())), statut: 'prevu', amount: i === n ? r2(base - part * (n - 1)) : part });
-  recompute();
+$('pMode').innerHTML = MODES.map(m => `<option>${m}</option>`).join('');
+// ---------- Paiements : tableau en lecture + modale de saisie ----------
+S.pays = [];
+const isRefund = p => p.type === 'remboursement';
+// paid = encaissé net des remboursements ; prevu = échéances prévues. skip = index ignoré (règlement en cours d'édition)
+function payTotals(skip = -1) {
+  let paid = 0, prevu = 0;
+  S.pays.forEach((p, i) => {
+    if (i === skip) return;
+    const a = Number(p.amount) || 0;
+    if (isRefund(p)) paid -= a; else if (p.statut === 'prevu') prevu += a; else paid += a;
+  });
+  return { paid: r2(paid), prevu: r2(prevu) };
 }
+const pm = { idx: -1, opener: null, delTimer: null };
+const payType = () => document.querySelector('input[name=payType]:checked').value;
+
+function renderPayments() {
+  paymentsBody.innerHTML = S.pays.length ? S.pays.map((p, i) => {
+    const ref = isRefund(p);
+    const detail = [
+      p.ref ? esc(p.ref) : '',
+      ref && p.motif ? `<div class="muted">Motif : ${esc(p.motif)}</div>` : '',
+      p.rendu > 0 ? `<div class="muted">Remis ${euro(p.recu)} € · rendu ${euro(p.rendu)} €</div>` : ''
+    ].join('');
+    const badge = ref ? '<span class="badge b-annulee">Remboursé</span>' : p.statut === 'prevu' ? '<span class="badge b-prevu">Prévu</span>' : '<span class="badge b-complet">Encaissé</span>';
+    return `<tr class="${ref ? 'refund' : ''}"><td>${fmtIsoFR(p.date)}</td>
+      <td class="left">${ref ? '<span class="tag t-refund">Remboursement</span> ' : ''}${esc(p.mode || '-')}</td>
+      <td class="left">${detail || '<span class="muted">—</span>'}</td>
+      <td class="amt">${ref ? '−' : ''}${euro(p.amount)}</td><td>${badge}</td>
+      <td><button type="button" class="btn-secondary" data-edit="${i}">Modifier</button></td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="muted" style="padding:18px">Aucun règlement enregistré.</td></tr>';
+}
+paymentsBody.addEventListener('click', e => {
+  const b = e.target.closest('[data-edit]'); if (!b) return;
+  const i = Number(b.dataset.edit); openPayModal(S.pays[i], i);
+});
+
+// Montants disponibles pour le règlement en cours d'édition
+function payContext() {
+  const o = payTotals(pm.idx), aReg = S.calc.aReg || 0;
+  return {
+    dispo: Math.max(r2(aReg - o.paid - o.prevu), 0),   // encore à régler (hors échéances déjà prévues)
+    maxRemb: Math.max(o.paid, 0),                      // encaissé net = remboursable au maximum
+    trop: Math.max(r2(o.paid - aReg), 0)               // trop-perçu
+  };
+}
+
+function syncPayModal() {
+  const ref = payType() === 'remboursement', c = payContext();
+  const amount = r2($('pAmount').value);
+  const enc = ref || $('pStatut').value === 'encaisse';
+  $('pStatutWrap').hidden = ref;
+  $('pMotifWrap').hidden = !ref;
+  $('pAmountLbl').textContent = ref ? 'Montant à rembourser (€)' : 'Montant du paiement (€)';
+
+  // Résumé + raccourci pour remplir le montant
+  if (ref) {
+    const v = c.trop > 0.009 ? c.trop : c.maxRemb;
+    $('paySummary').innerHTML = `Maximum remboursable : <b>${euro(c.maxRemb)} €</b>` + (c.trop > 0.009 ? ` — dont trop-perçu : <b>${euro(c.trop)} €</b>` : '')
+      + (v > 0 ? ` <button type="button" class="link" data-fill="${v}">${c.trop > 0.009 ? 'Utiliser le trop-perçu' : 'Tout rembourser'}</button>` : '');
+  } else {
+    $('paySummary').innerHTML = c.dispo > 0.009
+      ? `Reste à régler : <b>${euro(c.dispo)} €</b> <button type="button" class="link" data-fill="${c.dispo}">Utiliser ce montant</button>`
+      : 'Aucun montant restant à régler sur cette facture.';
+  }
+
+  // Bloc espèces : monnaie à rendre (paiement) ou somme à remettre (remboursement)
+  const cash = $('pMode').value === 'Espèces';
+  $('cashBox').hidden = !(cash && enc);
+  $('cashIn').hidden = ref;
+  const out = $('cashOut');
+  if (ref) {
+    out.className = 'change warn';
+    out.textContent = amount > 0 ? `À remettre au patient en espèces : ${euro(amount)} €` : 'Saisissez le montant à rembourser.';
+  } else {
+    const recu = $('pRecu').value === '' ? null : r2($('pRecu').value);
+    const notes = [5, 10, 20, 50, 100, 200, 500].filter(n => n > amount).slice(0, 3);
+    $('pChips').innerHTML = amount > 0
+      ? [`<button type="button" class="chip" data-recu="${amount}">Montant exact</button>`, ...notes.map(n => `<button type="button" class="chip" data-recu="${n}">${n} €</button>`)].join('')
+      : '';
+    if (amount <= 0) { out.className = 'change'; out.textContent = 'Saisissez le montant du paiement.'; }
+    else if (recu === null) { out.className = 'change'; out.textContent = 'Saisissez la somme remise pour calculer la monnaie.'; }
+    else if (recu + 0.0001 < amount) { out.className = 'change late'; out.textContent = `Il manque ${euro(amount - recu)} €`; }
+    else if (r2(recu - amount) === 0) { out.className = 'change ok'; out.textContent = 'Aucune monnaie à rendre'; }
+    else { out.className = 'change ok'; out.textContent = `Monnaie à rendre : ${euro(recu - amount)} €`; }
+  }
+}
+
+function resetDelBtn() { clearTimeout(pm.delTimer); $('payDel').textContent = 'Supprimer'; $('payDel').dataset.armed = ''; }
+function openPayModal(init = {}, idx = -1) {
+  recompute();
+  pm.idx = idx; pm.opener = document.activeElement;
+  document.querySelector(`input[name=payType][value=${isRefund(init) ? 'remboursement' : 'paiement'}]`).checked = true;
+  $('payTitle').textContent = idx >= 0 ? 'Modifier le règlement' : 'Nouveau règlement';
+  $('pDate').value = init.date || isoL(new Date());
+  $('pStatut').value = init.statut === 'prevu' ? 'prevu' : 'encaisse';
+  $('pMode').value = init.mode || 'Espèces';
+  $('pRef').value = init.ref || '';
+  $('pAmount').value = Number(init.amount) > 0 ? r2(init.amount) : '';
+  $('pRecu').value = Number(init.recu) > 0 ? init.recu : '';
+  $('pMotif').value = init.motif || '';
+  $('payErr').textContent = '';
+  $('payDel').hidden = idx < 0; resetDelBtn();
+  $('payModal').hidden = false;
+  syncPayModal();
+  setTimeout(() => $('pAmount').focus(), 30);
+}
+function closePay() { $('payModal').hidden = true; resetDelBtn(); pm.opener?.focus?.(); }
+
+function savePay() {
+  const ref = payType() === 'remboursement', c = payContext();
+  const amount = r2($('pAmount').value), date = $('pDate').value, mode = $('pMode').value, statut = ref ? 'encaisse' : $('pStatut').value;
+  const err = m => { $('payErr').textContent = m; };
+  if (!date) return err('Indiquez la date.');
+  if (!(amount > 0)) return err('Indiquez un montant supérieur à 0.');
+  const p = { type: ref ? 'remboursement' : 'paiement', date, mode, ref: $('pRef').value.trim(), amount, statut };
+  if (ref) {
+    if (c.maxRemb <= 0.009) return err('Rien à rembourser : aucun montant n’a été encaissé.');
+    if (amount > c.maxRemb + 0.009) return err(`Le remboursement dépasse le montant encaissé (${euro(c.maxRemb)} €).`);
+    const motif = $('pMotif').value.trim();
+    if (!motif) return err('Le motif du remboursement est obligatoire.');
+    p.motif = motif;
+  } else {
+    if (amount > c.dispo + 0.009) return err(c.dispo > 0.009 ? `Le montant dépasse ce qu’il reste à régler (${euro(c.dispo)} €).` : 'Il n’y a plus rien à régler sur cette facture.');
+    if (mode === 'Espèces' && statut === 'encaisse' && $('pRecu').value !== '') {
+      const recu = r2($('pRecu').value);
+      if (recu + 0.0001 < amount) return err(`La somme remise est insuffisante (il manque ${euro(amount - recu)} €).`);
+      p.recu = recu; p.rendu = r2(recu - amount);
+    }
+  }
+  if (pm.idx >= 0) S.pays[pm.idx] = p; else S.pays.push(p);
+  closePay(); renderPayments(); recompute();
+  setMsg(p.rendu > 0 ? `💶 Monnaie à rendre : ${euro(p.rendu)} € — règlement ajouté, à valider avec la facture.` : ref ? '↩️ Remboursement ajouté — pensez à valider la facture.' : '💶 Règlement enregistré — pensez à valider la facture.', 'ok');
+}
+function deletePay() {
+  if (pm.idx < 0) return;
+  const b = $('payDel');
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Confirmer la suppression'; pm.delTimer = setTimeout(resetDelBtn, 4000); return; }
+  S.pays.splice(pm.idx, 1); closePay(); renderPayments(); recompute();
+  setMsg('Règlement supprimé — pensez à valider la facture.', 'ok');
+}
+function backdropClose(el, fn) {
+  let down = false;
+  el.addEventListener('mousedown', e => { down = e.target === el; });
+  el.addEventListener('click', e => { if (down && e.target === el) fn(); down = false; });
+}
+$('paySummary').addEventListener('click', e => { const v = e.target.dataset.fill; if (v !== undefined) { $('pAmount').value = v; syncPayModal(); } });
+$('pChips').addEventListener('click', e => { const v = e.target.dataset.recu; if (v !== undefined) { $('pRecu').value = v; syncPayModal(); } });
+['pAmount', 'pRecu', 'pStatut', 'pMode', 'pDate'].forEach(id => { $(id).addEventListener('input', syncPayModal); $(id).addEventListener('change', syncPayModal); });
+document.querySelectorAll('input[name=payType]').forEach(r => r.addEventListener('change', syncPayModal));
+$('payModal').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio') { e.preventDefault(); savePay(); } });
+$('paySave').onclick = savePay; $('payDel').onclick = deletePay; $('payCancel').onclick = closePay; $('payClose').onclick = closePay;
+backdropClose($('payModal'), closePay);
+
+function settle() {
+  recompute();
+  if (S.calc.reste <= 0.009) return alert('Rien à solder.');
+  const t = payTotals(), dispo = Math.max(r2(S.calc.aReg - t.paid - t.prevu), 0);
+  if (dispo <= 0.009) return alert('Le reste est déjà couvert par des échéances prévues : ouvrez une échéance (Modifier) pour la passer en « Encaissé ».');
+  openPayModal({ amount: dispo, statut: 'encaisse' });
+}
+
+// ---------- Échéancier (modale) ----------
+function schedPlan() {
+  const n = parseInt($('sN').value, 10), d0 = $('sDate').value, base = Math.max(r2(S.calc.aReg - payTotals().paid), 0);
+  if (!(n >= 2 && n <= 12) || !d0 || base <= 0) return null;
+  const [y, m, d] = d0.split('-').map(Number), part = r2(base / n);
+  return Array.from({ length: n }, (_, i) => {
+    const lastDay = new Date(y, m + i, 0).getDate();
+    return { date: isoL(new Date(y, m - 1 + i, Math.min(d, lastDay))), amount: i === n - 1 ? r2(base - part * (n - 1)) : part };
+  });
+}
+function syncSched() {
+  const plan = schedPlan(), t = payTotals(), base = Math.max(r2(S.calc.aReg - t.paid), 0);
+  $('schedSummary').innerHTML = `Reste à échelonner : <b>${euro(base)} €</b>` + (t.prevu > 0 ? ' — les échéances prévues actuelles seront remplacées.' : '');
+  $('sPreview').innerHTML = plan
+    ? plan.map((p, i) => `<div class="srow"><span>${i + 1}/${plan.length}</span><span>${fmtIsoFR(p.date)}</span><b>${euro(p.amount)} €</b></div>`).join('')
+    : '<div class="muted">Indiquez un nombre d’échéances entre 2 et 12 et une date de départ.</div>';
+  $('schedErr').textContent = '';
+}
+function openSched() {
+  recompute();
+  if (Math.max(r2(S.calc.aReg - payTotals().paid), 0) <= 0) return alert('Rien à échelonner.');
+  sm.opener = document.activeElement;
+  const now = new Date();
+  $('sN').value = 3; $('sDate').value = isoL(new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()));
+  $('schedModal').hidden = false; syncSched();
+  setTimeout(() => $('sN').focus(), 30);
+}
+const sm = { opener: null };
+function closeSched() { $('schedModal').hidden = true; sm.opener?.focus?.(); }
+function createSched() {
+  const plan = schedPlan(); if (!plan) { $('schedErr').textContent = 'Vérifiez le nombre d’échéances et la date de départ.'; return; }
+  S.pays = S.pays.filter(p => isRefund(p) || p.statut !== 'prevu');
+  plan.forEach(p => S.pays.push({ type: 'paiement', date: p.date, mode: 'Espèces', ref: '', amount: p.amount, statut: 'prevu' }));
+  closeSched(); renderPayments(); recompute();
+  setMsg(`📅 Échéancier créé (${plan.length} échéances) — pensez à valider la facture.`, 'ok');
+}
+['sN', 'sDate'].forEach(id => $(id).addEventListener('input', syncSched));
+$('schedModal').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); createSched(); } });
+$('schedOk').onclick = createSched; $('schedCancel').onclick = closeSched; $('schedClose').onclick = closeSched;
+backdropClose($('schedModal'), closeSched);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('payModal').hidden) closePay(); else if (!$('schedModal').hidden) closeSched();
+});
 
 // ---------- Sérialisation ----------
 function serialize() {
@@ -614,7 +889,7 @@ function serialize() {
     assurance: { regimeId: reg.id, regimeLabel: reg.label, regimeSecuPct: reg.taux, tiersPayant: $('tiersPayant').checked, numeroSecu: $('numeroSecu').value.trim(), mutuelle: $('mutuelle').value.trim(), mutuellePct: Number($('mutuellePct').value) || 0 },
     regimeSecuPct: reg.taux, mutuellePct: Number($('mutuellePct').value) || 0,
     prestations: readLines(), payments: pays,
-    totals: { total: c.total, partSecu: c.secu, partMutuelle: c.mut, partPatient: c.pat, aRegler: c.aReg, dejaPaye: c.paid, prevu: c.prevu, restePayer: c.reste },
+    totals: { total: c.total, partSecu: c.secu, partMutuelle: c.mut, partPatient: c.pat, aRegler: c.aReg, dejaPaye: c.paid, prevu: c.prevu, restePayer: c.reste, rembourse: c.rembourse },
     statutPaiement: c.reste <= 0.009 && c.total > 0 ? 'complet' : 'incomplet',
     creePar: window.medecinUid || null, updatedAt: new Date().toISOString()
   };
@@ -628,9 +903,9 @@ function applyInvoice(f) {
   const a = f.assurance || {};
   if (!a.regimeId) { const r = S.regimes.find(x => x.taux === f.regimeSecuPct); if (r) a.regimeId = r.id; }
   a.mutuellePct = a.mutuellePct ?? f.mutuellePct; setAssurance(a); S.assurLoaded = true;
-  linesBody.innerHTML = ''; paymentsBody.innerHTML = '';
-  (f.prestations || []).forEach(addLine); (f.payments || []).forEach(p => addPayment({ ...p, statut: p.statut || 'encaisse' }));
-  if (!linesBody.children.length) addLine(); if (!paymentsBody.children.length) addPayment();
+  linesBody.innerHTML = '';
+  (f.prestations || []).forEach(addLine); S.pays = (f.payments || []).map(p => ({ ...p, type: p.type || 'paiement', statut: p.statut || 'encaisse' })); renderPayments();
+  if (!linesBody.children.length) addLine();
   computeNbJours(); recompute();
 }
 
@@ -640,6 +915,7 @@ function validate(p) {
   if (!S.id && !p.sources.consultationIds.length && !p.sources.hospitalisationIds.length) return 'Sélectionnez au moins une consultation ou une hospitalisation à facturer.';
   if (!p.prestations.length) return 'Ajoutez au moins une prestation (description et quantité > 0).';
   const { dateEntree, dateSortie } = p.sejour; if (dateEntree && dateSortie && dateSortie < dateEntree) return 'La date de sortie précède la date d’entrée.';
+  if (S.calc.trop > 0.009) return `Le patient a trop payé de ${euro(S.calc.trop)} € : enregistrez un remboursement (onglet Paiements).`;
   if (S.calc.paid + S.calc.prevu > S.calc.aReg + 0.009) return `Les paiements (${euro(S.calc.paid + S.calc.prevu)} €) dépassent le montant dû (${euro(S.calc.aReg)} €).`;
   return null;
 }
@@ -694,9 +970,12 @@ function buildFactureORD(f, extra = {}) {
   L(`À la charge du patient${a.tiersPayant ? '' : ' (avance des frais)'} : ${euro(t.aRegler)} €`);
 
   SEC('Règlements');
-  if ((f.payments || []).length) (f.payments).forEach(p => L(`${fmtIsoFR(p.date)} — ${p.mode || '-'}${p.ref ? ' (' + p.ref + ')' : ''} — ${euro(p.amount)} € — ${p.statut === 'prevu' ? 'Prévu' : 'Encaissé'}`));
+  if ((f.payments || []).length) (f.payments).forEach(p => L(p.type === 'remboursement'
+    ? `${fmtIsoFR(p.date)} — REMBOURSEMENT ${p.mode || '-'}${p.ref ? ' (' + p.ref + ')' : ''} — -${euro(p.amount)} €${p.motif ? ' — Motif : ' + p.motif : ''}`
+    : `${fmtIsoFR(p.date)} — ${p.mode || '-'}${p.ref ? ' (' + p.ref + ')' : ''} — ${euro(p.amount)} € — ${p.statut === 'prevu' ? 'Prévu' : 'Encaissé'}`));
   else L('Aucun règlement enregistré.');
-  L(`Déjà payé : ${euro(t.dejaPaye)} €`);
+  L(`Déjà payé${t.rembourse > 0 ? ' (net)' : ''} : ${euro(t.dejaPaye)} €`);
+  if (t.rembourse > 0) L(`Dont remboursé : ${euro(t.rembourse)} €`);
   L(`Reste à payer : ${euro(t.restePayer)} €${f.statutPaiement === 'complet' && !annulee ? ' — FACTURE ACQUITTÉE' : ''}`);
 
   const ord = {
@@ -837,7 +1116,7 @@ async function loadInvoiceById(ref) {
 
 function newInvoice() {
   S.id = S.numero = S.statut = null; S.assurLoaded = false; S.type = null;
-  linesBody.innerHTML = ''; paymentsBody.innerHTML = ''; addPayment();
+  linesBody.innerHTML = ''; S.pays = []; renderPayments();
   computeBilled(); defaultSel({ c: [], h: [] }); prefillAssurance(); applyContext(); setMsg('');
 }
 
@@ -864,8 +1143,7 @@ async function openInvoice() {
 // ---------- Démarrage ----------
 function bindEvents() {
   $('addLineBtn').onclick = () => { addLine(); recompute(); };
-  $('addPaymentBtn').onclick = () => { addPayment(); recompute(); };
-  $('settleBtn').onclick = settle; $('scheduleBtn').onclick = schedule;
+  $('addPaymentBtn').onclick = () => openPayModal(); $('settleBtn').onclick = settle; $('scheduleBtn').onclick = openSched;
   $('detectBtn').onclick = () => { if (!S.sel.c.size && !S.sel.h.size) return; applyContext(); setMsg('🔍 Prestations détectées à partir du dossier.', 'ok'); };
   $('reloadFacturablesBtn').onclick = async () => { await loadFacturables(); setMsg('🔄 Référentiel rechargé.', 'ok'); };
   ['regime', 'mutuellePct', 'tiersPayant'].forEach(id => $(id).addEventListener('input', recompute));
@@ -890,7 +1168,7 @@ async function startApp() {
   bindEvents();
   await loadConfig(); await loadFacturables();
   $('connStatus').textContent = '🟢 Connecté à Firestore.'; $('connStatus').style.color = 'var(--success)';
-  addLine(); addPayment();
+  addLine(); renderPayments();
   const q = new URLSearchParams(location.search), pid = q.get('id'), fid = q.get('factureId');
   if (fid) await loadInvoiceById(fid);
   else if (pid) {

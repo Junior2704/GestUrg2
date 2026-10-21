@@ -166,16 +166,16 @@ function renderContenu(contenu) {
 function cssOrd() {
 
     return `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             margin: 0;
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
             background: white;
         }
-
         #ordonnance {
             width: 210mm;
             color: #1f2937;
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
             font-size: 16px;
             line-height: normal;
             text-align: left;

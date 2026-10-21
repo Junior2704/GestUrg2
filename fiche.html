@@ -610,6 +610,16 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 .modal-icon .i{width:28px;height:28px}
 .modal-icon.warning{background:var(--warn-soft);color:var(--warn)}
 .modal-icon.success{background:var(--ok-soft);color:var(--ok)}
+.modal-icon.error{background:var(--late-soft);color:var(--late)}
+#modalControleCloture{z-index:3500}
+#modalControleCloture .modal-box{max-width:520px;text-align:left}
+#modalControleCloture h2,#modalControleCloture .modal-icon{text-align:center}
+#modalControleCloture .modal-icon{margin-left:auto;margin-right:auto}
+#controleListe{margin:8px 0 0;padding-left:20px;color:var(--ink);line-height:1.5}
+#controleListe li{margin-bottom:4px;overflow-wrap:anywhere}
+#controleListe li small{color:var(--muted)}
+#infoTermineeHospi{margin:10px 0 0}
+.modal-box.bloquant{border-top:6px solid var(--late)}
 .emails-envoyes{margin:18px 0 0;padding:14px 16px;text-align:left;background:var(--field);border:1px solid var(--line);border-radius:12px}
 .emails-envoyes:empty{display:none}
 .emails-envoyes .email-titre{margin-bottom:6px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
@@ -792,7 +802,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
   }
   #modalExamen .modal{height:92dvh}
   .modal-box{border-radius:20px}
-  #modalAvertissementEmail,#modalSuccesCloture,#modalCodeCloture,#modalCloture{align-items:center;padding:16px}
+  #modalAvertissementEmail,#modalControleCloture,#modalSuccesCloture,#modalCodeCloture,#modalCloture{align-items:center;padding:16px}
   #modalCodeCloture .modal,#modalCloture .modal{border-radius:20px;width:100%}
   .modal-buttons .btn-id,.modal-actions .btn-id,.modal-actions button{flex:1 1 auto}
   .sig-device-overlay{padding:0;align-items:flex-end}
@@ -1259,6 +1269,14 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
       <div id="sortieListe"></div>
     </div>
 
+    <div class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Fin d’hospitalisation</div>
+      <div class="choice-grid">
+        <label class="choice sq"><input type="checkbox" id="chkTerminerHospi"><span><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Terminer l’hospitalisation</span><i class="choice-check"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></i></label>
+      </div>
+      <p class="hint" id="infoTermineeHospi">Cochez puis « Enregistrer la sortie » pour marquer l’hospitalisation comme terminée.</p>
+    </div>
+
     <div class="actions end">
       <button id="btnAnnulerSortie" class="btn-id btn-id-c" type="button"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer la sortie</button>
       <button id="btnValiderSortie" class="btn-id btn-id-v" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Enregistrer la sortie</button>
@@ -1266,7 +1284,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
 
     <div class="card-sec">
       <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-euro"/></svg> Fin de prise en charge</div>
-      <p class="hint" style="margin:0 0 12px">Enregistrez la sortie avant de clôturer l’hospitalisation.</p>
+      <p class="hint" style="margin:0 0 12px">Enregistrez la sortie et terminez l’hospitalisation avant de la clôturer.</p>
       <div class="actions">
         <button id="btnFacturerSortie" class="btn-id" type="button"><svg class="i" aria-hidden="true"><use href="#i-euro"/></svg>Facturer</button>
         <button id="btnCloturerSortie" class="btn-id btn-ok" type="button"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Clôturer l’hospitalisation</button>
@@ -1342,6 +1360,17 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:18px;he
     </div>
 </div>
 
+
+<div id="modalControleCloture" class="modal-overlay" style="display:none;">
+    <div class="modal-box" id="controleBox">
+        <div class="modal-icon warning" id="controleIcone"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg></div>
+        <h2 id="controleTitre"></h2>
+        <p id="controleIntro"></p>
+        <ul id="controleListe"></ul>
+        <p id="controleQuestion" style="margin-top:14px"></p>
+        <div class="modal-actions" id="controleActions"></div>
+    </div>
+</div>
 
 <!-- ========================================= -->
 <!-- RÉUSSITE -->
@@ -1632,6 +1661,7 @@ import {
   getDocs,
   query,
   where,
+  limit,
   deleteField,
    arrayUnion,
    Timestamp,
@@ -2018,10 +2048,17 @@ document.getElementById("btnValiderSortie").addEventListener("click", async () =
     traitementSortie: champTraitementSortie.value.trim()
   };
 
+  const terminer = !!document.getElementById("chkTerminerHospi")?.checked;
+  if (terminer && !type) {
+    afficherBulle("❌ Choisissez un type de sortie pour terminer l’hospitalisation", "error");
+    return;
+  }
+
   try {
     await updateHospitalisationField("sortie", sortie);
     afficherSortieListe(sortie);
-    afficherBulle("✔️ Sortie enregistrée", "success");
+    await enregistrerTerminaisonHospitalisation(terminer);
+    afficherBulle(terminer ? "✔️ Sortie enregistrée – hospitalisation terminée" : "✔️ Sortie enregistrée", "success");
   } catch (err) {
     console.error("Erreur enregistrement sortie :", err);
     afficherBulle("❌ Erreur lors de l’enregistrement de la sortie", "error");
@@ -2034,6 +2071,9 @@ document.getElementById("btnAnnulerSortie").addEventListener("click", async() =>
   champAutreOption.value = "";
   champTraitementSortie.value = "";
   sortieListe.innerHTML = "<p>Aucune sortie enregistrée.</p>";
+  const chkTerm = document.getElementById("chkTerminerHospi");
+  if (chkTerm) chkTerm.checked = false;
+  majInfoTerminee(null);
   document
   .querySelectorAll('input[name="typeSortie"], input[name="optionsSortie"]')
   .forEach(el => {
@@ -2064,7 +2104,10 @@ document.getElementById("btnAnnulerSortie").addEventListener("click", async() =>
     const hospiRef = doc(db, "hospitalisations", hospitalisationId);
     await updateDoc(hospiRef, {
       sortie: deleteField(),
-      traitementSortie: ""
+      traitementSortie: "",
+      hospitalisationTerminee: deleteField(),
+      termineeDate: deleteField(),
+      termineeAuteur: deleteField()
     });
 
    
@@ -2075,6 +2118,58 @@ document.getElementById("btnAnnulerSortie").addEventListener("click", async() =>
     afficherBulle("❌ Erreur suppression sortie", "error");
   }
 });
+
+// ==============================
+// ✅ TERMINER L'HOSPITALISATION (depuis l'onglet Sortie)
+// ==============================
+async function getHospitalisationCibleId() {
+  if (!patientId) return null;
+  const pSnap = await getDoc(doc(db, "patients", patientId));
+  if (!pSnap.exists()) return null;
+  const p = pSnap.data();
+  return p.hospitalisationActiveId || (Array.isArray(p.hospitalisations) ? p.hospitalisations.slice(-1)[0] : null) || null;
+}
+
+function majInfoTerminee(hospi) {
+  const info = document.getElementById("infoTermineeHospi");
+  if (!info) return;
+  if (hospi?.hospitalisationTerminee) {
+    const d = hospi.termineeDate?.toDate ? hospi.termineeDate.toDate().toLocaleString("fr-FR") : "";
+    info.textContent = "✔️ Hospitalisation terminée" + (d ? " le " + d : "") + (hospi.termineeAuteur ? " par " + hospi.termineeAuteur : "") + ".";
+  } else {
+    info.textContent = "Cochez puis « Enregistrer la sortie » pour marquer l’hospitalisation comme terminée.";
+  }
+}
+
+async function enregistrerTerminaisonHospitalisation(terminer) {
+  const hospiId = await getHospitalisationCibleId();
+  if (!hospiId) return;
+  const hospiRef = doc(db, "hospitalisations", hospiId);
+  const snap = await getDoc(hospiRef);
+  const avant = snap.exists() ? snap.data() : {};
+
+  if (terminer) {
+    if (avant.hospitalisationTerminee) { majInfoTerminee(avant); return; } // déjà terminée : on garde la date d'origine
+    const auteur = window.medecinNom
+      ? window.medecinNom + (window.medecinType ? " (" + window.medecinType + ")" : "")
+      : "Utilisateur inconnu";
+    await updateDoc(hospiRef, {
+      hospitalisationTerminee: true,
+      termineeDate: Timestamp.now(),
+      termineeAuteur: auteur
+    });
+    majInfoTerminee({ hospitalisationTerminee: true, termineeDate: Timestamp.now(), termineeAuteur: auteur });
+    ajouterEntreeHistorique("Hospitalisation terminée (sortie enregistrée)", { hospitalisationId: hospiId, silencieux: true });
+  } else if (avant.hospitalisationTerminee) {
+    await updateDoc(hospiRef, {
+      hospitalisationTerminee: deleteField(),
+      termineeDate: deleteField(),
+      termineeAuteur: deleteField()
+    });
+    majInfoTerminee(null);
+    ajouterEntreeHistorique("Hospitalisation ré-ouverte (terminaison annulée)", { hospitalisationId: hospiId, silencieux: true });
+  }
+}
 
 // Container dynamique pour les champs spécifiques
 let containerDynamique = document.getElementById("optionsSpecifiques");
@@ -2240,6 +2335,9 @@ if (!patient.hospitalisationActiveId || patient.hospitalisationActiveId === "") 
     if (hospi.sortie) {
       afficherSortieListe(hospi.sortie);
     }
+    const chkTerminer = document.getElementById("chkTerminerHospi");
+    if (chkTerminer) chkTerminer.checked = !!hospi.hospitalisationTerminee;
+    majInfoTerminee(hospi);
 
     // ==================================
     // 4️⃣ ACTES & EXAMENS
@@ -2885,7 +2983,145 @@ const btnAnnulerCode = document.getElementById("btnAnnulerCode");
 const btnValiderCode = document.getElementById("btnValiderCode");
 
 // 🔹 Ouvrir la modale quand on clique sur "Clôturer"
+// ==============================
+// 🛡️ CONTRÔLES AVANT CLÔTURE
+//   - bloquants : sortie non enregistrée / hospitalisation non terminée
+//   - non bloquant : reste à facturer (même calcul que Facturation.html)
+// ==============================
+const escCtl = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const tsCtl = v => v?.toDate ? v.toDate() : (v ? new Date(v) : null);
+const fmtCtl = d => d && !isNaN(d) ? d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "-";
+
+function afficherModaleControle({ bloquant, titre, intro, items, question, boutons }) {
+  return new Promise(resolve => {
+    const modal = document.getElementById("modalControleCloture");
+    document.getElementById("controleBox").classList.toggle("bloquant", !!bloquant);
+    const icone = document.getElementById("controleIcone");
+    icone.className = "modal-icon " + (bloquant ? "error" : "warning");
+    document.getElementById("controleTitre").textContent = titre;
+    document.getElementById("controleIntro").textContent = intro || "";
+    document.getElementById("controleListe").innerHTML = (items || []).map(i => "<li>" + i + "</li>").join("");
+    const q = document.getElementById("controleQuestion");
+    q.textContent = question || "";
+    q.style.display = question ? "" : "none";
+    const zone = document.getElementById("controleActions");
+    zone.innerHTML = "";
+    boutons.forEach(b => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = b.principal ? "btn-primary" : "btn-secondary";
+      btn.textContent = b.label;
+      btn.onclick = () => { modal.style.display = "none"; resolve(b.valeur); };
+      zone.appendChild(btn);
+    });
+    modal.style.display = "flex";
+  });
+}
+
+// Même logique que Facturation.html (computeBilled / defaultSel)
+async function calculerResteAFacturer(patient) {
+  const get = async (col, ids) =>
+    (await Promise.all((ids || []).map(i => getDoc(doc(db, col, i))))).filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() }));
+  const [consults, hospis, invSnap] = await Promise.all([
+    get("consultations", patient.consultations),
+    get("hospitalisations", patient.hospitalisations),
+    getDocs(query(collection(db, "facture"), where("patientId", "==", patientId), limit(200)))
+  ]);
+
+  const billed = {};
+  consults.forEach(c => { if (c.facturee) billed["c" + c.id] = c.factureRef || "initialisation"; });
+  hospis.forEach(h => { if (h.facturee) billed["h" + h.id] = h.factureRef || "initialisation"; });
+  invSnap.docs.forEach(d => {
+    const data = d.data();
+    if (data.statut === "annulee") return;
+    const lab = data.numero || d.id;
+    (data.sources?.consultationIds || []).forEach(i => billed["c" + i] = lab);
+    (data.sources?.hospitalisationIds || []).forEach(i => billed["h" + i] = lab);
+  });
+
+  return {
+    consults: consults.filter(c => !billed["c" + c.id] && c.statut !== "encours"),
+    hospis: hospis.filter(h => !billed["h" + h.id])
+  };
+}
+
+// Retourne true si la clôture peut continuer
+async function controlerAvantCloture() {
+  let patient, hospi;
+  try {
+    const pSnap = await getDoc(doc(db, "patients", patientId));
+    if (!pSnap.exists()) { afficherBulle("❌ Patient introuvable", "error"); return false; }
+    patient = pSnap.data();
+    const hospiId = patient.hospitalisationActiveId || (Array.isArray(patient.hospitalisations) ? patient.hospitalisations.slice(-1)[0] : null);
+    if (!hospiId) { afficherBulle("❌ Aucune hospitalisation à clôturer", "error"); return false; }
+    const hSnap = await getDoc(doc(db, "hospitalisations", hospiId));
+    if (!hSnap.exists()) { afficherBulle("❌ Hospitalisation introuvable", "error"); return false; }
+    hospi = hSnap.data();
+  } catch (err) {
+    console.error("Contrôle avant clôture :", err);
+    afficherBulle("❌ Impossible de vérifier l’hospitalisation", "error");
+    return false;
+  }
+
+  // ⛔ Contrôles bloquants
+  const erreurs = [];
+  if (!hospi.sortie || !hospi.sortie.type) erreurs.push("Aucune sortie n’est enregistrée.");
+  if (!hospi.hospitalisationTerminee) erreurs.push("L’hospitalisation n’est pas marquée comme terminée.");
+
+  if (erreurs.length) {
+    const choix = await afficherModaleControle({
+      bloquant: true,
+      titre: "Clôture impossible",
+      intro: "Corrigez les points suivants dans l’onglet Sortie avant de clôturer :",
+      items: erreurs.map(escCtl),
+      boutons: [
+        { label: "Fermer", valeur: "fermer" },
+        { label: "Aller à l’onglet Sortie", valeur: "sortie", principal: true }
+      ]
+    });
+    if (choix === "sortie") window.openSection?.("panel-sortie");
+    return false;
+  }
+
+  // ⚠️ Contrôle non bloquant : reste à facturer
+  try {
+    const reste = await calculerResteAFacturer(patient);
+    const items = [
+      ...reste.hospis.map(h => {
+        const fin = tsCtl(h.dateFinTS);
+        return "<b>Hospitalisation</b> du " + escCtl(fmtCtl(tsCtl(h.dateDebutTS))) + (fin ? " au " + escCtl(fmtCtl(fin)) : " (en cours)") + (h.motif ? " <small>– " + escCtl(h.motif) + "</small>" : "");
+      }),
+      ...reste.consults.map(c =>
+        "<b>Consultation</b> du " + escCtl((c.date || "") + " " + (c.heure || "")).trim() + (c.motif ? " <small>– " + escCtl(c.motif) + "</small>" : ""))
+    ];
+    if (items.length) {
+      const choix = await afficherModaleControle({
+        bloquant: false,
+        titre: "Il reste des éléments à facturer",
+        intro: "Ces éléments ne sont pas encore facturés :",
+        items,
+        question: "Voulez-vous clôturer l’hospitalisation malgré tout ?",
+        boutons: [
+          { label: "Annuler", valeur: "annuler" },
+          { label: "Facturer", valeur: "facturer" },
+          { label: "Clôturer quand même", valeur: "continuer", principal: true }
+        ]
+      });
+      if (choix === "facturer") { document.getElementById("btnFacturer")?.click(); return false; }
+      if (choix !== "continuer") return false;
+    }
+  } catch (err) {
+    // La vérification de facturation ne doit jamais empêcher la clôture
+    console.error("Contrôle facturation avant clôture :", err);
+    afficherBulle("⚠️ Vérification de la facturation impossible", "warning");
+  }
+
+  return true;
+}
+
 document.getElementById("btnCloturer").addEventListener("click", async () => {
+
+  if (!(await controlerAvantCloture())) return;
 
   try {
 const docSnap = await getDoc(patientRef);

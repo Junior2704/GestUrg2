@@ -107,7 +107,16 @@ textarea{min-height:90px;resize:vertical}
 .ok{text-align:center}.ok h2{font-family:var(--font-display);font-size:2rem;color:var(--teal-deep);margin:0 0 6px}.ref{display:inline-block;margin:10px 0;padding:8px 18px;background:var(--aqua);border-radius:12px;font:800 1.4rem var(--font-body);letter-spacing:2px;color:var(--teal-deep)}
 .todo{text-align:left;max-width:440px;margin:14px auto;padding:14px 18px 14px 36px;background:var(--bg);border-radius:14px;line-height:1.7}
 .ok .btn{margin:6px 4px 0}
-@media print{header,.alerte,.ok .btn{display:none}}
+/* modale de chargement */
+.loadm{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(246,251,250,.88);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:fadeIn .2s ease both}
+.loadm .box{width:100%;max-width:360px;text-align:center;padding:30px 26px;background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--teal);border-radius:18px;box-shadow:var(--shadow)}
+.loadm .spin{width:54px;height:54px;margin:0 auto 18px;border:5px solid var(--aqua);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+.loadm h2{margin:0 0 6px;font-family:var(--font-display);font-size:1.35rem;font-weight:600;color:var(--teal-deep)}
+.loadm p{margin:0;color:var(--ink-soft);font-size:.92rem;line-height:1.5}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.loadm{animation:none}.loadm .spin{animation-duration:2s}}
+@media print{header,.alerte,.ok .btn,.loadm{display:none}}
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -221,6 +230,10 @@ textarea{min-height:90px;resize:vertical}
     <div class="nav"><button type="button" class="btn ghost" id="back" hidden>← Retour</button><button type="button" class="btn" id="next">Continuer</button></div>
   </div>
 </main>
+
+<div class="loadm" id="loadm" role="alertdialog" aria-modal="true" aria-live="assertive" aria-labelledby="loadmT" aria-describedby="loadmD" hidden>
+  <div class="box"><div class="spin" aria-hidden="true"></div><h2 id="loadmT">Confirmation en cours…</h2><p id="loadmD">Nous enregistrons votre rendez-vous et vous envoyons un e-mail de confirmation. Merci de patienter quelques instants, sans fermer la page.</p></div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -460,6 +473,7 @@ async function envoyer(){
   const btn=$('#next'),err=$('#err'),c=collect();
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
   err.textContent='';btn.disabled=true;
+  $('#loadm').hidden=false;document.body.style.overflow='hidden';
   const ref=doc(collection(db,'rdv-urgences')),code='URG-'+Math.random().toString(36).slice(2,6).toUpperCase(),occ=doc(db,'rdv-occupation',date);
   let emailEnvoye = false;
 
@@ -503,6 +517,7 @@ try {
 termine(code, c, emailEnvoye);
 }
 function termine(code,c,emailEnvoye=false){
+  $('#loadm').hidden=true;document.body.style.overflow='';
   $('#wiz').hidden=true;$('#done').hidden=false;
   $('#done').innerHTML=`<div class="card ok"><h2>Rendez-vous confirmé</h2><p><strong>${fmtD(date)} à ${time}</strong><br>${esc(c.patient.prenom)} ${esc(c.patient.nom)}</p><div class="ref">${code}</div>
     <p class="mut">Notez votre référence : elle vous sera demandée à l’accueil.<br>Présentez-vous 10 minutes avant.</p>

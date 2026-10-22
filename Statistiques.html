@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Statistiques – Hôpital</title>
+<link rel="icon" type="image/png" href="logog2.png">
+<style>
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--soft:#e9eff5;--field:#f6f9fc;--p:#0b6fa4;--pd:#085a86;--ps:#e3f1f9;--ok:#16784a;--oks:#e1f4e9;--bad:#b92a30;--bads:#fdecec;--c1:#0b6fa4;--c2:#16784a;--c3:#a35a00;--c4:#6b3fc4;--c5:#b92a30;--c6:#0e9aa7;--c7:#c2417a;--c8:#6c7a89}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);font-size:15px;line-height:1.45;color:var(--ink);background:#fff}
+h1,h2,h3,p{margin:0}button,select,input{font:inherit}
+header{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:20}
+.brand{width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--p),var(--pd));border-radius:11px}
+.brand svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.kicker{font-size:12px;font-weight:600;color:var(--muted)}h1{font-size:18px;font-weight:700}
+#who{margin-left:auto;font-size:14px;font-weight:600;color:var(--muted)}
+main{padding:16px clamp(12px,2.5vw,28px) 40px;max-width:1500px;margin:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.b{min-height:38px;padding:0 13px;font-weight:600;font-size:14px;color:var(--p);background:#fff;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.b:hover{background:var(--ps)}.b.on{background:var(--p);color:#fff;border-color:var(--p)}
+input[type=date]{min-height:38px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink)}
+.sp{flex:1}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tab{padding:10px 14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--pd);border-color:var(--p)}
+.msg{padding:14px 16px;border-radius:12px;background:var(--bads);color:var(--bad);font-weight:600}
+.per{color:var(--muted);font-size:13px;margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.kpi{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--field)}
+.kpi small{display:block;color:var(--muted);font-weight:600;font-size:12.5px}
+.kpi b{display:block;font-size:26px;letter-spacing:-.02em;line-height:1.25}
+.kpi i{font-style:normal;font-size:12px;font-weight:700;padding:1px 7px;border-radius:99px}
+.up{color:var(--ok);background:var(--oks)}.dn{color:var(--bad);background:var(--bads)}.eq{color:var(--muted);background:var(--soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}
+.card{padding:14px 16px;border:1px solid var(--line);border-radius:14px;min-width:0}
+.card.w{grid-column:1/-1}
+.card h3{font-size:15px;margin-bottom:2px}.card .sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.vide{color:var(--muted);padding:14px 0;font-size:14px}
+.vb{display:flex;align-items:flex-end;gap:3px;height:190px;padding-top:16px;overflow-x:auto}
+.vb>div{flex:1;min-width:14px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative}
+.vb .g{display:flex;align-items:flex-end;gap:2px;width:100%;height:calc(100% - 20px);justify-content:center}
+.vb .g i{flex:1;max-width:26px;border-radius:4px 4px 0 0;min-height:1px}
+.vb span{font-size:10.5px;color:var(--muted);height:20px;white-space:nowrap;overflow:visible}
+.hb{display:grid;grid-template-columns:minmax(80px,38%) 1fr auto;gap:6px 10px;align-items:center;font-size:13.5px}
+.hb>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb>div{height:12px;background:var(--soft);border-radius:6px;overflow:hidden}.hb>div i{display:block;height:100%;border-radius:6px}
+.hb>b{font-variant-numeric:tabular-nums}
+.don{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.don>div:first-child{width:150px;height:150px;border-radius:50%;flex:none;display:grid;place-items:center}
+.don>div:first-child span{width:84px;height:84px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:700;font-size:18px}
+.leg{display:grid;gap:3px;font-size:13.5px;flex:1;min-width:150px}.leg div{display:flex;gap:7px;align-items:center}
+.leg em{width:10px;height:10px;border-radius:50%;flex:none}.leg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.heat{display:grid;grid-template-columns:34px repeat(24,1fr);gap:2px;font-size:10.5px;color:var(--muted);overflow-x:auto;min-width:0}
+.heat i{aspect-ratio:1;min-height:14px;border-radius:3px;background:var(--p)}.heat span{align-self:center;text-align:center}
+svg.ln{width:100%;height:210px;display:block}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:6px}.lg em{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--soft)}th{color:var(--muted);font-weight:600}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.pr{height:8px;background:var(--soft);border-radius:5px;overflow:hidden;min-width:70px}.pr i{display:block;height:100%;background:var(--ok)}
+.note{padding:10px 12px;border-radius:10px;background:var(--field);border:1px dashed var(--line);color:var(--muted);font-size:13px;margin-top:10px}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
+.modalna .card{max-width:440px;text-align:center;padding:30px}.modalna h2{color:var(--bad);margin-bottom:10px}
+:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media print{header,.bar,.tabs{display:none}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+  <div><div class="kicker">Direction · Pilotage</div><h1>Statistiques générales</h1></div>
+  <span id="who"></span>
+</header>
+<div id="modal-no-access" class="modalna"><div class="card"><h2>Accès refusé</h2><p>Vous n’avez pas accès à cette page.</p><p>Veuillez contacter un administrateur.</p></div></div>
+<div id="modal-error" class="modalna"><div class="card"><h2>Oups, une erreur est survenue</h2><p>Veuillez réessayer un peu plus tard.</p></div></div>
+<main>
+  <div id="gate" class="msg">Connexion en cours…</div>
+  <div id="app" hidden>
+    <div class="bar" id="pers"></div>
+    <div class="bar"><span class="per" id="plage" style="margin:0"></span><span class="sp"></span>
+      <button class="b" id="refresh">↻ Actualiser</button><button class="b" id="csv">⬇ Export CSV</button><button class="b" id="print">🖨 Imprimer</button></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="view"></div>
+  </div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+const auth=getAuth(app),db=getFirestore(app);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
+function afficherBulle(m,t){if(window.parent!==window)window.parent.postMessage({source:"notification-bulle",message:m,typeBulle:t},"*");else console.warn(m)}
+window.afficherLoader=()=>{let l=document.getElementById("loadingScreen");if(!l){l=document.createElement("iframe");l.id="loadingScreen";l.src="loader.html?modal=true";l.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";document.body.appendChild(l)}l.style.display="block";l.style.opacity="1"};
+window.masquerLoader=()=>{const l=document.getElementById("loadingScreen");if(l){l.style.transition="opacity .3s";l.style.opacity="0";setTimeout(()=>l.style.display="none",300)}};
+
+/* ================= Utilitaires ================= */
+const PAL=['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8'].map(v=>`var(${v})`);
+const JOURS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],dow=d=>(d.getDay()+6)%7;
+const fr=s=>{const m=/^(\d{2})\/(\d{2})\/(\d{4})/.exec(s||'');return m?new Date(+m[3],m[2]-1,+m[1]):null};
+const dt=v=>{let d=v?.toDate?v.toDate():v instanceof Date?v:typeof v==='string'?(fr(v)||new Date(v)):null;return d&&!isNaN(d)?d:null};
+const med=a=>{a=a.filter(Number.isFinite).sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null};
+const avg=a=>{a=a.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
+const pct=(a,b)=>b?Math.round(a/b*100)+' %':'—';
+const nf=n=>n==null?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(n);
+const eur=n=>n==null?'—':new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const fh=h=>h==null?'—':h<1?Math.round(h*60)+' min':h<48?nf(h)+' h':nf(h/24)+' j';
+const fm=m=>m==null?'—':m<60?Math.round(m)+' min':nf(m/60)+' h';
+const grp=(a,f)=>{const m={};a.forEach(x=>{let k=f(x);if(k==null||k==='')return;(Array.isArray(k)?k:[k]).forEach(y=>{if(y!==''&&y!=null)m[y]=(m[y]||0)+1})});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+const sexe=p=>/^f/i.test(p?.sexe||'')?'Femme':/^(m|h)/i.test(p?.sexe||'')?'Homme':'Non renseigné';
+const age=(p,at)=>{const d=dt(p?.dateNaissance);return d&&at?(at-d)/31557600000:null};
+const BANDES=[['<2',0,2],['2–14',2,15],['15–24',15,25],['25–44',25,45],['45–64',45,65],['65–79',65,80],['80+',80,200]];
+const bande=a=>a==null||a<0?null:BANDES.find(b=>a>=b[1]&&a<b[2])?.[0];
+const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]};
+
+/* ================= Graphiques (HTML/SVG sans dépendance) ================= */
+function bars(labels,series,{every=1,fmt=nf}={}){
+  if(!labels.length||!series.some(s=>s.v.some(x=>x)))return'<div class="vide">Aucune donnée sur la période.</div>';
+  const m=Math.max(...series.flatMap(s=>s.v),1);
+  return`<div class="vb">${labels.map((l,i)=>`<div title="${esc(l)} : ${series.map(s=>(series.length>1?s.n+' ':'')+fmt(s.v[i])).join(' · ')}"><div class="g">${series.map((s,k)=>`<i style="height:${s.v[i]/m*100}%;background:${s.c||PAL[k]}"></i>`).join('')}</div><span>${i%every===0?esc(l):''}</span></div>`).join('')}</div>`+
+  (series.length>1?`<div class="lg">${series.map((s,k)=>`<span><em style="background:${s.c||PAL[k]}"></em>${esc(s.n)}</span>`).join('')}</div>`:'');
+}
+function hb(e,{n=10,fmt=nf,tot}={}){
+  e=e.slice(0,n);if(!e.length)return'<div class="vide">Aucune donnée sur la période.</div>';
+  const m=Math.max(...e.map(x=>x[1]),1),t=tot??null;
+  return`<div class="hb">${e.map(([k,v],i)=>`<span title="${esc(k)}">${esc(k)}</span><div><i style="width:${v/m*100}%;background:${PAL[i%8]}"></i></div><b>${fmt(v)}${t?` <small style="color:var(--muted);font-weight:500">${pct(v,t)}</small>`:''}</b>`).join('')}</div>`;
+}
+function donut(e,{n=8,centre}={}){
+  e=e.filter(x=>x[1]>0);if(!e.length)return'<div class="vide">Aucune donnée sur la période.</div>';
+  if(e.length>n){const r=e.slice(n-1);e=[...e.slice(0,n-1),['Autres',sum(r.map(x=>x[1]))]]}
+  const t=sum(e.map(x=>x[1]));let a=0;
+  const g=e.map(([,v],i)=>{const s=a/t*360;a+=v;return`${PAL[i%8]} ${s}deg ${a/t*360}deg`}).join(',');
+  return`<div class="don"><div style="background:conic-gradient(${g})"><span>${centre??nf(t)}</span></div><div class="leg">${e.map(([k,v],i)=>`<div><em style="background:${PAL[i%8]}"></em>${esc(k)}<b>${nf(v)} · ${pct(v,t)}</b></div>`).join('')}</div></div>`;
+}
+function line(labels,series){
+  if(labels.length<2)return'<div class="vide">Période trop courte pour une courbe.</div>';
+  const W=800,H=210,pl=34,pb=22,m=Math.max(...series.flatMap(s=>s.v),1),x=i=>pl+i*(W-pl-8)/(labels.length-1),y=v=>H-pb-v/m*(H-pb-10);
+  const k=Math.ceil(labels.length/8);
+  return`<svg class="ln" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${[0,.5,1].map(f=>`<line x1="${pl}" x2="${W}" y1="${y(m*f)}" y2="${y(m*f)}" stroke="#e9eff5"/><text x="2" y="${y(m*f)+4}" font-size="11" fill="#586a7e">${nf(Math.round(m*f))}</text>`).join('')}
+  ${series.map((s,j)=>`<polyline fill="none" stroke="${s.c||PAL[j]}" stroke-width="2.2" stroke-linejoin="round" points="${s.v.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`).join('')}
+  ${labels.map((l,i)=>i%k===0?`<text x="${x(i)}" y="${H-5}" font-size="11" text-anchor="middle" fill="#586a7e">${esc(l)}</text>`:'').join('')}</svg>
+  <div class="lg">${series.map((s,j)=>`<span><em style="background:${s.c||PAL[j]}"></em>${esc(s.n)} (${nf(sum(s.v))})</span>`).join('')}</div>`;
+}
+function heat(mat){
+  const m=Math.max(...mat.flat(),1);
+  return`<div class="heat"><span></span>${Array.from({length:24},(_,h)=>`<span>${h%3===0?h+'h':''}</span>`).join('')}${mat.map((r,d)=>`<span>${JOURS[d]}</span>`+r.map((v,h)=>`<i title="${JOURS[d]} ${h}h : ${v}" style="opacity:${v?.12+.88*v/m:.05}"></i>`).join('')).join('')}</div>`;
+}
+const tbl=(h,rows)=>rows.length?`<div style="overflow-x:auto"><table><tr>${h.map((x,i)=>`<th class="${i?'n':''}">${esc(x)}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?'n':''}">${c}</td>`).join('')}</tr>`).join('')}</table></div>`:'<div class="vide">Aucune donnée sur la période.</div>';
+const card=(t,b,{sub='',w=false}={})=>`<div class="card${w?' w':''}"><h3>${t}</h3>${sub?`<div class="sub">${sub}</div>`:''}${b}</div>`;
+const prog=(v,t)=>`<div style="display:flex;gap:8px;align-items:center;justify-content:flex-end"><div class="pr" style="flex:1"><i style="width:${t?v/t*100:0}%"></i></div><span>${pct(v,t)}</span></div>`;
+function kpi(l,v,cur,prev,{inv=false,fmt=nf,hint=''}={}){
+  let d='';if(prev!=null&&cur!=null&&prev!==0&&Number.isFinite(cur)){const p=Math.round((cur-prev)/prev*100);d=`<i class="${p===0?'eq':(p>0)!==inv?'up':'dn'}" title="vs période précédente">${p>0?'▲':p<0?'▼':'='} ${Math.abs(p)} %</i>`}
+  return`<div class="kpi" title="${esc(hint)}"><small>${l}</small><b>${v}</b>${d}</div>`;
+}
+
+/* ================= Chargement ================= */
+let per='30',tab='syn',S=null,PC=null,FC=null,medecin={};
+const PERS=[['7','7 jours'],['30','30 jours'],['90','90 jours'],['365','12 mois'],['all','Tout'],['custom','Personnalisé']];
+function plage(){
+  let e=new Date();e.setHours(23,59,59,999);let s;
+  if(per==='custom'){s=new Date(($('#d1')?.value||iso(new Date()))+'T00:00');e=new Date(($('#d2')?.value||iso(new Date()))+'T23:59:59')}
+  else if(per==='all')s=new Date(2000,0,1);
+  else{s=new Date();s.setDate(s.getDate()-(+per-1));s.setHours(0,0,0,0)}
+  const len=e-s,ps=per==='all'?null:new Date(s.getTime()-len-1);
+  return{s,e,ps,pe:ps?new Date(s.getTime()-1):null};
+}
+const rd=(c,f,a,b)=>getDocs(query(collection(db,c),where(f,'>=',a),where(f,'<=',b))).then(q=>q.docs.map(d=>({id:d.id,...d.data()})));
+const rdAll=c=>getDocs(collection(db,c)).then(q=>q.docs.map(d=>({id:d.id,...d.data()})));
+async function charger(force){
+  window.afficherLoader();
+  try{
+    const R=plage(),from=R.ps||R.s,T=x=>Timestamp.fromDate(x);
+    if(force||!PC){PC=await rdAll('patients');FC=await rdAll('facture').catch(()=>[])}
+    const[H,C,V]=await Promise.all([rd('hospitalisations','dateDebutTS',T(from),T(R.e)),rd('consultations','dateTS',T(from),T(R.e)),rd('rdv-urgences','date',iso(from),iso(R.e))]);
+    S=calc(R,H,C,V);rendre();
+  }catch(e){console.error(e);afficherBulle('Chargement des statistiques impossible','erreur')}
+  window.masquerLoader();
+}
+
+/* ================= Calculs ================= */
+function calc(R,H,C,V){
+  const pm=Object.fromEntries(PC.map(p=>[p.id,p])),inR=(d,a,b)=>d&&d>=a&&d<=b;
+  const hd=h=>dt(h.dateDebutTS),cd=c=>dt(c.dateTS),rdt=r=>dt(r.date+'T'+(r.heure||'00:00'));
+  const cut=(a,f)=>[a.filter(x=>inR(f(x),R.s,R.e)),R.ps?a.filter(x=>inR(f(x),R.ps,R.pe)):[]];
+  const[h,ph]=cut(H,hd),[c,pc]=cut(C,cd),[r,pr]=cut(V,rdt);
+  const fin=x=>dt(x.dateFinTS),dur=x=>fin(x)&&hd(x)?(fin(x)-hd(x))/36e5:null;
+  const termine=x=>!!(x.hospitalisationTerminee||x.dateFinTS);
+  const consById=Object.fromEntries(C.map(x=>[x.id,x]));
+  const attente=x=>{const a=dt(x.arriveLe),k=consById[x.consultationId];return a&&k&&cd(k)?(cd(k)-a)/6e4:null};
+  const kpis=(hh,cc,rr)=>{
+    const t=hh.filter(termine),d=t.map(dur).filter(v=>v!=null&&v>=0),ex=hh.flatMap(x=>x.examens||[]);
+    return{nH:hh.length,nC:cc.length,nR:rr.length,
+      pat:new Set([...hh,...cc].map(x=>x.patientId).filter(Boolean)).size,
+      dMed:med(d),dMoy:avg(d),
+      grave:hh.filter(x=>['P0','Urgences_Vitales'].includes(x.gravite)).length,
+      deces:t.filter(x=>/décès|deces/i.test(x.sortie?.type||'')).length,
+      hosp:t.filter(x=>x.sortie?.type==='Hospitalisation').length,term:t.length,
+      dom:t.filter(x=>x.sortie?.type==='Retour à domicile').length,
+      exD:ex.length,exR:ex.filter(e=>e.realise).length,
+      ann:rr.filter(x=>x.statut==='annule').length,
+      att:med(rr.map(attente)),
+      transf:cc.filter(x=>x.statut==='transferee').length};
+  };
+  const acti=PC.filter(p=>p.hospitalisationActiveId);
+  return{R,pm,h,c,r,ph,pc,pr,hd,cd,rdt,dur,fin,termine,attente,k:kpis(h,c,r),kp:R.ps?kpis(ph,pc,pr):{},acti,consById};
+}
+function serie(S,items,f){ // série temporelle (jour, ou mois si >92 j)
+  const{s,e}=S.R;let a=s;if(per==='all'){const ds=items.map(f).filter(Boolean).sort((x,y)=>x-y);if(!ds.length)return{l:[],k:{}};a=ds[0]}
+  const mois=(e-a)/864e5>92,key=d=>mois?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'):iso(d),L=[];
+  for(let d=new Date(a.getFullYear(),a.getMonth(),mois?1:a.getDate());d<=e;mois?d.setMonth(d.getMonth()+1):d.setDate(d.getDate()+1))L.push(key(d));
+  const lab=k=>mois?k.slice(5)+'/'+k.slice(2,4):k.slice(8)+'/'+k.slice(5,7);
+  return{l:L,lab:L.map(lab),key,f};
+}
+const counts=(sr,items)=>{const m={};items.forEach(x=>{const d=sr.f(x);if(d)m[sr.key(d)]=(m[sr.key(d)]||0)+1});return sr.l.map(k=>m[k]||0)};
+
+/* ================= Onglets ================= */
+const TABS={syn:'Synthèse',urg:'Urgences',pat:'Patients',con:'Consultations & RDV',eq:'Équipe & examens',fin:'Facturation',qual:'Qualité des données'};
+const T={
+syn(S){const k=S.k,p=S.kp;
+  const sr=serie(S,[...S.h,...S.c,...S.r],x=>x.dateDebutTS?S.hd(x):x.dateTS?S.cd(x):S.rdt(x));
+  const mat=Array.from({length:7},()=>Array(24).fill(0));S.h.forEach(x=>{const d=S.hd(x);if(d)mat[dow(d)][d.getHours()]++});
+  return`<div class="kpis">
+  ${kpi('Passages aux urgences',nf(k.nH),k.nH,p.nH)}${kpi('Consultations',nf(k.nC),k.nC,p.nC)}${kpi('Rendez-vous',nf(k.nR),k.nR,p.nR)}
+  ${kpi('Patients distincts',nf(k.pat),k.pat,p.pat)}${kpi('Patients présents maintenant',nf(S.acti.length),null,null,{hint:'Hospitalisations actives à l’instant'})}
+  ${kpi('Durée médiane de prise en charge',fh(k.dMed),k.dMed,p.dMed,{inv:true})}${kpi('Gravité élevée (P0 / vitale)',pct(k.grave,k.nH),k.grave,p.grave,{inv:true,hint:k.grave+' passages'})}
+  ${kpi('Taux d’hospitalisation',pct(k.hosp,k.term),null,null,{hint:'Sorties de type Hospitalisation / sorties terminées'})}${kpi('Retours à domicile',pct(k.dom,k.term))}
+  ${kpi('Décès',nf(k.deces),k.deces,p.deces,{inv:true})}${kpi('Examens réalisés',pct(k.exR,k.exD),null,null,{hint:k.exR+' / '+k.exD})}
+  ${kpi('Annulation RDV',pct(k.ann,k.nR),k.ann,p.ann,{inv:true})}${kpi('Attente médiane RDV → consultation',fm(k.att),k.att,p.att,{inv:true})}
+  ${kpi('Consultations transférées aux urgences',pct(k.transf,k.nC))}</div>
+  <div class="grid">
+  ${card('Activité dans le temps',line(sr.lab,[{n:'Urgences',v:counts(sr,S.h.map(x=>({...x,_:1})))},{n:'Consultations',v:counts(sr,S.c)},{n:'Rendez-vous',v:counts(sr,S.r)}]),{w:true,sub:'Par jour (par mois au-delà de 3 mois)'})}
+  ${card('Répartition par gravité',donut(grp(S.h,x=>x.gravite)))}
+  ${card('Motifs les plus fréquents',hb(grp(S.h,x=>cap(norm(x.motif))),{n:10}))}
+  ${card('Affluence : jour × heure d’arrivée',heat(mat),{w:true,sub:'Heure de début de prise en charge — plus c’est foncé, plus il y a de passages'})}</div>`},
+
+urg(S){const h=S.h,t=h.filter(S.termine);
+  const B=[['< 1 h',0,1],['1–3 h',1,3],['3–6 h',3,6],['6–12 h',6,12],['12–24 h',12,24],['> 24 h',24,1e9]],d=t.map(S.dur).filter(v=>v!=null&&v>=0);
+  const gr=['P0','P1','P2','P3','Urgences_Vitales','Administratif'];
+  return`<div class="grid">
+  ${card('Gravité',donut(grp(h,x=>x.gravite)))}
+  ${card('Moyen d’entrée',hb(grp(h,x=>x.moyen),{n:8,tot:h.length}))}
+  ${card('Orientation : service idéal',hb(grp(h,x=>x.service),{n:10}))}
+  ${card('Circuit particulier',donut(grp(h,x=>x.circuit)))}
+  ${card('Statut de prise en charge',hb(grp(h,x=>x.pdcStatut),{n:10}))}
+  ${card('Position du patient',donut(grp(h,x=>x.positionPatient)))}
+  ${card('Durée de prise en charge',bars(B.map(b=>b[0]),[{n:'Passages',v:B.map(b=>d.filter(x=>x>=b[1]&&x<b[2]).length)}]),{sub:`Médiane ${fh(med(d))} · moyenne ${fh(avg(d))} · ${d.length} hospitalisations terminées`})}
+  ${card('Durée médiane par gravité',tbl(['Gravité','Passages','Médiane','Moyenne'],gr.map(g=>{const a=t.filter(x=>x.gravite===g),dd=a.map(S.dur).filter(v=>v!=null&&v>=0);return a.length?[g,nf(a.length),fh(med(dd)),fh(avg(dd))]:null}).filter(Boolean)))}
+  ${card('Type de sortie',donut(grp(t,x=>x.sortie?.type)))}
+  ${card('Options de sortie',hb(grp(t,x=>x.sortie?.options),{n:8}))}
+  ${card('Services d’hospitalisation (destination)',hb(grp(t,x=>x.sortie?.serviceHospitalisation),{n:10}))}
+  ${card('Destinations de transfert',hb(grp(t,x=>x.sortie?.destinationTransfert&&cap(norm(x.sortie.destinationTransfert))),{n:10}))}
+  ${card('Avis spécialistes demandés',hb(grp(t,x=>x.sortie?.avisSpecialiste&&cap(norm(x.sortie.avisSpecialiste))),{n:10}))}
+  ${card('Signature de clôture',donut(grp(h,x=>x.signatureStatut)))}</div>`},
+
+pat(S){const pm=S.pm,at=(x,d)=>age(pm[x.patientId],d),
+  ev=[...S.h.map(x=>({pid:x.patientId,d:S.hd(x)})),...S.c.map(x=>({pid:x.patientId,d:S.cd(x)}))].filter(e=>e.pid),
+  ids=[...new Set(ev.map(e=>e.pid))],P=ids.map(i=>pm[i]).filter(Boolean),ex=S.k.pat-P.length;
+  const sx=['Femme','Homme','Non renseigné'],bl=BANDES.map(b=>b[0]);
+  const ages=ev.map(e=>age(pm[e.pid],e.d)).filter(a=>a!=null&&a>=0);
+  const pass=grp(ev,e=>e.pid).map(x=>x[1]),rec=pass.filter(n=>n>1).length;
+  return`<div class="grid">
+  ${card('Tranches d’âge × sexe',bars(bl,[{n:'Femmes',c:'var(--c7)',v:bl.map(b=>ev.filter(e=>sexe(pm[e.pid])==='Femme'&&bande(age(pm[e.pid],e.d))===b).length)},{n:'Hommes',c:'var(--c1)',v:bl.map(b=>ev.filter(e=>sexe(pm[e.pid])==='Homme'&&bande(age(pm[e.pid],e.d))===b).length)}]),{w:true,sub:`Passages (urgences + consultations) · âge médian ${nf(med(ages))} ans · moyen ${nf(avg(ages))} ans`})}
+  ${card('Sexe',donut(grp(P,sexe)))}
+  ${card('Récurrence des patients',tbl(['Indicateur','Valeur'],[['Patients distincts',nf(ids.length)],['Patients revenus ≥ 2 fois',nf(rec)+' ('+pct(rec,ids.length)+')'],['Passages max. pour un patient',nf(Math.max(0,...pass))],['Passages par patient (moyenne)',nf(avg(pass))]]))}
+  ${card('Passages par patient',bars(['1','2','3','4','5+'],[{n:'Patients',v:[1,2,3,4].map(n=>pass.filter(x=>x===n).length).concat(pass.filter(x=>x>=5).length)}]))}
+  ${card('Informations médicales sensibles',tbl(['Indicateur','Patients'],[['Allergies renseignées',nf(P.filter(p=>p.allergies&&norm(p.allergies)!=='aucun'&&norm(p.allergies)!=='aucune').length)],['Allergies importantes signalées',nf(P.filter(p=>p.importanceAllergies===true).length)],['Vigilances renseignées',nf(P.filter(p=>p.vigilances&&norm(p.vigilances)!=='aucune'&&norm(p.vigilances)!=='aucun').length)],['Médecin traitant renseigné',nf(P.filter(p=>norm(p.medtraitant)).length)],['Identité vérifiée (≥1 contrôle)',nf(P.filter(p=>(p.identiteVerifications||[]).length).length)]]))}
+  ${card('Allergies les plus citées',hb(grp(P,p=>norm(p.allergies)&&!/^aucun/.test(norm(p.allergies))?norm(p.allergies).split(/[,;]/).map(s=>cap(s.trim())):null),{n:10}))}
+  ${card('Base patients (total, hors période)',tbl(['Indicateur','Valeur'],[['Fiches patients',nf(PC.length)],['Avec e-mail',pct(PC.filter(p=>p.email).length,PC.length)],['Avec téléphone',pct(PC.filter(p=>p.telephone).length,PC.length)],['Hospitalisés actuellement',nf(S.acti.length)]]))}
+  </div>${ex>0?`<div class="note">${ex} patient(s) de la période n’ont pas de fiche retrouvée dans la collection « patients » (non inclus dans les répartitions ci-dessus).</div>`:''}`},
+
+con(S){const c=S.c,r=S.r,tr=c.filter(x=>x.statut==='terminee'),dc=tr.map(x=>S.cd(x)&&dt(x.clotureLe)?(dt(x.clotureLe)-S.cd(x))/6e4:null);
+  const L={encours:'En cours',terminee:'Terminée',transferee:'Transférée aux urgences'},LR={pris:'Réservé',attente:'En salle d’attente',encours:'En consultation',termine:'Terminé',annule:'Annulé'};
+  const hrs=Array.from({length:24},(_,i)=>i);
+  return`<div class="kpis">${kpi('Consultations',nf(c.length),c.length,S.kp.nC)}${kpi('Durée médiane',fm(med(dc)))}${kpi('Taux de transfert',pct(S.k.transf,c.length))}${kpi('RDV réservés',nf(r.length),r.length,S.kp.nR)}${kpi('RDV annulés',pct(S.k.ann,r.length),S.k.ann,S.kp.ann,{inv:true})}${kpi('Attente médiane',fm(S.k.att),S.k.att,S.kp.att,{inv:true})}${kpi('Alertes vitales déclarées',nf(r.filter(x=>x.alerteVitale).length))}${kpi('Pris pour un proche',pct(r.filter(x=>x.pourQui==='proche').length,r.length))}</div>
+  <div class="grid">
+  ${card('Consultations par statut',donut(grp(c,x=>L[x.statut]||x.statut)))}
+  ${card('Origine des consultations',donut(grp(c,x=>x.origine)))}
+  ${card('Par médecin',hb(grp(c,x=>x.medecinNom),{n:12}))}
+  ${card('Par spécialité',hb(grp(c,x=>x.medecinSpecialite),{n:10}))}
+  ${card('Motifs de consultation',hb(grp(c,x=>cap(norm(x.motif))),{n:12}),{w:true})}
+  ${card('Rendez-vous par statut',donut(grp(r,x=>LR[x.statut]||x.statut)))}
+  ${card('RDV par jour de semaine',bars(JOURS,[{n:'RDV',v:JOURS.map((_,i)=>r.filter(x=>dow(S.rdt(x))===i).length)}]))}
+  ${card('RDV par heure',bars(hrs.map(h=>h+'h'),[{n:'RDV',v:hrs.map(h=>r.filter(x=>+String(x.heure).split(':')[0]===h).length)}]),{every:2,w:true})}
+  ${card('Annulations : par qui',donut(grp(r.filter(x=>x.statut==='annule'),x=>({patient:'Patient (en ligne)',accueil:'Accueil',medecin:'Service'}[x.annulePar]||x.annulePar||'Non renseigné'))))}
+  ${card('Annulations : motifs',hb(grp(r.filter(x=>x.statut==='annule'),x=>x.motifAnnulation||'Non renseigné'),{n:8}))}
+  ${card('Symptômes déclarés',hb(grp(r,symsDe),{n:12}))}
+  ${card('Signes d’alerte',hb(grp(r,x=>x.symptomes?.signesAlerte),{n:8}))}
+  ${card('Indicateurs symptômes',tbl(['Indicateur','Valeur'],[['Douleur moyenne déclarée',(()=>{const a=avg(r.map(x=>+x.symptomes?.douleur));return a==null?'—':nf(a)+' / 10'})()],['Fièvre déclarée',nf(r.filter(x=>x.symptomes?.fievre&&!/^non|aucune/i.test(x.symptomes.fievre)).length)],['Durée « depuis » la plus citée',grp(r,x=>x.symptomes?.depuis)[0]?.[0]||'—']]))}
+  </div>`},
+
+eq(S){const h=S.h,R=[['medecinReferent','Médecin'],['infirmierReferent','Infirmier(ère)'],['interneReferent','Interne'],['externeReferent','Externe']],ex=h.flatMap(x=>(x.examens||[]).map(e=>({...e,hid:x.id}))),his=h.flatMap(x=>x.historique||[]);
+  const nm=(x,k)=>x.equipe?.[k]?.nom||null;
+  return`<div class="kpis">${kpi('Examens demandés',nf(ex.length))}${kpi('Examens réalisés',pct(ex.filter(e=>e.realise).length,ex.length))}${kpi('Examens / passage',nf(ex.length/(h.length||1)))}${kpi('Actions tracées',nf(his.length))}${kpi('Passages avec médecin référent',pct(h.filter(x=>nm(x,'medecinReferent')).length,h.length))}</div>
+  <div class="grid">
+  ${card('Couverture de l’équipe référente',tbl(['Rôle','Affectés','Couverture'],R.map(([k,l])=>[l,nf(h.filter(x=>nm(x,k)).length),prog(h.filter(x=>nm(x,k)).length,h.length)])))}
+  ${R.map(([k,l])=>card('Charge — '+l,hb(grp(h,x=>nm(x,k)),{n:8}))).join('')}
+  ${card('Examens par type',hb(grp(ex,e=>e.type),{n:12}))}
+  ${card('Examens : réalisation',donut(grp(ex,e=>e.realise?'Réalisé':'À faire')))}
+  ${card('Contributeurs (actions tracées)',hb(grp(his,x=>x.auteurNom),{n:12}))}
+  ${card('Actions par profil',donut(grp(his,x=>x.auteurType)))}
+  ${card('Types d’actions les plus fréquents',hb(grp(his,x=>String(x.action||'').split(/[:(–]/)[0].trim()),{n:12}),{w:true})}
+  </div>`},
+
+fin(S){const R=S.R,amt=f=>{for(const k of['totalTTC','total','montantTTC','montant','montantTotal','totalPatient','net']){const v=f[k];if(v!==''&&v!=null&&Number.isFinite(+v))return+v}return null},
+  fd=f=>dt(f.dateCreation||f.date||f.createdAt||f.dateFacture||f.creeLe);
+  const F=FC.filter(f=>{const d=fd(f);return d&&d>=R.s&&d<=R.e}),ok=F.filter(f=>f.statut!=='annulee'),am=ok.map(amt).filter(v=>v!=null);
+  const billed=new Set();FC.forEach(f=>{if(f.statut==='annulee')return;(f.sources?.consultationIds||[]).forEach(i=>billed.add('c'+i));(f.sources?.hospitalisationIds||[]).forEach(i=>billed.add('h'+i))});
+  const hN=S.h.filter(x=>S.termine(x)&&!x.facturee&&!billed.has('h'+x.id)),cN=S.c.filter(x=>x.statut!=='encours'&&!x.facturee&&!billed.has('c'+x.id));
+  const sr=serie(S,ok,fd),mv=sr.l.map(k=>0);ok.forEach(f=>{const d=fd(f),v=amt(f);if(d&&v!=null){const i=sr.l.indexOf(sr.key(d));if(i>=0)mv[i]+=v}});
+  return`<div class="kpis">${kpi('Factures émises',nf(ok.length))}${kpi('Montant facturé',am.length?eur(sum(am)):'—')}${kpi('Facture moyenne',am.length?eur(avg(am)):'—')}${kpi('Factures annulées',nf(F.length-ok.length),null,null)}${kpi('Urgences à facturer',nf(hN.length),null,null,{hint:'Hospitalisations terminées non facturées'})}${kpi('Consultations à facturer',nf(cN.length))}${kpi('Taux de facturation (urgences)',pct(S.h.filter(S.termine).length-hN.length,S.h.filter(S.termine).length))}</div>
+  <div class="grid">
+  ${card('Montant facturé dans le temps',bars(sr.lab,[{n:'€',v:mv}],{fmt:eur,every:Math.ceil(sr.l.length/10)}),{w:true})}
+  ${card('Factures par statut',donut(grp(F,f=>f.statut||'Non renseigné')))}
+  ${card('Factures par mois',bars(sr.lab,[{n:'Factures',v:counts(sr,ok)}],{every:Math.ceil(sr.l.length/10)}))}</div>
+  ${am.length?'':'<div class="note">Aucun montant détecté : la page cherche les champs totalTTC, total, montantTTC, montant, montantTotal, totalPatient ou net dans la collection « facture ». Si ton champ a un autre nom, ajoute-le dans la fonction <b>amt</b> de l’onglet Facturation.</div>'}`},
+
+qual(S){const h=S.h,t=h.filter(S.termine),c=S.c,cl=c.filter(x=>x.statut!=='encours'),now=new Date();
+  const row=(l,v,tot)=>[l,nf(v)+' / '+nf(tot),prog(v,tot)];
+  const long=h.filter(x=>!S.termine(x)&&S.hd(x)&&(now-S.hd(x))/36e5>24),inc=h.filter(x=>S.fin(x)&&S.hd(x)&&S.fin(x)<S.hd(x));
+  return`<div class="grid">
+  ${card('Complétude — passages aux urgences',tbl(['Champ','Renseignés','Taux'],[row('Motif d’entrée',h.filter(x=>norm(x.motif)).length,h.length),row('Gravité',h.filter(x=>x.gravite).length,h.length),row('Moyen d’entrée',h.filter(x=>x.moyen).length,h.length),row('Service idéal',h.filter(x=>x.service).length,h.length),row('Statut de prise en charge',h.filter(x=>x.pdcStatut).length,h.length),row('Position du patient',h.filter(x=>x.positionPatient).length,h.length),row('Médecin référent',h.filter(x=>x.equipe?.medecinReferent?.nom).length,h.length),row('Dossier médical (≥1 champ)',h.filter(x=>Object.values(x.dossierMedical||{}).some(Boolean)).length,h.length),row('Évolution aux urgences',h.filter(x=>norm(x.evolution)).length,h.length),row('Type de sortie (terminées)',t.filter(x=>x.sortie?.type).length,t.length),row('Signature à la clôture (terminées)',t.filter(x=>x.signatureStatut).length,t.length)]))}
+  ${card('Complétude — consultations',tbl(['Champ','Renseignés','Taux'],[row('Motif',c.filter(x=>norm(x.motif)).length,c.length),row('Examen clinique (clôturées)',cl.filter(x=>norm(x.examenClinique)).length,cl.length),row('Diagnostic (clôturées)',cl.filter(x=>norm(x.diagnostic)).length,cl.length),row('Conduite à tenir (clôturées)',cl.filter(x=>norm(x.conduite)).length,cl.length)]))}
+  ${card('Anomalies détectées',tbl(['Contrôle','Nombre'],[['Hospitalisations ouvertes depuis plus de 24 h',nf(long.length)],['Hospitalisations ouvertes depuis plus de 48 h',nf(long.filter(x=>(now-S.hd(x))/36e5>48).length)],['Date de fin antérieure à la date de début',nf(inc.length)],['Terminées sans type de sortie',nf(t.filter(x=>!x.sortie?.type).length)],['Consultations « en cours » de plus de 12 h',nf(c.filter(x=>x.statut==='encours'&&S.cd(x)&&(now-S.cd(x))/36e5>12).length)],['RDV « réservés » dépassés sans prise en charge',nf(S.r.filter(x=>x.statut==='pris'&&S.rdt(x)<now).length)]]))}
+  </div><div class="note">Les passages dépourvus de <b>dateDebutTS</b> (anciens enregistrements) ne sont pas comptés dans les statistiques par période. La page ne modifie jamais aucune donnée : elle est en lecture seule.</div>`}
+};
+
+/* ================= Rendu / événements ================= */
+function rendre(){
+  const R=S.R;$('#plage').textContent=per==='all'?'Toutes périodes':`Du ${R.s.toLocaleDateString('fr-FR')} au ${R.e.toLocaleDateString('fr-FR')}`+(R.ps?' · comparaison avec la période précédente de même durée':'');
+  $('#tabs').innerHTML=Object.entries(TABS).map(([k,l])=>`<button class="tab ${k===tab?'on':''}" data-t="${k}">${l}</button>`).join('');
+  $('#pers').innerHTML=PERS.map(([k,l])=>`<button class="b ${k===per?'on':''}" data-p="${k}">${l}</button>`).join('')+(per==='custom'?`<input type="date" id="d1" value="${$('#d1')?.value||iso(R.s)}"><input type="date" id="d2" value="${$('#d2')?.value||iso(R.e)}"><button class="b" id="ok">Appliquer</button>`:'');
+  try{$('#view').innerHTML=T[tab](S)}catch(e){console.error(e);$('#view').innerHTML='<div class="msg">Erreur de calcul dans cet onglet (voir la console).</div>'}
+}
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b){tab=b.dataset.t;rendre()}};
+$('#pers').onclick=e=>{const b=e.target.closest('[data-p]');if(b){per=b.dataset.p;per==='custom'?rendre():charger()}if(e.target.id==='ok')charger()};
+$('#refresh').onclick=()=>charger(true);
+$('#print').onclick=()=>print();
+$('#csv').onclick=()=>{
+  const rows=[['type','id','date','heure','patientId','motif','gravite','statut','service','detail']];
+  S.h.forEach(x=>{const d=S.hd(x);rows.push(['urgences',x.id,d&&iso(d),d&&d.toTimeString().slice(0,5),x.patientId,x.motif,x.gravite,S.termine(x)?'terminee':'en cours',x.service,[x.moyen,x.sortie?.type,S.dur(x)!=null?nf(S.dur(x))+' h':''].filter(Boolean).join(' | ')])});
+  S.c.forEach(x=>{const d=S.cd(x);rows.push(['consultation',x.id,d&&iso(d),x.heure,x.patientId,x.motif,'',x.statut,x.medecinSpecialite,x.medecinNom])});
+  S.r.forEach(x=>rows.push(['rdv',x.id,x.date,x.heure,x.patientId||'',x.motif,'',x.statut,'',x.motifAnnulation||'']));
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download='statistiques_'+iso(S.R.s)+'_'+iso(S.R.e)+'.csv';a.click();
+};
+
+/* ================= Accès ================= */
+onAuthStateChanged(auth,async user=>{
+  if(!user){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
+  try{
+    window.afficherLoader();
+    const s=await getDoc(doc(db,"medecins",user.uid));
+    if(!s.exists()){window.masquerLoader();afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.","erreur");return}
+    medecin=s.data();$('#who').textContent=medecin.nom||'';
+    const page=location.pathname.substring(location.pathname.lastIndexOf("/")+1).replace(".html","");
+    if(!(medecin.pages||{})[page]){window.masquerLoader();$('#modal-no-access').style.display="flex";return}
+    $('#gate').hidden=true;$('#app').hidden=false;
+    await charger();
+  }catch(e){window.masquerLoader();$('#modal-error').style.display="flex";console.error(e)}
+});
+</script>
+</body>
+</html>

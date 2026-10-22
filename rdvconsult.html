@@ -474,8 +474,35 @@ async function envoyer(){
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
   err.textContent='';btn.disabled=true;
   $('#loadm').hidden=false;document.body.style.overflow='hidden';
-  const ref=doc(collection(db,'rdv-urgences')),code='URG-'+Math.random().toString(36).slice(2,6).toUpperCase(),occ=doc(db,'rdv-occupation',date);
-  let emailEnvoye = false;
+  const occ=doc(db,'rdv-occupation',date);
+  let emailEnvoye = false,code=null;
+
+  /* ---- Enregistrement du rendez-vous (transaction : capacité + occupation + document) ---- */
+  const genCode=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[Math.floor(Math.random()*A.length)];return 'URG-'+s};
+  try{
+    for(let essai=0;essai<5&&!code;essai++){
+      const cand=genCode(),ref=doc(db,'rdv-urgences',cand); // l'identifiant du document = la référence (unicité garantie)
+      try{
+        await runTransaction(db,async tx=>{
+          const [ex,o]=await Promise.all([tx.get(ref),tx.get(occ)]);
+          if(ex.exists())throw new Error('COLLISION');
+          const cts=o.exists()?{...(o.data().counts||{})}:{};
+          if((cts[time]||0)>=(caps[time]||0))throw new Error('COMPLET');
+          cts[time]=(cts[time]||0)+1;
+          o.exists()?tx.update(occ,{counts:cts}):tx.set(occ,{counts:cts});
+          tx.set(ref,{...c,ref:cand,date,heure:time,statut:'pris',creeLe:serverTimestamp()});
+        });
+        code=cand;
+      }catch(e){if(e.message!=='COLLISION')throw e}
+    }
+    if(!code)throw new Error('COLLISION');
+  }catch(e){
+    console.error('Enregistrement du rendez-vous impossible :',e);
+    $('#loadm').hidden=true;document.body.style.overflow='';btn.disabled=false;
+    if(e.message==='COMPLET'){await choisirJour(date);go(0,-1);err.textContent='Ce créneau vient d’être pris. Choisissez-en un autre.'}
+    else err.textContent='Impossible d’enregistrer le rendez-vous pour le moment. Réessayez dans un instant.';
+    return;
+  }
 
 try {
   const reponse = await fetch(

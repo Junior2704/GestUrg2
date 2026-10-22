@@ -37,6 +37,9 @@ input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--
 .fact label{display:block;font-size:13px;font-weight:600;color:var(--muted)}.fact span{font-weight:600}
 .choice{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
 .choice input{width:auto;min-height:0;margin-top:4px}.choice.on{border-color:var(--primary);background:var(--primary-soft)}
+.fsearch{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.fsearch .row{display:flex;gap:8px}.fsearch .row input{flex:1;min-width:0}.fsearch .row button{white-space:nowrap}
+.fsearch .hint{font-size:13px;margin-top:8px}
 .btn-primary,.btn-secondary,.btn-danger{appearance:none;min-height:46px;padding:0 18px;font:600 15px var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:disabled{opacity:.45;cursor:not-allowed}
 .btn-secondary{background:#fff;color:var(--primary);border-color:var(--line)}.btn-secondary:hover{background:var(--primary-soft)}
@@ -169,6 +172,31 @@ async function candidats(p){
   return [...out.values()].sort((a,b)=>((b.dateNaissance===p.dateNaissance)-(a.dateNaissance===p.dateNaissance)));
 }
 
+/* ---- Recherche manuelle d'une fiche patient ---- */
+const sansAcc=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function variantesDate(t){ // jj/mm/aaaa, jj-mm-aaaa, jj.mm.aaaa ou aaaa-mm-jj -> formes utilisées par l'index et par la fiche
+  let m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/),j,mo,a;
+  if(m){a=m[1];mo=m[2];j=m[3]}else{m=t.match(/^(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{4})$/);if(!m)return[];j=m[1];mo=m[2];a=m[3]}
+  j=j.padStart(2,'0');mo=mo.padStart(2,'0');
+  return[`${j}/${mo}/${a}`,`${j}${mo}${a}`,`${a}-${mo}-${j}`];
+}
+async function rechercherFiches(q){
+  const brut=q.trim(),toks=brut.toLowerCase().split(/\s+/).filter(Boolean),out=new Map(),keys=new Set(),col=collection(db,'patients');
+  for(const t of toks){keys.add(t);keys.add(sansAcc(t));variantesDate(t).forEach(v=>keys.add(v))}
+  if(toks.length>1){keys.add(brut.toLowerCase());keys.add(sansAcc(brut))}
+  const taches=[...keys].map(k=>getDocs(query(col,where('searchIndex','array-contains',k),limit(50))).then(r=>r.forEach(x=>out.set(x.id,{id:x.id,...x.data()}))).catch(()=>{}));
+  const chiffres=brut.replace(/\D/g,'');
+  if(chiffres.length>=6)for(const tel of new Set([brut,chiffres]))taches.push(getDocs(query(col,where('telephone','==',tel),limit(20))).then(r=>r.forEach(x=>out.set(x.id,{id:x.id,...x.data()}))).catch(()=>{}));
+  if(/^[A-Za-z0-9]{20}$/.test(brut))taches.push(getDoc(doc(db,'patients',brut)).then(x=>{if(x.exists())out.set(x.id,{id:x.id,...x.data()})}).catch(()=>{}));
+  await Promise.all(taches);
+  // tous les mots saisis doivent correspondre à la fiche (nom, prénom, naissance, téléphone, CIP)
+  return [...out.values()].filter(c=>{
+    const d=c.dateNaissance?new Date(c.dateNaissance):null,fr=d&&!isNaN(d)?d.toLocaleDateString('fr-FR'):'';
+    const hay=norm([c.nom,c.prenom,c.prenom+' '+c.nom,c.dateNaissance,fr,String(c.dateNaissance||'').replace(/\D/g,''),c.telephone,String(c.telephone||'').replace(/\D/g,''),c.id].join(' '));
+    return toks.every(t=>[norm(t),...variantesDate(t)].some(v=>hay.includes(v)));
+  }).sort((a,b)=>String(a.nom||'').localeCompare(String(b.nom||''),'fr')||String(a.prenom||'').localeCompare(String(b.prenom||''),'fr')).slice(0,15);
+}
+
 /* ---- Accueil du patient ---- */
 const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</span></div>`;
 const heureTS=t=>t?.toDate?t.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
@@ -185,21 +213,41 @@ async function ouvrir(r){
   box.innerHTML=head+`</div><div class="card-sec"><h2 class="card-title">Identité du patient</h2><div class="form">${V('nom','Nom','text',1)}${V('prenom','Prénom','text',1)}${V('dateNaissance','Date de naissance','date',1)}
     <div class="field"><label for="f-sexe">Sexe</label><select id="f-sexe"><option value="">—</option><option value="F"${p.sexe==='F'?' selected':''}>Féminin</option><option value="M"${p.sexe==='M'?' selected':''}>Masculin</option></select></div>
     ${V('telephone','Téléphone','tel')}${V('email','E-mail','email')}${V('adresse','Adresse')}</div></div>
-    <div class="card-sec"><h2 class="card-title">Fiche patient</h2><div id="fiche"></div><div class="actions"><button class="btn-primary" id="arrive" disabled>Enregistrer l’arrivée · mettre en salle d’attente</button><button class="btn-danger" id="cancel">Annuler le rendez-vous</button></div></div>`;
+    <div class="card-sec"><h2 class="card-title">Fiche patient</h2><div id="fichebox"><div id="fiche"></div><div class="fsearch"><label class="lbl" for="fq">La fiche détectée ne correspond pas ? Rechercher une autre fiche</label><div class="row"><input id="fq" type="search" autocomplete="off" placeholder="Nom, prénom, naissance (jj/mm/aaaa), téléphone ou CIP"><button type="button" class="btn-secondary" id="fgo">Rechercher</button></div><div id="fres" style="margin-top:10px"></div></div></div><div class="actions"><button class="btn-primary" id="arrive" disabled>Enregistrer l’arrivée · mettre en salle d’attente</button><button class="btn-danger" id="cancel">Annuler le rendez-vous</button></div></div>`;
   const val=k=>$('#f-'+k).value.trim(),ident=()=>({nom:val('nom'),prenom:val('prenom'),dateNaissance:val('dateNaissance'),sexe:val('sexe'),telephone:val('telephone'),email:val('email'),adresse:val('adresse')});
-  const maj=()=>{const c=$('#fiche input[name=f]:checked'),i=ident();$('#arrive').disabled=!(c&&i.nom&&i.prenom&&i.dateNaissance);$('#fiche').querySelectorAll('.choice').forEach(x=>x.classList.toggle('on',x.querySelector('input').checked))};
+  const manuel=new Map(); // fiches trouvées via la recherche manuelle
+  const maj=()=>{const c=$('#fichebox input[name=f]:checked'),i=ident(),m=!!(c&&manuel.has(c.value));$('#arrive').disabled=!(c&&(m||(i.nom&&i.prenom&&i.dateNaissance)));$('#fichebox').querySelectorAll('.choice').forEach(x=>x.classList.toggle('on',x.querySelector('input').checked))};
   async function chercher(){
-    const i=ident(),f=$('#fiche');if(!i.nom||!i.prenom){f.innerHTML='<p class="mut">Renseignez le nom et le prénom pour rechercher une fiche.</p>';maj();return}
+    const i=ident(),f=$('#fiche');if(!i.nom||!i.prenom){f.innerHTML='<p class="mut">Renseignez le nom et le prénom pour rechercher une fiche, ou utilisez la recherche ci-dessous.</p>';maj();return}
     f.innerHTML='<p class="mut">Recherche des fiches existantes…</p>';
-    const cands=await candidats(i),exact=cands.length&&cands[0].dateNaissance===i.dateNaissance?cands[0].id:null;
+    const cands=await candidats(i),garde=!!$('#fres input[name=f]:checked'),exact=!garde&&cands.length&&cands[0].dateNaissance===i.dateNaissance?cands[0].id:null;
     f.innerHTML=(cands.length?'<p class="mut" style="margin-bottom:10px">Fiches correspondantes : choisissez celle du patient, ou créez-en une nouvelle.</p>'+cands.map(c=>`<label class="choice"><input type="radio" name="f" value="${c.id}" ${c.id===exact?'checked':''}><span><b>${esc(c.nom)} ${esc(c.prenom)}</b><br><small class="mut">Né(e) le ${esc(c.dateNaissance||'—')} · ${esc(c.telephone||'—')} · CIP ${esc(c.id)}</small></span></label>`).join(''):'<p class="mut" style="margin-bottom:10px">Aucune fiche existante ne correspond.</p>')+
-      `<label class="choice"><input type="radio" name="f" value="new" ${cands.length?'':'checked'}><span><b>Créer une nouvelle fiche patient</b></span></label>`;
+      `<label class="choice"><input type="radio" name="f" value="new" ${cands.length||garde?'':'checked'}><span><b>Créer une nouvelle fiche patient</b></span></label>`;
     f.querySelectorAll('input').forEach(x=>x.onchange=maj);maj();
   }
   ['nom','prenom','dateNaissance'].forEach(k=>$('#f-'+k).oninput=()=>{maj();clearTimeout(tmr);tmr=setTimeout(chercher,500)});
   chercher();
+  async function lancerRecherche(){
+    const q=$('#fq').value.trim(),box=$('#fres');
+    if(q.length<2){manuel.clear();box.innerHTML=q?'<p class="mut hint">Saisissez au moins 2 caractères.</p>':'';if(!$('#fichebox input[name=f]:checked'))chercher();else maj();return}
+    box.innerHTML='<p class="mut">Recherche en cours…</p>';
+    let res=[];
+    try{res=await rechercherFiches(q)}catch(e){console.error(e);box.innerHTML='<p class="msg">La recherche a échoué.</p>';return}
+    if($('#fq').value.trim()!==q)return; // une saisie plus récente est en cours
+    manuel.clear();res.forEach(c=>manuel.set(c.id,c));
+    box.innerHTML=res.length
+      ?`<p class="mut" style="margin-bottom:8px">${res.length} fiche${res.length>1?'s':''} trouvée${res.length>1?'s':''} :</p>`+res.map(c=>`<label class="choice"><input type="radio" name="f" value="${esc(c.id)}"><span><b>${esc(c.nom)} ${esc(c.prenom)}</b><br><small class="mut">Né(e) le ${esc(c.dateNaissance||'—')} · ${esc(c.telephone||'—')} · CIP ${esc(c.id)}</small></span></label>`).join('')+'<p class="mut hint">En choisissant l’une de ces fiches, l’identité du rendez-vous (nom, prénom, naissance) sera alignée sur celle de la fiche.</p>'
+      :'<p class="mut">Aucune fiche trouvée. Vérifiez l’orthographe ou essayez avec une date de naissance ou un téléphone.</p>';
+    box.querySelectorAll('input').forEach(x=>x.onchange=maj);
+    if(!$('#fichebox input[name=f]:checked'))chercher();else maj();
+  }
+  let tmr2=null;
+  $('#fq').oninput=()=>{clearTimeout(tmr2);tmr2=setTimeout(lancerRecherche,450)};
+  $('#fq').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(tmr2);lancerRecherche()}};
+  $('#fgo').onclick=()=>{clearTimeout(tmr2);lancerRecherche()};
   $('#arrive').onclick=async()=>{
-    $('#arrive').disabled=true;const i=ident(),v=$('#fiche input[name=f]:checked').value;
+    $('#arrive').disabled=true;const i=ident(),v=$('#fichebox input[name=f]:checked').value,man=manuel.get(v);
+    if(man){i.nom=man.nom||i.nom;i.prenom=man.prenom||i.prenom;i.dateNaissance=man.dateNaissance||i.dateNaissance} // fiche choisie via la recherche : son identité fait foi
     try{
       let pid=v;
       if(v==='new'){

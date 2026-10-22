@@ -581,6 +581,7 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;flex:non
     <div class="modal">
       <h3 class="modal-title" id="modalTitle">Ajouter</h3>
       <input type="text" id="modalInput" placeholder="Nom..." />
+      <input type="number" id="modalPrice" min="0" step="0.01" placeholder="Prix en € (0 = non facturé)" style="margin-top:10px;display:none" />
       <div class="modal-buttons">
         <button class="btn-id" type="button" onclick="cancelModal()"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>Annuler</button>
         <button class="btn-id btn-id-v" type="button" onclick="confirmModal()"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Valider</button>
@@ -863,6 +864,7 @@ const moyensListEl = document.getElementById('moyensList');
 
 const personnelListEl = document.getElementById('personnelList');
 let actes = [];
+let actesPrix = {}; // { nomActe: prix } — 0 ou absent = non facturé
 let moyens = [];
 let personnel = [];
 let spécialités = [];
@@ -908,7 +910,9 @@ window.saveModeSysteme = async function () {
 async function saveToFirestore() {
   try {
 
-    await setDoc(doc(db, "referentiels", "actes"), { liste: actes });
+    const prix = {};
+    actes.forEach(n => { prix[n] = Number(actesPrix[n]) || 0; });
+    await setDoc(doc(db, "referentiels", "actes"), { liste: actes, prix });
     await setDoc(doc(db, "referentiels", "personnel"), { liste: personnel });
     await setDoc(doc(db, "referentiels", "spécialités"), { spécialités });
 
@@ -927,6 +931,7 @@ async function loadData() {
 
   const actesSnap = await getDoc(doc(db, "referentiels", "actes"));
   actes = actesSnap.exists() ? actesSnap.data().liste || [] : [];
+  actesPrix = actesSnap.exists() ? { ...(actesSnap.data().prix || {}) } : {};
   renderList("actes", actes);
 
   const persSnap = await getDoc(doc(db, "referentiels", "personnel"));
@@ -943,6 +948,14 @@ const container = type === "actes" ? actesListEl : type === "moyens" ? moyensLis
   container.innerHTML = "";
   array.forEach((item, index) => {
     const li = document.createElement("li");
+    if (type === "actes") {
+      const prix = Number(actesPrix[item]) || 0;
+      li.innerHTML = `<input value="${item.replace(/"/g, '&quot;')}" onchange="updateItem('actes', ${index}, this.value)" />
+                    <input type="number" min="0" step="0.01" value="${prix}" title="Prix (0 = non facturé)" onchange="updateActePrix(${index}, this.value)" /> €
+                    <button class="btn btn-del" onclick="removeItem('actes', ${index})" aria-label="Supprimer"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg></button>`;
+      container.appendChild(li);
+      return;
+    }
     li.innerHTML = `<input value="${item.replace(/"/g, '&quot;')}" onchange="updateItem('${type}', ${index}, this.value)" />
                     <button class="btn btn-del" onclick="removeItem('${type}', ${index})" aria-label="Supprimer"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg></button>`;
     container.appendChild(li);
@@ -956,7 +969,11 @@ const container = type === "actes" ? actesListEl : type === "moyens" ? moyensLis
   });
 window.updateItem = async (type, index, newValue) => {
     if (type === "moyens") moyens[index] = newValue;
-  if (type === "actes") actes[index] = newValue;
+  if (type === "actes") {
+    const old = actes[index];
+    if (old !== newValue) { actesPrix[newValue] = Number(actesPrix[old]) || 0; delete actesPrix[old]; }
+    actes[index] = newValue;
+  }
   if (type === "personnel") personnel[index] = newValue;
   if (type === "spécialités") spécialités[index] = newValue;
  
@@ -965,10 +982,15 @@ window.updateItem = async (type, index, newValue) => {
 
 window.removeItem = async (type, index) => {
     if (type === "moyens") moyens.splice(index, 1);
-  if (type === "actes") actes.splice(index, 1);
+  if (type === "actes") { delete actesPrix[actes[index]]; actes.splice(index, 1); }
   if (type === "personnel") personnel.splice(index, 1);
   if (type === "spécialités") spécialités.splice(index, 1);
   renderList(type, type === "actes" ? actes : type === "spécialités" ? spécialités : personnel);
+  await saveToFirestore();
+};
+
+window.updateActePrix = async (index, value) => {
+  actesPrix[actes[index]] = Math.max(0, parseFloat(value) || 0);
   await saveToFirestore();
 };
 
@@ -976,6 +998,8 @@ window.openModal = (type) => {
   currentType = type;
   document.getElementById("modalTitle").textContent = `Ajouter à ${type}`;
   document.getElementById("modalInput").value = "";
+  const mp = document.getElementById("modalPrice");
+  mp.value = ""; mp.style.display = type === "actes" ? "" : "none";
   document.getElementById("modal").style.display = "flex";
 };
 
@@ -983,7 +1007,10 @@ window.confirmModal = async () => {
   const val = document.getElementById("modalInput").value.trim();
   if (!val) return;
     if (currentType === "moyens") moyens.push(val);
-  if (currentType === "actes") actes.push(val);
+  if (currentType === "actes") {
+    actes.push(val);
+    actesPrix[val] = Math.max(0, parseFloat(document.getElementById("modalPrice").value) || 0);
+  }
   if (currentType === "personnel") personnel.push(val);
     if (currentType === "spécialités") spécialités.push(val);
   renderList(currentType, currentType === "actes" ? actes : currentType === "spécialités" ? spécialités : personnel);

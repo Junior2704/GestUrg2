@@ -442,7 +442,7 @@ const MODES = ['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile mone
 const TYPES = { consultation: 'Consultation', hospitalisation: 'Hospitalisation (urgences)', mixte: 'Consultation + hospitalisation', urgences: 'Urgences' };
 const SRC = { consultation: 'Consultation', passage: 'Passage', sejour: 'Séjour', acte: 'Acte', examen: 'Examen', transport: 'Transport', manuel: 'Manuel' };
 
-const S = { id: null, numero: null, statut: null, type: null, pid: null, patient: null, fact: {}, regles: {}, regimes: REGIMES, etab: {},
+const S = { id: null, numero: null, statut: null, type: null, pid: null, patient: null, fact: {}, actesPrix: {}, regles: {}, regimes: REGIMES, etab: {},
   consults: [], hospis: [], sel: { c: new Set(), h: new Set() }, invoices: [], billed: {}, calc: {}, saving: false, assurLoaded: false };
 
 const $ = id => document.getElementById(id);
@@ -473,6 +473,8 @@ async function loadConfig() {
 async function loadFacturables() {
   try { const s = await getDoc(doc(db, 'referentiels', 'Facturables')); S.fact = s.exists() ? s.data() : {}; }
   catch (e) { console.error(e); S.fact = {}; setMsg('⚠️ Référentiel des prestations indisponible.', 'error'); }
+  try { const a = await getDoc(doc(db, 'referentiels', 'actes')); S.actesPrix = a.exists() ? (a.data().prix || {}) : {}; }
+  catch (e) { console.error(e); S.actesPrix = {}; }
   $('dl').innerHTML = Object.keys(S.fact).map(n => `<option value="${esc(n)}">${euro(S.fact[n])} €</option>`).join('');
 }
 function findFact(...keys) {
@@ -483,6 +485,12 @@ function findFact(...keys) {
     if (m) return [m, Number(S.fact[m]) || 0];
   }
   return null;
+}
+// Prix d'un acte défini dans Paramètres > Actes. Retourne [nom, prix] ou null (acte inconnu).
+function findActe(name) {
+  const n = norm(name); if (!n) return null;
+  const k = Object.keys(S.actesPrix).find(x => norm(x) === n);
+  return k ? [k, Number(S.actesPrix[k]) || 0] : null;
 }
 const rule = (key, kws, def) => { const m = findFact(S.regles[key], ...kws); return [m ? m[0] : def, m]; };
 const regime = () => S.regimes.find(r => r.id === $('regime').value) || S.regimes[0];
@@ -543,7 +551,10 @@ function detect() {
     const n = hs.length === 1 && $('nbJours').value !== '' ? Number($('nbJours').value) : nights(tsOf(h.dateDebutTS), tsOf(h.dateFinTS) || new Date());
     if (n > 0) { const [dj, mj] = rule('journee', ['journee', 'hospitalisation', 'sejour'], 'Journée d’hospitalisation'); add(dj, mj, n, 'sejour', h.id); }
     (h.actes || []).filter(a => norm(a.status) === 'realise').forEach(a => {
-      const nm = a.nom || a.acte || a.libelle || a.type || a.name || 'Acte réalisé'; const f = findFact(nm); add(f ? f[0] : nm, f, 1, 'acte', h.id);
+      const nm = a.nom || a.acte || a.libelle || a.type || a.name || 'Acte réalisé';
+      const f = findActe(nm);
+      if (!f || !(f[1] > 0)) return; // prix = 0 (ou non défini) : pas de ligne
+      add(f[0], f, 1, 'acte', h.id);
     });
     (h.examens || []).filter(e => e.realise).forEach(e => { const f = findFact(e.type); add(f ? f[0] : (e.type || 'Examen'), f, 1, 'examen', h.id); });
     if ((h.sortie?.options || []).some(o => /ambulance/i.test(o))) { const [da, ma] = rule('ambulance', ['ambulance', 'transport'], 'Transport en ambulance'); add(da, ma, 1, 'transport', h.id); }

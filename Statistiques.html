@@ -309,6 +309,13 @@ eq(S){const h=S.h,R=[['medecinReferent','Médecin'],['infirmierReferent','Infirm
 fin(S) {
   const R = S.R,
     amt = f => {
+      // Le total de la facture est enregistré dans totals.total
+      const total = f.totals?.total;
+      if (total !== '' && total != null && Number.isFinite(+total)) {
+        return +total;
+      }
+
+      // Champs alternatifs, si nécessaire
       for (const k of [
         "totalTTC",
         "total",
@@ -321,8 +328,12 @@ fin(S) {
         const v = f[k];
         if (v !== '' && v != null && Number.isFinite(+v)) return +v;
       }
+
       return null;
-    },  fd=f=>dt(f.dateCreation||f.date||f.createdAt||f.dateFacture||f.creeLe);
+    },
+    fd = f => dt(
+      f.dateCreation || f.date || f.createdAt || f.dateFacture || f.creeLe
+    );
   const F=FC.filter(f=>{const d=fd(f);return d&&d>=R.s&&d<=R.e}),ok=F.filter(f=>f.statut!=='annulee'),am=ok.map(amt).filter(v=>v!=null);
   const billed=new Set();FC.forEach(f=>{if(f.statut==='annulee')return;(f.sources?.consultationIds||[]).forEach(i=>billed.add('c'+i));(f.sources?.hospitalisationIds||[]).forEach(i=>billed.add('h'+i))});
   const hN=S.h.filter(x=>S.termine(x)&&!x.facturee&&!billed.has('h'+x.id)),cN=S.c.filter(x=>x.statut!=='encours'&&!x.facturee&&!billed.has('c'+x.id));
@@ -332,7 +343,7 @@ fin(S) {
   ${card('Montant facturé dans le temps',bars(sr.lab,[{n:'€',v:mv}],{fmt:eur,every:Math.ceil(sr.l.length/10)}),{w:true})}
   ${card('Factures par statut',donut(grp(F,f=>f.statut||'Non renseigné')))}
   ${card('Factures par mois',bars(sr.lab,[{n:'Factures',v:counts(sr,ok)}],{every:Math.ceil(sr.l.length/10)}))}</div>
-  ${am.length?'':'<div class="note">Aucun montant détecté : la page cherche les champs totalTTC, total, montantTTC, montant, montantTotal, totalPatient ou net dans la collection « facture ». Si ton champ a un autre nom, ajoute-le dans la fonction <b>amt</b> de l’onglet Facturation.</div>'}`},
+  ${am.length?'':'<div class="note">Aucun montant détecté .</div>'}`},
 
 qual(S){const h=S.h,t=h.filter(S.termine),c=S.c,cl=c.filter(x=>x.statut!=='encours'),now=new Date();
   const row=(l,v,tot)=>[l,nf(v)+' / '+nf(tot),prog(v,tot)];

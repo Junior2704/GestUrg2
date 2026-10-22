@@ -87,9 +87,6 @@ textarea{min-height:90px;resize:vertical}
 .tag.perso button{background:var(--aqua)}
 .symadd{display:flex;gap:8px}.symadd input{flex:1;min-width:0}
 .btn.sm{min-height:48px;padding:0 20px;font-size:.95rem;box-shadow:none}
-.pw{position:relative}.pw input{padding-right:92px}
-.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--teal-deep);font:700 .82rem var(--font-body);padding:10px;cursor:pointer}
-.pwhint{margin:6px 0 0;font-size:.8rem;color:var(--ink-soft)}
 /* navigation */
 .nav{position:sticky;bottom:0;display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(246,251,250,0),var(--bg) 35%)}
 .btn{padding:14px 28px;border:0;border-radius:14px;background:var(--teal);color:#fff;font:700 1.05rem var(--font-body);cursor:pointer;box-shadow:var(--shadow-sm)}
@@ -158,10 +155,7 @@ textarea{min-height:90px;resize:vertical}
         <div><label for="nom">Nom</label><input id="nom" autocomplete="family-name"></div>
         <div><label for="naiss">Date de naissance</label><input id="naiss" type="date" autocomplete="bday"></div>
         <div><label for="tel" id="lblTel">Téléphone</label><input id="tel" type="tel" autocomplete="tel"></div>
-        <div class="full"><div class="sec" style="margin-top:6px">Compte du patient</div><p class="sub" style="margin:0">Chaque patient dispose de son propre e-mail et de son propre mot de passe.</p></div>
-        <div class="full"><label for="mail">E-mail du patient <small>(sert d’identifiant)</small></label><input id="mail" type="email" autocomplete="email"></div>
-        <div><label for="mdp">Mot de passe</label><div class="pw"><input id="mdp" type="password" autocomplete="new-password"><button type="button" data-show="mdp">Afficher</button></div><p class="pwhint">8 caractères minimum.</p></div>
-        <div><label for="mdp2">Confirmer le mot de passe</label><div class="pw"><input id="mdp2" type="password" autocomplete="new-password"><button type="button" data-show="mdp2">Afficher</button></div></div>
+        <div class="full"><label for="mail">E-mail du patient</label><input id="mail" type="email" autocomplete="email"></div>
         <div><label for="cp">Code postal <small>(facultatif)</small></label><input id="cp" inputmode="numeric" autocomplete="postal-code"></div>
         <div><label for="ville">Ville <small>(facultatif)</small></label><input id="ville" autocomplete="address-level2"></div>
       </div>
@@ -231,12 +225,10 @@ textarea{min-height:90px;resize:vertical}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, collection, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const cfg={apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"};
 const app=initializeApp(cfg);
 const db=getFirestore(app);
-// Instance Auth dédiée aux patients : elle ne modifie pas la session d'un médecin connecté sur le même navigateur
-const auth=getAuth(initializeApp(cfg,"patient"));
+
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const tmin=t=>{const[a,b]=t.split(':');return +a*60+ +b}, mt=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -340,7 +332,6 @@ $('#symList').onclick=e=>{const b=e.target.closest('.symb');if(!b)return;const x
 $('#symSel').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;if(b.dataset.k==='c')sel.delete(b.dataset.v);else{const i=custom.indexOf(b.dataset.v);if(i>-1)custom.splice(i,1)}renderSym()};
 $('#symAdd').onclick=ajouterSym;
 $('#symAutre').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();ajouterSym()}});
-$$('[data-show]').forEach(b=>b.onclick=()=>{const i=$('#'+b.dataset.show),h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'Masquer':'Afficher'});
 
 /* ---------- Champs conditionnels ---------- */
 function sync(){
@@ -379,9 +370,6 @@ const V=[
    if(val('tel')&&!telOk(val('tel')))e.push(['tel','Le téléphone du patient n’est pas valide.']);
   }else if(!telOk(val('tel')))e.push(['tel','Un numéro de téléphone valide est requis.']);
   if(!/^\S+@\S+\.\S+$/.test(val('mail')))e.push(['mail','Un e-mail valide est requis pour le patient.']);
-  const mdp=$('#mdp').value;
-  if(mdp.length<8)e.push(['mdp','Le mot de passe doit contenir au moins 8 caractères.']);
-  else if(mdp!==$('#mdp2').value)e.push(['mdp2','Les deux mots de passe ne correspondent pas.']);
   return e},
  ()=>{const e=[];ajouterSym();
   if(!val('motif'))e.push(['motif','Choisissez une catégorie.']);
@@ -459,7 +447,7 @@ function recap(){
   const sec=(i,t,rows)=>`<div class="rc"><div class="rch">${t}<button type="button" data-edit="${i}">Modifier</button></div><dl>${rows.filter(r=>L(r[1])).map(r=>`<div><dt>${r[0]}</dt><dd>${esc(L(r[1]))}</dd></div>`).join('')}</dl></div>`;
   $('#recap').innerHTML=
    sec(0,'Rendez-vous',[['Date',fmtD(date)],['Heure',time]])+
-   sec(1,'Patient',[['Pour',c.pourQui==='proche'?'Un proche':'Moi-même'],['Identité',`${p.prenom} ${p.nom}`],['Naissance',p.dateNaissance&&new Date(p.dateNaissance+'T00:00').toLocaleDateString('fr-FR')],['Sexe',p.sexe],['Téléphone',p.telephone],['E-mail (identifiant)',p.email],['Mot de passe','••••••••'],['Ville',[p.codePostal,p.ville].filter(Boolean).join(' ')],
+   sec(1,'Patient',[['Pour',c.pourQui==='proche'?'Un proche':'Moi-même'],['Identité',`${p.prenom} ${p.nom}`],['Naissance',p.dateNaissance&&new Date(p.dateNaissance+'T00:00').toLocaleDateString('fr-FR')],['Sexe',p.sexe],['Téléphone',p.telephone],['E-mail',p.email],['Ville',[p.codePostal,p.ville].filter(Boolean).join(' ')],
      ...(c.demandeur?[['Demandeur',`${c.demandeur.prenom} ${c.demandeur.nom} (${c.demandeur.lien})`],['Tél. demandeur',c.demandeur.telephone]]:[])])+
    sec(2,'Motif',[['Catégorie',c.motif],['Symptômes',[...sy.liste,...sy.autres]],['Description',c.detail],['Depuis',sy.depuis],['Fièvre',sy.fievre],['Douleur',sy.douleur&&sy.douleur+'/10'],['Signes d’alerte',sy.signesAlerte]])+
    sec(3,'Santé',[['Allergies',s.allergies],['Traitements',s.traitements],['Antécédents',[...s.antecedents,s.antecedentsAutre].filter(Boolean)],['Grossesse',s.grossesse],['Antitétanique',s.tetanos]])+
@@ -467,36 +455,11 @@ function recap(){
 }
 $('#recap').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b)go(+b.dataset.edit,-1)});
 
-/* ---------- Compte patient ---------- */
-// Le mot de passe n'est jamais enregistré dans Firestore : il reste géré par Firebase Authentication.
-async function creerCompte(email,mdp){
-  try{return (await createUserWithEmailAndPassword(auth,email,mdp)).user.uid}
-  catch(e){
-    if(e.code==='auth/email-already-in-use'){ // compte déjà créé (nouvelle tentative, patient déjà inscrit)
-      try{return (await signInWithEmailAndPassword(auth,email,mdp)).user.uid}
-      catch(e2){throw Object.assign(new Error('compte-existant'),{code:'compte-existant'})}
-    }
-    throw e;
-  }
-}
-const ERR_COMPTE={
-  'compte-existant':'Un compte existe déjà avec cet e-mail. Saisissez le mot de passe de ce compte, ou utilisez l’e-mail propre à ce patient.',
-  'auth/weak-password':'Le mot de passe est trop faible. Choisissez-en un plus long.',
-  'auth/invalid-email':'L’e-mail n’est pas valide.',
-  'auth/network-request-failed':'Connexion impossible. Vérifiez votre réseau et réessayez.'
-};
-
 /* ---------- Envoi ---------- */
 async function envoyer(){
   const btn=$('#next'),err=$('#err'),c=collect();
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
   err.textContent='';btn.disabled=true;
-  try{c.patientAuthUid=await creerCompte(c.patient.email,$('#mdp').value)}
-  catch(e){
-    btn.disabled=false;go(1,-1);
-    err.textContent=ERR_COMPTE[e.code]||'La création du compte a échoué. Réessayez dans un instant.';
-    return;
-  }
   const ref=doc(collection(db,'rdv-urgences')),code='URG-'+Math.random().toString(36).slice(2,6).toUpperCase(),occ=doc(db,'rdv-occupation',date);
   try{
     await runTransaction(db,async tx=>{
@@ -506,7 +469,6 @@ async function envoyer(){
       tx.set(occ,{counts:cn});
       tx.set(ref,{ref:code,date,heure:time,statut:'pris',creeLe:serverTimestamp(),...c,consentement:true,patientId:null});
     });
-    signOut(auth).catch(()=>{});
     termine(code,c);
   }catch(e){
     btn.disabled=false;
@@ -519,7 +481,6 @@ function termine(code,c){
   $('#done').innerHTML=`<div class="card ok"><h2>Rendez-vous confirmé</h2><p><strong>${fmtD(date)} à ${time}</strong><br>${esc(c.patient.prenom)} ${esc(c.patient.nom)}</p><div class="ref">${code}</div>
     <p class="mut">Notez votre référence : elle vous sera demandée à l’accueil.<br>Présentez-vous 10 minutes avant.</p>
     <ul class="todo"><li>Pièce d’identité</li><li>Carte Vitale et carte de mutuelle</li><li>Ordonnances et liste de vos traitements</li><li>Carnet de santé pour un enfant</li></ul>
-    <p class="mut">Le compte patient a été créé avec l’e-mail <strong>${esc(c.patient.email)}</strong>.</p>
     <button type="button" class="btn" id="ics">Ajouter à mon agenda</button><button type="button" class="btn ghost" id="prt">Imprimer</button></div>`;
   $('#prt').onclick=()=>print();
   $('#ics').onclick=()=>{

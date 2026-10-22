@@ -461,41 +461,46 @@ async function envoyer(){
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
   err.textContent='';btn.disabled=true;
   const ref=doc(collection(db,'rdv-urgences')),code='URG-'+Math.random().toString(36).slice(2,6).toUpperCase(),occ=doc(db,'rdv-occupation',date);
-  try{
-    await runTransaction(db,async tx=>{
-      const s=await tx.get(occ),cn=s.exists()?s.data().counts||{}:{};
-      if((cn[time]||0)>=caps[time])throw new Error('complet');
-      cn[time]=(cn[time]||0)+1;
-      tx.set(occ,{counts:cn});
-      tx.set(ref,{ref:code,date,heure:time,statut:'pris',creeLe:serverTimestamp(),...c,consentement:true,patientId:null});
-    });
-    // L'enregistrement est confirmé : l'e-mail est envoyé par le serveur.
-    // L'échec de l'e-mail ne doit pas annuler le rendez-vous déjà enregistré.
-    let emailEnvoye=false;
-    try{
-      const reponse=await fetch('https://gesturg2-server.onrender.com/api/rdv/confirmation',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          email:c.patient.email,
-          prenom:c.patient.prenom,
-          nom:c.patient.nom,
-          date,
-          heure:time,
-          reference:code
-        })
-      });
-      emailEnvoye=reponse.ok;
-      if(!reponse.ok) console.error('Échec de l’envoi de l’e-mail de confirmation :',await reponse.text());
-    }catch(erreurEmail){
-      console.error('Serveur e-mail inaccessible :',erreurEmail);
+  let emailEnvoye = false;
+
+try {
+  const reponse = await fetch(
+    'https://gesturg2-server.onrender.com/api/rdv/confirmation',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: c.patient.email,
+        prenom: c.patient.prenom,
+        nom: c.patient.nom,
+        date,
+        heure: time,
+        reference: code
+      })
     }
-    termine(code,c,emailEnvoye);
-  }catch(e){
-    btn.disabled=false;
-    if(e.message==='complet'){await choisirJour(date);go(0,-1);err.textContent='Ce créneau vient d’être pris. Choisissez-en un autre.'}
-    else err.textContent='L’enregistrement a échoué. Vérifiez votre connexion et réessayez.';
+  );
+
+  const resultat = await reponse.json().catch(() => ({}));
+
+  emailEnvoye = reponse.ok && resultat.success === true;
+
+  if (!emailEnvoye) {
+    console.error(
+      'Échec de l’envoi de la confirmation :',
+      resultat.error || reponse.status
+    );
   }
+
+} catch (erreurEmail) {
+  console.error(
+    'Serveur e-mail inaccessible :',
+    erreurEmail
+  );
+}
+
+termine(code, c, emailEnvoye);
 }
 function termine(code,c,emailEnvoye=false){
   $('#wiz').hidden=true;$('#done').hidden=false;

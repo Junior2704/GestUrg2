@@ -306,8 +306,23 @@ eq(S){const h=S.h,R=[['medecinReferent','Médecin'],['infirmierReferent','Infirm
   ${card('Types d’actions les plus fréquents',hb(grp(his,x=>String(x.action||'').split(/[:(–]/)[0].trim()),{n:12}),{w:true})}
   </div>`},
 
-fin(S){const R=S.R,amt=f=>{for(const k of['totalTTC','total','montantTTC','montant','montantTotal','totalPatient','net']){const v=f[k];if(v!==''&&v!=null&&Number.isFinite(+v))return+v}return null},
-  fd=f=>dt(f.dateCreation||f.date||f.createdAt||f.dateFacture||f.creeLe);
+fin(S) {
+  const R = S.R,
+    amt = f => {
+      for (const k of [
+        "totalTTC",
+        "total",
+        "montantTTC",
+        "montant",
+        "montantTotal",
+        "totalPatient",
+        "net"
+      ]) {
+        const v = f[k];
+        if (v !== '' && v != null && Number.isFinite(+v)) return +v;
+      }
+      return null;
+    },  fd=f=>dt(f.dateCreation||f.date||f.createdAt||f.dateFacture||f.creeLe);
   const F=FC.filter(f=>{const d=fd(f);return d&&d>=R.s&&d<=R.e}),ok=F.filter(f=>f.statut!=='annulee'),am=ok.map(amt).filter(v=>v!=null);
   const billed=new Set();FC.forEach(f=>{if(f.statut==='annulee')return;(f.sources?.consultationIds||[]).forEach(i=>billed.add('c'+i));(f.sources?.hospitalisationIds||[]).forEach(i=>billed.add('h'+i))});
   const hN=S.h.filter(x=>S.termine(x)&&!x.facturee&&!billed.has('h'+x.id)),cN=S.c.filter(x=>x.statut!=='encours'&&!x.facturee&&!billed.has('c'+x.id));

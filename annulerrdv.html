@@ -42,6 +42,14 @@ label small{font-weight:500;color:var(--ink-soft)}
 input,select,textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:500 1rem var(--font-body)}
 textarea{min-height:90px;resize:vertical}
 #ref{text-transform:uppercase;letter-spacing:2px;font-weight:800}
+.ref-entry{display:flex;align-items:center;gap:10px;max-width:390px}
+.ref-prefix{display:grid;place-items:center;min-width:88px;height:54px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--aqua);color:var(--teal-deep);font-weight:800;letter-spacing:1.5px;font-size:1.05rem}
+.ref-cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:1}
+.ref-part{width:100%;min-width:0;height:54px;padding:0;text-align:center;text-transform:uppercase;font-size:1.25rem;font-weight:800;letter-spacing:.5px;border:2px solid var(--line);border-radius:12px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.ref-part:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,118,110,.12);outline:none}
+.ref-part.filled{background:#F0FAF8;border-color:#A8DCD5}
+.ref-help{margin:9px 0 0;color:var(--ink-soft);font-size:.82rem}
+@media(max-width:420px){.ref-entry{gap:6px}.ref-prefix{min-width:72px;padding:0 9px}.ref-cells{gap:5px}.ref-part{height:50px;font-size:1.1rem}}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .chips{display:flex;flex-direction:column;gap:8px}
 .chip{position:relative;display:block;margin:0}
@@ -92,7 +100,20 @@ textarea{min-height:90px;resize:vertical}
     <section class="step card" id="s0">
       <h2 class="section-title" tabindex="-1">Votre rendez-vous</h2>
       <p class="sub">Saisissez la référence reçue lors de la réservation (ex. URG-AB12).</p>
-      <div class="grid"><div class="full"><label for="ref">Référence du rendez-vous</label><input id="ref" placeholder="URG-XXXX" autocomplete="off" maxlength="12"></div></div>
+      <div class="grid"><div class="full">
+        <label for="refpart0">Référence du rendez-vous</label>
+        <div class="ref-entry" role="group" aria-label="Référence du rendez-vous, préfixe URG suivi de quatre lettres ou chiffres">
+          <span class="ref-prefix" aria-hidden="true">URG-</span>
+          <div class="ref-cells">
+            <input class="ref-part" id="refpart0" aria-label="Premier caractère de la référence" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input class="ref-part" id="refpart1" aria-label="Deuxième caractère de la référence" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input class="ref-part" id="refpart2" aria-label="Troisième caractère de la référence" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input class="ref-part" id="refpart3" aria-label="Quatrième caractère de la référence" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          </div>
+        </div>
+        <input id="ref" type="hidden" value="">
+        <p class="ref-help">Saisissez les 4 caractères après URG-. Lettres et chiffres acceptés.</p>
+      </div></div>
     </section>
 
     <!-- 2. Sécurité -->
@@ -178,7 +199,7 @@ function montrer(msg,ids=[]){
   $$('.bad').forEach(x=>x.classList.remove('bad'));
   $('#err').textContent=msg||'';
   ids.forEach(i=>$('#'+i)?.classList.add('bad'));
-  if(msg)$('#'+(ids[0]||'err'))?.focus?.({preventScroll:false});
+  if(msg){const target=ids[0]==='ref'?$('#refpart0'):$('#'+(ids[0]||'err'));target?.focus?.({preventScroll:false})}
   return !!msg;
 }
 async function suivant(){
@@ -212,6 +233,33 @@ function go(n,dir=1){
 $('#back').onclick=()=>{if(step===1){rdv=null}go(step-1,-1)};
 $('#next').onclick=suivant;
 $('#wiz').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('input:not([type=radio])')){e.preventDefault();suivant()}});
+// Saisie en 4 cases : avance automatique, retour arrière et collage d'une référence complète.
+const refParts=$$('.ref-part');
+function syncReference(){
+  const suffix=refParts.map(el=>el.value.toUpperCase()).join('');
+  $('#ref').value=suffix.length===4?'URG-'+suffix:'';
+  refParts.forEach(el=>el.classList.toggle('filled',!!el.value));
+}
+refParts.forEach((el,i)=>{
+  el.addEventListener('input',()=>{
+    let chars=el.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    el.value=chars.slice(-1);
+    syncReference();
+    if(el.value && i<refParts.length-1)refParts[i+1].focus();
+  });
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&!el.value&&i>0){refParts[i-1].focus();refParts[i-1].select()}
+    else if(e.key==='ArrowLeft'&&i>0){e.preventDefault();refParts[i-1].focus()}
+    else if(e.key==='ArrowRight'&&i<refParts.length-1){e.preventDefault();refParts[i+1].focus()}
+  });
+  el.addEventListener('paste',e=>{
+    e.preventDefault();
+    const pasted=(e.clipboardData||window.clipboardData).getData('text').toUpperCase().replace(/^URG-/,'').replace(/[^A-Z0-9]/g,'').slice(0,4);
+    refParts.forEach((part,j)=>part.value=pasted[j]||'');
+    syncReference();
+    refParts[Math.min(pasted.length,3)].focus();
+  });
+});
 $('#ref').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
 
 function recap(){

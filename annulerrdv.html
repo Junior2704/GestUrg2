@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B544E">
+<title>Annuler un rendez-vous Urgences</title>
+<link rel="icon" type="image/png" href="logog2.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F6FBFA;--surface:#fff;--ink:#12312D;--ink-soft:#4C6B66;--teal:#0F766E;--teal-deep:#0B544E;--aqua:#DCF3F0;--coral:#EF6351;--coral-soft:#FDE4DF;--line:#E2EEEC;--shadow-sm:0 10px 26px -16px rgba(15,60,55,.35);--font-display:'Fraunces',serif;--font-body:'Plus Jakarta Sans',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;font-family:var(--font-body);color:var(--ink);-webkit-font-smoothing:antialiased;background:radial-gradient(1100px 500px at 90% -10%,#E7F6F3 0%,transparent 60%),radial-gradient(900px 500px at -10% 110%,#FBEDE9 0%,transparent 55%),var(--bg);display:flex;flex-direction:column;align-items:center;padding:0 16px 30px}
+header{width:100%;max-width:1000px;margin-top:20px;background:linear-gradient(90deg,var(--teal-deep) 0%,var(--teal) 60%,#16A398 100%);color:#fff;border-radius:18px;padding:14px 26px;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;gap:14px}
+header img{height:54px;border-radius:8px;background:rgba(255,255,255,.9);padding:4px}
+header h1{flex:1;text-align:center;margin:0;font-family:var(--font-display);font-size:1.7rem;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+main{width:100%;max-width:760px}
+[hidden]{display:none!important}
+.section-title{font-family:var(--font-display);font-size:1.5rem;font-weight:600;color:var(--teal-deep);margin:0 0 6px}
+.section-title:focus{outline:none}
+.sub{margin:0 0 18px;color:var(--ink-soft);font-size:.95rem}
+.card{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--teal);border-radius:18px;box-shadow:var(--shadow-sm);padding:22px;margin-top:14px}
+/* progression */
+.stepper{list-style:none;display:flex;justify-content:space-between;gap:4px;margin:18px 0 8px;padding:0}
+.stepper li{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;font:600 .72rem var(--font-body);color:var(--ink-soft)}
+.stepper i{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:#fff;font:800 .85rem var(--font-body);font-style:normal;color:var(--ink-soft)}
+.stepper .done i{background:var(--aqua);border-color:var(--teal);color:var(--teal-deep)}
+.stepper .cur i{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
+.stepper .cur{color:var(--teal-deep);font-weight:800}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),#16A398);border-radius:99px;transition:width .35s ease}
+@media(max-width:600px){header h1{font-size:1.15rem}header img{height:40px}.stepper span{display:none}}
+.step.from-r{animation:inR .32s ease both}.step.from-l{animation:inL .32s ease both}
+@keyframes inR{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes inL{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.step.from-r,.step.from-l{animation:none}.bar i{transition:none}}
+/* formulaires */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.full{grid-column:1/-1}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:5px}
+label small{font-weight:500;color:var(--ink-soft)}
+input,select,textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:500 1rem var(--font-body)}
+textarea{min-height:90px;resize:vertical}
+#ref{text-transform:uppercase;letter-spacing:2px;font-weight:800}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.chips{display:flex;flex-direction:column;gap:8px}
+.chip{position:relative;display:block;margin:0}
+.chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
+.chip span{display:flex;align-items:center;min-height:46px;padding:0 16px;border:2px solid var(--line);border-radius:14px;background:#fff;font-weight:600;font-size:.95rem}
+.chip input:checked+span{background:var(--teal);border-color:var(--teal);color:#fff}
+.chip input:focus-visible+span{outline:3px solid var(--teal);outline-offset:2px}
+.bad{outline:2px solid var(--coral);outline-offset:3px;border-radius:12px}
+.consent{display:flex;gap:12px;align-items:flex-start;font-weight:600;font-size:.92rem;line-height:1.4;margin:0}
+.consent input{width:22px;height:22px;flex:none;margin:1px 0 0;padding:0}
+/* navigation */
+.nav{position:sticky;bottom:0;display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(246,251,250,0),var(--bg) 35%)}
+.btn{padding:14px 28px;border:0;border-radius:14px;background:var(--teal);color:#fff;font:700 1.05rem var(--font-body);cursor:pointer;box-shadow:var(--shadow-sm);text-decoration:none;display:inline-block}
+.btn.ghost{background:#fff;color:var(--teal-deep);border:2px solid var(--line);box-shadow:none}
+.btn.danger{background:var(--coral)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.nav .btn:last-child{margin-left:auto}
+.err{color:var(--coral);font-weight:700;margin:12px 0 0}
+.err:empty{display:none}
+.mut{color:var(--ink-soft)}
+/* récapitulatif */
+.rc{border:1px solid var(--line);border-radius:14px;margin-top:12px;overflow:hidden}
+.rc .rch{padding:10px 14px;background:var(--aqua);font-weight:800;color:var(--teal-deep)}
+.rc dl{margin:0;padding:6px 14px}
+.rc dl div{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}.rc dl div:last-child{border:0}
+.rc dt{flex:0 0 38%;color:var(--ink-soft);font-size:.88rem}.rc dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.warn{margin-top:14px;padding:14px 16px;background:var(--coral-soft);border:1px solid var(--coral);border-radius:14px;font-weight:600}
+/* confirmation */
+.ok{text-align:center}.ok h2{font-family:var(--font-display);font-size:2rem;color:var(--teal-deep);margin:0 0 6px}
+.ref{display:inline-block;margin:10px 0;padding:8px 18px;background:var(--aqua);border-radius:12px;font:800 1.4rem var(--font-body);letter-spacing:2px;color:var(--teal-deep)}
+.ok .btn{margin:10px 4px 0}
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+</style>
+</head>
+<body>
+<header><img src="logog2.png" alt="" onerror="this.style.display='none'"><h1>Annuler un rendez-vous</h1><span style="width:54px"></span></header>
+<main>
+  <div id="done" hidden></div>
+  <div id="wiz">
+    <ol class="stepper" id="stepper" aria-label="Progression"></ol>
+    <div class="bar"><i id="barFill"></i></div>
+
+    <!-- 1. Référence -->
+    <section class="step card" id="s0">
+      <h2 class="section-title" tabindex="-1">Votre rendez-vous</h2>
+      <p class="sub">Saisissez la référence reçue lors de la réservation (ex. URG-AB12).</p>
+      <div class="grid"><div class="full"><label for="ref">Référence du rendez-vous</label><input id="ref" placeholder="URG-XXXX" autocomplete="off" maxlength="12"></div></div>
+    </section>
+
+    <!-- 2. Sécurité -->
+    <section class="step card" id="s1" hidden>
+      <h2 class="section-title" tabindex="-1">Vérification</h2>
+      <p class="sub">Pour protéger les données du patient, confirmez les informations renseignées lors de la réservation.</p>
+      <div class="grid">
+        <div class="full"><label for="mail">E-mail du patient</label><input id="mail" type="email" autocomplete="email"></div>
+        <div class="full"><label for="naiss">Date de naissance du patient</label><input id="naiss" type="date" autocomplete="off"></div>
+      </div>
+    </section>
+
+    <!-- 3. Motif -->
+    <section class="step card" id="s2" hidden>
+      <h2 class="section-title" tabindex="-1">Pourquoi annuler ?</h2>
+      <p class="sub">Votre réponse nous aide à nous améliorer.</p>
+      <div class="grid">
+        <div class="full" id="g-raison"><div id="raisons" class="chips"></div></div>
+        <div class="full"><label for="precision">Précisions <small id="precOpt">(facultatif)</small></label><textarea id="precision" maxlength="300" placeholder="Dites-nous en plus…"></textarea></div>
+      </div>
+    </section>
+
+    <!-- 4. Confirmation -->
+    <section class="step card" id="s3" hidden>
+      <h2 class="section-title" tabindex="-1">Confirmez l’annulation</h2>
+      <p class="sub">Relisez les informations avant de valider.</p>
+      <div id="recap"></div>
+      <div class="warn">Cette action est définitive : le créneau sera libéré pour d’autres patients. Vous pourrez toujours reprendre un nouveau rendez-vous.</div>
+    </section>
+
+    <div class="err" id="err" role="alert"></div>
+    <div class="nav"><button type="button" class="btn ghost" id="back" hidden>← Retour</button><button type="button" class="btn" id="next">Continuer</button></div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, collection, query, where, limit, getDocs, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+const db=getFirestore(app);
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val=id=>($('#'+id)?.value||'').trim();
+const tmin=t=>{const[a,b]=String(t).split(':');return +a*60+ +b};
+const fmtD=s=>new Date(s+'T00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+const normMail=s=>String(s||'').trim().toLowerCase();
+const normDate=s=>{ // accepte aaaa-mm-jj ou jj/mm/aaaa selon le stockage
+  s=String(s||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return`${m[1]}-${m[2]}-${m[3]}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:s;
+};
+const RAISONS=['Je n’ai plus besoin de consulter','Mon état de santé s’est amélioré','J’ai trouvé un autre créneau ou un autre lieu','Empêchement personnel ou professionnel','Rendez-vous pris par erreur','Autre'];
+$('#raisons').innerHTML=RAISONS.map(r=>`<label class="chip"><input type="radio" name="raison" value="${esc(r)}"><span>${esc(r)}</span></label>`).join('');
+$('#raisons').addEventListener('change',()=>{$('#precOpt').textContent=$('input[name=raison]:checked')?.value==='Autre'?'(obligatoire)':'(facultatif)'});
+
+let rdv=null; // document Firestore trouvé { id, ...data }
+
+/* ---------- Recherche du rendez-vous ---------- */
+async function chercher(){
+  const code=val('ref').toUpperCase().replace(/\s/g,'');
+  if(!/^URG-[A-Z0-9]{4}$/.test(code))return'Référence invalide. Elle ressemble à URG-AB12.';
+  let snap;
+  try{snap=await getDocs(query(collection(db,'rdv-urgences'),where('ref','==',code),limit(1)))}
+  catch(e){console.error(e);return'Impossible de vérifier la référence pour le moment. Réessayez dans un instant.'}
+  if(snap.empty)return'Aucun rendez-vous ne correspond à cette référence.';
+  const d={id:snap.docs[0].id,...snap.docs[0].data()};
+  if(d.statut==='annule')return'Ce rendez-vous est déjà annulé.';
+  if(d.statut!=='pris')return'Ce rendez-vous ne peut plus être annulé en ligne (patient déjà accueilli). Adressez-vous à l’accueil.';
+  const now=new Date(),today=new Date(now-now.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  if(d.date<today||(d.date===today&&tmin(d.heure)<=now.getHours()*60+now.getMinutes()))return'Ce rendez-vous est déjà passé.';
+  rdv=d;return'';
+}
+function verifier(){
+  const p=rdv.patient||{};
+  // message volontairement générique : ne pas révéler laquelle des deux informations est fausse
+  return normMail(val('mail'))===normMail(p.email)&&val('naiss')===normDate(p.dateNaissance)?'':'Les informations saisies ne correspondent pas à ce rendez-vous.';
+}
+
+/* ---------- Validation / navigation ---------- */
+const STEPS=['Référence','Vérification','Motif','Confirmer'],LAST=STEPS.length-1;
+let step=0,essais=0;
+function montrer(msg,ids=[]){
+  $$('.bad').forEach(x=>x.classList.remove('bad'));
+  $('#err').textContent=msg||'';
+  ids.forEach(i=>$('#'+i)?.classList.add('bad'));
+  if(msg)$('#'+(ids[0]||'err'))?.focus?.({preventScroll:false});
+  return !!msg;
+}
+async function suivant(){
+  const btn=$('#next');
+  if(step===0){
+    btn.disabled=true;const m=await chercher();btn.disabled=false;
+    if(montrer(m,['ref']))return;
+  }else if(step===1){
+    if(!/^\S+@\S+\.\S+$/.test(val('mail'))||!val('naiss'))return void montrer('Renseignez l’e-mail et la date de naissance du patient.',['mail','naiss']);
+    if(++essais>5)return void montrer('Trop de tentatives. Réessayez plus tard.');
+    const m=verifier();if(montrer(m,['mail','naiss']))return;
+  }else if(step===2){
+    const r=$('input[name=raison]:checked')?.value;
+    if(!r)return void montrer('Indiquez la raison de l’annulation.',['g-raison']);
+    if(r==='Autre'&&val('precision').length<3)return void montrer('Merci de préciser la raison.',['precision']);
+  }else return envoyer();
+  go(step+1,1);
+}
+function go(n,dir=1){
+  $('#err').textContent='';$$('.bad').forEach(x=>x.classList.remove('bad'));
+  $('#s'+step).hidden=true;step=n;
+  const el=$('#s'+n);el.hidden=false;el.classList.remove('from-r','from-l');void el.offsetWidth;el.classList.add(dir>0?'from-r':'from-l');
+  if(n===LAST)recap();
+  $('#back').hidden=n===0;
+  $('#next').textContent=n===LAST?'Annuler mon rendez-vous':'Continuer';
+  $('#next').classList.toggle('danger',n===LAST);
+  $('#barFill').style.width=(n/LAST*100)+'%';
+  $('#stepper').innerHTML=STEPS.map((t,i)=>`<li class="${i<n?'done':i===n?'cur':''}" ${i===n?'aria-current="step"':''}><i>${i<n?'✓':i+1}</i><span>${t}</span></li>`).join('');
+  el.querySelector('.section-title').focus({preventScroll:true});
+}
+$('#back').onclick=()=>{if(step===1){rdv=null}go(step-1,-1)};
+$('#next').onclick=suivant;
+$('#wiz').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('input:not([type=radio])')){e.preventDefault();suivant()}});
+$('#ref').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
+
+function recap(){
+  const p=rdv.patient||{},r=$('input[name=raison]:checked').value,pr=val('precision');
+  const rows=[['Référence',rdv.ref],['Date',fmtD(rdv.date)],['Heure',rdv.heure],['Patient',`${p.prenom||''} ${p.nom||''}`.trim()],['Raison',r],['Précisions',pr]];
+  $('#recap').innerHTML=`<div class="rc"><div class="rch">Rendez-vous à annuler</div><dl>${rows.filter(x=>x[1]).map(x=>`<div><dt>${x[0]}</dt><dd>${esc(x[1])}</dd></div>`).join('')}</dl></div>`;
+}
+
+/* ---------- Enregistrement de l'annulation ---------- */
+async function envoyer(){
+  const btn=$('#next');btn.disabled=true;$('#err').textContent='';
+  const raison=$('input[name=raison]:checked').value,precision=val('precision');
+  try{
+    await runTransaction(db,async tx=>{
+      const rref=doc(db,'rdv-urgences',rdv.id),oref=doc(db,'rdv-occupation',rdv.date);
+      const cur=await tx.get(rref),o=await tx.get(oref);
+      if(!cur.exists()||cur.data().statut!=='pris')throw new Error('STATUT'); // déjà annulé / accueilli entre-temps
+      if(o.exists()){const c=o.data().counts||{};c[rdv.heure]=Math.max(0,(c[rdv.heure]||1)-1);tx.update(oref,{counts:c})}
+      tx.update(rref,{statut:'annule',annuleLe:serverTimestamp(),annulePar:'patient',motifAnnulation:raison,precisionAnnulation:precision});
+    });
+  }catch(e){
+    console.error(e);btn.disabled=false;
+    $('#err').textContent=e.message==='STATUT'?'Ce rendez-vous ne peut plus être annulé (déjà annulé ou patient accueilli).':'L’annulation a échoué. Réessayez dans un instant.';
+    return;
+  }
+  termine();
+}
+function termine(){
+  $('#wiz').hidden=true;$('#done').hidden=false;
+  $('#done').innerHTML=`<div class="card ok"><h2>Rendez-vous annulé</h2><p><strong>${fmtD(rdv.date)} à ${esc(rdv.heure)}</strong></p><div class="ref">${esc(rdv.ref)}</div>
+    <p class="mut">Votre annulation a bien été enregistrée et le créneau a été libéré.</p>
+    <p class="mut">En cas de danger vital (douleur thoracique, difficulté à respirer, malaise grave), appelez le 15 ou le 112.</p>
+    <a class="btn" href="rdvconsult.html">Prendre un nouveau rendez-vous</a></div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+go(0,1);
+</script>
+</body>
+</html>

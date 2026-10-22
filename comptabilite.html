@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Comptabilité RPO</title>
+<link rel="icon" type="image/png" href="logo.png">
+<style>
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--warn:#7a4f00;--warn-soft:#fff5da;--warn-line:#f0d98f;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--shadow-sm:0 1px 2px rgba(17,35,54,.06);--ring:0 0 0 4px rgba(11,111,164,.15);--head-h:64px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);--nav-w:76px;--nav-w-open:288px;--gutter:clamp(16px,3vw,32px)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%;margin:0;padding:0}
+body{display:flex;flex-direction:column;overflow:hidden;font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
+h2,h3,p{margin:0}button{font-family:inherit}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}.i.lg{width:24px;height:24px}
+body>header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--head-h);padding:8px 20px;background:#fff;border-bottom:1px solid var(--line);z-index:5}
+.left-header{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand{width:38px;height:38px;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25)}.brand .i{width:22px;height:22px;stroke-width:2.4}
+.head-text{min-width:0;display:flex;flex-direction:column}
+.head-kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#patientName{font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;padding:4px 12px;font-size:13px;font-weight:700;border-radius:999px;background:var(--primary-soft);color:var(--primary-d);white-space:nowrap}.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.late{background:var(--late-soft);color:var(--late)}
+.icon-button{appearance:none;width:44px;height:44px;display:inline-grid;place-items:center;padding:0;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}.icon-button:hover{background:var(--primary-soft)}
+.menu-toggle{display:none;appearance:none;width:44px;height:44px;flex:none;padding:0;place-items:center;color:var(--primary);background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.app{flex:1;min-height:0;display:flex;overflow:hidden}
+.content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+nav{flex:none;width:var(--nav-w);display:flex;flex-direction:column;padding:14px 12px calc(14px + var(--safe-b));background:#fff;border-right:1px solid var(--line);overflow-x:hidden;overflow-y:auto;scrollbar-width:none;transition:width .25s ease,box-shadow .25s ease;z-index:10}
+nav::-webkit-scrollbar{display:none}
+nav:hover{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.08)}
+.nav-title{padding:4px 12px 12px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--line-soft);opacity:0;transition:opacity .2s}nav:hover .nav-title{opacity:1}
+#navItems{display:flex;flex-direction:column;gap:4px}
+.nav-item{position:relative;display:flex;align-items:center;gap:14px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none;touch-action:manipulation}
+.nav-item>.i{color:var(--muted)}.nav-label{opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis}nav:hover .nav-label{opacity:1}
+@media (hover:hover){.nav-item:hover{background:var(--primary-soft)}.nav-item:hover>.i{color:var(--primary)}}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d)}.nav-item.active>.i{color:var(--primary)}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;background:var(--primary);border-radius:0 4px 4px 0}
+.nav-item:focus-visible,.btn-primary:focus-visible,.btn-secondary:focus-visible,.btn-danger:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+@media (hover:none){nav:hover{width:var(--nav-w);box-shadow:none}nav:hover .nav-label,nav:hover .nav-title{opacity:0}nav.expanded{width:var(--nav-w-open);box-shadow:8px 0 30px rgba(17,35,54,.1)}nav.expanded .nav-label,nav.expanded .nav-title{opacity:1}}
+.nav-backdrop{display:none}
+section.panel{display:none;flex:1;min-height:0;overflow-y:auto;background:#fff}section.panel.active{display:block}
+.panel-head{position:sticky;top:0;z-index:4;padding:22px var(--gutter) 16px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.panel-title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;letter-spacing:-.015em}
+.panel-title .ico{width:40px;height:40px;flex:none;display:grid;place-items:center;color:var(--primary);background:var(--primary-soft);border-radius:12px}
+.hint{margin:6px 0 0 52px;font-size:14px;color:var(--muted)}
+.panel-body{padding:22px var(--gutter) 48px}
+.card-sec{margin-bottom:16px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm)}
+.card-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.card-title .i{color:var(--primary);width:18px;height:18px}
+.disabled-section{opacity:.45;pointer-events:none}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}.form-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid .full{grid-column:1/-1}
+.field{min-width:0}label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+input:disabled{opacity:.75;cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;margin:0;font-weight:600;cursor:pointer}.check input{width:20px;height:20px;min-height:0}
+.btn-primary,.btn-secondary,.btn-danger{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;font:600 15px/1 var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:active{background:var(--primary-d)}
+.btn-secondary{background:#fff;color:var(--primary);border-color:var(--line)}.btn-secondary:hover{background:var(--primary-soft)}
+.btn-danger{background:#fff;color:var(--late);border-color:#f0c3c5}.btn-danger:hover{background:var(--late-soft)}
+button:disabled{opacity:.5;cursor:not-allowed}
+td .btn-danger{min-height:38px;padding:0 12px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.actionbar{flex:none;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px var(--gutter) calc(12px + var(--safe-b));background:#fff;border-top:1px solid var(--line)}
+.muted{color:var(--muted);font-size:14px}.error-text{color:var(--late);font-size:14px;font-weight:600}.ok-text{color:var(--ok);font-size:14px;font-weight:600}
+.reason{display:flex;gap:10px;padding:12px 14px;margin-bottom:16px;border-radius:12px;font-weight:600;background:var(--primary-soft);color:var(--primary-d);border:1px solid #b5d6ea}
+.reason.none{background:var(--late-soft);border-color:#f0c3c5;color:var(--late)}.reason.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.enc{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 8px;padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-weight:400;cursor:pointer}
+.enc input{width:20px;height:20px;min-height:0}.enc.off{opacity:.6;cursor:not-allowed}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--primary-soft);color:var(--primary-d)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}.b-complet{background:var(--ok-soft);color:var(--ok)}.b-incomplet{background:var(--late-soft);color:var(--late)}.b-annulee{background:var(--line-soft);color:var(--muted)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:8px 10px;border-bottom:1px solid var(--line-soft);text-align:center;vertical-align:middle}
+th{background:var(--field);font-size:13px;font-weight:700;color:var(--muted)}td.left{text-align:left}tfoot td{font-weight:700;background:var(--field)}
+td input,td select{min-height:40px;padding:8px 10px;font-size:15px}
+tr.unpriced input.u{border-color:var(--late);background:var(--late-soft)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:16px}
+.kpi{padding:12px 14px;background:var(--field);border:1px solid var(--line);border-radius:12px;font-size:13px;font-weight:500;color:var(--muted)}.kpi b{display:block;margin-top:3px;font-size:18px;color:var(--ink)}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:18px;font-weight:600;color:var(--late);background:rgba(255,255,255,.96)}
+@media(max-width:768px){.form-grid,.form-grid.c3{grid-template-columns:1fr}.hint{margin-left:0}nav{width:64px}}
+@media (max-width:900px){
+  .menu-toggle{display:inline-grid}.head-kicker{display:none}
+  nav,nav:hover,nav.open{width:min(320px,86vw)}
+  nav{position:fixed;top:0;bottom:0;left:calc(-1*min(320px,86vw) - 30px);padding:calc(18px + var(--safe-t)) 14px calc(24px + var(--safe-b));border-right:0;border-radius:0 22px 22px 0;box-shadow:none;z-index:2000;transition:left .3s cubic-bezier(.22,1,.36,1)}
+  nav.open{left:0;box-shadow:6px 0 30px rgba(15,30,60,.25)}nav .nav-label,nav .nav-title{opacity:1}
+  .nav-backdrop{display:block;position:fixed;inset:0;z-index:1999;background:rgba(10,25,41,.45);opacity:0;pointer-events:none;transition:opacity .3s}.nav-backdrop.show{opacity:1;pointer-events:auto}
+}
+
+/* Section « À facturer » repliable */
+.facturables-toggle {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  margin: 0 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.facturables-toggle .card-title {
+  margin: 0;
+}
+
+.facturables-toggle .chevron {
+  color: var(--muted);
+  transition: transform .25s ease;
+}
+
+.facturables-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+}
+
+.facturables-toggle[aria-expanded="false"] .chevron {
+  transform: rotate(-90deg);
+}
+
+#facturablesContent {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows .25s ease,
+    opacity .2s ease;
+}
+
+#facturablesContent > #encList {
+  min-height: 0;
+}
+
+#facturablesContent.collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#facturablesContent.collapsed > #encList {
+  overflow: hidden;
+}
+
+/* Le contenu doit pouvoir être masqué proprement */
+#facturablesContent.collapsed {
+  display: none;
+}
+
+/* ---------- BARRES DE DÉFILEMENT ---------- */
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+
+/* ---------- Paiements : tableau + modales ---------- */
+td.amt{font-weight:700;white-space:nowrap}
+tr.refund td.amt{color:var(--late)}
+td .btn-secondary{min-height:38px;padding:0 12px}
+.b-prevu{background:var(--warn-soft);color:var(--warn)}
+.t-refund{background:var(--late-soft);color:var(--late)}
+.mback{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,25,41,.5);backdrop-filter:blur(2px)}
+.mbox{width:100%;max-width:560px;max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(10,25,41,.35)}
+.mbox.narrow{max-width:460px}
+.mhead{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mhead h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.mbody{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.mfoot{flex:none;display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;padding:14px 20px calc(14px + var(--safe-b,0px));border-top:1px solid var(--line)}
+.mfoot .spacer{margin-right:auto}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--field);border:1px solid var(--line);border-radius:12px}
+.seg label{position:relative;margin:0;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:9px;font-weight:700;font-size:15px;color:var(--muted)}
+.seg input:checked+span{background:#fff;color:var(--primary-d);box-shadow:var(--shadow-sm)}
+.seg input[value=remboursement]:checked+span{color:var(--late)}
+.seg input:focus-visible+span{outline:3px solid rgba(11,111,164,.4)}
+.psum{padding:10px 14px;background:var(--primary-soft);color:var(--primary-d);border-radius:12px;font-size:14px}
+.link{appearance:none;margin-left:6px;padding:0;border:0;background:none;color:var(--primary);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+textarea{width:100%;min-height:84px;margin:0;padding:12px 14px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:var(--ring)}
+.cash{display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--field);border:1px solid var(--line);border-radius:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{appearance:none;min-height:38px;padding:0 14px;font:600 14px/1 var(--font);color:var(--primary-d);background:#fff;border:1px solid var(--line);border-radius:999px;cursor:pointer}.chip:hover{background:var(--primary-soft)}
+.change{padding:14px;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:var(--muted);background:#fff;border:1px dashed var(--line)}
+.change.ok{color:var(--ok);background:var(--ok-soft);border:1px solid #b6e0c6}
+.change.late{color:var(--late);background:var(--late-soft);border:1px solid #f0c3c5}
+.change.warn{color:var(--warn);background:var(--warn-soft);border:1px solid var(--warn-line)}
+.req{color:var(--late)}
+.srow{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:15px}.srow:last-child{border-bottom:0}
+#sPreview{border:1px solid var(--line);border-radius:12px;background:var(--field)}
+#sPreview>.muted{padding:10px 12px}
+@media(max-width:560px){.mback{align-items:flex-end;padding:0}.mbox,.mbox.narrow{max-width:none;max-height:92dvh;border-radius:18px 18px 0 0}}
+.bar{display:flex;align-items:center;gap:10px;margin:8px 0}.bar span{min-width:140px;font-size:14px}.bar i{display:block;height:10px;border-radius:6px;background:var(--primary)}.bar.neg i{background:var(--late)}.bar b{margin-left:auto;white-space:nowrap}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></symbol>
+<symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20zM12 10v5M12 18h.01"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4zM8 8h8M8 12h8"/></symbol>
+<symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a3.5 3.5 0 0 1 0 7M22 21c0-3-2-5-4-5.5"/></symbol>
+<symbol id="i-log" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</svg>
+
+<header>
+  <div class="left-header">
+    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Ouvrir le menu"><svg class="i lg"><use href="#i-menu"/></svg></button>
+    <div class="brand" aria-hidden="true"><svg class="i"><use href="#i-chart"/></svg></div>
+    <div class="head-text"><span class="head-kicker">Comptabilité</span><h2 id="patientName">Comptabilité</h2></div>
+    <span id="rolePill" class="pill" hidden></span>
+  </div>
+  <button class="icon-button" type="button" id="reloadBtn" aria-label="Actualiser" title="Actualiser"><svg class="i"><use href="#i-refresh"/></svg></button>
+</header>
+
+<div class="app">
+<div id="blocker" class="modalna"></div>
+<nav aria-label="Navigation de la comptabilité">
+  <div class="nav-title">Comptabilité</div>
+  <div id="navItems">
+    <div class="nav-item active" data-module="dash" data-perm="voir" role="button" tabindex="0"><svg class="i"><use href="#i-chart"/></svg><span class="nav-label">Tableau de bord</span></div>
+    <div class="nav-item" data-module="enc" data-perm="voir" role="button" tabindex="0"><svg class="i"><use href="#i-in"/></svg><span class="nav-label">Encaissements</span></div>
+    <div class="nav-item" data-module="imp" data-perm="voir" role="button" tabindex="0"><svg class="i"><use href="#i-alert"/></svg><span class="nav-label">Impayés et créances</span></div>
+    <div class="nav-item" data-module="ecr" data-perm="voir" role="button" tabindex="0"><svg class="i"><use href="#i-book"/></svg><span class="nav-label">Dépenses et recettes</span></div>
+    <div class="nav-item" data-module="caisse" data-perm="caisse" role="button" tabindex="0"><svg class="i"><use href="#i-cash"/></svg><span class="nav-label">Caisse</span></div>
+    <div class="nav-item" data-module="clot" data-perm="cloturer" role="button" tabindex="0"><svg class="i"><use href="#i-lock"/></svg><span class="nav-label">Clôtures</span></div>
+    <div class="nav-item" data-module="exp" data-perm="exporter" role="button" tabindex="0"><svg class="i"><use href="#i-dl"/></svg><span class="nav-label">Exports</span></div>
+    <div class="nav-item" data-module="droits" data-perm="droits" role="button" tabindex="0"><svg class="i"><use href="#i-users"/></svg><span class="nav-label">Droits d’accès</span></div>
+    <div class="nav-item" data-module="audit" data-perm="audit" role="button" tabindex="0"><svg class="i"><use href="#i-log"/></svg><span class="nav-label">Journal d’audit</span></div>
+  </div>
+</nav>
+
+<div class="content">
+<section id="panel-dash" class="panel active">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-chart"/></svg></span>Tableau de bord</h3><p class="hint">Période d’analyse commune à tous les onglets.</p></div>
+  <div class="panel-body">
+    <div class="card-sec"><div class="form-grid c3">
+      <div class="field"><label for="pFrom">Du</label><input id="pFrom" type="date"></div>
+      <div class="field"><label for="pTo">Au</label><input id="pTo" type="date"></div>
+      <div class="field"><label>&nbsp;</label><div class="actions" style="margin:0"><button class="btn-secondary" type="button" data-range="m">Ce mois</button><button class="btn-secondary" type="button" data-range="y">Cette année</button></div></div>
+    </div></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="card-sec"><div class="card-title">Encaissements par mode de paiement</div><div id="byMode"></div></div>
+    <div class="card-sec"><div class="card-title">Encaissements par service</div><div id="bySvc"></div></div>
+    <div class="card-sec"><div class="card-title">Dépenses par catégorie</div><div id="byCat"></div></div>
+  </div>
+</section>
+
+<section id="panel-enc" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-in"/></svg></span>Encaissements</h3><p class="hint" id="encInfo"></p></div>
+  <div class="panel-body"><div class="card-sec"><div class="form-grid c3">
+    <div class="field"><label for="fMode">Mode</label><select id="fMode"></select></div>
+    <div class="field"><label for="fQ">Recherche (patient, n° facture, réf.)</label><input id="fQ" type="text"></div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Facture</th><th>Patient</th><th>Service</th><th>Mode</th><th>Réf.</th><th>Montant (€)</th></tr></thead><tbody id="encBody"></tbody></table></div></div>
+</section>
+
+<section id="panel-imp" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-alert"/></svg></span>Impayés et créances</h3><p class="hint">Factures non annulées avec un reste à payer, classées par ancienneté.</p></div>
+  <div class="panel-body"><div class="kpis" id="agedKpis"></div>
+    <div class="table-wrap"><table><thead><tr><th>Facture</th><th>Date</th><th>Patient</th><th>Total (€)</th><th>Reste (€)</th><th>Âge</th><th>Tranche</th></tr></thead><tbody id="impBody"></tbody></table></div></div>
+</section>
+
+<section id="panel-ecr" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-book"/></svg></span>Dépenses et recettes diverses</h3><p class="hint">Écritures hors facturation patient. Une écriture n’est jamais supprimée : elle est annulée avec un motif.</p></div>
+  <div class="panel-body">
+    <div class="card-sec" data-perm="saisir"><div class="card-title">Saisie d’une écriture <span id="eNum" class="tag" hidden></span></div>
+      <input id="eId" type="hidden">
+      <div class="form-grid">
+        <div class="field"><label for="eDate">Date</label><input id="eDate" type="date"></div>
+        <div class="field"><label for="eType">Type</label><select id="eType"><option value="depense">Dépense</option><option value="recette">Recette diverse</option></select></div>
+        <div class="field"><label for="eCat">Catégorie</label><input id="eCat" list="cats" placeholder="Ex. Fournitures, Salaires…"><datalist id="cats"></datalist></div>
+        <div class="field"><label for="eMode">Mode</label><select id="eMode"></select></div>
+        <div class="field full"><label for="eLib">Libellé</label><input id="eLib" type="text"></div>
+        <div class="field"><label for="eMontant">Montant (€)</label><input id="eMontant" type="number" min="0" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label for="eTiers">Tiers (fournisseur / payeur)</label><input id="eTiers" type="text"></div>
+        <div class="field"><label for="ePiece">Réf. pièce justificative</label><input id="ePiece" type="text"></div>
+      </div>
+      <div class="actions"><button id="eSave" class="btn-primary" type="button">Enregistrer</button><button id="eReset" class="btn-secondary" type="button">Nouvelle écriture</button></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Catégorie</th><th>Libellé</th><th>Mode</th><th>Montant (€)</th><th>Statut</th><th></th></tr></thead><tbody id="ecrBody"></tbody></table></div>
+  </div>
+</section>
+
+<section id="panel-caisse" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-cash"/></svg></span>Caisse (espèces)</h3><p class="hint">Rapprochement du fond de caisse avec les mouvements en espèces de la journée.</p></div>
+  <div class="panel-body"><div class="card-sec"><div class="form-grid">
+    <div class="field"><label for="cDate">Journée</label><input id="cDate" type="date"></div>
+    <div class="field"><label for="cFond">Fond de caisse à l’ouverture (€)</label><input id="cFond" type="number" min="0" step="0.01"></div>
+    <div class="field"><label for="cCompte">Espèces comptées à la clôture (€)</label><input id="cCompte" type="number" min="0" step="0.01"></div>
+    <div class="field"><label for="cNote">Observation</label><input id="cNote" type="text"></div></div>
+    <div class="kpis" id="cKpis"></div>
+    <div class="actions"><button id="cSave" class="btn-primary" type="button">Clôturer la caisse du jour</button></div></div></div>
+</section>
+
+<section id="panel-clot" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-lock"/></svg></span>Clôtures mensuelles</h3><p class="hint">Une période clôturée verrouille la saisie, la modification et l’annulation des écritures et caisses du mois.</p></div>
+  <div class="panel-body"><div class="card-sec"><div class="form-grid c3">
+    <div class="field"><label for="clMois">Mois</label><input id="clMois" type="month"></div></div>
+    <div class="actions"><button id="clDo" class="btn-primary" type="button">Clôturer le mois</button><button id="clUndo" class="btn-danger" type="button" data-perm="rouvrir">Rouvrir le mois</button></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Mois</th><th>Statut</th><th>Encaissements</th><th>Résultat</th><th>Par</th></tr></thead><tbody id="clBody"></tbody></table></div></div>
+</section>
+
+<section id="panel-exp" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-dl"/></svg></span>Exports</h3><p class="hint">Fichiers CSV (séparateur « ; », ouverture directe dans Excel) sur la période du tableau de bord. Chaque export est tracé.</p></div>
+  <div class="panel-body"><div class="card-sec"><div class="actions">
+    <button class="btn-secondary" type="button" data-exp="enc">Journal des encaissements</button>
+    <button class="btn-secondary" type="button" data-exp="ecr">Journal des écritures</button>
+    <button class="btn-secondary" type="button" data-exp="imp">Impayés et créances</button>
+    <button class="btn-secondary" type="button" data-exp="bal">Synthèse de la période</button></div></div></div>
+</section>
+
+<section id="panel-droits" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-users"/></svg></span>Droits d’accès</h3><p class="hint" id="rolesHint"></p></div>
+  <div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Utilisateur</th><th>Accès à la page</th><th>Rôle</th><th>Actif</th><th></th></tr></thead><tbody id="usrBody"></tbody></table></div></div>
+</section>
+
+<section id="panel-audit" class="panel">
+  <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-log"/></svg></span>Journal d’audit</h3><p class="hint">200 dernières actions, y compris les accès refusés.</p></div>
+  <div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Utilisateur</th><th>Rôle</th><th>Action</th><th>Détail</th></tr></thead><tbody id="audBody"></tbody></table></div></div>
+</section>
+<div class="actionbar"><span id="saveMsg" class="muted"></span></div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, query, orderBy, limit, runTransaction, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+const app = initializeApp({
+  apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo", authDomain: "urgences-a8ed4.firebaseapp.com",
+  projectId: "urgences-a8ed4", storageBucket: "urgences-a8ed4.appspot.com",
+  messagingSenderId: "392921498200", appId: "1:392921498200:web:7ccce767332c67c697c02d"
+});
+const db = getFirestore(app), auth = getAuth(app);
+const PAGE = 'comptabilite';
+const MODES = ['Espèces', 'Carte bancaire', 'Chèque', 'Virement', 'Mobile money', 'Autre'];
+// ---------- Rôles et droits ----------
+const ROLES = {
+  admin: { label: 'Administrateur', p: 'voir saisir modifier annuler caisse cloturer rouvrir exporter droits audit' },
+  comptable: { label: 'Comptable', p: 'voir saisir modifier annuler caisse cloturer exporter audit' },
+  caissier: { label: 'Caissier', p: 'voir saisir caisse' },
+  auditeur: { label: 'Auditeur', p: 'voir exporter audit' },
+  lecteur: { label: 'Lecteur', p: 'voir' }
+};
+const U = { uid: null, nom: '', role: 'lecteur', perms: new Set() };
+const can = k => U.perms.has(k);
+const D = { F: [], E: [], CL: {}, CA: {} };
+const $ = id => document.getElementById(id), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+const eur = v => r2(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pad = n => String(n).padStart(2, '0');
+const isoL = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fr = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : '-'; };
+const day = s => String(s || '').slice(0, 10);
+const sum = (a, f) => r2(a.reduce((s, x) => s + f(x), 0));
+const msg = (t, k) => { const e = $('saveMsg'); e.textContent = t; e.className = k === 'error' ? 'error-text' : k === 'ok' ? 'ok-text' : 'muted'; };
+const ym = d => String(d).slice(0, 7), locked = d => D.CL[ym(d)]?.statut === 'cloturee';
+const block = m => { const b = $('blocker'); b.textContent = m; b.style.display = 'flex'; };
+
+async function audit(action, detail = '') {
+  try { await setDoc(doc(collection(db, 'compta_audit')), { date: new Date().toISOString(), uid: U.uid, nom: U.nom, role: U.role, action, detail: String(detail).slice(0, 300) }); } catch (e) { console.error(e); }
+}
+function need(k) { if (can(k)) return true; audit('Accès refusé', k); msg('⛔ Droit manquant : ' + k, 'error'); return false; }
+const stamp = a => ({ date: new Date().toISOString(), action: a, auteur: U.nom, uid: U.uid });
+
+// ---------- Données ----------
+async function loadAll() {
+  const [f, e, c, k] = await Promise.all([
+    getDocs(query(collection(db, 'facture'), orderBy('updatedAt', 'desc'), limit(1500))),
+    getDocs(query(collection(db, 'compta_ecritures'), orderBy('date', 'desc'), limit(2000))),
+    getDocs(collection(db, 'compta_clotures')), getDocs(collection(db, 'compta_caisses'))]);
+  D.F = f.docs.map(d => ({ id: d.id, data: d.data() }));
+  D.E = e.docs.map(d => ({ id: d.id, ...d.data() }));
+  D.CL = {}; c.forEach(d => D.CL[d.id] = d.data());
+  D.CA = {}; k.forEach(d => D.CA[d.id] = d.data());
+  renderAll();
+}
+const payments = () => D.F.flatMap(({ id, data: f }) => (f.payments || []).filter(p => p.statut !== 'prevu').map(p => ({
+  fid: id, num: f.numero || id, annulee: f.statut === 'annulee', patient: `${f.patient?.prenom || ''} ${f.patient?.nom || ''}`.trim(),
+  service: f.service || '—', date: p.date || '', mode: p.mode || 'Autre', ref: p.ref || '', refund: p.type === 'remboursement',
+  signed: p.type === 'remboursement' ? -(Number(p.amount) || 0) : (Number(p.amount) || 0) })));
+const range = () => [$('pFrom').value || '0000', $('pTo').value || '9999'];
+const inR = d => { const [a, b] = range(); return d >= a && d <= b; };
+const ecrOk = () => D.E.filter(e => e.statut !== 'annulee');
+const group = (arr, kf, vf) => arr.reduce((o, x) => { const k = kf(x) || '—'; o[k] = r2((o[k] || 0) + vf(x)); return o; }, {});
+
+function stats() {
+  const P = payments().filter(p => inR(p.date)), E = ecrOk().filter(e => inR(e.date));
+  const enc = sum(P, p => p.signed), rec = sum(E.filter(e => e.type === 'recette'), e => e.montant), dep = sum(E.filter(e => e.type === 'depense'), e => e.montant);
+  const fact = sum(D.F.filter(({ data: f }) => f.statut !== 'annulee' && inR(day(f.createdAt || f.updatedAt))), x => x.data.totals?.total);
+  const imp = sum(D.F.filter(({ data: f }) => f.statut !== 'annulee'), x => Math.max(0, x.data.totals?.restePayer || 0));
+  return { P, E, enc, rec, dep, fact, imp, res: r2(enc + rec - dep) };
+}
+// ---------- Rendu ----------
+function bars(o, neg) {
+  const ent = Object.entries(o).sort((a, b) => b[1] - a[1]), mx = Math.max(1, ...ent.map(e => Math.abs(e[1])));
+  return ent.length ? ent.map(([k, v]) => `<div class="bar ${neg ? 'neg' : ''}"><span>${esc(k)}</span><i style="width:${Math.max(2, Math.abs(v) / mx * 55)}%"></i><b>${eur(v)} €</b></div>`).join('') : '<div class="muted">Aucune donnée sur la période.</div>';
+}
+const kpi = (l, v, c) => `<div class="kpi">${l}<b ${c ? `style="color:var(--${c})"` : ''}>${v}</b></div>`;
+function renderDash() {
+  const s = stats();
+  $('kpis').innerHTML = kpi('Facturé', eur(s.fact) + ' €') + kpi('Encaissé (net)', eur(s.enc) + ' €', 'ok') + kpi('Recettes diverses', eur(s.rec) + ' €') + kpi('Dépenses', eur(s.dep) + ' €', 'late') + kpi('Résultat', eur(s.res) + ' €', s.res < 0 ? 'late' : 'ok') + kpi('Impayés (total)', eur(s.imp) + ' €', 'late');
+  $('byMode').innerHTML = bars(group(s.P, p => p.mode, p => p.signed));
+  $('bySvc').innerHTML = bars(group(s.P, p => p.service, p => p.signed));
+  $('byCat').innerHTML = bars(group(s.E.filter(e => e.type === 'depense'), e => e.categorie, e => e.montant), true);
+}
+function encRows() { const m = $('fMode').value, q = $('fQ').value.toLowerCase(); return payments().filter(p => inR(p.date) && (!m || p.mode === m) && (!q || `${p.patient} ${p.num} ${p.ref}`.toLowerCase().includes(q))).sort((a, b) => b.date.localeCompare(a.date)); }
+function renderEnc() {
+  const r = encRows();
+  $('encInfo').textContent = `${r.length} mouvement(s) — net ${eur(sum(r, p => p.signed))} €`;
+  $('encBody').innerHTML = r.slice(0, 500).map(p => `<tr class="${p.refund ? 'refund' : ''}"><td>${fr(p.date)}</td><td>${esc(p.num)}${p.annulee ? ' <span class="badge b-annulee">annulée</span>' : ''}</td><td class="left">${esc(p.patient)}</td><td>${esc(p.service)}</td><td>${esc(p.mode)}</td><td>${esc(p.ref)}</td><td class="amt">${eur(p.signed)}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Aucun encaissement.</td></tr>';
+}
+function impRows() {
+  const now = Date.now();
+  return D.F.filter(({ data: f }) => f.statut !== 'annulee' && (f.totals?.restePayer || 0) > 0.009).map(({ id, data: f }) => {
+    const d = day(f.createdAt || f.updatedAt), age = Math.max(0, Math.floor((now - new Date(d)) / 864e5));
+    return { num: f.numero || id, d, patient: `${f.patient?.prenom || ''} ${f.patient?.nom || ''}`.trim(), total: f.totals?.total || 0, reste: f.totals?.restePayer || 0, age, tr: age <= 30 ? '0-30 j' : age <= 60 ? '31-60 j' : age <= 90 ? '61-90 j' : '> 90 j' };
+  }).sort((a, b) => b.age - a.age);
+}
+function renderImp() {
+  const r = impRows(), g = group(r, x => x.tr, x => x.reste);
+  $('agedKpis').innerHTML = ['0-30 j', '31-60 j', '61-90 j', '> 90 j'].map(t => kpi(t, eur(g[t] || 0) + ' €', t === '> 90 j' ? 'late' : '')).join('') + kpi('Total créances', eur(sum(r, x => x.reste)) + ' €', 'late');
+  $('impBody').innerHTML = r.map(x => `<tr><td>${esc(x.num)}</td><td>${fr(x.d)}</td><td class="left">${esc(x.patient)}</td><td>${eur(x.total)}</td><td class="amt">${eur(x.reste)}</td><td>${x.age} j</td><td><span class="badge ${x.age > 90 ? 'b-annulee' : 'b-prevu'}">${x.tr}</span></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Aucun impayé.</td></tr>';
+}
+function renderEcr() {
+  $('cats').innerHTML = [...new Set(D.E.map(e => e.categorie).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+  $('ecrBody').innerHTML = D.E.filter(e => inR(e.date)).slice(0, 500).map(e => {
+    const an = e.statut === 'annulee';
+    return `<tr class="${an ? 'refund' : ''}"><td>${esc(e.numero || e.id)}</td><td>${fr(e.date)}</td><td>${e.type === 'recette' ? 'Recette' : 'Dépense'}</td><td>${esc(e.categorie)}</td><td class="left">${esc(e.libelle)}${an ? `<div class="muted">Annulée : ${esc(e.annulation?.motif)}</div>` : ''}</td><td>${esc(e.mode)}</td><td class="amt">${e.type === 'depense' ? '−' : ''}${eur(e.montant)}</td><td><span class="badge ${an ? 'b-annulee' : 'b-complet'}">${an ? 'ANNULÉE' : 'VALIDÉE'}</span></td>
+    <td>${!an && can('modifier') ? `<button class="btn-secondary" data-edit="${e.id}">Modifier</button> ` : ''}${!an && can('annuler') ? `<button class="btn-danger" data-cancel="${e.id}">Annuler</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="muted">Aucune écriture sur la période.</td></tr>';
+}
+function cashCalc() {
+  const d = $('cDate').value, P = payments().filter(p => p.date === d && p.mode === 'Espèces'), E = ecrOk().filter(e => e.date === d && e.mode === 'Espèces');
+  const enc = sum(P, p => p.signed), rec = sum(E.filter(e => e.type === 'recette'), e => e.montant), dep = sum(E.filter(e => e.type === 'depense'), e => e.montant);
+  const fond = r2($('cFond').value), th = r2(fond + enc + rec - dep), ct = $('cCompte').value === '' ? null : r2($('cCompte').value);
+  return { d, enc, rec, dep, fond, th, ct, ecart: ct === null ? null : r2(ct - th) };
+}
+function renderCaisse() {
+  const c = cashCalc(), s = D.CA[c.d];
+  $('cKpis').innerHTML = kpi('Encaissé espèces', eur(c.enc) + ' €') + kpi('Recettes diverses', eur(c.rec) + ' €') + kpi('Dépenses', eur(c.dep) + ' €') + kpi('Solde théorique', eur(c.th) + ' €') + kpi('Écart', c.ecart === null ? '—' : eur(c.ecart) + ' €', c.ecart ? 'late' : 'ok') + kpi('Statut', s ? 'CLÔTURÉE' : 'OUVERTE');
+}
+function renderClot() {
+  $('clBody').innerHTML = Object.entries(D.CL).sort((a, b) => b[0].localeCompare(a[0])).map(([m, c]) => `<tr><td>${m}</td><td><span class="badge ${c.statut === 'cloturee' ? 'b-complet' : 'b-prevu'}">${c.statut === 'cloturee' ? 'CLÔTURÉ' : 'ROUVERT'}</span></td><td>${eur(c.totaux?.enc)} €</td><td>${eur(c.totaux?.res)} €</td><td>${esc(c.par)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Aucune clôture.</td></tr>';
+}
+function renderAll() { renderDash(); renderEnc(); renderImp(); renderEcr(); renderCaisse(); renderClot(); }
+
+// ---------- Écritures ----------
+function resetEcr() { ['eId', 'eCat', 'eLib', 'eMontant', 'eTiers', 'ePiece'].forEach(i => $(i).value = ''); $('eDate').value = isoL(new Date()); $('eType').value = 'depense'; $('eNum').hidden = true; }
+async function saveEcr() {
+  const id = $('eId').value, old = D.E.find(e => e.id === id);
+  if (!need(id ? 'modifier' : 'saisir')) return;
+  const o = { date: $('eDate').value, type: $('eType').value, categorie: $('eCat').value.trim(), libelle: $('eLib').value.trim(), montant: r2($('eMontant').value), mode: $('eMode').value, tiers: $('eTiers').value.trim(), piece: $('ePiece').value.trim() };
+  if (!o.date || !o.categorie || !o.libelle || !(o.montant > 0)) return msg('❌ Date, catégorie, libellé et montant (> 0) sont obligatoires.', 'error');
+  if (locked(o.date) || (old && locked(old.date))) return msg('🔒 Période clôturée : écriture impossible.', 'error');
+  try {
+    const now = new Date().toISOString();
+    if (id) { await setDoc(doc(db, 'compta_ecritures', id), { ...o, updatedAt: now, historique: arrayUnion(stamp('Modification')) }, { merge: true }); audit('Modification écriture', old?.numero || id); }
+    else {
+      const ref = doc(collection(db, 'compta_ecritures')), y = new Date().getFullYear(); let num;
+      await runTransaction(db, async tx => { const cr = doc(db, 'compteurs', 'compta-' + y), s = await tx.get(cr), n = (s.exists() ? s.data().dernier || 0 : 0) + 1; num = `E${y}-${String(n).padStart(6, '0')}`; tx.set(cr, { dernier: n }, { merge: true }); tx.set(ref, { ...o, numero: num, statut: 'validee', createdAt: now, updatedAt: now, creePar: U.nom, uid: U.uid, historique: [stamp('Création')] }); });
+      audit('Création écriture', num);
+    }
+    msg('✅ Écriture enregistrée.', 'ok'); resetEcr(); await loadAll();
+  } catch (e) { console.error(e); msg('❌ ' + (e.message || 'Erreur'), 'error'); }
+}
+async function cancelEcr(id) {
+  if (!need('annuler')) return; const e = D.E.find(x => x.id === id); if (!e) return;
+  if (locked(e.date)) return msg('🔒 Période clôturée.', 'error');
+  const motif = (prompt('Motif d’annulation :') || '').trim(); if (!motif) return;
+  await setDoc(doc(db, 'compta_ecritures', id), { statut: 'annulee', annulation: { motif, date: new Date().toISOString(), par: U.nom }, historique: arrayUnion(stamp('Annulation : ' + motif)) }, { merge: true });
+  audit('Annulation écriture', `${e.numero} — ${motif}`); await loadAll();
+}
+// ---------- Caisse / clôtures ----------
+async function saveCaisse() {
+  if (!need('caisse')) return; const c = cashCalc();
+  if (!c.d || c.ct === null) return msg('❌ Indiquez la journée et les espèces comptées.', 'error');
+  if (locked(c.d)) return msg('🔒 Période clôturée.', 'error');
+  if (D.CA[c.d] && !can('rouvrir')) { audit('Accès refusé', 'caisse déjà clôturée ' + c.d); return msg('⛔ Caisse déjà clôturée : droit « rouvrir » requis.', 'error'); }
+  if (c.ecart && !$('cNote').value.trim()) return msg('❌ Un écart de caisse exige une observation.', 'error');
+  await setDoc(doc(db, 'compta_caisses', c.d), { date: c.d, fond: c.fond, theorique: c.th, compte: c.ct, ecart: c.ecart, note: $('cNote').value.trim(), statut: 'cloturee', par: U.nom, uid: U.uid, at: new Date().toISOString() });
+  audit('Clôture caisse', `${c.d} écart ${c.ecart}`); msg('✅ Caisse clôturée.', 'ok'); await loadAll();
+}
+async function setMonth(close) {
+  if (!need(close ? 'cloturer' : 'rouvrir')) return; const m = $('clMois').value; if (!m) return;
+  if (close && D.CL[m]?.statut === 'cloturee') return msg('Ce mois est déjà clôturé.', 'error');
+  const P = payments().filter(p => ym(p.date) === m), E = ecrOk().filter(e => ym(e.date) === m);
+  const enc = sum(P, p => p.signed), res = r2(enc + sum(E.filter(e => e.type === 'recette'), e => e.montant) - sum(E.filter(e => e.type === 'depense'), e => e.montant));
+  if (!confirm(close ? `Clôturer ${m} ? Plus aucune modification ne sera possible.` : `Rouvrir ${m} ?`)) return;
+  await setDoc(doc(db, 'compta_clotures', m), { statut: close ? 'cloturee' : 'rouverte', totaux: { enc, res }, par: U.nom, uid: U.uid, at: new Date().toISOString() }, { merge: true });
+  audit(close ? 'Clôture période' : 'Réouverture période', m); await loadAll();
+}
+// ---------- Exports ----------
+function csv(name, head, rows) {
+  if (!need('exporter')) return;
+  const q = v => { let s = String(v ?? ''); if (typeof v !== 'number' && /^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
+  const t = '\ufeff' + [head, ...rows].map(r => r.map(q).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' })); a.download = `${name}_${$('pFrom').value}_${$('pTo').value}.csv`; a.click();
+  audit('Export CSV', name);
+}
+const EXPORTS = {
+  enc: () => csv('encaissements', ['Date', 'Facture', 'Patient', 'Service', 'Mode', 'Référence', 'Montant'], encRows().map(p => [p.date, p.num, p.patient, p.service, p.mode, p.ref, p.signed])),
+  ecr: () => csv('ecritures', ['N°', 'Date', 'Type', 'Catégorie', 'Libellé', 'Mode', 'Tiers', 'Pièce', 'Montant', 'Statut'], D.E.filter(e => inR(e.date)).map(e => [e.numero, e.date, e.type, e.categorie, e.libelle, e.mode, e.tiers, e.piece, e.montant, e.statut])),
+  imp: () => csv('impayes', ['Facture', 'Date', 'Patient', 'Total', 'Reste', 'Âge (j)', 'Tranche'], impRows().map(x => [x.num, x.d, x.patient, x.total, x.reste, x.age, x.tr])),
+  bal: () => { const s = stats(); csv('synthese', ['Poste', 'Montant'], [['Facturé', s.fact], ['Encaissé net', s.enc], ['Recettes diverses', s.rec], ['Dépenses', s.dep], ['Résultat', s.res], ['Impayés', s.imp]]); }
+};
+// ---------- Droits et audit ----------
+async function renderUsers() {
+  if (!can('droits')) return;
+  const snap = await getDocs(collection(db, 'medecins'));
+  $('rolesHint').textContent = 'Rôles : ' + Object.values(ROLES).map(r => r.label).join(', ') + '. Les droits sont appliqués aussi côté serveur (règles Firestore).';
+  $('usrBody').innerHTML = snap.docs.map(d => { const u = d.data(), r = u.compta?.role || 'lecteur';
+    return `<tr data-uid="${esc(d.id)}"><td class="left">${esc(u.nom || d.id)}</td><td><input type="checkbox" class="uPage" ${u.pages?.[PAGE] ? 'checked' : ''}></td>
+    <td><select class="uRole">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${k === r ? 'selected' : ''}>${v.label}</option>`).join('')}</select></td>
+    <td><input type="checkbox" class="uAct" ${u.compta?.actif !== false ? 'checked' : ''}></td><td><button class="btn-secondary" data-usave="${esc(d.id)}">Enregistrer</button></td></tr>`; }).join('');
+}
+async function saveUser(uid) {
+  if (!need('droits')) return; const tr = document.querySelector(`tr[data-uid="${CSS.escape(uid)}"]`);
+  const role = tr.querySelector('.uRole').value, page = tr.querySelector('.uPage').checked, actif = tr.querySelector('.uAct').checked;
+  if (uid === U.uid && (role !== 'admin' || !page || !actif)) return msg('⛔ Vous ne pouvez pas retirer vos propres droits d’administrateur.', 'error');
+  await setDoc(doc(db, 'medecins', uid), { pages: { [PAGE]: page }, compta: { role, actif } }, { merge: true });
+  audit('Modification droits', `${uid} → ${role}, page=${page}, actif=${actif}`); msg('✅ Droits enregistrés.', 'ok');
+}
+async function renderAudit() {
+  if (!can('audit')) return;
+  const s = await getDocs(query(collection(db, 'compta_audit'), orderBy('date', 'desc'), limit(200)));
+  $('audBody').innerHTML = s.docs.map(d => { const a = d.data(); return `<tr><td>${new Date(a.date).toLocaleString('fr-FR')}</td><td class="left">${esc(a.nom)}</td><td>${esc(a.role)}</td><td>${esc(a.action)}</td><td class="left">${esc(a.detail)}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">Aucune entrée.</td></tr>';
+}
+// ---------- Démarrage ----------
+function ouvrir(m) {
+  const n = document.querySelector(`.nav-item[data-module="${m}"]`); if (!n || !can(n.dataset.perm)) return;
+  $$('.nav-item').forEach(x => x.classList.toggle('active', x === n)); $$('section.panel').forEach(s => s.classList.toggle('active', s.id === 'panel-' + m));
+  if (m === 'droits') renderUsers(); if (m === 'audit') renderAudit();
+}
+function bind() {
+  $('fMode').innerHTML = '<option value="">Tous</option>' + MODES.map(m => `<option>${m}</option>`).join(''); $('eMode').innerHTML = MODES.map(m => `<option>${m}</option>`).join('');
+  const now = new Date(); $('pFrom').value = isoL(new Date(now.getFullYear(), now.getMonth(), 1)); $('pTo').value = isoL(now); $('cDate').value = isoL(now); $('clMois').value = isoL(now).slice(0, 7); resetEcr();
+  ['pFrom', 'pTo', 'fMode', 'fQ'].forEach(i => $(i).addEventListener('input', renderAll)); ['cDate', 'cFond', 'cCompte'].forEach(i => $(i).addEventListener('input', renderCaisse));
+  $$('[data-range]').forEach(b => b.onclick = () => { const n = new Date(); $('pFrom').value = isoL(b.dataset.range === 'y' ? new Date(n.getFullYear(), 0, 1) : new Date(n.getFullYear(), n.getMonth(), 1)); $('pTo').value = isoL(n); renderAll(); });
+  $$('[data-exp]').forEach(b => b.onclick = EXPORTS[b.dataset.exp]);
+  $('eSave').onclick = saveEcr; $('eReset').onclick = resetEcr; $('cSave').onclick = saveCaisse; $('clDo').onclick = () => setMonth(true); $('clUndo').onclick = () => setMonth(false);
+  $('reloadBtn').onclick = () => loadAll();
+  $('ecrBody').addEventListener('click', e => {
+    const c = e.target.dataset.cancel, m = e.target.dataset.edit; if (c) cancelEcr(c);
+    if (m) { const x = D.E.find(z => z.id === m); if (!x) return; $('eId').value = x.id; $('eDate').value = x.date; $('eType').value = x.type; $('eCat').value = x.categorie || ''; $('eLib').value = x.libelle || ''; $('eMontant').value = x.montant; $('eMode').value = x.mode; $('eTiers').value = x.tiers || ''; $('ePiece').value = x.piece || ''; $('eNum').textContent = x.numero || ''; $('eNum').hidden = false; scrollTo(0, 0); }
+  });
+  $('usrBody').addEventListener('click', e => { if (e.target.dataset.usave) saveUser(e.target.dataset.usave); });
+  $$('.nav-item').forEach(n => { n.onclick = () => ouvrir(n.dataset.module); n.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.click(); } }; });
+  const nav = document.querySelector('nav'), v = document.createElement('div'); v.className = 'nav-backdrop'; document.body.appendChild(v);
+  $('menu-toggle').onclick = () => nav.classList.toggle('open'); v.onclick = () => nav.classList.remove('open');
+  new MutationObserver(() => v.classList.toggle('show', nav.classList.contains('open'))).observe(nav, { attributes: true, attributeFilter: ['class'] });
+}
+function applyRights() {
+  $$('[data-perm]').forEach(e => e.style.display = can(e.dataset.perm) ? '' : 'none');
+  const p = $('rolePill'); p.hidden = false; p.textContent = ROLES[U.role].label;
+  $('patientName').textContent = U.nom || 'Comptabilité';
+}
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    window.afficherLoader?.();
+    const snap = await getDoc(doc(db, 'medecins', user.uid));
+    if (!snap.exists()) { window.masquerLoader?.(); return block('Utilisateur non trouvé, veuillez vous reconnecter.'); }
+    const d = snap.data(), c = d.compta || {};
+    if (!(d.pages || {})[PAGE] || c.actif === false) { audit('Accès refusé', 'page ' + PAGE); window.masquerLoader?.(); return block('Accès refusé. Veuillez contacter un administrateur.'); }
+    U.uid = user.uid; U.nom = d.nom || ''; U.role = ROLES[c.role] ? c.role : 'lecteur';
+    U.perms = new Set(ROLES[U.role].p.split(' '));
+    Object.entries(c.droits || {}).forEach(([k, v]) => v === true ? U.perms.add(k) : v === false && U.perms.delete(k));
+    if (!can('voir')) { window.masquerLoader?.(); return block('Accès refusé : droit de consultation manquant.'); }
+    bind(); applyRights(); await loadAll(); audit('Connexion', U.role); window.masquerLoader?.();
+  } catch (err) { console.error(err); window.masquerLoader?.(); block('Oups, une erreur est survenue. Veuillez réessayer plus tard.'); }
+});
+</script>
+</body>
+</html>

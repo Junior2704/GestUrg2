@@ -96,6 +96,7 @@ const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLo
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
 let medecin={},rdvs=[],sel=null,unsub=null,tmr=null;
 const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
+const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
 /* ---- Notifications : bulle affichée par la page parente ---- */
 const ORIGINE_PARENT_BULLE = "*";
 const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
@@ -153,7 +154,7 @@ function visibles(){
 }
 function rendreListe(){
   const l=visibles();
-  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${$('#portee').value==='tous'?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
+  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${$('#portee').value==='tous'?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}${demandeurDe(r)?' · pris par '+esc(demandeurDe(r)):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
   document.querySelectorAll('.rdv').forEach(b=>b.onclick=()=>{sel=b.dataset.id;rendreListe();ouvrir(rdvs.find(x=>x.id===sel))});
 }
 
@@ -203,7 +204,7 @@ const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</spa
 const heureTS=t=>t?.toDate?t.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 async function ouvrir(r){
   if(!r)return;const p=r.patient||{},box=$('#detail');
-  const head=`<div class="card-sec"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px"><h2 class="card-title" style="margin:0">${esc(r.date?new Date(r.date+'T12:00').toLocaleDateString('fr-FR'):'')} à ${esc(r.heure)}${r.ref?' · '+esc(r.ref):''}</h2><span class="pill s-${r.statut}">${STAT[r.statut]}</span></div>${r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':''}${F('Motif',r.motif+(r.detail?' — '+r.detail:''))}${F('Symptômes',(r.symptomes?.liste||[]).join(', '))}${F('Symptômes ajoutés par le patient',(r.symptomes?.autres||[]).join(', '))}${F('Depuis',r.symptomes?.depuis)}${F('Douleur',r.symptomes?.douleur?r.symptomes.douleur+'/10':'')}${F('Signes d’alerte',(r.symptomes?.signesAlerte||[]).join(', '))}`;
+  const head=`<div class="card-sec"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px"><h2 class="card-title" style="margin:0">${esc(r.date?new Date(r.date+'T12:00').toLocaleDateString('fr-FR'):'')} à ${esc(r.heure)}${r.ref?' · '+esc(r.ref):''}</h2><span class="pill s-${r.statut}">${STAT[r.statut]}</span></div>${r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':''}${F('Motif',r.motif+(r.detail?' — '+r.detail:''))}${demandeurDe(r)?F('Rendez-vous pris par un tiers',demandeurDe(r))+F('Téléphone du demandeur',r.demandeur?.telephone):''}${F('Symptômes',(r.symptomes?.liste||[]).join(', '))}${F('Symptômes ajoutés par le patient',(r.symptomes?.autres||[]).join(', '))}${F('Depuis',r.symptomes?.depuis)}${F('Douleur',r.symptomes?.douleur?r.symptomes.douleur+'/10':'')}${F('Signes d’alerte',(r.symptomes?.signesAlerte||[]).join(', '))}`;
   if(r.statut!=='pris'){
     box.innerHTML=head+F('Patient',(p.prenom||'')+' '+(p.nom||''))+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('Fiche patient (CIP)',r.patientId)+
       (r.statut==='attente'?`<div class="note s-attente">En salle d’attente depuis ${esc(heureTS(r.arriveLe)||'—')}.</div><div class="actions"><button class="btn-secondary" id="undo">Annuler l’arrivée</button></div>`:'')+'</div>';

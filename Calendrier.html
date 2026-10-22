@@ -112,6 +112,7 @@ const PX=120,DUR=15; // 120 px par heure, créneau affiché = 15 min
 let medecin={},rdvs=[],sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
 const tm=h=>{const[a,b]=String(h).split(':');return +a*60+ +b};
 const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
+const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
 /* ---- Notifications : bulle affichée par la page parente ---- */
 const ORIGINE_PARENT_BULLE = "*";
 const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
@@ -185,7 +186,7 @@ function rendre(){
     h+=`<div class="col ${k===today?'today':''}" style="height:${H}px;background-size:100% ${PX/4*4}px">`;
     for(const hr in grp)grp[hr].forEach((r,i,arr)=>{
       const p=r.patient||{},top=(tm(hr)-h0*60)/60*PX;
-      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', '))}" style="top:${top}px;height:${Math.max(26,PX*DUR/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
+      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', '))}" style="top:${top}px;height:${Math.max(26,PX*DUR/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.alerteVitale?'⚠ ':''}${demandeurDe(r)?'👤 ':''}${esc(p.prenom)} ${esc(p.nom)}${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
     });
     if(k===today&&nm>=h0*60&&nm<h1*60)h+=`<div class="now" style="top:${(nm-h0*60)/60*PX}px"></div>`;
     h+='</div>';
@@ -215,7 +216,7 @@ const openConsult=(id,p)=>window.parent.postMessage({type:'OPEN_TAB',title:('Con
 async function creerConsultation(r,pid){
   const n=new Date();
   const ref=await addDoc(collection(db,'consultations'),{patientId:pid,rdvId:r.id,date:n.toLocaleDateString('fr-FR'),heure:n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),dateTS:Timestamp.now(),
-    motif:r.motif,histoire:[r.detail,symsDe(r).length?'Symptômes déclarés : '+symsDe(r).join(', '):'',r.symptomes?.depuis?'Depuis : '+r.symptomes.depuis:''].filter(Boolean).join('\n'),symptomes:r.symptomes||{},examenClinique:'',diagnostic:'',conduite:'',statut:'encours',
+    motif:r.motif,histoire:[r.detail,symsDe(r).length?'Symptômes déclarés : '+symsDe(r).join(', '):'',r.symptomes?.depuis?'Depuis : '+r.symptomes.depuis:''].filter(Boolean).join('\n'),symptomes:r.symptomes||{},pourQui:r.pourQui||'moi',demandeur:r.demandeur||null,examenClinique:'',diagnostic:'',conduite:'',statut:'encours',
     medecinId:medecin.uid,medecinNom:medecin.nom||'',medecinSpecialite:medecin.specialite||'',origine:'rdv-urgences'});
   await updateDoc(doc(db,'patients',pid),{consultations:arrayUnion(ref.id)});
   await updateDoc(doc(db,'rdv-urgences',r.id),{patientId:pid,consultationId:ref.id,statut:'encours'});
@@ -229,7 +230,7 @@ async function ouvrir(){
   const p=r.patient||{},sy=r.symptomes||{},arr=r.arriveLe?.toDate?r.arriveLe.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
   const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</span></div>`;
   let h=`<div class="dh"><h2 class="card-title">${esc(p.prenom)} ${esc(p.nom)}</h2><button class="x" id="close" aria-label="Fermer">×</button></div><span class="pill s-${r.statut}">${STAT[r.statut]}</span>`+
-    F('Créneau',new Date(r.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+' à '+r.heure+(r.ref?' · '+r.ref:''))+(r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':'')+F('Motif',r.motif+(r.detail?' — '+r.detail:''))+F('Symptômes',(sy.liste||[]).join(', '))+F('Symptômes ajoutés par le patient',(sy.autres||[]).join(', '))+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',(sy.signesAlerte||[]).join(', '))+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('E-mail',p.email);
+    F('Créneau',new Date(r.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+' à '+r.heure+(r.ref?' · '+r.ref:''))+(r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':'')+F('Motif',r.motif+(r.detail?' — '+r.detail:''))+F('Symptômes',(sy.liste||[]).join(', '))+F('Symptômes ajoutés par le patient',(sy.autres||[]).join(', '))+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',(sy.signesAlerte||[]).join(', '))+(demandeurDe(r)?F('Rendez-vous pris par un tiers',demandeurDe(r))+F('Téléphone du demandeur',r.demandeur?.telephone):'')+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('E-mail',p.email);
   const actif=r.statut==='pris'||r.statut==='attente';
   if(r.statut==='pris')h+=`<h3>Fiche patient</h3><div id="fiche"><p class="mut">Recherche des fiches existantes…</p></div>`;
   else if(r.statut==='attente')h+=`<div class="note s-attente">En salle d’attente${arr?' depuis '+arr:''}.</div><button class="btn-primary" id="go">Démarrer la consultation</button>`;

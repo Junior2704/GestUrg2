@@ -355,11 +355,12 @@ function afficher(){
   const al=[];
   if(patient.allergies&&!/^aucun/i.test(patient.allergies))al.push(`<div class="alert late"><svg class="i"><use href="#i-warn"/></svg>Allergie(s) : ${esc(patient.allergies)}</div>`);
   if(patient.vigilances&&!/^aucun/i.test(patient.vigilances))al.push(`<div class="alert"><svg class="i"><use href="#i-warn"/></svg>Vigilance(s) : ${esc(patient.vigilances)}</div>`);
-  const sy=cons.symptomes||{},sl=sy.liste||[],sa=sy.autres||[],sg=sy.signesAlerte||[];
+  const sy=cons.symptomes||{},sl=sy.liste||[],sa=sy.autres||[],sg=sy.signesAlerte||[],dem=cons.pourQui==='proche'&&cons.demandeur?cons.demandeur:null;
+  if(dem)al.push(`<div class="alert"><svg class="i"><use href="#i-warn"/></svg>Rendez-vous pris par un tiers : ${esc(`${dem.prenom||''} ${dem.nom||''}`.trim())}${dem.lien?' ('+esc(dem.lien)+')':''}${dem.telephone?' · '+esc(dem.telephone):''}</div>`);
   if(sg.length)al.push(`<div class="alert late"><svg class="i"><use href="#i-warn"/></svg>Signes d’alerte déclarés : ${esc(sg.join(', '))}</div>`);
   $('#alertes').innerHTML=al.join('');
-  $('#cardSym').hidden=!(sl.length||sa.length||sy.depuis||sy.douleur||sy.fievre||sg.length);
-  $('#symFacts').innerHTML=F('Symptômes',sl.join(', '),1)+F('Ajoutés par le patient',sa.join(', '),1)+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',sg.join(', '));
+  $('#cardSym').hidden=!(dem||sl.length||sa.length||sy.depuis||sy.douleur||sy.fievre||sg.length);
+  $('#symFacts').innerHTML=(dem?F('Rendez-vous pris par',`${dem.prenom||''} ${dem.nom||''}`.trim()+(dem.lien?' ('+dem.lien+')':''))+F('Téléphone du demandeur',dem.telephone):'')+F('Symptômes',sl.join(', '),1)+F('Ajoutés par le patient',sa.join(', '),1)+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',sg.join(', '));
   $('#motif').value=cons.motif||'';$('#histoire').value=cons.histoire||'';$('#examen').value=cons.examenClinique||'';$('#diagnostic').value=cons.diagnostic||'';$('#conduite').value=cons.conduite||'';
   $('#tMotif').value=cons.motif||'';
   $('#tNote').value=`Patient transféré depuis la consultation du ${cons.date||''} ${cons.heure||''} (réf. ${cons.id}). Se référer à cette consultation pour l’historique, le diagnostic et la conduite à tenir.`;

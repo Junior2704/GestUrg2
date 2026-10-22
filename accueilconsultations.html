@@ -95,6 +95,7 @@ const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
 let medecin={},rdvs=[],sel=null,unsub=null,tmr=null;
+const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
 /* ---- Notifications : bulle affichée par la page parente ---- */
 const ORIGINE_PARENT_BULLE = "*";
 const BULLE = {OK:"succes", ERR:"erreur", WARN:"avertissement", INFO:"info"}; // adapter aux types attendus par la page parente
@@ -146,13 +147,13 @@ function visibles(){
     if(st&&r.statut!==st)return false;
     const p=r.patient||{},d=p.dateNaissance?new Date(p.dateNaissance):null;
     const fr=d&&!isNaN(d)?d.toLocaleDateString('fr-FR'):'';
-    const hay=norm([p.nom,p.prenom,p.prenom+' '+p.nom,r.ref,p.telephone,String(p.telephone||'').replace(/\D/g,''),p.dateNaissance,fr,p.email,r.motif,r.patientId].join(' '));
+    const hay=norm([p.nom,p.prenom,p.prenom+' '+p.nom,r.ref,p.telephone,String(p.telephone||'').replace(/\D/g,''),p.dateNaissance,fr,p.email,r.motif,r.patientId,...symsDe(r)].join(' '));
     return t.every(x=>hay.includes(x));
   });
 }
 function rendreListe(){
   const l=visibles();
-  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${$('#portee').value==='tous'?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${esc(p.prenom)} ${esc(p.nom)}<small>${esc(r.motif)}${r.ref?' · '+esc(r.ref):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
+  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${$('#portee').value==='tous'?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
   document.querySelectorAll('.rdv').forEach(b=>b.onclick=()=>{sel=b.dataset.id;rendreListe();ouvrir(rdvs.find(x=>x.id===sel))});
 }
 
@@ -202,7 +203,7 @@ const F=(l,v)=>`<div class="fact"><label>${l}</label><span>${esc(v||'—')}</spa
 const heureTS=t=>t?.toDate?t.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 async function ouvrir(r){
   if(!r)return;const p=r.patient||{},box=$('#detail');
-  const head=`<div class="card-sec"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px"><h2 class="card-title" style="margin:0">${esc(r.date?new Date(r.date+'T12:00').toLocaleDateString('fr-FR'):'')} à ${esc(r.heure)}${r.ref?' · '+esc(r.ref):''}</h2><span class="pill s-${r.statut}">${STAT[r.statut]}</span></div>${F('Motif',r.motif+(r.detail?' — '+r.detail:''))}`;
+  const head=`<div class="card-sec"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px"><h2 class="card-title" style="margin:0">${esc(r.date?new Date(r.date+'T12:00').toLocaleDateString('fr-FR'):'')} à ${esc(r.heure)}${r.ref?' · '+esc(r.ref):''}</h2><span class="pill s-${r.statut}">${STAT[r.statut]}</span></div>${r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':''}${F('Motif',r.motif+(r.detail?' — '+r.detail:''))}${F('Symptômes',(r.symptomes?.liste||[]).join(', '))}${F('Symptômes ajoutés par le patient',(r.symptomes?.autres||[]).join(', '))}${F('Depuis',r.symptomes?.depuis)}${F('Douleur',r.symptomes?.douleur?r.symptomes.douleur+'/10':'')}${F('Signes d’alerte',(r.symptomes?.signesAlerte||[]).join(', '))}`;
   if(r.statut!=='pris'){
     box.innerHTML=head+F('Patient',(p.prenom||'')+' '+(p.nom||''))+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('Fiche patient (CIP)',r.patientId)+
       (r.statut==='attente'?`<div class="note s-attente">En salle d’attente depuis ${esc(heureTS(r.arriveLe)||'—')}.</div><div class="actions"><button class="btn-secondary" id="undo">Annuler l’arrivée</button></div>`:'')+'</div>';
@@ -212,7 +213,7 @@ async function ouvrir(r){
   const V=(k,l,t='text',req)=>`<div class="field"><label for="f-${k}">${l}${req?' *':''}</label><input id="f-${k}" type="${t}" value="${esc(p[k]||'')}"></div>`;
   box.innerHTML=head+`</div><div class="card-sec"><h2 class="card-title">Identité du patient</h2><div class="form">${V('nom','Nom','text',1)}${V('prenom','Prénom','text',1)}${V('dateNaissance','Date de naissance','date',1)}
     <div class="field"><label for="f-sexe">Sexe</label><select id="f-sexe"><option value="">—</option><option value="F"${p.sexe==='F'?' selected':''}>Féminin</option><option value="M"${p.sexe==='M'?' selected':''}>Masculin</option></select></div>
-    ${V('telephone','Téléphone','tel')}${V('email','E-mail','email')}${V('adresse','Adresse')}</div></div>
+    ${V('telephone','Téléphone','tel')}${V('email','E-mail','email',1)}${V('adresse','Adresse')}</div></div>
     <div class="card-sec"><h2 class="card-title">Fiche patient</h2><div id="fichebox"><div id="fiche"></div><div class="fsearch"><label class="lbl" for="fq">La fiche détectée ne correspond pas ? Rechercher une autre fiche</label><div class="row"><input id="fq" type="search" autocomplete="off" placeholder="Nom, prénom, naissance (jj/mm/aaaa), téléphone ou CIP"><button type="button" class="btn-secondary" id="fgo">Rechercher</button></div><div id="fres" style="margin-top:10px"></div></div></div><div class="actions"><button class="btn-primary" id="arrive" disabled>Enregistrer l’arrivée · mettre en salle d’attente</button><button class="btn-danger" id="cancel">Annuler le rendez-vous</button></div></div>`;
   const val=k=>$('#f-'+k).value.trim(),ident=()=>({nom:val('nom'),prenom:val('prenom'),dateNaissance:val('dateNaissance'),sexe:val('sexe'),telephone:val('telephone'),email:val('email'),adresse:val('adresse')});
   const manuel=new Map(); // fiches trouvées via la recherche manuelle
@@ -251,7 +252,7 @@ async function ouvrir(r){
     try{
       let pid=v;
       if(v==='new'){
-        pid=(await addDoc(collection(db,'patients'),{nom:i.nom.toUpperCase(),prenom:i.prenom,sexe:i.sexe,civilite:'',dateNaissance:i.dateNaissance,adresse:i.adresse,telephone:i.telephone,email:i.email,
+        pid=(await addDoc(collection(db,'patients'),{nom:i.nom.toUpperCase(),prenom:i.prenom,sexe:i.sexe,civilite:'',dateNaissance:i.dateNaissance,adresse:i.adresse,telephone:i.telephone,email:i.email,authUid:r.patientAuthUid||null,
           hospitalisations:[],hospitalisationActiveId:null,hospitalisationActive:false,consultations:[],medtraitant:'',vigilances:'aucune',allergies:'aucun',searchIndex:buildSearchIndex(i.nom.toUpperCase(),i.prenom,i.dateNaissance)})).id;
       }else{ // fiche existante : on complète uniquement les champs vides
         const o=(await getDoc(doc(db,'patients',pid))).data()||{},m={};

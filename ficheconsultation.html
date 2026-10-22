@@ -160,6 +160,7 @@ details.hc .bd{padding:0 16px 16px;display:grid;gap:10px}
   <div class="panel-head"><h3 class="panel-title"><span class="ico"><svg class="i"><use href="#i-stethoscope"/></svg></span>Consultation</h3><p class="hint" id="consHint"></p></div>
   <div class="panel-body">
     <div id="alertes"></div>
+    <div class="card-sec" id="cardSym" hidden><div class="card-title"><svg class="i"><use href="#i-file-text"/></svg> Déclaré par le patient à la prise de rendez-vous</div><div class="facts" id="symFacts"></div></div>
     <div class="card-sec"><div class="card-title"><svg class="i"><use href="#i-file-text"/></svg> Motif et interrogatoire</div>
       <div class="form-grid">
         <div class="field full"><label for="motif">Motif de consultation</label><input type="text" id="motif" autocomplete="off"></div>
@@ -354,7 +355,11 @@ function afficher(){
   const al=[];
   if(patient.allergies&&!/^aucun/i.test(patient.allergies))al.push(`<div class="alert late"><svg class="i"><use href="#i-warn"/></svg>Allergie(s) : ${esc(patient.allergies)}</div>`);
   if(patient.vigilances&&!/^aucun/i.test(patient.vigilances))al.push(`<div class="alert"><svg class="i"><use href="#i-warn"/></svg>Vigilance(s) : ${esc(patient.vigilances)}</div>`);
+  const sy=cons.symptomes||{},sl=sy.liste||[],sa=sy.autres||[],sg=sy.signesAlerte||[];
+  if(sg.length)al.push(`<div class="alert late"><svg class="i"><use href="#i-warn"/></svg>Signes d’alerte déclarés : ${esc(sg.join(', '))}</div>`);
   $('#alertes').innerHTML=al.join('');
+  $('#cardSym').hidden=!(sl.length||sa.length||sy.depuis||sy.douleur||sy.fievre||sg.length);
+  $('#symFacts').innerHTML=F('Symptômes',sl.join(', '),1)+F('Ajoutés par le patient',sa.join(', '),1)+F('Depuis',sy.depuis)+F('Douleur',sy.douleur?sy.douleur+'/10':'')+F('Fièvre',sy.fievre)+F('Signes d’alerte',sg.join(', '));
   $('#motif').value=cons.motif||'';$('#histoire').value=cons.histoire||'';$('#examen').value=cons.examenClinique||'';$('#diagnostic').value=cons.diagnostic||'';$('#conduite').value=cons.conduite||'';
   $('#tMotif').value=cons.motif||'';
   $('#tNote').value=`Patient transféré depuis la consultation du ${cons.date||''} ${cons.heure||''} (réf. ${cons.id}). Se référer à cette consultation pour l’historique, le diagnostic et la conduite à tenir.`;

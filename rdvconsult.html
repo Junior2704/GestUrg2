@@ -76,6 +76,20 @@ textarea{min-height:90px;resize:vertical}
 .consent input{width:22px;height:22px;flex:none;margin:1px 0 0;padding:0}
 .vital{margin-top:14px;padding:14px 16px;background:var(--coral-soft);border:2px solid var(--coral);border-radius:14px;font-weight:600}
 .vital a{display:inline-block;margin-top:8px;padding:10px 18px;border-radius:12px;background:var(--coral);color:#fff;font-weight:800;text-decoration:none}
+/* symptômes */
+.sym{display:flex;flex-wrap:wrap;gap:8px}
+.symb{min-height:44px;padding:0 16px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:600 .93rem var(--font-body);cursor:pointer}
+.symb[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}
+.symsel{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:5px 6px 5px 14px;border-radius:999px;background:var(--aqua);color:var(--teal-deep);font-weight:700;font-size:.9rem}
+.tag.perso{background:#fff;border:2px dashed var(--teal)}
+.tag button{width:28px;height:28px;border:0;border-radius:50%;background:#fff;color:var(--teal-deep);font:800 1rem var(--font-body);line-height:1;cursor:pointer}
+.tag.perso button{background:var(--aqua)}
+.symadd{display:flex;gap:8px}.symadd input{flex:1;min-width:0}
+.btn.sm{min-height:48px;padding:0 20px;font-size:.95rem;box-shadow:none}
+.pw{position:relative}.pw input{padding-right:92px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--teal-deep);font:700 .82rem var(--font-body);padding:10px;cursor:pointer}
+.pwhint{margin:6px 0 0;font-size:.8rem;color:var(--ink-soft)}
 /* navigation */
 .nav{position:sticky;bottom:0;display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(246,251,250,0),var(--bg) 35%)}
 .btn{padding:14px 28px;border:0;border-radius:14px;background:var(--teal);color:#fff;font:700 1.05rem var(--font-body);cursor:pointer;box-shadow:var(--shadow-sm)}
@@ -144,7 +158,10 @@ textarea{min-height:90px;resize:vertical}
         <div><label for="nom">Nom</label><input id="nom" autocomplete="family-name"></div>
         <div><label for="naiss">Date de naissance</label><input id="naiss" type="date" autocomplete="bday"></div>
         <div><label for="tel" id="lblTel">Téléphone</label><input id="tel" type="tel" autocomplete="tel"></div>
-        <div class="full"><label for="mail">E-mail <small>(facultatif)</small></label><input id="mail" type="email" autocomplete="email"></div>
+        <div class="full"><div class="sec" style="margin-top:6px">Compte du patient</div><p class="sub" style="margin:0">Chaque patient dispose de son propre e-mail et de son propre mot de passe.</p></div>
+        <div class="full"><label for="mail">E-mail du patient <small>(sert d’identifiant)</small></label><input id="mail" type="email" autocomplete="email"></div>
+        <div><label for="mdp">Mot de passe</label><div class="pw"><input id="mdp" type="password" autocomplete="new-password"><button type="button" data-show="mdp">Afficher</button></div><p class="pwhint">8 caractères minimum.</p></div>
+        <div><label for="mdp2">Confirmer le mot de passe</label><div class="pw"><input id="mdp2" type="password" autocomplete="new-password"><button type="button" data-show="mdp2">Afficher</button></div></div>
         <div><label for="cp">Code postal <small>(facultatif)</small></label><input id="cp" inputmode="numeric" autocomplete="postal-code"></div>
         <div><label for="ville">Ville <small>(facultatif)</small></label><input id="ville" autocomplete="address-level2"></div>
       </div>
@@ -155,8 +172,11 @@ textarea{min-height:90px;resize:vertical}
       <h2 class="section-title" tabindex="-1">Pourquoi consultez-vous ?</h2>
       <p class="sub">Ces précisions aident l’équipe à vous accueillir dans de bonnes conditions.</p>
       <div class="grid">
-        <div class="full"><label for="motif">Motif principal</label><select id="motif"><option>Douleur</option><option>Traumatisme / chute</option><option>Plaie / brûlure</option><option>Fièvre / infection</option><option>Difficulté respiratoire</option><option>Enfant malade</option><option>Autre</option></select></div>
-        <div class="full"><label for="detail">Décrivez ce qui vous amène</label><textarea id="detail" placeholder="Que s’est-il passé ? Où avez-vous mal ? Quels symptômes ?"></textarea></div>
+        <div class="full"><label for="motif">Catégorie du motif</label><select id="motif"></select></div>
+        <div class="full" id="bSym" hidden><label>Symptômes <small>(touchez ceux qui vous concernent)</small></label><div class="sym" id="symList"></div></div>
+        <div class="full"><label for="symAutre">Un autre symptôme ? <small>(facultatif, vous pouvez en ajouter plusieurs)</small></label><div class="symadd"><input id="symAutre" maxlength="60" autocomplete="off" placeholder="Ex. : engourdissement du bras"><button type="button" class="btn sm" id="symAdd">Ajouter</button></div></div>
+        <div class="full" id="bSymSel" hidden><label>Vos symptômes</label><div class="symsel" id="symSel" aria-live="polite"></div></div>
+        <div class="full"><label for="detail">Décrivez ce qui vous amène <small>(facultatif si vous avez choisi des symptômes)</small></label><textarea id="detail" placeholder="Que s’est-il passé ? Où avez-vous mal ? Quels symptômes ?"></textarea></div>
         <div><label for="depuis">Depuis quand ?</label><select id="depuis"><option value="">Choisir…</option><option>Moins de 24 heures</option><option>1 à 3 jours</option><option>4 à 7 jours</option><option>Plus d’une semaine</option></select></div>
         <div><label>Fièvre <small>(facultatif)</small></label><div data-chips="fievre|radio|Oui;Non;Je ne sais pas" id="g-fievre"></div></div>
         <div class="full"><label>Intensité de la douleur <small>(facultatif)</small></label><div class="scale" data-chips="douleur|radio|0;1;2;3;4;5;6;7;8;9;10" id="g-douleur"></div><div class="scalehint"><span>0 = aucune</span><span>10 = insupportable</span></div></div>
@@ -192,7 +212,6 @@ textarea{min-height:90px;resize:vertical}
         <div class="full"><label>Viendrez-vous accompagné(e) ?</label><div data-chips="accompagne|radio|Oui;Non" id="g-accompagne"></div></div>
         <div class="full"><label>Besoins particuliers <small>(facultatif)</small></label><div data-chips="besoins|checkbox|Mobilité réduite / fauteuil;Interprète ou langue étrangère;Malentendant;Malvoyant" id="g-besoins"></div>
           <input id="precisions" style="margin-top:8px" placeholder="Précisions (langue, autre besoin…)"></div>
-        <div class="full"><label>Me rappeler mon rendez-vous par <small>(facultatif)</small></label><div data-chips="rappel|checkbox|SMS;E-mail" id="g-rappel"></div></div>
         <div class="full" id="g-consent"><label class="consent"><input type="checkbox" id="consent"><span>Je certifie l’exactitude de ces informations et j’accepte qu’elles soient utilisées pour préparer ma prise en charge.</span></label></div>
       </div>
     </section>
@@ -212,8 +231,12 @@ textarea{min-height:90px;resize:vertical}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, collection, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const cfg={apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"};
+const app=initializeApp(cfg);
 const db=getFirestore(app);
+// Instance Auth dédiée aux patients : elle ne modifie pas la session d'un médecin connecté sur le même navigateur
+const auth=getAuth(initializeApp(cfg,"patient"));
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const tmin=t=>{const[a,b]=t.split(':');return +a*60+ +b}, mt=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -277,6 +300,48 @@ $$('[data-chips]').forEach(el=>{
   el.innerHTML=list.split(';').map(s=>{const[v,l]=s.split('=');return `<label class="chip"><input type="${t}" name="${n}" value="${esc(v)}"><span>${esc(l??v)}</span></label>`}).join('');
 });
 
+/* ---------- Catégories et symptômes ---------- */
+const CAT={
+ 'Douleur':['Mal de tête','Douleur dans la poitrine','Douleur au ventre','Mal de dos','Douleur articulaire ou musculaire','Douleur au cou','Douleur dentaire'],
+ 'Traumatisme / chute':['Entorse','Fracture suspectée','Contusion / hématome','Choc à la tête','Gonflement','Impossible d’appuyer sur le membre','Douleur après un choc'],
+ 'Plaie / brûlure':['Plaie qui saigne','Plaie profonde','Écorchure','Brûlure','Morsure / piqûre','Corps étranger'],
+ 'Fièvre / infection':['Fièvre','Frissons','Courbatures','Fatigue intense','Ganglions gonflés','Sueurs'],
+ 'Respiratoire':['Toux','Difficulté à respirer','Essoufflement','Sifflements','Crachats','Gêne respiratoire la nuit'],
+ 'ORL (gorge, nez, oreilles)':['Mal de gorge','Douleur d’oreille','Nez bouché / écoulement','Saignement de nez','Perte de l’odorat ou du goût','Voix enrouée'],
+ 'Digestif':['Nausées','Vomissements','Diarrhée','Constipation','Brûlures d’estomac','Sang dans les selles','Ballonnements'],
+ 'Cœur / circulation':['Palpitations','Malaise','Vertiges','Évanouissement','Jambe gonflée ou douloureuse','Tension élevée'],
+ 'Neurologie':['Maux de tête intenses','Vertiges','Fourmillements / engourdissement','Faiblesse d’un membre','Trouble de la parole','Trouble de la vue','Convulsions'],
+ 'Peau / allergie':['Éruption cutanée','Démangeaisons','Urticaire','Gonflement du visage','Réaction allergique','Rougeur étendue'],
+ 'Œil':['Œil rouge','Douleur à l’œil','Baisse de la vision','Corps étranger dans l’œil','Larmoiement'],
+ 'Urinaire / gynécologique':['Brûlures en urinant','Sang dans les urines','Difficulté à uriner','Douleur pelvienne','Saignements anormaux','Douleur lombaire'],
+ 'Enfant malade':['Fièvre élevée','Refus de manger ou de boire','Pleurs inhabituels','Vomissements','Diarrhée','Éruption cutanée','Toux / respiration difficile','Somnolence'],
+ 'Santé mentale':['Angoisse / crise de panique','Tristesse intense','Insomnie','Agitation'],
+ 'Autre':['Fatigue','Perte de poids','Vertiges','Malaise','Gonflement','Saignement']
+};
+const sel=new Set(),custom=[]; // symptômes proposés cochés / symptômes ajoutés par le patient
+$('#motif').innerHTML='<option value="">Choisir…</option>'+Object.keys(CAT).map(k=>`<option>${esc(k)}</option>`).join('');
+function renderSym(){
+  const m=val('motif');
+  $('#bSym').hidden=!m;
+  $('#symList').innerHTML=(CAT[m]||[]).map(x=>`<button type="button" class="symb" data-s="${esc(x)}" aria-pressed="${sel.has(x)}">${esc(x)}</button>`).join('');
+  const tags=[...sel].map(x=>[x,'c']).concat(custom.map(x=>[x,'p']));
+  $('#bSymSel').hidden=!tags.length;
+  $('#symSel').innerHTML=tags.map(([x,k])=>`<span class="tag ${k==='p'?'perso':''}">${esc(x)}<button type="button" data-k="${k}" data-v="${esc(x)}" aria-label="Retirer ${esc(x)}">×</button></span>`).join('');
+}
+function ajouterSym(){
+  const v=val('symAutre').replace(/\s+/g,' ');
+  if(!v)return;
+  const deja=[...sel,...custom].some(x=>x.toLowerCase()===v.toLowerCase());
+  if(!deja&&custom.length<10)custom.push(v);
+  $('#symAutre').value='';renderSym();
+}
+$('#motif').addEventListener('change',renderSym);
+$('#symList').onclick=e=>{const b=e.target.closest('.symb');if(!b)return;const x=b.dataset.s;sel.has(x)?sel.delete(x):sel.add(x);renderSym()};
+$('#symSel').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;if(b.dataset.k==='c')sel.delete(b.dataset.v);else{const i=custom.indexOf(b.dataset.v);if(i>-1)custom.splice(i,1)}renderSym()};
+$('#symAdd').onclick=ajouterSym;
+$('#symAutre').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();ajouterSym()}});
+$$('[data-show]').forEach(b=>b.onclick=()=>{const i=$('#'+b.dataset.show),h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'Masquer':'Afficher'});
+
 /* ---------- Champs conditionnels ---------- */
 function sync(){
   const proche=rad('pourQui')==='proche',a=age(val('naiss'));
@@ -313,10 +378,14 @@ const V=[
    if(!telOk(val('dTel')))e.push(['dTel','Votre numéro de téléphone est requis.']);
    if(val('tel')&&!telOk(val('tel')))e.push(['tel','Le téléphone du patient n’est pas valide.']);
   }else if(!telOk(val('tel')))e.push(['tel','Un numéro de téléphone valide est requis.']);
-  if(val('mail')&&!/^\S+@\S+\.\S+$/.test(val('mail')))e.push(['mail','L’e-mail n’est pas valide.']);
+  if(!/^\S+@\S+\.\S+$/.test(val('mail')))e.push(['mail','Un e-mail valide est requis pour le patient.']);
+  const mdp=$('#mdp').value;
+  if(mdp.length<8)e.push(['mdp','Le mot de passe doit contenir au moins 8 caractères.']);
+  else if(mdp!==$('#mdp2').value)e.push(['mdp2','Les deux mots de passe ne correspondent pas.']);
   return e},
- ()=>{const e=[];
-  if(val('detail').length<5)e.push(['detail','Décrivez brièvement ce qui vous amène.']);
+ ()=>{const e=[];ajouterSym();
+  if(!val('motif'))e.push(['motif','Choisissez une catégorie.']);
+  if(!sel.size&&!custom.length&&val('detail').length<5)e.push(['detail','Choisissez au moins un symptôme ou décrivez ce qui vous amène.']);
   if(!val('depuis'))e.push(['depuis','Indiquez depuis quand.']);
   if(!chk('signes').length)e.push(['g-signes','Indiquez si vous avez l’un de ces signes (ou « Aucun »).']);
   return e},
@@ -330,7 +399,6 @@ const V=[
  ()=>{const e=[],s=val('secu').replace(/\s/g,'');
   if(s&&!/^\d{13}(\d{2})?$/.test(s))e.push(['secu','Le n° de sécurité sociale doit comporter 13 ou 15 chiffres.']);
   if(!rad('accompagne'))e.push(['g-accompagne','Indiquez si vous viendrez accompagné(e).']);
-  if(chk('rappel').includes('E-mail')&&!val('mail'))e.push(['g-rappel','Pour un rappel par e-mail, renseignez votre e-mail (étape Patient) ou décochez-le.']);
   if(!$('#consent').checked)e.push(['g-consent','Veuillez accepter pour continuer.']);
   return e},
  ()=>[]
@@ -378,11 +446,11 @@ function collect(){
     demandeur:proche?{prenom:val('dPrenom'),nom:val('dNom').toUpperCase(),lien:val('dLien'),telephone:val('dTel')}:null,
     patient:{prenom:val('prenom'),nom:val('nom').toUpperCase(),dateNaissance:val('naiss'),sexe:rad('sexe'),telephone:val('tel'),email:val('mail'),codePostal:val('cp'),ville:val('ville'),numeroSecu:val('secu').replace(/\s/g,''),mutuelle:val('mutuelle'),medecinTraitant:val('medecin')},
     motif:val('motif'),detail:val('detail'),
-    symptomes:{depuis:val('depuis'),douleur:rad('douleur'),fievre:rad('fievre'),signesAlerte:sg},
+    symptomes:{liste:[...sel],autres:[...custom],depuis:val('depuis'),douleur:rad('douleur'),fievre:rad('fievre'),signesAlerte:sg},
     alerteVitale:sg.length>0,
     sante:{allergies:chk('noAllergie').length?'Aucune connue':val('allergies'),traitements:chk('noTrait').length?'Aucun':val('traitements'),antecedents:chk('anteced').filter(x=>x!=='Aucun'),antecedentsAutre:val('antAutre'),
       grossesse:$('#bGrossesse').hidden?'':rad('grossesse'),tetanos:$('#bTetanos').hidden?'':rad('tetanos')},
-    accueil:{accompagne:rad('accompagne'),besoins:chk('besoins'),precisions:val('precisions'),rappel:chk('rappel')}
+    accueil:{accompagne:rad('accompagne'),besoins:chk('besoins'),precisions:val('precisions')}
   };
 }
 function recap(){
@@ -391,19 +459,44 @@ function recap(){
   const sec=(i,t,rows)=>`<div class="rc"><div class="rch">${t}<button type="button" data-edit="${i}">Modifier</button></div><dl>${rows.filter(r=>L(r[1])).map(r=>`<div><dt>${r[0]}</dt><dd>${esc(L(r[1]))}</dd></div>`).join('')}</dl></div>`;
   $('#recap').innerHTML=
    sec(0,'Rendez-vous',[['Date',fmtD(date)],['Heure',time]])+
-   sec(1,'Patient',[['Pour',c.pourQui==='proche'?'Un proche':'Moi-même'],['Identité',`${p.prenom} ${p.nom}`],['Naissance',p.dateNaissance&&new Date(p.dateNaissance+'T00:00').toLocaleDateString('fr-FR')],['Sexe',p.sexe],['Téléphone',p.telephone],['E-mail',p.email],['Ville',[p.codePostal,p.ville].filter(Boolean).join(' ')],
+   sec(1,'Patient',[['Pour',c.pourQui==='proche'?'Un proche':'Moi-même'],['Identité',`${p.prenom} ${p.nom}`],['Naissance',p.dateNaissance&&new Date(p.dateNaissance+'T00:00').toLocaleDateString('fr-FR')],['Sexe',p.sexe],['Téléphone',p.telephone],['E-mail (identifiant)',p.email],['Mot de passe','••••••••'],['Ville',[p.codePostal,p.ville].filter(Boolean).join(' ')],
      ...(c.demandeur?[['Demandeur',`${c.demandeur.prenom} ${c.demandeur.nom} (${c.demandeur.lien})`],['Tél. demandeur',c.demandeur.telephone]]:[])])+
-   sec(2,'Motif',[['Motif',c.motif],['Description',c.detail],['Depuis',sy.depuis],['Fièvre',sy.fievre],['Douleur',sy.douleur&&sy.douleur+'/10'],['Signes d’alerte',sy.signesAlerte]])+
+   sec(2,'Motif',[['Catégorie',c.motif],['Symptômes',[...sy.liste,...sy.autres]],['Description',c.detail],['Depuis',sy.depuis],['Fièvre',sy.fievre],['Douleur',sy.douleur&&sy.douleur+'/10'],['Signes d’alerte',sy.signesAlerte]])+
    sec(3,'Santé',[['Allergies',s.allergies],['Traitements',s.traitements],['Antécédents',[...s.antecedents,s.antecedentsAutre].filter(Boolean)],['Grossesse',s.grossesse],['Antitétanique',s.tetanos]])+
-   sec(4,'Accueil',[['N° sécu',p.numeroSecu],['Mutuelle',p.mutuelle],['Médecin traitant',p.medecinTraitant],['Accompagné(e)',a.accompagne],['Besoins',[...a.besoins,a.precisions].filter(Boolean)],['Rappel',a.rappel]]);
+   sec(4,'Accueil',[['N° sécu',p.numeroSecu],['Mutuelle',p.mutuelle],['Médecin traitant',p.medecinTraitant],['Accompagné(e)',a.accompagne],['Besoins',[...a.besoins,a.precisions].filter(Boolean)]]);
 }
 $('#recap').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b)go(+b.dataset.edit,-1)});
+
+/* ---------- Compte patient ---------- */
+// Le mot de passe n'est jamais enregistré dans Firestore : il reste géré par Firebase Authentication.
+async function creerCompte(email,mdp){
+  try{return (await createUserWithEmailAndPassword(auth,email,mdp)).user.uid}
+  catch(e){
+    if(e.code==='auth/email-already-in-use'){ // compte déjà créé (nouvelle tentative, patient déjà inscrit)
+      try{return (await signInWithEmailAndPassword(auth,email,mdp)).user.uid}
+      catch(e2){throw Object.assign(new Error('compte-existant'),{code:'compte-existant'})}
+    }
+    throw e;
+  }
+}
+const ERR_COMPTE={
+  'compte-existant':'Un compte existe déjà avec cet e-mail. Saisissez le mot de passe de ce compte, ou utilisez l’e-mail propre à ce patient.',
+  'auth/weak-password':'Le mot de passe est trop faible. Choisissez-en un plus long.',
+  'auth/invalid-email':'L’e-mail n’est pas valide.',
+  'auth/network-request-failed':'Connexion impossible. Vérifiez votre réseau et réessayez.'
+};
 
 /* ---------- Envoi ---------- */
 async function envoyer(){
   const btn=$('#next'),err=$('#err'),c=collect();
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
   err.textContent='';btn.disabled=true;
+  try{c.patientAuthUid=await creerCompte(c.patient.email,$('#mdp').value)}
+  catch(e){
+    btn.disabled=false;go(1,-1);
+    err.textContent=ERR_COMPTE[e.code]||'La création du compte a échoué. Réessayez dans un instant.';
+    return;
+  }
   const ref=doc(collection(db,'rdv-urgences')),code='URG-'+Math.random().toString(36).slice(2,6).toUpperCase(),occ=doc(db,'rdv-occupation',date);
   try{
     await runTransaction(db,async tx=>{
@@ -413,6 +506,7 @@ async function envoyer(){
       tx.set(occ,{counts:cn});
       tx.set(ref,{ref:code,date,heure:time,statut:'pris',creeLe:serverTimestamp(),...c,consentement:true,patientId:null});
     });
+    signOut(auth).catch(()=>{});
     termine(code,c);
   }catch(e){
     btn.disabled=false;
@@ -422,10 +516,10 @@ async function envoyer(){
 }
 function termine(code,c){
   $('#wiz').hidden=true;$('#done').hidden=false;
-  const rappel=c.accueil.rappel.length?`<p class="mut">Un rappel vous sera envoyé par ${c.accueil.rappel.join(' et ')}.</p>`:'';
   $('#done').innerHTML=`<div class="card ok"><h2>Rendez-vous confirmé</h2><p><strong>${fmtD(date)} à ${time}</strong><br>${esc(c.patient.prenom)} ${esc(c.patient.nom)}</p><div class="ref">${code}</div>
     <p class="mut">Notez votre référence : elle vous sera demandée à l’accueil.<br>Présentez-vous 10 minutes avant.</p>
-    <ul class="todo"><li>Pièce d’identité</li><li>Carte Vitale et carte de mutuelle</li><li>Ordonnances et liste de vos traitements</li><li>Carnet de santé pour un enfant</li></ul>${rappel}
+    <ul class="todo"><li>Pièce d’identité</li><li>Carte Vitale et carte de mutuelle</li><li>Ordonnances et liste de vos traitements</li><li>Carnet de santé pour un enfant</li></ul>
+    <p class="mut">Le compte patient a été créé avec l’e-mail <strong>${esc(c.patient.email)}</strong>.</p>
     <button type="button" class="btn" id="ics">Ajouter à mon agenda</button><button type="button" class="btn ghost" id="prt">Imprimer</button></div>`;
   $('#prt').onclick=()=>print();
   $('#ics').onclick=()=>{

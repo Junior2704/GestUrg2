@@ -469,17 +469,39 @@ async function envoyer(){
       tx.set(occ,{counts:cn});
       tx.set(ref,{ref:code,date,heure:time,statut:'pris',creeLe:serverTimestamp(),...c,consentement:true,patientId:null});
     });
-    termine(code,c);
+    // L'enregistrement est confirmé : l'e-mail est envoyé par le serveur.
+    // L'échec de l'e-mail ne doit pas annuler le rendez-vous déjà enregistré.
+    let emailEnvoye=false;
+    try{
+      const reponse=await fetch('https://gesturg2-server.onrender.com/api/rdv/confirmation',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          email:c.patient.email,
+          prenom:c.patient.prenom,
+          nom:c.patient.nom,
+          date,
+          heure:time,
+          reference:code
+        })
+      });
+      emailEnvoye=reponse.ok;
+      if(!reponse.ok) console.error('Échec de l’envoi de l’e-mail de confirmation :',await reponse.text());
+    }catch(erreurEmail){
+      console.error('Serveur e-mail inaccessible :',erreurEmail);
+    }
+    termine(code,c,emailEnvoye);
   }catch(e){
     btn.disabled=false;
     if(e.message==='complet'){await choisirJour(date);go(0,-1);err.textContent='Ce créneau vient d’être pris. Choisissez-en un autre.'}
     else err.textContent='L’enregistrement a échoué. Vérifiez votre connexion et réessayez.';
   }
 }
-function termine(code,c){
+function termine(code,c,emailEnvoye=false){
   $('#wiz').hidden=true;$('#done').hidden=false;
   $('#done').innerHTML=`<div class="card ok"><h2>Rendez-vous confirmé</h2><p><strong>${fmtD(date)} à ${time}</strong><br>${esc(c.patient.prenom)} ${esc(c.patient.nom)}</p><div class="ref">${code}</div>
     <p class="mut">Notez votre référence : elle vous sera demandée à l’accueil.<br>Présentez-vous 10 minutes avant.</p>
+    <p role="status" style="font-weight:700;color:${emailEnvoye?'var(--teal-deep)':'var(--coral)'}">${emailEnvoye?'Un e-mail de confirmation a été envoyé à '+esc(c.patient.email)+'.':'Le rendez-vous est confirmé, mais l’e-mail de confirmation n’a pas pu être envoyé. Vous pouvez conserver votre référence ci-dessus.'}</p>
     <ul class="todo"><li>Pièce d’identité</li><li>Carte Vitale et carte de mutuelle</li><li>Ordonnances et liste de vos traitements</li><li>Carnet de santé pour un enfant</li></ul>
     <button type="button" class="btn" id="ics">Ajouter à mon agenda</button><button type="button" class="btn ghost" id="prt">Imprimer</button></div>`;
   $('#prt').onclick=()=>print();

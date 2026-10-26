@@ -39,26 +39,14 @@ const firebaseConfig = {
 };
 
 const API_BASE = "https://gesturg2-server.onrender.com";
-
-// Même configuration Firebase que fiche.html.
 const appFirebase = initializeApp(firebaseConfig);
-const authLocal = getAuth(appFirebase);
-const db = getFirestore(appFirebase);
 
-// Si shell.html expose déjà son instance Firebase Auth, on la réutilise.
-// Sinon, on utilise l'instance locale avec une persistance navigateur explicite.
 const auth = initializeAuth(appFirebase, {
   persistence: browserSessionPersistence
 });
-try {
-  if (window.parent && window.parent !== window && window.parent.auth) {
-    auth = window.parent.auth;
-    console.info("[Réclamations] Instance Auth du shell réutilisée.");
-  }
-} catch (error) {
-  // Un parent d'une autre origine n'est pas accessible : utiliser Auth local.
-  console.info("[Réclamations] Auth du shell inaccessible, utilisation locale.");
-}
+
+const db = getFirestore(appFirebase);
+
 window.auth = auth;
 
 let currentUser = null;
@@ -235,42 +223,38 @@ async function initialiserGestionReclamations(user) {
   }
 }
 
-async function demarrerAuthentification() {
-  // La fiche utilise getAuth(app) + onAuthStateChanged. On reprend ce modèle,
-  // en forçant la persistance locale uniquement si l'Auth locale est utilisée.
-  if (auth === authLocal) {
-    try {
-      await setPersistence(authLocal, browserLocalPersistence);
-    } catch (error) {
-      console.warn("[Réclamations] Persistance locale indisponible :", error);
-    }
-  }
-
- onAuthStateChanged(auth, async user => {
-  console.log("[Réclamations] Auth :", {
+onAuthStateChanged(auth, async user => {
+  console.log("[Réclamations] État Firebase :", {
     projet: auth.app.options.projectId,
     origine: window.location.origin,
-    utilisateur: user?.uid ?? null,
-    email: user?.email ?? null,
-    utilisateurCourant: auth.currentUser?.uid ?? null
+    uid: user?.uid ?? null,
+    email: user?.email ?? null
   });
 
   if (!user) {
     currentUser = null;
     utilisateurInitialise = null;
-    $("app").classList.add("hidden");
 
-    pageError(
-      "Session Firebase absente dans la page Réclamations. " +
-      "Consultez la console pour le diagnostic."
-    );
+    $("app").classList.add("hidden");
+    $("userInfo").textContent =
+      "Session non reconnue — veuillez vous reconnecter.";
+
+    // Le message doit être visible, même si l'application est masquée.
+    $("accessDenied").classList.remove("hidden");
+    $("accessDenied").querySelector("h1").textContent =
+      "Session non reconnue";
+    $("accessDenied").querySelector("p").textContent =
+      "La page Réclamations ne retrouve pas votre session. " +
+      "Retournez dans GestUrg2, reconnectez-vous si nécessaire, " +
+      "puis rouvrez cette page.";
+
     return;
   }
 
+  $("accessDenied").classList.add("hidden");
+
   await initialiserGestionReclamations(user);
 });
-
-}
 
 demarrerAuthentification();
 

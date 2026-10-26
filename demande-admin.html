@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin – Réclamations</title>
+<style>
+:root{--r:#0b6fa4}*{box-sizing:border-box}body{margin:0;font:15px Inter,system-ui,sans-serif;background:#f4f5f7;color:#222}
+header{background:var(--r);color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+#w{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:16px;padding:16px}@media(max-width:760px){#w{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #d8e1ea;border-radius:16px;padding:16px}.fr header{display:none}
+.row{padding:10px;border-bottom:1px solid #eee;cursor:pointer}.row:hover,.row.on{background:#e3f1f9}
+.tag{font-size:.75rem;padding:2px 8px;border-radius:10px;background:#ddd}.nouvelle{background:#ffd9dc}.en_cours{background:#ffe9b8}.cloturee{background:#cdeccd}
+button,.btn{background:var(--r);color:#fff;border:0;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;margin:4px 4px 0 0;text-decoration:none;display:inline-block}button.s{background:#666}
+input,textarea{padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit;width:100%}
+.m{padding:6px 10px;border-radius:10px;margin:5px 0;max-width:85%}.p{background:#eee}.a{background:#e3f1f9;margin-left:auto}.f{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.f button{margin:0}
+</style></head><body>
+<header><b>Réclamations — Administration</b><span id="who"></span></header>
+<div id="lg" class="card" style="max-width:340px;margin:40px auto"><h3>Connexion agent</h3><input id="em" placeholder="E-mail"><br><br><input id="pw" type="password" placeholder="Mot de passe"><button id="go">Se connecter</button><p id="e" style="color:var(--r)"></p></div>
+<div id="w" hidden><div class="card"><div class="f" id="fl"></div><div id="ls"></div></div><div class="card" id="dt">Sélectionnez une demande.</div></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,doc,updateDoc,addDoc,collection,onSnapshot,query,orderBy,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const app=initializeApp({ apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",
+    authDomain: "urgences-a8ed4.firebaseapp.com",
+    projectId: "urgences-a8ed4"}),db=getFirestore(app);
+const FICHE_URL="fiche.html?id=",FICHE_RECH="fiche.html?q="; // ← à adapter : paramètre attendu par fiche.html
+const $=x=>document.getElementById(x),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ST={nouvelle:"Nouvelle",en_cours:"En cours",cloturee:"Clôturée"};
+let me="",all=[],flt="open",cur=null,unsub=null;
+// ===== DROITS : seul point à brancher sur votre connexion.html =====
+const GU={droit:"reclamations",
+ session(){try{return JSON.parse(sessionStorage.getItem("user")||localStorage.getItem("user")||"null")}catch(e){return null}}, // ← à adapter
+ ok(u){return !!u&&(u.admin===true||u.role==="admin"||(u.droits||[]).includes(this.droit))}};
+if(parent!==window)document.body.classList.add("fr");
+const U=GU.session();
+if(!GU.ok(U))$("lg").innerHTML="<h3>🚫 Accès refusé</h3><p>Vous n’avez pas accès à cette page. Contactez un administrateur.</p>";
+else{$("lg").hidden=true;$("w").hidden=false;me=U.email||U.login||U.nom||"agent";$("who").textContent=me;
+ onSnapshot(query(collection(db,"reclamations"),orderBy("createdAt","desc")),s=>{all=s.docs.map(d=>({id:d.id,...d.data()}));list();if(cur)detail(cur)})}
+const FL={open:"Non clôturées",mine:"Mes demandes ouvertes",free:"Non affectées",all:"Toutes",closed:"Clôturées"};
+function list(){$("fl").innerHTML=Object.entries(FL).map(([k,v])=>`<button class="${k==flt?"":"s"}" data-k="${k}">${v}</button>`).join("");
+ $("fl").querySelectorAll("button").forEach(b=>b.onclick=()=>{flt=b.dataset.k;list()});
+ const ok=r=>({open:r.statut!="cloturee",mine:r.affecteA==me&&r.statut!="cloturee",free:!r.affecteA&&r.statut!="cloturee",all:1,closed:r.statut=="cloturee"})[flt];
+ $("ls").innerHTML=all.filter(ok).map(r=>`<div class="row ${r.id==cur?"on":""}" data-id="${r.id}"><span class="tag ${r.statut}">${ST[r.statut]}</span> <b>${esc(r.demandeur.nom)} ${esc(r.demandeur.prenom)}</b><br><small>${esc(r.type)} · ${r.affecteA?esc(r.affecteA):"non affectée"}</small></div>`).join("")||"<p>Aucune demande.</p>";
+ $("ls").querySelectorAll(".row").forEach(x=>x.onclick=()=>{cur=x.dataset.id;list();detail(cur,1)})}
+const upd=(id,o)=>updateDoc(doc(db,"reclamations",id),o);
+function detail(id,fresh){const r=all.find(x=>x.id==id);if(!r)return;const p=r.patient,dm=r.demandeur;
+ const lien=p?(p.cip?FICHE_URL+encodeURIComponent(p.cip):FICHE_RECH+encodeURIComponent(p.nom+" "+p.prenom)):"";
+ const chatOn=$("ch")&&$("dt").dataset.id==id;
+ if(!chatOn||fresh){$("dt").dataset.id=id;
+  $("dt").innerHTML=`<h3>${esc(r.type)} <span class="tag ${r.statut}">${ST[r.statut]}</span></h3><div id="inf"></div><div class="f" id="ac"></div><hr><div id="ch"></div><textarea id="t" rows=2 placeholder="Réponse au patient…"></textarea><button id="se">Envoyer</button><button class="s" id="ld">📎 Envoyer un document (lien 7 jours)</button>`;
+  if(unsub)unsub();unsub=onSnapshot(query(collection(db,"reclamations",id,"messages"),orderBy("createdAt")),s=>{$("ch").innerHTML=s.docs.map(q=>{const m=q.data();return`<div class="m ${m.de=="admin"?"a":"p"}">${esc(m.texte)}${m.lien?`<br><small>📎 lien valable jusqu'au ${new Date(m.expire).toLocaleDateString("fr-FR")}</small>`:""}</div>`}).join("")});
+  const send=o=>addDoc(collection(db,"reclamations",id,"messages"),{de:"admin",agent:me,createdAt:serverTimestamp(),...o});
+  $("se").onclick=()=>{if($("t").value.trim()){send({texte:$("t").value.trim()});$("t").value=""}};
+  $("ld").onclick=()=>{const u=prompt("URL du document à partager (stockage sécurisé) :");if(u)send({texte:$("t").value.trim()||"Voici votre document :",lien:u,expire:Date.now()+7*864e5})}}
+ $("inf").innerHTML=`<p><b>Demandeur :</b> ${esc(dm.nom)} ${esc(dm.prenom)} (${esc(dm.qualite)}) · né(e) le ${esc(dm.naissance)}<br>${esc(dm.email)} ${esc(dm.tel)}</p>
+ <p><b>Patient :</b> ${p?`${esc(p.nom)} ${esc(p.prenom)} · ${esc(p.naissance)} · CIP ${esc(p.cip)||"inconnu"}`:"aucun"}</p>
+ <p><b>Détail :</b> ${esc(r.doc)} ${esc(r.periode)} — urgence ${esc(r.urgence)}<br>${esc(r.motif)}</p>${r.enquete?`<p>⭐ Satisfaction : ${r.enquete.note}/5 — ${esc(r.enquete.commentaire)}</p>`:""}`;
+ $("ac").innerHTML=(p?`<a class="btn" href="${lien}" target=_blank>Fiche patient</a><button class="s" id="ot">Autre patient…</button>`:"")+
+ (r.affecteA==me?`<button class="s" id="lb">Me désaffecter</button>`:`<button id="mo">M'affecter</button>`)+
+ (r.statut!="cloturee"?`<button id="cl">Clôturer</button>`:`<button class="s" id="ro">Rouvrir</button>`);
+ const b=(i,f)=>$(i)&&($(i).onclick=f);
+ b("mo",()=>upd(id,{affecteA:me,statut:"en_cours"}));b("lb",()=>upd(id,{affecteA:"",statut:"nouvelle"}));
+ b("cl",()=>confirm("Clôturer ? Le patient recevra l'enquête de satisfaction.")&&upd(id,{statut:"cloturee",closedAt:Date.now()}));b("ro",()=>upd(id,{statut:"en_cours",enquete:null}));
+ b("ot",()=>{const c=prompt("CIP du patient réellement concerné :");if(c)upd(id,{"patient.cip":c.trim(),patientCorrige:true})})}
+</script></body></html>

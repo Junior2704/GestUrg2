@@ -49,20 +49,61 @@ async function api(path, options={}) {
   if(!res.ok)throw new Error(data.message||data.error||`Erreur serveur (${res.status}).`);
   return data;
 }
-onAuthStateChanged(auth, async user=>{
+onAuthStateChanged(auth, async (user) => {
   showLoader(true);
-  try{
-    if(!user){$("userInfo").textContent="Session non connectée";$("accessDenied").classList.remove("hidden");return;}
-    currentUser=user;
-    const snap=await getDoc(doc(db,"medecins",user.uid));
-    if(!snap.exists()){$("userInfo").textContent=user.email||"";$("accessDenied").classList.remove("hidden");return;}
-    const med=snap.data();
-    $("userInfo").textContent=`${med.nom||user.email||"Professionnel"} · Gestion des réclamations`;
-    if(med.pages?.reclamations!==true){$("accessDenied").classList.remove("hidden");return;}
+
+  try {
+    if (!user) {
+      $("userInfo").textContent = "Session non connectée";
+      $("accessDenied").classList.remove("hidden");
+      return;
+    }
+
+    currentUser = user;
+
+    const docRef = doc(db, "medecins", user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      $("userInfo").textContent = user.email || "";
+      $("accessDenied").classList.remove("hidden");
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // Récupération des informations du médecin
+    window.medecinNom = data.nom || "";
+    window.medecinSpecialite = data.specialite || "";
+    window.medecinLieu = data.lieu || "";
+    window.medecinType = data.type || "";
+    window.medecinUid = user.uid;
+
+    $("userInfo").textContent =
+      `${data.nom || user.email || "Professionnel"} · Gestion des réclamations`;
+
+    // Vérification de la permission "reclamations",
+    // indépendamment du nom du fichier HTML
+    const pages = data.pages || {};
+
+    if (pages.reclamations !== true) {
+      console.warn("Accès refusé : pages.reclamations =", pages.reclamations);
+      $("accessDenied").classList.remove("hidden");
+      return;
+    }
+
+    // Accès autorisé
+    $("accessDenied").classList.add("hidden");
     $("app").classList.remove("hidden");
+
     await loadCases();
-  }catch(e){$("accessDenied").classList.remove("hidden");console.error(e);}
-  finally{showLoader(false);}
+
+  } catch (error) {
+    console.error("Erreur de vérification des accès :", error);
+    $("accessDenied").classList.remove("hidden");
+  } finally {
+    showLoader(false);
+  }
 });
 async function loadCases(){
  clearPageError();showLoader(true);

@@ -30,6 +30,40 @@ async function api(path, options={}) {
 }
 function dateText(value){if(!value)return "";const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}
 function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function renderMessageContent(value) {
+  const text = String(value ?? "");
+  const urlRegex = /https:\/\/[^\s<>"']+/g;
+  let html = "";
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(urlRegex)) {
+    const url = match[0];
+    const start = match.index;
+
+    // Évite d'inclure la ponctuation finale dans le lien
+    const cleanUrl = url.replace(/[.,!?;:)]+$/, "");
+    const trailing = url.slice(cleanUrl.length);
+
+    html += esc(text.slice(lastIndex, start));
+
+    if (cleanUrl) {
+      html += `<a href="${esc(cleanUrl)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        style="color:#087f8c;font-weight:700;text-decoration:underline;overflow-wrap:anywhere">
+        ${esc(cleanUrl)}
+      </a>`;
+    }
+
+    html += esc(trailing);
+    lastIndex = start + url.length;
+  }
+
+  html += esc(text.slice(lastIndex));
+  return html.replace(/\n/g, "<br>");
+}
+
 function renderCase(data){
  const c=data.reclamation||data.dossier||data;
  $("caseRef").textContent="Référence : "+(c.reference||c.numero||"");
@@ -40,7 +74,7 @@ function renderCase(data){
  const events=c.historique||c.evenements||[];
  $("timeline").innerHTML=events.length?events.map(e=>`<div class="event"><strong>${esc(e.titre||e.statut||"Mise à jour")} · ${esc(dateText(e.date||e.dateCreation))}</strong><p>${esc(e.description||e.message||"")}</p></div>`).join(""):'<div class="muted">Aucun événement supplémentaire pour le moment.</div>';
  const messages=data.messages||c.messages||[];
- $("messages").innerHTML=messages.length?messages.map(m=>`<div class="message ${m.auteurType==="professionnel"||m.auteur==="établissement"?"staff":""}"><div class="messagehead"><strong>${esc(m.auteurLibelle||m.auteurType||"Message")}</strong><span>${esc(dateText(m.date||m.dateCreation))}</span></div><p>${esc(m.contenu||m.message||"")}</p></div>`).join(""):'<div class="empty">Aucun échange pour le moment.</div>';
+ $("messages").innerHTML=messages.length?messages.map(m=>`<div class="message ${m.auteurType==="professionnel"||m.auteur==="établissement"?"staff":""}"><div class="messagehead"><strong>${esc(m.auteurLibelle||m.auteurType||"Message")}</strong><span>${esc(dateText(m.date||m.dateCreation))}</span></div><p>${renderMessageContent(m.contenu || m.message || "")}</p></div>`).join(""):'<div class="empty">Aucun échange pour le moment.</div>';
  $("loginCard").classList.add("hidden");$("caseArea").classList.remove("hidden");
 }
 $("loginForm").addEventListener("submit",async e=>{

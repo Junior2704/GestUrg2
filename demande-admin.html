@@ -245,26 +245,30 @@ async function demarrerAuthentification() {
     }
   }
 
-  onAuthStateChanged(auth, async user => {
-    console.log(
-      "[Réclamations] État Firebase :",
-      user ? user.uid : "aucun utilisateur"
-    );
-
-    if (!user) {
-      currentUser = null;
-      utilisateurInitialise = null;
-      $("app").classList.add("hidden");
-      $("userInfo").textContent = "Session non détectée — vérifiez la connexion dans shell.html";
-      return;
-    }
-
-    currentUser = user;
-    await initialiserGestionReclamations(user);
-  }, error => {
-    console.error("[Réclamations] Erreur d'authentification :", error);
-    pageError("Impossible de vérifier la session Firebase : " + (error.message || error));
+ onAuthStateChanged(auth, async user => {
+  console.log("[Réclamations] Auth :", {
+    projet: auth.app.options.projectId,
+    origine: window.location.origin,
+    utilisateur: user?.uid ?? null,
+    email: user?.email ?? null,
+    utilisateurCourant: auth.currentUser?.uid ?? null
   });
+
+  if (!user) {
+    currentUser = null;
+    utilisateurInitialise = null;
+    $("app").classList.add("hidden");
+
+    pageError(
+      "Session Firebase absente dans la page Réclamations. " +
+      "Consultez la console pour le diagnostic."
+    );
+    return;
+  }
+
+  await initialiserGestionReclamations(user);
+});
+
 }
 
 demarrerAuthentification();

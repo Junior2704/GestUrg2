@@ -18,64 +18,153 @@
 <section class="panel"><div class="tablewrap"><table><thead><tr><th>Référence</th><th>Demandeur</th><th>Objet</th><th>Créée le</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Chargement des demandes…</td></tr></tbody></table></div></section>
 </main>
 <div class="overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><section class="modal"><div class="modalhead"><div><div class="eyebrow" id="detailRef">Dossier</div><h2 id="detailTitle">Détail de la réclamation</h2></div><button class="close" id="closeModal" aria-label="Fermer">×</button></div><form id="detailForm"><div class="modalbody"><div class="twocol"><div class="field"><label>Demandeur</label><div class="detailbox" id="dName"></div></div><div class="field"><label>Coordonnées</label><div class="detailbox" id="dContact"></div></div><div class="field full"><label>Description initiale</label><div class="detailbox" id="dDescription"></div></div><div class="field"><label for="dStatus">Statut</label><select id="dStatus"><option value="nouvelle">Nouvelle</option><option value="en_analyse">En analyse</option><option value="en_attente">En attente</option><option value="en_cours">En cours</option><option value="cloturee">Clôturée</option><option value="refusee">Non recevable</option></select></div><div class="field"><label for="dPriority">Priorité</label><select id="dPriority"><option value="normale">Normale</option><option value="haute">Haute</option><option value="urgente">Urgente</option></select></div><div class="field"><label for="dAssignee">Personne / service en charge</label><input id="dAssignee" maxlength="180"></div><div class="field"><label for="dCategory">Catégorie</label><select id="dCategory"><option>Accueil et orientation</option><option>Délais d’attente</option><option>Information et communication</option><option>Prise en charge et soins</option><option>Respect et comportement</option><option>Organisation et locaux</option><option>Facturation / administratif</option><option>Autre</option></select></div><div class="field full"><label for="dInternal">Note interne (non visible par l’usager)</label><textarea id="dInternal" maxlength="5000" placeholder="Notes réservées à l’équipe habilitée…"></textarea></div><div class="field full"><label for="dReply">Réponse / message à transmettre à l’usager (facultatif)</label><textarea id="dReply" maxlength="5000" placeholder="Ce message sera visible dans l’espace de suivi du patient."></textarea></div><div class="field full"><label>Historique</label><div class="history" id="dHistory"></div></div></div><div class="error" id="detailError"></div></div><div class="modalfoot"><button type="button" class="btn secondary" id="cancelModal">Annuler</button><button type="submit" class="btn" id="saveBtn">Enregistrer les modifications</button></div></form></section></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDg-D-BxucYdg8ArWo",
   authDomain: "urgences-a8ed4.firebaseapp.com",
   projectId: "urgences-a8ed4"
 };
+
 const API_BASE = "https://gesturg2-server.onrender.com";
+
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
-let currentUser=null, currentCase=null, allCases=[];
+
+let currentUser = null;
+let currentCase = null;
+let allCases = [];
+
 const $ = id => document.getElementById(id);
-const showLoader = v => $("loader").style.display=v?"flex":"none";
-function pageError(msg){$("pageError").textContent=msg;$("pageError").style.display="block"}
-function clearPageError(){$("pageError").textContent="";$("pageError").style.display="none"}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function dateText(v){if(!v)return "—";let d=v?.toDate?v.toDate():new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}
-function normStatus(s){return String(s||"nouvelle").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replaceAll(" ","_")}
-function statusLabel(s){return ({nouvelle:"Nouvelle",en_analyse:"En analyse",en_attente:"En attente",en_cours:"En cours",cloturee:"Clôturée",cloturee_definitivement:"Clôturée",refusee:"Non recevable"})[normStatus(s)]||s||"Nouvelle"}
-function statusClass(s){let n=normStatus(s);return n==="nouvelle"?"nouveau":n==="en_analyse"||n==="en_cours"?"analyse":n==="en_attente"?"attente":n==="cloturee"||n==="cloturee_definitivement"?"clos":""}
-async function api(path, options={}) {
-  const token=await currentUser.getIdToken();
-  const res=await fetch(`${API_BASE}${path}`,{...options,headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,...(options.headers||{})}});
-  const data=await res.json().catch(()=>({}));
-  if(!res.ok)throw new Error(data.message||data.error||`Erreur serveur (${res.status}).`);
-  return data;
+
+const showLoader = value => {
+  $("loader").style.display = value ? "flex" : "none";
+};
+
+function pageError(message) {
+  $("pageError").textContent = message;
+  $("pageError").style.display = "block";
+}
+
+function clearPageError() {
+  $("pageError").textContent = "";
+  $("pageError").style.display = "none";
+}
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function dateText(value) {
+  if (!value) return "—";
+
+  const date = value?.toDate
+    ? value.toDate()
+    : new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleString("fr-FR", {
+        dateStyle: "short",
+        timeStyle: "short"
+      });
+}
+
+function normStatus(status) {
+  return String(status || "nouvelle")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replaceAll(" ", "_");
+}
+
+function statusLabel(status) {
+  return ({
+    nouvelle: "Nouvelle",
+    en_analyse: "En analyse",
+    en_attente: "En attente",
+    en_cours: "En cours",
+    cloturee: "Clôturée",
+    cloturee_definitivement: "Clôturée",
+    refusee: "Non recevable"
+  })[normStatus(status)] || status || "Nouvelle";
+}
+
+function statusClass(status) {
+  const normalized = normStatus(status);
+
+  if (normalized === "nouvelle") return "nouveau";
+
+  if (
+    normalized === "en_analyse" ||
+    normalized === "en_cours"
+  ) {
+    return "analyse";
+  }
+
+  if (normalized === "en_attente") return "attente";
+
+  if (
+    normalized === "cloturee" ||
+    normalized === "cloturee_definitivement"
+  ) {
+    return "clos";
+  }
+
+  return "";
 }
 
 
-let shellUser = null;
+
 let initialisationEnCours = false;
+let utilisateurInitialise = null;
 
 async function initialiserGestionReclamations(user) {
-  if (initialisationEnCours) return;
+  if (!user?.uid) return;
+
+  // Évite de relancer le chargement pour le même utilisateur.
+  if (
+    initialisationEnCours ||
+    utilisateurInitialise === user.uid
+  ) {
+    return;
+  }
+
   initialisationEnCours = true;
   showLoader(true);
 
   try {
-    if (!user?.uid) {
-      console.error("Aucun utilisateur reçu depuis shell.html.");
-      $("userInfo").textContent = "Session non connectée";
-      $("accessDenied").classList.remove("hidden");
-      $("app").classList.add("hidden");
-      return;
-    }
-
-    shellUser = user;
-
-    // Utilise l'UID transmis par le shell pour lire le médecin.
-    const docSnap = await getDoc(doc(db, "medecins", user.uid));
+    const docSnap = await getDoc(
+      doc(db, "medecins", user.uid)
+    );
 
     if (!docSnap.exists()) {
-      console.error("Document médecin introuvable pour :", user.uid);
-      $("userInfo").textContent = user.email || "";
+      console.error(
+        "Document médecin introuvable :",
+        user.uid
+      );
+
+      $("userInfo").textContent =
+        user.email || "Utilisateur non reconnu";
+
       $("accessDenied").classList.remove("hidden");
       $("app").classList.add("hidden");
       return;
@@ -104,36 +193,77 @@ async function initialiserGestionReclamations(user) {
       return;
     }
 
+    currentUser = user;
+
     $("accessDenied").classList.add("hidden");
     $("app").classList.remove("hidden");
+
+    utilisateurInitialise = user.uid;
 
     await loadCases();
 
   } catch (error) {
-    console.error("Erreur d'initialisation :", error);
+    console.error(
+      "Erreur d'initialisation des réclamations :",
+      error
+    );
+
     $("accessDenied").classList.remove("hidden");
     $("app").classList.add("hidden");
+
   } finally {
     showLoader(false);
     initialisationEnCours = false;
   }
 }
 
-// Le shell transmet l'utilisateur à chaque iframe ouverte.
-window.addEventListener("message", event => {
-  if (event.origin !== window.location.origin) return;
+onAuthStateChanged(auth, async user => {
+  console.log(
+    "[Réclamations] État Firebase :",
+    user ? user.uid : "aucun utilisateur"
+  );
 
-  if (event.data?.type === "USER_CONNECTED" && event.data.user) {
-    initialiserGestionReclamations(event.data.user);
+  if (!user) {
+    currentUser = null;
+    utilisateurInitialise = null;
+    $("app").classList.add("hidden");
+    return;
   }
+
+  await initialiserGestionReclamations(user);
 });
 
-// Demande aussi l'identité au shell si la page a été ouverte
-// après le premier envoi de USER_CONNECTED.
-window.parent.postMessage(
-  { type: "GET_CONNECTED_USER" },
-  window.location.origin
-);
+
+async function api(path, options = {}) {
+  if (!currentUser) {
+    throw new Error(
+      "Aucun utilisateur Firebase authentifié."
+    );
+  }
+
+  const token = await currentUser.getIdToken();
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(
+      data.message ||
+      data.error ||
+      `Erreur serveur (${res.status}).`
+    );
+  }
+
+  return data;
+}
 
 
 

@@ -49,55 +49,40 @@ async function api(path, options={}) {
   if(!res.ok)throw new Error(data.message||data.error||`Erreur serveur (${res.status}).`);
   return data;
 }
-onAuthStateChanged(auth, async (user) => {
+
+
+let shellUser = null;
+let initialisationEnCours = false;
+
+async function initialiserGestionReclamations(user) {
+  if (initialisationEnCours) return;
+  initialisationEnCours = true;
   showLoader(true);
 
-  // Diagnostic : état initial
-  console.clear();
-  console.log("=== DIAGNOSTIC ACCÈS RÉCLAMATIONS ===");
-  console.log("Utilisateur Firebase :", user);
-
   try {
-    if (!user) {
-      console.error("CAUSE : aucun utilisateur Firebase connecté.");
+    if (!user?.uid) {
+      console.error("Aucun utilisateur reçu depuis shell.html.");
       $("userInfo").textContent = "Session non connectée";
       $("accessDenied").classList.remove("hidden");
+      $("app").classList.add("hidden");
       return;
     }
 
-    currentUser = user;
+    shellUser = user;
 
-    console.log("UID :", user.uid);
-    console.log("Email :", user.email);
-
-    const docRef = doc(db, "medecins", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    console.log("Document médecin existe :", docSnap.exists());
+    // Utilise l'UID transmis par le shell pour lire le médecin.
+    const docSnap = await getDoc(doc(db, "medecins", user.uid));
 
     if (!docSnap.exists()) {
-      console.error(
-        "CAUSE : aucun document dans medecins pour cet UID :",
-        user.uid
-      );
-
+      console.error("Document médecin introuvable pour :", user.uid);
       $("userInfo").textContent = user.email || "";
       $("accessDenied").classList.remove("hidden");
+      $("app").classList.add("hidden");
       return;
     }
 
     const data = docSnap.data();
-
-    console.log("Document médecin complet :", data);
-    console.log("Valeur de data.pages :", data.pages);
-    console.log(
-      "Valeur exacte de data.pages.reclamations :",
-      data.pages?.reclamations
-    );
-    console.log(
-      "Type de cette valeur :",
-      typeof data.pages?.reclamations
-    );
+    const pages = data.pages || {};
 
     window.medecinNom = data.nom || "";
     window.medecinSpecialite = data.specialite || "";
@@ -108,13 +93,10 @@ onAuthStateChanged(auth, async (user) => {
     $("userInfo").textContent =
       `${data.nom || user.email || "Professionnel"} · Gestion des réclamations`;
 
-    const autorise = data.pages?.reclamations === true;
-
-    console.log("Accès réclamations autorisé :", autorise);
-
-    if (!autorise) {
-      console.error(
-        "CAUSE : la valeur data.pages.reclamations n'est pas le booléen true."
+    if (pages.reclamations !== true) {
+      console.warn(
+        "Accès refusé : pages.reclamations =",
+        pages.reclamations
       );
 
       $("accessDenied").classList.remove("hidden");
@@ -122,24 +104,39 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    console.log("Accès autorisé. Chargement de la liste…");
-
     $("accessDenied").classList.add("hidden");
     $("app").classList.remove("hidden");
 
     await loadCases();
 
   } catch (error) {
-    console.error("ERREUR PENDANT LA VÉRIFICATION :", error);
-    console.error("Message :", error.message);
-    console.error("Code :", error.code);
-
+    console.error("Erreur d'initialisation :", error);
     $("accessDenied").classList.remove("hidden");
+    $("app").classList.add("hidden");
   } finally {
     showLoader(false);
-    console.log("=== FIN DU DIAGNOSTIC ===");
+    initialisationEnCours = false;
+  }
+}
+
+// Le shell transmet l'utilisateur à chaque iframe ouverte.
+window.addEventListener("message", event => {
+  if (event.origin !== window.location.origin) return;
+
+  if (event.data?.type === "USER_CONNECTED" && event.data.user) {
+    initialiserGestionReclamations(event.data.user);
   }
 });
+
+// Demande aussi l'identité au shell si la page a été ouverte
+// après le premier envoi de USER_CONNECTED.
+window.parent.postMessage(
+  { type: "GET_CONNECTED_USER" },
+  window.location.origin
+);
+
+
+
 async function loadCases(){
  clearPageError();showLoader(true);
  try{

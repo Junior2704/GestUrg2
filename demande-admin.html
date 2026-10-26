@@ -23,7 +23,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
@@ -39,9 +41,24 @@ const firebaseConfig = {
 
 const API_BASE = "https://gesturg2-server.onrender.com";
 
+// Même configuration Firebase que fiche.html.
 const appFirebase = initializeApp(firebaseConfig);
-const auth = getAuth(appFirebase);
+const authLocal = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
+
+// Si shell.html expose déjà son instance Firebase Auth, on la réutilise.
+// Sinon, on utilise l'instance locale avec une persistance navigateur explicite.
+let auth = authLocal;
+try {
+  if (window.parent && window.parent !== window && window.parent.auth) {
+    auth = window.parent.auth;
+    console.info("[Réclamations] Instance Auth du shell réutilisée.");
+  }
+} catch (error) {
+  // Un parent d'une autre origine n'est pas accessible : utiliser Auth local.
+  console.info("[Réclamations] Auth du shell inaccessible, utilisation locale.");
+}
+window.auth = auth;
 
 let currentUser = null;
 let currentCase = null;
@@ -217,21 +234,40 @@ async function initialiserGestionReclamations(user) {
   }
 }
 
-onAuthStateChanged(auth, async user => {
-  console.log(
-    "[Réclamations] État Firebase :",
-    user ? user.uid : "aucun utilisateur"
-  );
-
-  if (!user) {
-    currentUser = null;
-    utilisateurInitialise = null;
-    $("app").classList.add("hidden");
-    return;
+async function demarrerAuthentification() {
+  // La fiche utilise getAuth(app) + onAuthStateChanged. On reprend ce modèle,
+  // en forçant la persistance locale uniquement si l'Auth locale est utilisée.
+  if (auth === authLocal) {
+    try {
+      await setPersistence(authLocal, browserLocalPersistence);
+    } catch (error) {
+      console.warn("[Réclamations] Persistance locale indisponible :", error);
+    }
   }
 
-  await initialiserGestionReclamations(user);
-});
+  onAuthStateChanged(auth, async user => {
+    console.log(
+      "[Réclamations] État Firebase :",
+      user ? user.uid : "aucun utilisateur"
+    );
+
+    if (!user) {
+      currentUser = null;
+      utilisateurInitialise = null;
+      $("app").classList.add("hidden");
+      $("userInfo").textContent = "Session non détectée — vérifiez la connexion dans shell.html";
+      return;
+    }
+
+    currentUser = user;
+    await initialiserGestionReclamations(user);
+  }, error => {
+    console.error("[Réclamations] Erreur d'authentification :", error);
+    pageError("Impossible de vérifier la session Firebase : " + (error.message || error));
+  });
+}
+
+demarrerAuthentification();
 
 
 async function api(path, options = {}) {

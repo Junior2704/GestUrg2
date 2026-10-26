@@ -22,10 +22,9 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence
+  initializeAuth,
+  browserSessionPersistence,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
@@ -48,7 +47,9 @@ const db = getFirestore(appFirebase);
 
 // Si shell.html expose déjà son instance Firebase Auth, on la réutilise.
 // Sinon, on utilise l'instance locale avec une persistance navigateur explicite.
-let auth = authLocal;
+const auth = initializeAuth(appFirebase, {
+  persistence: browserSessionPersistence
+});
 try {
   if (window.parent && window.parent !== window && window.parent.auth) {
     auth = window.parent.auth;

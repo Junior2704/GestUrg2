@@ -31,37 +31,39 @@ async function api(path, options={}) {
 function dateText(value){if(!value)return "";const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}
 function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
-function renderMessageContent(value) {
+function renderMessageContent(container, value) {
+  container.replaceChildren();
+
   const text = String(value ?? "");
-  const urlRegex = /https:\/\/[^\s<>"']+/g;
-  let html = "";
+  const urlRegex = /https:\/\/[^\s<>"'\\]+/g;
   let lastIndex = 0;
 
   for (const match of text.matchAll(urlRegex)) {
-    const url = match[0];
     const start = match.index;
+    const url = match[0].replace(/[.,!?;:)]+$/, "");
+    const trailing = match[0].slice(url.length);
 
-    // Évite d'inclure la ponctuation finale dans le lien
-    const cleanUrl = url.replace(/[.,!?;:)]+$/, "");
-    const trailing = url.slice(cleanUrl.length);
+    container.appendChild(
+      document.createTextNode(text.slice(lastIndex, start))
+    );
 
-    html += esc(text.slice(lastIndex, start));
+    if (url) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.cssText =
+        "color:#087f8c;font-weight:700;text-decoration:underline;overflow-wrap:anywhere";
 
-    if (cleanUrl) {
-      html += `<a href="${esc(cleanUrl)}"
-        target="_blank"
-        rel="noopener noreferrer"
-        style="color:#087f8c;font-weight:700;text-decoration:underline;overflow-wrap:anywhere">
-        ${esc(cleanUrl)}
-      </a>`;
+      container.appendChild(link);
     }
 
-    html += esc(trailing);
-    lastIndex = start + url.length;
+    container.appendChild(document.createTextNode(trailing));
+    lastIndex = start + match[0].length;
   }
 
-  html += esc(text.slice(lastIndex));
-  return html.replace(/\n/g, "<br>");
+  container.appendChild(document.createTextNode(text.slice(lastIndex)));
 }
 
 function renderCase(data){
@@ -73,8 +75,50 @@ function renderCase(data){
  $("caseDescription").textContent=c.description||c.messageInitial||"";
  const events=c.historique||c.evenements||[];
  $("timeline").innerHTML=events.length?events.map(e=>`<div class="event"><strong>${esc(e.titre||e.statut||"Mise à jour")} · ${esc(dateText(e.date||e.dateCreation))}</strong><p>${esc(e.description||e.message||"")}</p></div>`).join(""):'<div class="muted">Aucun événement supplémentaire pour le moment.</div>';
- const messages=data.messages||c.messages||[];
- $("messages").innerHTML=messages.length?messages.map(m=>`<div class="message ${m.auteurType==="professionnel"||m.auteur==="établissement"?"staff":""}"><div class="messagehead"><strong>${esc(m.auteurLibelle||m.auteurType||"Message")}</strong><span>${esc(dateText(m.date||m.dateCreation))}</span></div><p>${renderMessageContent(m.contenu || m.message || "")}</p></div>`).join(""):'<div class="empty">Aucun échange pour le moment.</div>';
+
+const messages = data.messages || c.messages || [];
+const messagesContainer = $("messages");
+messagesContainer.replaceChildren();
+
+if (messages.length) {
+  messages.forEach(m => {
+    const article = document.createElement("div");
+    article.className = "message";
+
+    if (
+      m.auteurType === "professionnel" ||
+      m.auteur === "établissement"
+    ) {
+      article.classList.add("staff");
+    }
+
+    const head = document.createElement("div");
+    head.className = "messagehead";
+
+    const author = document.createElement("strong");
+    author.textContent = m.auteurLibelle || m.auteurType || "Message";
+
+    const date = document.createElement("span");
+    date.textContent = dateText(m.date || m.dateCreation);
+
+    head.append(author, date);
+
+    const content = document.createElement("p");
+    content.style.whiteSpace = "pre-wrap";
+    content.style.overflowWrap = "anywhere";
+
+    renderMessageContent(content, m.contenu || m.message || "");
+
+    article.append(head, content);
+    messagesContainer.appendChild(article);
+  });
+} else {
+  const empty = document.createElement("div");
+  empty.className = "empty";
+  empty.textContent = "Aucun échange pour le moment.";
+  messagesContainer.appendChild(empty);
+}
+
  $("loginCard").classList.add("hidden");$("caseArea").classList.remove("hidden");
 }
 $("loginForm").addEventListener("submit",async e=>{

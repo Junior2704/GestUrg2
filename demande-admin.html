@@ -22,8 +22,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  initializeAuth,
-  browserSessionPersistence,
+  getAuth,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -41,9 +40,7 @@ const firebaseConfig = {
 const API_BASE = "https://gesturg2-server.onrender.com";
 const appFirebase = initializeApp(firebaseConfig);
 
-const auth = initializeAuth(appFirebase, {
-  persistence: browserSessionPersistence
-});
+const auth = getAuth(appFirebase);
 
 const db = getFirestore(appFirebase);
 
@@ -255,9 +252,6 @@ onAuthStateChanged(auth, async user => {
 
   await initialiserGestionReclamations(user);
 });
-
-demarrerAuthentification();
-
 
 async function api(path, options = {}) {
   if (!currentUser) {

@@ -50,7 +50,7 @@ input[type=file]{padding:11px 14px;font-size:13.5px}
 .messagehead strong{color:var(--teal-deep)}
 .message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
 .composer{display:grid;gap:16px;margin-top:20px}
-.empty{text-align:center;padding:26px;color:var(--ink-soft)}
+.closed-note{display:none;gap:12px;padding:15px 18px;background:var(--aqua);border-radius:16px;margin-top:20px;color:var(--ink-soft);font-size:14px}.closed-note strong{display:block;color:var(--teal-deep)}.empty{text-align:center;padding:26px;color:var(--ink-soft)}
 .foot{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:22px;opacity:.8}
 @media (max-width:600px){.grid{grid-template-columns:1fr}.headrow{display:block}.headrow .pill{margin-bottom:10px}}
 </style>
@@ -65,7 +65,7 @@ input[type=file]{padding:11px 14px;font-size:13.5px}
 <section class="card" id="loginCard"><h2>Retrouver mon dossier</h2><form id="loginForm"><div class="grid"><div><label for="reference">Numéro de référence</label><input id="reference" name="reference" required autocomplete="off" placeholder="Ex. REC-2026-XXXX"></div><div><label for="code">Code de suivi</label><input id="code" name="code" type="password" required autocomplete="current-password" placeholder="Votre code personnel"></div></div><p class="muted">Ne partagez pas votre code de suivi. Il permet d’accéder aux informations de votre dossier.</p><div class="error" id="loginError" role="alert"></div><button class="btn" id="loginBtn" type="submit">Consulter mon dossier →</button></form></section>
 <div id="caseArea" class="hidden">
 <section class="card"><div class="headrow"><div><div class="meta" id="caseRef"></div><h2 id="caseTitle" style="margin:5px 0"></h2><div class="meta" id="caseDate"></div></div><span class="pill" id="caseStatus"></span></div><p id="caseDescription" style="white-space:pre-wrap"></p><h2 style="margin-top:26px">Historique du traitement</h2><div id="timeline" class="timeline"></div></section>
-<section class="card"><h2>Échanges avec l’établissement</h2><div id="messages" class="messages"></div><form id="messageForm" class="composer"><div><label for="message">Votre message</label><textarea id="message" name="message" required minlength="2" maxlength="5000" placeholder="Écrivez votre message…"></textarea></div><div><label for="piece">Pièce jointe (facultatif)</label><input id="piece" name="piece" type="file" accept=".pdf,.jpg,.jpeg,.png"><p class="muted" style="margin-bottom:0">Les pièces jointes seront activées lorsque le dépôt sécurisé de fichiers sera raccordé.</p></div><div class="error" id="messageError" role="alert" style="margin:0"></div><button class="btn" id="sendBtn" type="submit">Envoyer le message</button></form></section>
+<section class="card"><h2>Échanges avec l’établissement</h2><div id="messages" class="messages"></div><div class="closed-note" id="closedNote" role="status"><div aria-hidden="true">🔒</div><div><strong>Cette réclamation est clôturée</strong>L’envoi de nouveaux messages n’est plus possible. Pour toute nouvelle demande, vous pouvez déposer une nouvelle réclamation.</div></div><form id="messageForm" class="composer"><div><label for="message">Votre message</label><textarea id="message" name="message" required minlength="2" maxlength="5000" placeholder="Écrivez votre message…"></textarea></div><div><label for="piece">Pièce jointe (facultatif)</label><input id="piece" name="piece" type="file" accept=".pdf,.jpg,.jpeg,.png"><p class="muted" style="margin-bottom:0">Les pièces jointes seront activées lorsque le dépôt sécurisé de fichiers sera raccordé.</p></div><div class="error" id="messageError" role="alert" style="margin:0"></div><button class="btn" id="sendBtn" type="submit">Envoyer le message</button></form></section>
 <button class="btn btn-ghost" id="logoutBtn" type="button">Fermer mon dossier</button>
 </div>
 <p class="foot">En cas de difficulté d’accès, contactez directement l’établissement concerné.</p>
@@ -122,6 +122,17 @@ function renderMessageContent(container, value) {
   container.appendChild(document.createTextNode(text.slice(lastIndex)));
 }
 
+function isClosed(c){
+ if(c.cloturee===true||c.closed===true||c.clos===true)return true;
+ const norm=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ return /(clotur|clos\b|closed|archiv)/.test(norm(c.statut)+" "+norm(c.statutLibelle));
+}
+function applyClosedState(closed){
+ caseClosed=closed;
+ $("messageForm").classList.toggle("hidden",closed);
+ $("closedNote").style.display=closed?"flex":"none";
+}
+let caseClosed=false;
 function renderCase(data){
  const c=data.reclamation||data.dossier||data;
  $("caseRef").textContent="Référence : "+(c.reference||c.numero||"");
@@ -129,6 +140,7 @@ function renderCase(data){
  $("caseDate").textContent=c.dateCreation?"Déposée le "+dateText(c.dateCreation):"";
  $("caseStatus").textContent=c.statutLibelle||c.statut||"En cours";
  $("caseDescription").textContent=c.description||c.messageInitial||"";
+ applyClosedState(isClosed(c));
  const events=c.historique||c.evenements||[];
  $("timeline").innerHTML=events.length?events.map(e=>`<div class="event"><strong>${esc(e.titre||e.statut||"Mise à jour")} · ${esc(dateText(e.date||e.dateCreation))}</strong><p>${esc(e.description||e.message||"")}</p></div>`).join(""):'<div class="muted">Aucun événement supplémentaire pour le moment.</div>';
 
@@ -188,6 +200,7 @@ $("loginForm").addEventListener("submit",async e=>{
 });
 $("messageForm").addEventListener("submit",async e=>{
  e.preventDefault();clearError("messageError");
+ if(caseClosed){showError("messageError","Cette réclamation est clôturée : il n’est plus possible d’envoyer de message.");return;}
  if($("piece").files.length){showError("messageError","Le dépôt de pièces jointes n’est pas encore activé.");return;}
  $("sendBtn").disabled=true;
  try{

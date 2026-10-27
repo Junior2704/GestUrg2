@@ -2,331 +2,259 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Protection des données — Centre Hospitalier</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Politique de protection des données — GestUrg2</title>
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg: #F6FBFA;
-    --surface: #FFFFFF;
-    --ink: #12312D;
-    --ink-soft: #4C6B66;
-    --teal: #0F766E;
-    --teal-deep: #0B544E;
-    --aqua: #DCF3F0;
-    --coral: #EF6351;
-    --coral-soft: #FDE4DF;
-    --amber: #E2A63A;
-    --line: #E2EEEC;
-    --radius: 22px;
-    --shadow: 0 20px 50px -25px rgba(15, 60, 55, .35);
-    --font-display: 'Fraunces', serif;
-    --font-body: 'Plus Jakarta Sans', sans-serif;
-  }
-
-  *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; }
-  html{ scroll-behavior:smooth; }
-  body{
-    font-family: var(--font-body);
-    color: var(--ink);
-    background:
-      radial-gradient(1100px 500px at 90% -10%, #E7F6F3 0%, transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
-      var(--bg);
-    min-height:100vh;
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    padding: 32px 16px 80px;
-    -webkit-font-smoothing:antialiased;
-    line-height:1.6;
-  }
-  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; scroll-behavior:auto !important; } }
-
-  .app{ width:100%; max-width:720px; }
-
-  header.hero{ text-align:center; margin-bottom:22px; }
-  .hero .kicker{
-    display:inline-flex; align-items:center; gap:8px;
-    font-size:12.5px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--teal-deep); font-weight:700;
-    background: var(--aqua); padding:6px 14px; border-radius:999px;
-    margin-bottom:14px;
-  }
-  .hero h1{
-    font-family:var(--font-display);
-    font-weight:600;
-    font-size:clamp(28px, 5vw, 38px);
-    line-height:1.15;
-    margin:0 0 8px;
-    color:var(--teal-deep);
-  }
-  .hero p{ color:var(--ink-soft); margin:0 auto; font-size:15.5px; max-width:520px; }
-
-  .card{
-    background:var(--surface);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    border:1px solid var(--line);
-    padding:32px;
-    margin-top:18px;
-  }
-  @media (max-width:520px){ .card{ padding:22px; } }
-
-  h2.card-title{
-    font-family:var(--font-display);
-    font-size:22px; font-weight:600; margin:0 0 4px; color:var(--ink);
-  }
-  p.card-sub{ margin:0 0 20px; color:var(--ink-soft); font-size:14.5px; }
-  p, li{ font-size:14.5px; }
-  p{ margin:0 0 12px; }
-  a{ color:var(--teal); font-weight:600; }
-  a:hover{ color:var(--teal-deep); }
-
-  /* ---- points clés ---- */
-  .key-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  @media (max-width:520px){ .key-grid{ grid-template-columns:1fr; } }
-  .key{
-    display:flex; gap:12px; align-items:flex-start;
-    background:var(--aqua); border-radius:14px; padding:14px;
-  }
-  .key .emoji{ font-size:22px; line-height:1.2; }
-  .key b{ display:block; font-size:14px; color:var(--teal-deep); margin-bottom:2px; }
-  .key span.d{ font-size:13px; color:var(--ink-soft); line-height:1.45; display:block; }
-
-  /* ---- sommaire ---- */
-  .toc{ display:flex; flex-wrap:wrap; gap:8px; }
-  .toc a{
-    border:1.5px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600;
-    color:var(--ink-soft); background:#FBFDFD; text-decoration:none; transition:all .16s ease;
-  }
-  .toc a:hover{ background:var(--teal); border-color:var(--teal); color:#fff; }
-
-  /* ---- sections accordéon ---- */
-  details.sec{
-    border:1.5px solid var(--line); border-radius:16px; background:#FBFDFD; margin-bottom:10px;
-    transition:border-color .18s ease, background .18s ease; scroll-margin-top:16px;
-  }
-  details.sec:hover{ border-color:var(--teal); }
-  details.sec[open]{ background:#fff; border-color:var(--teal); }
-  details.sec summary{
-    list-style:none; cursor:pointer; padding:16px 18px; display:flex; align-items:center; gap:12px;
-    font-weight:700; font-size:15px; color:var(--ink);
-  }
-  details.sec summary::-webkit-details-marker{ display:none; }
-  details.sec summary:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; border-radius:14px; }
-  .sec .num{
-    flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--aqua); color:var(--teal-deep);
-    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
-  }
-  .sec .chev{ margin-left:auto; transition:transform .2s ease; color:var(--ink-soft); font-size:14px; }
-  details.sec[open] .chev{ transform:rotate(180deg); }
-  .sec .body{ padding:0 18px 18px 60px; color:var(--ink); animation: rise .3s ease both; }
-  @media (max-width:520px){ .sec .body{ padding:0 16px 16px 16px; } }
-  @keyframes rise{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
-  .sec ul{ margin:0 0 12px; padding-left:20px; }
-  .sec li{ margin-bottom:6px; }
-
-  /* ---- tableau ---- */
-  .table-wrap{ overflow-x:auto; margin:6px 0 14px; border:1px solid var(--line); border-radius:14px; }
-  table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:420px; }
-  th{ text-align:left; background:var(--aqua); color:var(--teal-deep); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; }
-  td{ padding:11px 14px; border-top:1px solid var(--line); vertical-align:top; }
-
-  /* ---- encadrés ---- */
-  .callout{
-    display:flex; gap:12px; background:var(--coral-soft); border-radius:14px; padding:14px 16px; margin:4px 0 12px;
-    font-size:13.5px;
-  }
-  .callout .emoji{ font-size:20px; line-height:1.3; }
-  .callout.soft{ background:var(--aqua); }
-
-  /* champs à compléter */
-  .ph{
-    background:#FFF3D6; color:#7A5300; border-radius:6px; padding:1px 6px; font-weight:600; font-size:.95em;
-    border:1px dashed var(--amber);
-  }
-
-  /* ---- droits ---- */
-  .rights{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-  @media (max-width:520px){ .rights{ grid-template-columns:1fr; } }
-  .right{
-    border:1.5px solid var(--line); border-radius:12px; padding:10px 12px; font-size:13.5px; font-weight:600; background:#fff;
-    display:flex; gap:8px; align-items:center;
-  }
-
-  /* ---- boutons ---- */
-  .nav-row{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
-  .btn{
-    flex:1; padding:15px 18px; border-radius:14px; font-weight:700; font-size:15px; text-decoration:none;
-    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .18s ease; text-align:center;
-    font-family:var(--font-body);
-  }
-  .btn-primary{ background:var(--teal); color:#fff; box-shadow:0 12px 24px -12px rgba(15,118,110,.6); }
-  .btn-primary:hover{ background:var(--teal-deep); color:#fff; transform:translateY(-1px); }
-  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); }
-  .btn-ghost:hover{ border-color:var(--teal); color:var(--teal-deep); }
-
-  .footer-note{ text-align:center; font-size:12px; color:var(--ink-soft); margin-top:18px; opacity:.8; }
+:root{--blue:#0078d4;--blue-dark:#005ea2;--ink:#172b3a;--muted:#5b6b78;--bg:#f4f8fb;--line:#dfe8ef;--card:#fff;--soft:#eaf5fc;--warn:#fff5df;--warn-border:#e4b34f;--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:22px}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--blue-dark);text-underline-offset:3px}a:hover{color:var(--blue)}
+.wrap{width:min(1050px,100% - 32px);margin:0 auto;padding:28px 0 64px}
+.hero{background:linear-gradient(135deg,#073e68,#0078d4);color:#fff;border-radius:24px;padding:clamp(25px,5vw,52px);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:260px;height:260px;border:1px solid #ffffff30;border-radius:50%;right:-75px;top:-105px;box-shadow:0 0 0 35px #ffffff0c,0 0 0 70px #ffffff08}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.02em;margin-bottom:24px}.brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;padding:4px}
+.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:800;color:#cceaff}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.12;letter-spacing:-.04em;margin:10px 0 16px;max-width:780px} .hero p{max-width:760px;color:#e6f4ff;font-size:16px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}.pill{border:1px solid #ffffff55;background:#ffffff14;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:700}
+.notice{margin:20px 0;background:var(--warn);border:1px solid var(--warn-border);border-radius:14px;padding:16px 18px}.notice strong{display:block;margin-bottom:4px}
+.layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:20px;align-items:start;margin-top:22px}
+nav,.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 30px #183b5510}
+nav{padding:18px;position:sticky;top:16px}nav h2{font-size:14px;margin:0 0 10px}nav a{display:block;text-decoration:none;padding:7px 9px;border-radius:8px;color:var(--muted);font-size:13px;font-weight:600}nav a:hover{background:var(--soft);color:var(--blue-dark)}
+main{min-width:0}.panel{padding:clamp(20px,3vw,32px);margin-bottom:16px;scroll-margin-top:16px}
+h2{font-size:22px;letter-spacing:-.025em;line-height:1.3;margin:0 0 12px}h3{font-size:16px;margin:22px 0 7px}p{margin:0 0 12px}p:last-child{margin-bottom:0}ul,ol{padding-left:22px;margin:8px 0 14px}li{margin:5px 0}
+.lead{color:var(--muted);margin-top:-4px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mini{border:1px solid var(--line);background:#fbfdff;border-radius:13px;padding:15px}.mini b{display:block;margin-bottom:4px}.mini p{font-size:13px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--soft);font-size:12px;color:#164b70} .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+details{border:1px solid var(--line);border-radius:12px;padding:0 14px;margin:10px 0;background:#fff}summary{cursor:pointer;font-weight:700;padding:13px 0}details>div{padding:0 0 14px}
+.tag{display:inline-block;background:var(--soft);color:#07558c;border-radius:6px;padding:2px 7px;font-size:12px;font-weight:700}
+.placeholder{background:#fff0cf;border:1px dashed #c28b20;border-radius:5px;padding:1px 5px;color:#704d00;font-weight:700}
+.footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 8px}
+.top{display:inline-block;text-decoration:none;font-weight:700;font-size:13px}
+@media(max-width:780px){.layout{grid-template-columns:1fr}nav{position:static}.grid{grid-template-columns:1fr}.wrap{width:min(100% - 22px,1050px);padding-top:11px}.hero{border-radius:18px}}
+@media print{body{background:#fff;font-size:11pt}.wrap{width:100%;padding:0}.hero{background:#fff;color:#172b3a;border:1px solid #ccd6df;padding:20px}.hero p,.eyebrow{color:#334e60}.layout{display:block}nav{display:none}.panel{box-shadow:none;break-inside:avoid}.notice{break-inside:avoid}a{color:#172b3a}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
+<div class="wrap" id="haut">
+<header class="hero">
+  <div class="brand"><img src="logo.png" alt="" onerror="this.style.display='none'"><span>GestUrg2</span></div>
+  <div class="eyebrow">Confidentialité · Données personnelles</div>
+  <h1>Politique de protection des données</h1>
+  <p>Cette page explique quelles données peuvent être traitées par GestUrg2, pour quelles raisons, qui peut y accéder et comment exercer vos droits.</p>
+  <div class="meta"><span class="pill">Version du 27 octobre 2026</span><span class="pill">Règlement (UE) 2016/679 — RGPD</span><span class="pill">Droit français</span></div>
+</header>
 
-<div class="app">
-
-  <header class="hero">
-    <span class="kicker">🔒 Protection des données</span>
-    <h1>Vos données, en toute transparence</h1>
-    <p>Voici, simplement, ce que nous collectons lorsque vous répondez à notre enquête de satisfaction, pourquoi, et quels sont vos droits.</p>
-  </header>
-
-  <!-- Points clés -->
-  <section class="card" aria-labelledby="t-cles">
-    <h2 class="card-title" id="t-cles">L'essentiel en un coup d'œil</h2>
-    <p class="card-sub">Mise à jour : 27 octobre 2026</p>
-    <div class="key-grid">
-      <div class="key"><span class="emoji">🕶️</span><div><b>Réponse anonyme</b><span class="d">Nous ne vous demandons ni nom, ni prénom, ni e-mail, ni numéro de dossier.</span></div></div>
-      <div class="key"><span class="emoji">🎯</span><div><b>Un seul but</b><span class="d">Améliorer la qualité de l'accueil et des soins. Aucune utilisation commerciale.</span></div></div>
-      <div class="key"><span class="emoji">🚫</span><div><b>Jamais revendues</b><span class="d">Vos réponses ne sont ni vendues, ni cédées à des fins publicitaires.</span></div></div>
-      <div class="key"><span class="emoji">⚖️</span><div><b>Vos droits</b><span class="d">Vous pouvez nous contacter ou saisir la CNIL à tout moment.</span></div></div>
-    </div>
-  </section>
-
-  <!-- Sommaire -->
-  <section class="card" aria-labelledby="t-som">
-    <h2 class="card-title" id="t-som">Aller directement à…</h2>
-    <p class="card-sub">Touchez une rubrique pour l'ouvrir.</p>
-    <nav class="toc" aria-label="Sommaire">
-      <a href="#s1">Responsable</a>
-      <a href="#s2">Données collectées</a>
-      <a href="#s3">Finalité</a>
-      <a href="#s4">Hébergement</a>
-      <a href="#s5">Durée</a>
-      <a href="#s6">Vos droits</a>
-      <a href="#s7">Contact</a>
-    </nav>
-  </section>
-
-  <!-- Détail -->
-  <section class="card" aria-labelledby="t-detail">
-    <h2 class="card-title" id="t-detail">Le détail</h2>
-    <p class="card-sub">Informations fournies conformément aux articles 13 et 14 du RGPD.</p>
-
-    <details class="sec" id="s1">
-      <summary><span class="num">1</span> Qui est responsable de vos données ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <p>Le responsable du traitement est :</p>
-        <p><b><span class="ph">[Nom de l'établissement]</span></b><br>
-        <span class="ph">[Adresse postale complète]</span><br>
-        Représenté par <span class="ph">[Nom et fonction du représentant légal]</span></p>
-        <p>Un <b>délégué à la protection des données (DPO)</b> veille au respect de la réglementation. Ses coordonnées figurent à la rubrique « Contact ».</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s2" open>
-      <summary><span class="num">2</span> Quelles données collectons-nous ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Donnée</th><th>Précision</th></tr></thead>
-            <tbody>
-              <tr><td>Date du passage</td><td>La date que vous indiquez dans le questionnaire</td></tr>
-              <tr><td>Motif du passage</td><td>Une catégorie générale (consultation, urgences, maternité…), sans détail médical</td></tr>
-              <tr><td>Vos évaluations</td><td>Notes de 1 à 5 par thème (accueil, attente, soins…) et note de recommandation de 0 à 10</td></tr>
-              <tr><td>Points forts et pistes d'amélioration</td><td>Les éléments que vous sélectionnez dans les listes proposées</td></tr>
-              <tr><td>Commentaire libre</td><td>Facultatif, rédigé par vous</td></tr>
-              <tr><td>Date et heure d'envoi</td><td>Enregistrées automatiquement</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout">
-          <span class="emoji">✍️</span>
-          <div><b>Dans le commentaire libre, merci de ne pas indiquer</b> de nom (le vôtre ou celui d'un tiers), de numéro de dossier, ni d'information sur votre état de santé. Ce champ n'est pas fait pour cela.</div>
-        </div>
-        <p>Nous <b>ne collectons pas</b> votre identité, vos coordonnées ni votre numéro de dossier patient. Aucune donnée n'est rapprochée de votre dossier médical.</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s3">
-      <summary><span class="num">3</span> Pourquoi utilisons-nous ces données ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <p><b>Finalité :</b> mesurer la satisfaction des usagers et identifier des axes d'amélioration de l'accueil, de l'organisation et de la qualité des soins.</p>
-        <ul>
-          <li>Suivi statistique de la satisfaction par service et par motif de passage</li>
-          <li>Analyse des commentaires par l'équipe qualité</li>
-          <li>Pilotage des actions d'amélioration</li>
-        </ul>
-        <p><b>Base légale :</b> <span class="ph">[mission d'intérêt public (art. 6.1.e du RGPD) ou intérêt légitime (art. 6.1.f) — à confirmer avec votre DPO]</span>. Répondre est entièrement facultatif et n'a aucune incidence sur votre prise en charge.</p>
-        <p><b>Destinataires :</b> l'équipe qualité et la direction de l'établissement, uniquement sous forme de résultats ou de réponses non identifiantes.</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s4">
-      <summary><span class="num">4</span> Où sont-elles hébergées ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <p>Les réponses sont enregistrées dans une base de données <b>Google Cloud Firestore</b> (service Firebase, fourni par Google). Google intervient comme <b>sous-traitant</b> : il héberge les données pour notre compte, sans les utiliser pour ses propres finalités.</p>
-        <p>Région d'hébergement : <span class="ph">[ex. Europe — à vérifier dans la console Firebase]</span>.</p>
-        <p>Transferts hors Union européenne : <span class="ph">[préciser s'il y en a et les garanties applicables, par ex. clauses contractuelles types]</span>.</p>
-        <p>Cette page charge aussi des ressources techniques depuis les serveurs de Google (polices de caractères et bibliothèque Firebase). Lors du chargement, votre adresse IP peut être vue par Google, comme pour toute page web.</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s5">
-      <summary><span class="num">5</span> Combien de temps les conservons-nous ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <p>Les réponses sont conservées <b><span class="ph">[durée, ex. 3 ans]</span></b> à compter de leur envoi, puis supprimées ou définitivement anonymisées sous forme de statistiques agrégées.</p>
-        <p>L'accès à la base est limité aux personnes habilitées de l'établissement.</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s6">
-      <summary><span class="num">6</span> Quels sont vos droits ?<span class="chev">▼</span></summary>
-      <div class="body">
-        <div class="rights">
-          <div class="right">👁️ Accès</div>
-          <div class="right">✏️ Rectification</div>
-          <div class="right">🗑️ Effacement</div>
-          <div class="right">⏸️ Limitation</div>
-          <div class="right">✋ Opposition</div>
-          <div class="right">📦 Portabilité <span style="font-weight:500;color:var(--ink-soft)">(si applicable)</span></div>
-        </div>
-        <div class="callout soft">
-          <span class="emoji">💡</span>
-          <div>Vos réponses étant <b>anonymes</b>, nous ne pouvons pas toujours retrouver une réponse précise parmi les autres. Pour que nous puissions la localiser, indiquez-nous la <b>date de votre passage</b>, le <b>motif</b> et, si possible, <b>des extraits de votre commentaire</b>.</div>
-        </div>
-        <p>Pour exercer vos droits, écrivez à notre DPO (voir « Contact »). Nous vous répondons dans un délai d'<b>un mois</b>.</p>
-        <p>Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la <b>CNIL</b> : <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr/fr/plaintes</a>.</p>
-      </div>
-    </details>
-
-    <details class="sec" id="s7">
-      <summary><span class="num">7</span> Nous contacter<span class="chev">▼</span></summary>
-      <div class="body">
-        <p><b>Délégué à la protection des données</b></p>
-        <ul>
-          <li>Par e-mail : <span class="ph">[adresse e-mail du DPO]</span></li>
-          <li>Par courrier : <span class="ph">[Nom de l'établissement — À l'attention du DPO — adresse]</span></li>
-        </ul>
-        <p>Merci de ne pas joindre d'informations médicales à votre message.</p>
-      </div>
-    </details>
-  </section>
-
-  <!-- Retour -->
-  <section class="card">
-    <div class="nav-row" style="margin-top:0">
-     <!-- <a class="btn btn-ghost" href="avis-patient.html">← Retour au questionnaire</a>-->
-      <a class="btn btn-primary" href="#t-cles">Remonter en haut ↑</a>
-    </div>
-  </section>
-
-  <p class="footer-note">Dernière mise à jour : 27 octobre 2026<br>
-    🚀 Powered by GestUrg2
-  </p>
+<div class="notice">
+<strong>Important — document à valider avant toute utilisation réelle</strong>
+Cette politique est une base de transparence établie à partir des fonctionnalités techniques de l'application. Les éléments surlignés en jaune doivent être complétés ou vérifiés par l'établissement responsable du traitement et son délégué à la protection des données (DPO). Cette page, à elle seule, ne certifie pas la conformité RGPD de GestUrg2. Les données de santé ne doivent pas être utilisées en production tant que le responsable de traitement, les contrats, l'hébergement applicable aux données de santé et les mesures de sécurité n'ont pas été validés.
 </div>
 
+<div class="layout">
+<nav aria-label="Sommaire">
+<h2>Dans cette page</h2>
+<a href="#responsable">1. Responsable du traitement</a>
+<a href="#perimetre">2. Périmètre et utilisateurs</a>
+<a href="#donnees">3. Données traitées</a>
+<a href="#finalites">4. Finalités et bases légales</a>
+<a href="#destinataires">5. Destinataires et prestataires</a>
+<a href="#hebergement">6. Hébergement et transferts</a>
+<a href="#durees">7. Durées de conservation</a>
+<a href="#securite">8. Sécurité et confidentialité</a>
+<a href="#droits">9. Vos droits</a>
+<a href="#cookies">10. Cookies et stockage local</a>
+<a href="#mineurs">11. Mineurs et représentants</a>
+<a href="#incident">12. Incident de sécurité</a>
+<a href="#contact">13. Contact et réclamation</a>
+<a href="#maj">14. Mise à jour</a>
+</nav>
+
+<main>
+<section class="panel" id="responsable">
+<h2>1. Qui est responsable du traitement ?</h2>
+<p>Le responsable du traitement est l'organisme qui détermine les finalités et les moyens du traitement. Pour un usage dans un établissement de santé, il s'agit en principe de l'établissement ou de l'organisme qui décide de déployer GestUrg2, et non automatiquement du développeur de l'outil.</p>
+<p><strong>Responsable du traitement :</strong> <span class="placeholder">[Nom légal complet de l'établissement ou de l'organisme]</span></p>
+<p><strong>Adresse :</strong> <span class="placeholder">[Adresse postale complète]</span></p>
+<p><strong>Représentant :</strong> <span class="placeholder">[Nom ou fonction du représentant légal, si nécessaire]</span></p>
+<p><strong>Délégué à la protection des données (DPO) :</strong> <span class="placeholder">[Nom ou service et coordonnées du DPO]</span></p>
+<p>Le rôle exact de l'éditeur/développeur, de l'établissement utilisateur et des prestataires doit être formalisé avant la mise en production, notamment dans les contrats et accords de sous-traitance applicables.</p>
+</section>
+
+<section class="panel" id="perimetre">
+<h2>2. Périmètre de cette politique</h2>
+<p>GestUrg2 est une application web de gestion de parcours aux urgences et de fonctions associées. Selon les modules activés et la configuration de l'établissement, elle peut être utilisée par des professionnels habilités, des personnels administratifs et des patients disposant d'un accès à un portail patient.</p>
+<div class="grid">
+<div class="mini"><b>Professionnels et personnels</b><p>Comptes, identifiants, informations professionnelles, habilitations, paramètres de connexion et traces d'activité nécessaires au fonctionnement et à la sécurité.</p></div>
+<div class="mini"><b>Patients et usagers</b><p>Identité, coordonnées, informations administratives, données de santé liées à la prise en charge, rendez-vous, documents et informations transmises par les modules activés.</p></div>
+</div>
+<p>Les données réellement collectées dépendent des formulaires, des fonctions effectivement activées et des règles de l'établissement. Il convient de maintenir cette page à jour lorsque ces éléments changent.</p>
+</section>
+
+<section class="panel" id="donnees">
+<h2>3. Quelles catégories de données peuvent être traitées ?</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Catégorie</th><th>Exemples selon les modules utilisés</th><th>Personnes concernées</th></tr></thead>
+<tbody>
+<tr><td>Identité et état civil</td><td>Nom, prénom, civilité, sexe, date de naissance, identifiant patient</td><td>Patients</td></tr>
+<tr><td>Coordonnées</td><td>Adresse électronique, numéro de téléphone ou autres coordonnées lorsqu'ils sont saisis</td><td>Patients, professionnels</td></tr>
+<tr><td>Données de santé</td><td>Motif de passage, antécédents ou vigilances saisis, allergies, traitements, poids/taille, gravité, observations, actes, examens, prescriptions, comptes rendus, documents médicaux</td><td>Patients</td></tr>
+<tr><td>Prise en charge et parcours</td><td>Hospitalisations, service/circuit, équipe, dates d'entrée et de sortie, rendez-vous, consultations, statut et suivi</td><td>Patients</td></tr>
+<tr><td>Documents</td><td>Ordonnances, certificats, prescriptions, rapports, fichiers PDF et documents accessibles via le portail patient</td><td>Patients, professionnels</td></tr>
+<tr><td>Facturation et administratif</td><td>Prestations, montants, paiements et informations administratives nécessaires au dossier</td><td>Patients, personnels habilités</td></tr>
+<tr><td>Comptes professionnels</td><td>Nom, e-mail professionnel, spécialité, lieu d'exercice, type de compte, rôles, autorisations et préférences de connexion</td><td>Professionnels et personnels</td></tr>
+<tr><td>Accès et sécurité</td><td>Identifiants techniques, événements de connexion, journaux d'audit, actions effectuées, dates/horaires, informations nécessaires à la détection d'abus</td><td>Utilisateurs</td></tr>
+<tr><td>Communication</td><td>Messages de service, demandes, notifications, e-mails, rappels et informations nécessaires à l'envoi d'un SMS via un relais configuré</td><td>Patients, utilisateurs</td></tr>
+<tr><td>Retours d'expérience</td><td>Réponses à un questionnaire de satisfaction, notes et commentaires si ce module est utilisé</td><td>Usagers</td></tr>
+</tbody></table></div>
+<p>Les données de santé sont des données particulièrement sensibles. Elles ne doivent être accessibles qu'aux personnes autorisées et uniquement dans la mesure nécessaire à leurs missions.</p>
+<p>Les commentaires libres peuvent contenir involontairement des informations personnelles ou médicales. Les formulaires doivent demander aux utilisateurs de ne saisir que les informations utiles à leur finalité.</p>
+<p>GestUrg2 ne doit pas être considéré comme anonyme lorsque des données sont directement identifiantes ou qu'elles peuvent être reliées à un patient. La pseudonymisation ne constitue pas une anonymisation.</p>
+</section>
+
+<section class="panel" id="finalites">
+<h2>4. Pourquoi ces données sont-elles utilisées ?</h2>
+<ul>
+<li>Gérer l'accueil, l'admission, l'orientation et le suivi des patients aux urgences.</li>
+<li>Assurer la continuité de la prise en charge et permettre aux professionnels habilités de consulter les informations utiles.</li>
+<li>Produire, conserver et rendre accessibles les documents de prise en charge, prescriptions et comptes rendus.</li>
+<li>Organiser les consultations et rendez-vous, ainsi que les notifications ou communications qui y sont liées.</li>
+<li>Gérer les éléments administratifs et de facturation lorsque ces fonctions sont activées.</li>
+<li>Gérer les comptes, les droits d'accès, la maintenance, la sécurité, la prévention des abus et la traçabilité.</li>
+<li>Donner aux patients un accès sécurisé aux documents qui leur sont destinés, lorsque le portail patient est activé.</li>
+<li>Traiter les demandes des utilisateurs et, si le module existe, analyser les retours de satisfaction afin d'améliorer le service.</li>
+</ul>
+<h3>Base juridique</h3>
+<p>La base juridique doit être déterminée par le responsable de traitement pour chaque finalité. Selon le contexte, elle peut notamment relever d'une obligation légale, d'une mission d'intérêt public ou de la fourniture de soins et de la gestion des systèmes et services de santé dans les conditions prévues par le droit applicable. Les données de santé doivent également respecter une condition de licéité prévue par l'article 9 du RGPD et les dispositions françaises applicables.</p>
+<p><strong>Base(s) juridique(s) retenue(s) pour l'établissement :</strong> <span class="placeholder">[À compléter et valider avec le DPO/juriste selon les missions et les traitements réels]</span>.</p>
+<p>Le consentement n'est pas automatiquement la base légale appropriée pour les traitements nécessaires aux soins. Lorsqu'un traitement repose sur le consentement, celui-ci doit répondre aux conditions légales et pouvoir être retiré. La participation à un questionnaire facultatif, le cas échéant, ne doit pas affecter la prise en charge.</p>
+</section>
+
+<section class="panel" id="destinataires">
+<h2>5. Qui peut accéder aux données ?</h2>
+<p>Les données sont accessibles uniquement aux personnes et organismes autorisés, dans la limite de leurs fonctions et des habilitations accordées.</p>
+<ul>
+<li>Les professionnels de santé participant à la prise en charge, dans les conditions du secret professionnel et du secret médical.</li>
+<li>Les personnels administratifs autorisés, pour les besoins administratifs relevant de leurs fonctions.</li>
+<li>Les personnels techniques habilités, dans la mesure nécessaire à l'administration, à la maintenance et à la sécurité.</li>
+<li>Les patients, uniquement pour les informations et documents qui leur sont destinés via un accès patient sécurisé.</li>
+<li>Les prestataires techniques intervenant pour le compte du responsable de traitement, dans les limites des services fournis et des contrats applicables.</li>
+<li>Les autorités légalement habilitées lorsque la loi le prévoit.</li>
+</ul>
+<p>Les données ne doivent pas être vendues ni utilisées à des fins publicitaires. Toute communication à un autre destinataire doit reposer sur une base légale et être limitée à ce qui est nécessaire.</p>
+<h3>Prestataires techniques susceptibles d'intervenir</h3>
+<ul>
+<li><strong>Firebase / Google Cloud Firestore et Firebase Authentication :</strong> services utilisés pour certaines fonctions de base de données et d'authentification.</li>
+<li><strong>GitHub Pages / GitHub :</strong> hébergement et distribution du site web public, selon la configuration du déploiement.</li>
+<li><strong>Serveur applicatif hébergé sur Render :</strong> certaines fonctions serveur, notamment des notifications ou communications, selon les modules déployés.</li>
+<li><strong>Brevo :</strong> envoi d'e-mails lorsque le service est configuré pour cette fonction.</li>
+<li><strong>Google Fonts et bibliothèques externes :</strong> ressources chargées par certaines pages, susceptibles de transmettre des données techniques comme l'adresse IP au fournisseur.</li>
+</ul>
+<p>Cette liste est indicative et doit être vérifiée avec la configuration réellement utilisée. Le responsable de traitement doit vérifier les contrats de sous-traitance, les paramètres de partage, les lieux de traitement et les éventuels transferts internationaux de chaque prestataire.</p>
+</section>
+
+<section class="panel" id="hebergement">
+<h2>6. Hébergement, transferts et données de santé</h2>
+<p>Les données de l'application peuvent être stockées ou traitées par les services techniques configurés pour l'instance utilisée. La région de stockage et les lieux de traitement ne peuvent pas être déduits du seul fait que Firebase, Google Cloud, GitHub, Render ou Brevo sont utilisés : ils doivent être vérifiés dans les paramètres et contrats applicables.</p>
+<p><strong>Régions d'hébergement confirmées :</strong> <span class="placeholder">[À compléter pour chaque service utilisé]</span>.</p>
+<p><strong>Transferts hors Espace économique européen et garanties :</strong> <span class="placeholder">[À documenter après vérification des prestataires et contrats]</span>.</p>
+<div class="notice">
+<strong>Point de vigilance spécifique aux données de santé</strong>
+En France, l'hébergement de données de santé à caractère personnel pour le compte d'un tiers peut être soumis aux exigences de certification HDS et à d'autres conditions légales. La certification doit être vérifiée pour le prestataire, le périmètre et les activités effectivement concernés ; l'utilisation de Firebase ou d'un autre service cloud ne suffit pas, à elle seule, à démontrer que ces exigences sont satisfaites. Avant toute utilisation avec de vraies données de patients, l'établissement doit faire valider l'architecture, les contrats et les obligations applicables par son DPO et ses responsables sécurité/juridique.
+</div>
+<p>Les pages publiques du site et les services de stockage de données ne sont pas nécessairement hébergés par le même prestataire. Il faut distinguer l'hébergement des fichiers de l'application de l'hébergement des données enregistrées par les utilisateurs.</p>
+</section>
+
+<section class="panel" id="durees">
+<h2>7. Combien de temps les données sont-elles conservées ?</h2>
+<p>Les durées de conservation doivent être définies par le responsable de traitement selon la finalité, les obligations légales applicables et les règles de l'établissement. Elles ne peuvent pas être fixées de manière universelle pour toutes les données d'une application médicale.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Type de données</th><th>Durée applicable</th></tr></thead>
+<tbody>
+<tr><td>Dossiers patients et documents de santé</td><td><span class="placeholder">[Durée définie par l'établissement selon les règles légales applicables]</span></td></tr>
+<tr><td>Rendez-vous et données administratives</td><td><span class="placeholder">[Durée à définir selon la finalité et les obligations applicables]</span></td></tr>
+<tr><td>Comptes professionnels et habilitations</td><td><span class="placeholder">[Durée active du compte puis durée d'archivage justifiée]</span></td></tr>
+<tr><td>Journaux d'accès et d'audit</td><td><span class="placeholder">[Durée à définir selon les exigences de sécurité et les obligations applicables]</span></td></tr>
+<tr><td>Jetons et accès au portail patient</td><td>Ils doivent être limités dans le temps et révoqués à leur expiration ou lorsque cela est nécessaire ; durée exacte à confirmer dans la configuration.</td></tr>
+<tr><td>Messages et communications</td><td><span class="placeholder">[Durée à définir selon leur contenu et leur finalité]</span></td></tr>
+<tr><td>Questionnaires de satisfaction, si activés</td><td><span class="placeholder">[Durée à définir ; distinguer réponses identifiantes et statistiques réellement anonymisées]</span></td></tr>
+</tbody></table></div>
+<p>À l'issue de la durée applicable, les données doivent être supprimées ou archivées conformément aux obligations légales. Une conservation plus longue doit être justifiée. Les sauvegardes et copies techniques doivent également être prises en compte dans la politique de suppression.</p>
+</section>
+
+<section class="panel" id="securite">
+<h2>8. Comment les données sont-elles protégées ?</h2>
+<p>La sécurité repose sur des mesures techniques et organisationnelles adaptées au niveau de risque. Les mesures effectivement déployées doivent être documentées et contrôlées régulièrement. Selon la configuration, elles peuvent comprendre :</p>
+<ul>
+<li>authentification des utilisateurs et gestion individuelle des comptes ;</li>
+<li>gestion des rôles et des autorisations d'accès aux fonctions et aux données ;</li>
+<li>règles de sécurité de la base de données et contrôle des accès côté serveur ;</li>
+<li>communications chiffrées via HTTPS/TLS lorsque les services le prennent en charge ;</li>
+<li>traçabilité des événements et contrôles des accès lorsque ces fonctions sont activées ;</li>
+<li>expiration, limitation et révocation des liens ou jetons d'accès ;</li>
+<li>mises à jour, sauvegardes, procédures de reprise et gestion des incidents ;</li>
+<li>sensibilisation des utilisateurs au secret professionnel et à la confidentialité.</li>
+</ul>
+<p>Cette liste décrit des objectifs de sécurité et non une attestation que chaque mesure est déjà activée ou suffisante. Le responsable de traitement doit tester la configuration réelle, limiter les privilèges, protéger les secrets et clés, définir les procédures de sauvegarde et vérifier les règles de sécurité de la base de données.</p>
+<p>Les utilisateurs ne doivent jamais partager leur mot de passe, laisser une session ouverte sans surveillance ou transmettre des documents médicaux à des destinataires non autorisés.</p>
+</section>
+
+<section class="panel" id="droits">
+<h2>9. Quels sont vos droits ?</h2>
+<p>Dans les conditions prévues par le RGPD et les textes applicables, vous pouvez notamment disposer des droits suivants :</p>
+<div class="grid">
+<div class="mini"><b>Droit d'accès</b><p>Obtenir la confirmation qu'un traitement existe et accéder aux données concernées.</p></div>
+<div class="mini"><b>Droit de rectification</b><p>Demander la correction de données inexactes ou incomplètes.</p></div>
+<div class="mini"><b>Droit à l'effacement</b><p>Demander la suppression lorsque les conditions légales sont réunies ; ce droit peut être limité par des obligations de conservation.</p></div>
+<div class="mini"><b>Droit à la limitation</b><p>Demander, dans certains cas, que l'utilisation des données soit temporairement limitée.</p></div>
+<div class="mini"><b>Droit d'opposition</b><p>Vous opposer à certains traitements lorsque les conditions légales le permettent.</p></div>
+<div class="mini"><b>Droit à la portabilité</b><p>Applicable uniquement à certains traitements fondés sur le consentement ou un contrat et effectués par des moyens automatisés.</p></div>
+</div>
+<p>Ces droits ne sont pas absolus et peuvent être limités notamment lorsque le traitement est nécessaire à une obligation légale, à une mission d'intérêt public ou à la conservation du dossier médical. Le responsable de traitement doit examiner chaque demande selon le contexte applicable.</p>
+<p>Pour protéger vos informations, le responsable peut devoir vérifier votre identité de manière proportionnée avant de répondre. N'envoyez pas de copie de pièce d'identité sans qu'elle soit nécessaire et demandée par un canal approprié.</p>
+<p>Une réponse est en principe apportée dans un délai d'un mois, prolongeable dans les conditions prévues par le RGPD. L'exercice de vos droits est généralement gratuit, sauf exceptions prévues par la loi.</p>
+</section>
+
+<section class="panel" id="cookies">
+<h2>10. Cookies, journaux et stockage local</h2>
+<p>Le fonctionnement de l'application peut nécessiter des mécanismes techniques pour conserver une session, mémoriser une préférence ou assurer l'authentification. Selon la page et la configuration, ces mécanismes peuvent utiliser des cookies, le stockage local ou de session du navigateur, ainsi que les services d'authentification du fournisseur technique.</p>
+<p>Par exemple, une préférence de connexion ou un dernier identifiant utilisé peut être mémorisé localement sur l'appareil. Les journaux techniques et l'adresse IP peuvent également être traités par les fournisseurs qui délivrent les pages ou ressources réseau.</p>
+<p>La liste exacte des cookies et traceurs doit être vérifiée sur le site en production. Les traceurs non essentiels soumis au consentement ne doivent être activés qu'après recueil d'un consentement valable. Le simple chargement d'une police ou d'une bibliothèque externe peut transmettre des données techniques au fournisseur concerné.</p>
+<p>Vous pouvez gérer les cookies via les paramètres de votre navigateur. Bloquer certains mécanismes strictement nécessaires peut toutefois empêcher certaines fonctions de connexion ou de sécurité de fonctionner.</p>
+</section>
+
+<section class="panel" id="mineurs">
+<h2>11. Données concernant les mineurs et les représentants</h2>
+<p>Les données relatives à un enfant peuvent être traitées dans le cadre de sa prise en charge, dans le respect des règles applicables au secret médical, à l'autorité parentale, à la représentation légale et aux droits propres du mineur. Les règles de communication des informations ne sont pas identiques dans toutes les situations : elles doivent être appréciées par les professionnels et l'établissement selon la loi applicable.</p>
+<p>Un accès au portail patient ne doit être remis qu'à une personne habilitée et selon une procédure de vérification adaptée. Les liens d'accès et documents ne doivent pas être transmis à une adresse ou à un destinataire non vérifié.</p>
+</section>
+
+<section class="panel" id="incident">
+<h2>12. Que faire en cas de problème de sécurité ?</h2>
+<p>Tout utilisateur qui suspecte une divulgation, un accès indu, une perte de données ou l'envoi d'un document au mauvais destinataire doit le signaler sans délai au référent informatique/sécurité et au responsable prévu par l'établissement. Il ne doit pas tenter de masquer l'incident ni de diffuser davantage les données concernées.</p>
+<p>Le responsable de traitement évalue l'incident, prend les mesures nécessaires et, lorsque la réglementation l'exige, notifie la violation à l'autorité de contrôle dans les délais légaux et informe les personnes concernées lorsque cela est requis.</p>
+</section>
+
+<section class="panel" id="contact">
+<h2>13. Contact et réclamation</h2>
+<p>Pour exercer vos droits ou poser une question sur le traitement de vos données, contactez en priorité le responsable de traitement ou son DPO :</p>
+<p><strong>Courriel :</strong> <span class="placeholder">[Adresse e-mail officielle du DPO ou du service compétent]</span><br>
+<strong>Adresse postale :</strong> <span class="placeholder">[Adresse de l'établissement, à l'attention du DPO]</span></p>
+<p>Pour les questions concernant votre dossier médical ou une prise en charge, utilisez également le canal officiel de l'établissement. Évitez d'envoyer des données de santé par e-mail ordinaire si un canal sécurisé est mis à votre disposition.</p>
+<p>Si, après avoir contacté le responsable de traitement, vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la Commission nationale de l'informatique et des libertés (CNIL) : <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener noreferrer">www.cnil.fr/fr/plaintes</a>.</p>
+</section>
+
+<section class="panel" id="maj">
+<h2>14. Mise à jour de cette politique</h2>
+<p>Cette politique peut être modifiée pour refléter l'évolution des fonctionnalités, des prestataires, des obligations légales ou des pratiques de l'établissement. La date de mise à jour est indiquée ci-dessous. En cas de changement important, les personnes concernées doivent être informées lorsque la réglementation l'exige.</p>
+<p><strong>Dernière mise à jour :</strong> 27 octobre 2026.</p>
+<p><a class="top" href="#haut">↑ Revenir en haut de la page</a></p>
+</section>
+</main>
+</div>
+<footer class="footer">GestUrg2 · Politique de protection des données · Version du 27 octobre 2026<br>Les mentions en surbrillance doivent être complétées et validées par le responsable de traitement avant publication.</footer>
+</div>
 </body>
 </html>

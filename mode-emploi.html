@@ -146,7 +146,7 @@ function applySearch() {
   categories.forEach(category => {
     let shown = 0;
     category.querySelectorAll('.entry[data-allowed="true"]').forEach(entry => {
-      const match = !q || (entry.innerText + " " + (entry.dataset.title || "")).toLocaleLowerCase("fr").includes(q);
+      const match = !q || (entry.textContent + " " + (entry.dataset.title || "")).toLocaleLowerCase("fr").includes(q);
       entry.hidden = !match;
       if (match) { shown++; count++; }
     });
@@ -155,12 +155,16 @@ function applySearch() {
   document.getElementById("noResults").style.display = count ? "none" : "block";
 }
 document.getElementById("search").addEventListener("input", applySearch);
-document.getElementById("expandAll").addEventListener("click", () => { document.querySelectorAll(".entry[data-allowed='true']:not([hidden])").forEach(e => { e.open = true; }); });
-document.getElementById("collapseAll").addEventListener("click", () => { document.querySelectorAll(".entry").forEach(e => { e.open = false; }); });
-  document.querySelectorAll(".category").forEach(c => c.hidden = true);
-  document.getElementById("noResults").style.display = "none";
+document.getElementById("expandAll").addEventListener("click", () => {
+  document.querySelectorAll(".entry[data-allowed='true']:not([hidden])").forEach(e => { e.open = true; });
 });
-document.getElementById("print").addEventListener("click", () => { document.querySelectorAll(".entry[data-allowed='true']:not([hidden])").forEach(e => { e.open = true; }); window.print(); });
+document.getElementById("collapseAll").addEventListener("click", () => {
+  document.querySelectorAll(".entry").forEach(e => { e.open = false; });
+});
+document.getElementById("print").addEventListener("click", () => {
+  document.querySelectorAll(".entry[data-allowed='true']:not([hidden])").forEach(e => { e.open = true; });
+  window.print();
+});
 document.querySelectorAll("[data-open]").forEach(link => {
   link.addEventListener("click", event => {
     if (window.parent && window.parent !== window) {

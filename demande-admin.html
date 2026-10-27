@@ -233,21 +233,32 @@ function esc(value) {
   })[character]);
 }
 
-function dateText(value) {
-  if (!value) return "—";
+function parseDate(value){
+  if(!value)return null;
+  if(typeof value?.toDate==="function")return value.toDate();
+  if(value instanceof Date)return value;
+  if(typeof value==="object"&&(value._seconds!=null||value.seconds!=null))return new Date(Number(value._seconds??value.seconds)*1000);
+  if(typeof value==="number")return new Date(value);
+  if(typeof value==="string"){
+    const v=value.trim();
+    // Format français : JJ/MM/AAAA ou JJ/MM/AAAA HH:mm[:ss]
+    const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+    if(m){
+      const [,j,mo,a,h="0",mi="0",s="0"]=m;
+      const d=new Date(+a,+mo-1,+j,+h,+mi,+s);
+      return d.getMonth()===+mo-1?d:null;   // refuse les dates impossibles
+    }
+    return new Date(v);                      // ISO ou autre format standard
+  }
+  return new Date(value);
+}
 
-  const date = value?.toDate
-    ? value.toDate()
-    : (typeof value === "object" && (value._seconds != null || value.seconds != null)
-      ? new Date(Number(value._seconds ?? value.seconds) * 1000)
-      : new Date(value));
-
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : date.toLocaleString("fr-FR", {
-        dateStyle: "short",
-        timeStyle: "short"
-      });
+function dateText(value){
+  if(!value)return "—";
+  const date=parseDate(value);
+  if(!date||Number.isNaN(date.getTime()))return String(value);
+  const dateSeule=typeof value==="string"&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value.trim());
+  return date.toLocaleString("fr-FR",dateSeule?{dateStyle:"short"}:{dateStyle:"short",timeStyle:"short"});
 }
 
 function normStatus(status) {
@@ -683,7 +694,7 @@ $("assignMeBtn").addEventListener("click", async () => {
 let viewList=[],quick="",snapshot="",locked=false;
 const CLOSED=["cloturee","cloturee_definitivement","refusee"],PROG=["en_analyse","en_attente","en_cours"];
 const isClosedStatus=s=>CLOSED.includes(normStatus(s));
-const ms=v=>{if(!v)return 0;const d=v?.toDate?v.toDate():(typeof v==="object"&&(v._seconds!=null||v.seconds!=null)?new Date(Number(v._seconds??v.seconds)*1000):new Date(v));return d.getTime()||0};
+const ms=v=>{const d=parseDate(v);return d?(d.getTime()||0):0};
 const isLate=c=>{if(isClosedStatus(c.statut)||!c.echeance)return false;const t=new Date();t.setHours(0,0,0,0);return new Date(String(c.echeance).slice(0,10)).getTime()<t.getTime()};
 const mine=c=>{const n=(window.medecinNom||currentUser?.displayName||"").trim().toLowerCase();return !!n&&String(c.assigneA||"").trim().toLowerCase()===n};
 const frDate=v=>v?String(v).slice(0,10).split("-").reverse().join("/"):"—";

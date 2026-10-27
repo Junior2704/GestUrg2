@@ -110,7 +110,7 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 <div class="tabs"><button type="button" class="tab on" data-t="box">📬 Boîte mail générique</button><button type="button" class="tab" data-t="file">📎 Fichier .eml / texte collé</button></div>
 <div id="tabBox"><div style="display:flex;gap:10px;align-items:center"><button type="button" class="btn" id="mailRefresh">↻ Actualiser</button><span class="subtext">E-mails non lus de la boîte générique</span></div><div id="mailList"></div></div>
 <div id="tabFile" class="hidden"><div class="field"><label class="l">Fichier e-mail (.eml)</label><input type="file" id="emlFile" accept=".eml,message/rfc822"></div><p class="subtext" style="margin:12px 0">ou collez le contenu du mail :</p><div class="twocol"><div class="field"><label class="l" for="pFrom">De</label><input id="pFrom" placeholder="Nom Prénom &lt;adresse@mail.fr&gt;"></div><div class="field"><label class="l" for="pSubject">Objet</label><input id="pSubject"></div><div class="field full"><label class="l" for="pBody">Message</label><textarea id="pBody"></textarea></div></div><button type="button" class="btn" id="pParse" style="margin-top:10px">Analyser le texte</button></div>
-<form id="mailForm" class="hidden" style="margin-top:18px;border-top:1px solid var(--line);padding-top:18px"><div class="banner" style="margin-bottom:14px"><strong>Vérifiez les informations avant de créer la demande</strong><span id="mailDetect"></span></div><div class="twocol">
+<form id="mailForm" class="hidden" style="margin-top:18px;border-top:1px solid var(--line);padding-top:18px"><div class="banner" style="margin-bottom:14px"><strong>Vérifiez les informations avant de créer la demande</strong>Un espace de suivi sécurisé sera créé et les identifiants seront envoyés à l’adresse e-mail ci-dessous. <span id="mailDetect"></span></div><div class="twocol">
 <div class="field"><label class="l" for="mNom">Nom *</label><input id="mNom" required maxlength="100"></div><div class="field"><label class="l" for="mPrenom">Prénom</label><input id="mPrenom" maxlength="100"></div>
 <div class="field"><label class="l" for="mEmail">E-mail *</label><input id="mEmail" type="email" required></div><div class="field"><label class="l" for="mTel">Téléphone</label><input id="mTel" maxlength="30"></div>
 <div class="field"><label class="l" for="mLien">Demandeur</label><select id="mLien"><option value="patient">Le patient</option><option value="proche">Un proche / représentant</option><option value="autre">Autre</option></select></div><div class="field"><label class="l" for="mCat">Catégorie</label><select id="mCat"><option>Accueil et orientation</option><option>Délais d’attente</option><option>Information et communication</option><option>Prise en charge et soins</option><option>Respect et comportement</option><option>Organisation et locaux</option><option>Facturation / administratif</option><option>Autre</option></select></div>
@@ -666,7 +666,7 @@ function renderRows(list){
  viewList=list;
  if(!list.length){$("rows").innerHTML='<tr><td colspan="7" class="empty">Aucune réclamation pour ces filtres.</td></tr>';return}
  $("rows").innerHTML=list.map((c,i)=>{const closed=isClosedStatus(c.statut),late=isLate(c),pr=c.priorite||"normale";
-  return `<tr class="${closed?"closed":""}"><td><div class="ref">${esc(c.reference||c.numero||c.id||"—")}</div>${isMailCase(c)?'<span class="pri mail">✉ e-mail</span>':""}${pr!=="normale"?`<span class="pri ${esc(pr)}">${esc(pr)}</span>`:""}</td><td><strong>${esc([c.prenom,c.nom].filter(Boolean).join(" ")||c.demandeurNom||"Demandeur")}</strong><div class="subtext">${esc(c.email||"")}</div></td><td><div class="subject">${esc(c.objet||c.titre||"Sans objet")}</div><div class="subtext">${esc(c.categorie||"")}</div></td><td>${esc(dateText(c.dateCreation||c.createdAt))}</td><td class="${late?"late":""}">${esc(frDate(c.echeance))}${late?" ⚠":""}</td><td><span class="pill ${statusClass(c.statut)}">${closed?"🔒 ":""}${esc(statusLabel(c.statut))}</span>${needsReply(c)?' <span class="pri haute">À répondre</span>':""}<div class="subtext">${esc(c.assigneA||"Non affecté")}</div></td><td><button class="rowbtn" data-index="${i}">${closed?"Consulter":"Ouvrir"} →</button></td></tr>`}).join("");
+  return `<tr class="${closed?"closed":""}"><td><div class="ref">${esc(c.reference||c.numero||c.id||"—")}</div>${isMailSource(c)?'<span class="pri mail">✉ e-mail</span>':""}${pr!=="normale"?`<span class="pri ${esc(pr)}">${esc(pr)}</span>`:""}</td><td><strong>${esc([c.prenom,c.nom].filter(Boolean).join(" ")||c.demandeurNom||"Demandeur")}</strong><div class="subtext">${esc(c.email||"")}</div></td><td><div class="subject">${esc(c.objet||c.titre||"Sans objet")}</div><div class="subtext">${esc(c.categorie||"")}</div></td><td>${esc(dateText(c.dateCreation||c.createdAt))}</td><td class="${late?"late":""}">${esc(frDate(c.echeance))}${late?" ⚠":""}</td><td><span class="pill ${statusClass(c.statut)}">${closed?"🔒 ":""}${esc(statusLabel(c.statut))}</span>${needsReply(c)?' <span class="pri haute">À répondre</span>':""}<div class="subtext">${esc(c.assigneA||"Non affecté")}</div></td><td><button class="rowbtn" data-index="${i}">${closed?"Consulter":"Ouvrir"} →</button></td></tr>`}).join("");
  $("rows").querySelectorAll("[data-index]").forEach(b=>b.addEventListener("click",()=>openCase(list[Number(b.dataset.index)])));
 }
 const formState=()=>JSON.stringify(["dStatus","dPriority","dAssignee","dCategory","dInternal","dDueDate","dReply"].map(id=>id==="dReply"&&isMailCase(currentCase)?"":$(id).value));
@@ -775,17 +775,33 @@ $("printBtn").addEventListener("click",()=>{const c=currentCase;if(!c)return;con
 function initTools(c){initMail(c);renderSla(c);renderChecklist();renderSimilar(c);runAnalysis(c);qcUpdate();["snipSelect","askInsertBtn","escalateBtn","slaFixBtn","tplSelect"].forEach(id=>$(id).disabled=locked)}
 
 /* ===== Création depuis un e-mail ===== */
-const isMailCase=c=>c?.canal==="email"||c?.source==="email"||c?.reponseParEmail===true;
+const isMailCase=c=>c?.canal==="email";            // ancien mode (sans espace de suivi)
+const isMailSource=c=>c?.source==="email"||c?.canal==="email";
+
 function initMail(c){
- const m=isMailCase(c),b=$("mailBanner");b.classList.toggle("hidden",!m);
- $("dReply").placeholder=m?"Brouillon de la réponse (non envoyé via l’espace de suivi)…":"Ce message sera visible dans l’espace de suivi de la réclamation.";
- if(!m){b.innerHTML="";return}
- b.innerHTML=`<strong>✉ Demande reçue par e-mail — réponse par e-mail uniquement</strong>La messagerie de l’espace de suivi est désactivée pour ce dossier. Rédigez le brouillon ci-dessous, puis envoyez-le depuis la boîte mail générique.${c.mailFrom?`<div class="subtext">De : ${esc(c.mailFrom)}${c.mailSubject?` · Objet d’origine : ${esc(c.mailSubject)}`:""}${c.mailDate?` · Reçu le ${esc(dateText(c.mailDate))}`:""}</div>`:""}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" id="mCopy">Copier le brouillon</button><button type="button" class="btn" id="mOpen">Ouvrir dans ma messagerie</button><button type="button" class="btn ok" id="mDone" ${locked?"disabled":""}>Marquer « répondu par e-mail »</button></div>`;
- $("mCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("dReply").value);toast("Brouillon copié.")}catch{toast("Copie impossible.")}};
- $("mOpen").onclick=()=>{location.href=`mailto:${encodeURIComponent(c.email||"")}?subject=${encodeURIComponent("Re: "+(c.mailSubject||c.objet||"Votre message")+" ["+(c.reference||"")+"]")}&body=${encodeURIComponent($("dReply").value)}`};
- $("mDone").onclick=()=>{addNote("Réponse envoyée par e-mail à "+(c.email||""));toast("Ajouté à la note interne. Pensez à enregistrer.")};
- $("dMessages").innerHTML='<div class="subtext">Demande reçue par e-mail : les échanges se font par e-mail, hors espace de suivi.</div>';
+ const legacy=isMailCase(c),espace=!legacy&&c?.source==="email",b=$("mailBanner");
+ b.classList.toggle("hidden",!legacy&&!espace);
+ $("dReply").placeholder=legacy?"Brouillon de la réponse (non envoyé via l’espace de suivi)…":"Ce message sera visible dans l’espace de suivi de la réclamation.";
+ if(!legacy&&!espace){b.innerHTML="";return}
+ const meta=c.mailFrom?`<div class="subtext">De : ${esc(c.mailFrom)}${c.mailSubject?` · Objet d’origine : ${esc(c.mailSubject)}`:""}${c.mailDate?` · Reçu le ${esc(dateText(c.mailDate))}`:""}</div>`:"";
+ const resend=`<button type="button" class="btn" id="mResend" ${locked?"disabled":""}>${legacy?"Créer l’espace de suivi et envoyer les identifiants":"Renvoyer les identifiants"}</button>`;
+ if(espace){
+  b.innerHTML=`<strong>✉ Demande reçue par e-mail — espace de suivi sécurisé</strong>${c.accesEnvoyeLe?`Identifiants envoyés à ${esc(c.email)} le ${esc(dateText(c.accesEnvoyeLe))}. Le demandeur peut échanger via l’espace de suivi.`:"⚠ Les identifiants n’ont pas pu être envoyés par e-mail : utilisez « Renvoyer les identifiants »."}${meta}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${resend}</div>`;
+ }else{
+  b.innerHTML=`<strong>✉ Demande reçue par e-mail — réponse par e-mail uniquement</strong>Ce dossier a été créé avant l’espace de suivi : la messagerie est désactivée. Vous pouvez la réactiver en créant l’espace de suivi du demandeur.${meta}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" id="mCopy">Copier le brouillon</button><button type="button" class="btn" id="mOpen">Ouvrir dans ma messagerie</button><button type="button" class="btn ok" id="mDone" ${locked?"disabled":""}>Marquer « répondu par e-mail »</button>${resend}</div>`;
+  $("mCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("dReply").value);toast("Brouillon copié.")}catch{toast("Copie impossible.")}};
+  $("mOpen").onclick=()=>{location.href=`mailto:${encodeURIComponent(c.email||"")}?subject=${encodeURIComponent("Re: "+(c.mailSubject||c.objet||"Votre message")+" ["+(c.reference||"")+"]")}&body=${encodeURIComponent($("dReply").value)}`};
+  $("mDone").onclick=()=>{addNote("Réponse envoyée par e-mail à "+(c.email||""));toast("Ajouté à la note interne. Pensez à enregistrer.")};
+  $("dMessages").innerHTML='<div class="subtext">Demande reçue par e-mail : les échanges se font par e-mail, hors espace de suivi.</div>';
+ }
+ $("mResend").onclick=async()=>{
+  if(!confirm(`Générer un nouveau code de suivi et l’envoyer par e-mail à ${c.email} ?\nL’ancien code et les sessions ouvertes seront invalidés.`))return;
+  const btn=$("mResend");btn.disabled=true;
+  try{const r=await api(`/api/reclamations/${encodeURIComponent(c.id)}/renvoyer-acces`,{method:"POST",body:"{}"});toast(r.message||"Identifiants envoyés.");closeModal();await loadCases(true)}
+  catch(e){toast(e.message||"Envoi impossible.");btn.disabled=false}
+ };
 }
+
 /* analyse d'un fichier .eml (côté navigateur) */
 function decWord(s){return s.replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g,(m,cs,e,t)=>{try{const x=e.toUpperCase()==="B"?atob(t):t.replace(/_/g," ").replace(/=([0-9A-F]{2})/gi,(a,h)=>String.fromCharCode(parseInt(h,16)));return new TextDecoder(cs).decode(Uint8Array.from(x,c=>c.charCodeAt(0)))}catch{return t}})}
 function decBody(t,enc,cs){try{enc=(enc||"").toLowerCase();let x;if(enc==="base64")x=atob(t.replace(/\s/g,""));else if(enc==="quoted-printable")x=t.replace(/=\r?\n/g,"").replace(/=([0-9A-F]{2})/gi,(a,h)=>String.fromCharCode(parseInt(h,16)));else return t;return new TextDecoder(cs||"utf-8").decode(Uint8Array.from(x,c=>c.charCodeAt(0)))}catch{return t}}
@@ -824,9 +840,13 @@ $("emlFile").addEventListener("change",async()=>{const f=$("emlFile").files[0];i
 $("pParse").addEventListener("click",()=>{if(!$("pBody").value.trim())return toast("Collez d’abord le message.");const f=parseFrom($("pFrom").value);fillMailForm({fromName:f.name,fromEmail:f.email,subject:$("pSubject").value.trim(),body:$("pBody").value.trim()})});
 $("mailForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("mailCreate");btn.disabled=true;btn.textContent="Création…";$("mailError").style.display="none";
- try{const r=await api("/api/reclamations/import-mail",{method:"POST",body:JSON.stringify({...mailMeta,canal:"email",reponseParEmail:true,nom:$("mNom").value.trim(),prenom:$("mPrenom").value.trim(),email:$("mEmail").value.trim(),telephone:$("mTel").value.trim(),lien:$("mLien").value,categorie:$("mCat").value,objet:$("mObjet").value.trim(),description:$("mDesc").value.trim()})});
-  const rec=r.reclamation||r,ref=rec.reference||rec.numero;toast(`Demande ${ref||""} créée depuis l’e-mail.`);$("mailOverlay").style.display="none";
-  await loadCases(true);const c=allCases.find(x=>(ref&&x.reference===ref)||(rec.id&&x.id===rec.id));if(c)openCase(c);
+ try{const r=await api("/api/reclamations/import-mail",{method:"POST",body:JSON.stringify({...mailMeta,nom:$("mNom").value.trim(),prenom:$("mPrenom").value.trim(),email:$("mEmail").value.trim(),telephone:$("mTel").value.trim(),lien:$("mLien").value,categorie:$("mCat").value,objet:$("mObjet").value.trim(),description:$("mDesc").value.trim()})});
+const rec=r.reclamation||r,ref=rec.reference||rec.numero;
+toast(r.emailEnvoye===false
+  ?`Demande ${ref||""} créée, mais l’e-mail d’identifiants n’a pas pu être envoyé : utilisez « Renvoyer les identifiants ».`
+  :`Demande ${ref||""} créée. Identifiants envoyés au demandeur.`);
+$("mailOverlay").style.display="none";
+ await loadCases(true);const c=allCases.find(x=>(ref&&x.reference===ref)||(rec.id&&x.id===rec.id));if(c)openCase(c);
  }catch(err){$("mailError").textContent=err.message||"Création impossible.";$("mailError").style.display="block"}
  finally{btn.disabled=false;btn.textContent="Créer la demande"}
 });

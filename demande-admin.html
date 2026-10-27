@@ -241,14 +241,14 @@ function parseDate(value){
   if(typeof value==="number")return new Date(value);
   if(typeof value==="string"){
     const v=value.trim();
-    // Format français : JJ/MM/AAAA ou JJ/MM/AAAA HH:mm[:ss]
-    const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+    // JJ/MM/AAAA (séparateurs / . -) suivi éventuellement d'une heure, quel que soit le séparateur
+    const m=v.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?:\D+(\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
     if(m){
       const [,j,mo,a,h="0",mi="0",s="0"]=m;
       const d=new Date(+a,+mo-1,+j,+h,+mi,+s);
-      return d.getMonth()===+mo-1?d:null;   // refuse les dates impossibles
+      return d.getMonth()===+mo-1?d:null;
     }
-    return new Date(v);                      // ISO ou autre format standard
+    return new Date(v);   // ISO (AAAA-MM-JJ…) ou autre format standard
   }
   return new Date(value);
 }

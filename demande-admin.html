@@ -577,16 +577,16 @@ $("docSearch").addEventListener("keydown",e=>{if(e.key==="Enter")e.preventDefaul
 $("docSort").addEventListener("change",renderPatientDocuments);
 $("docFilter").addEventListener("change",renderPatientDocuments);
 async function sharePatientDocument(documentId, button){
- if(!currentCase?.id || !currentCase?.patientId){toast("Associez et confirmez d’abord le patient concerné.");return;}
- if(!currentCase.patientAssociationConfirmee){toast("L’association du patient doit être confirmée avant l’envoi d’un document.");return;}
+ if(!currentCase?.id || !currentCase?.patientId){afficherBulle("⚠️ Associez et confirmez d’abord le patient concerné.","warning");return;}
+ if(!currentCase.patientAssociationConfirmee){afficherBulle("⚠️ L’association du patient doit être confirmée avant l’envoi d’un document.","warning");return;}
  const ok=confirm("Envoyer ce document à l’adresse e-mail enregistrée dans la fiche patient ? Le lien sera valable 7 jours et nécessitera la date de naissance du patient.");
  if(!ok)return;
  const previous=button.textContent;button.disabled=true;button.textContent="Envoi…";
  try{
   const result=await api(`/api/reclamations/${encodeURIComponent(currentCase.id)}/documents/${encodeURIComponent(documentId)}/share`,{method:"POST",body:JSON.stringify({})});
-  toast(result.message||"Le lien du document a été ajouté au chat sécurisé.");
+  afficherBulle("✔️ "+(result.message||"Le lien du document a été ajouté au chat sécurisé."),"success");
   await loadPatientDocuments(currentCase.patientId);
- }catch(e){toast(e.message||"L’envoi du document a échoué.");button.disabled=false;button.textContent=previous;}
+ }catch(e){afficherBulle("❌ "+(e.message||"L’envoi du document a échoué."),"error");button.disabled=false;button.textContent=previous;}
 }
 function openPatientDocument(docId){
  const url=`viewer.html?docId=${encodeURIComponent(docId)}`;
@@ -604,12 +604,12 @@ async function revokePatientDocumentShare(accessId, button){
  if(!confirm("Révoquer ce lien ? Le patient ne pourra plus utiliser ce lien, même si une session était déjà ouverte."))return;
  const previous=button.textContent;button.disabled=true;button.textContent="Révocation…";
  try{await api(`/api/reclamations/${encodeURIComponent(currentCase.id)}/document-shares/${encodeURIComponent(accessId)}`,{method:"DELETE"});await loadPatientDocuments(currentCase.patientId);}
- catch(e){toast(e.message||"La révocation a échoué.");button.disabled=false;button.textContent=previous;}
+ catch(e){afficherBulle("❌ "+(e.message||"La révocation a échoué."),"error");button.disabled=false;button.textContent=previous;}
 }
 
 function exportCasesCsv(){
  const list=viewList;
- if(!list.length){toast("Aucune réclamation à exporter.");return;}
+ if(!list.length){afficherBulle("⚠️ Aucune réclamation à exporter.","warning");return;}
  const columns=[["reference","Référence"],["dateCreation","Date de création"],["statut","Statut"],["priorite","Priorité"],["categorie","Catégorie"],["assigneA","Affecté à"],["nom","Nom"],["prenom","Prénom"],["email","E-mail"],["telephone","Téléphone"],["objet","Objet"],["patientId","ID patient associé"]];
  const csvCell=v=>'"'+String(v??"").replace(/"/g,'""').replace(/[\r\n]+/g," ")+'"';
  const rows=[columns.map(c=>csvCell(c[1])).join(";"),...list.map(item=>columns.map(c=>csvCell(item[c[0]])).join(";"))];
@@ -653,7 +653,7 @@ async function saveCurrentCase(overrides = {}) {
       body: JSON.stringify(payload)
     });
     closeModal();
-    toast("Les modifications ont été enregistrées.");
+    afficherBulle("✔️ Les modifications ont été enregistrées.","success");
     await loadCases();
   } catch (err) {
     console.error("Échec de mise à jour de la réclamation", err);
@@ -698,7 +698,15 @@ const ms=v=>{const d=parseDate(v);return d?(d.getTime()||0):0};
 const isLate=c=>{if(isClosedStatus(c.statut)||!c.echeance)return false;const t=new Date();t.setHours(0,0,0,0);return new Date(String(c.echeance).slice(0,10)).getTime()<t.getTime()};
 const mine=c=>{const n=(window.medecinNom||currentUser?.displayName||"").trim().toLowerCase();return !!n&&String(c.assigneA||"").trim().toLowerCase()===n};
 const frDate=v=>v?String(v).slice(0,10).split("-").reverse().join("/"):"—";
-function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;$("toasts").appendChild(t);setTimeout(()=>t.remove(),4500)}
+const ORIGINE_PARENT_BULLE="*";
+function afficherBulle(message,typeBulle){
+  if(window.parent===window){
+    // Page ouverte seule (hors parent) : repli local pour ne pas perdre le message
+    const t=document.createElement("div");t.className="toast";t.textContent=message;$("toasts").appendChild(t);setTimeout(()=>t.remove(),4500);
+    return;
+  }
+  window.parent.postMessage({source:"notification-bulle",message,typeBulle},ORIGINE_PARENT_BULLE);
+}
 function applyFilters(){
  const st=$("filterStatus").value,pr=$("filterPriority").value,order={urgente:0,haute:1,normale:2};
  const l=allCases.filter(c=>{const s=normStatus(c.statut);
@@ -750,7 +758,7 @@ let tmr;$("search").addEventListener("input",()=>{clearTimeout(tmr);tmr=setTimeo
 document.querySelectorAll(".stat").forEach(b=>b.addEventListener("click",()=>{quick=b.dataset.q===quick?"":b.dataset.q;refreshView()}));
 $("resetBtn").addEventListener("click",()=>{quick="";["search","filterStatus","filterCategory","filterPriority"].forEach(id=>$(id).value="");$("sortBy").value="recent";$("mine").checked=false;$("toAnswer").checked=false;loadCases()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("detailOverlay").style.display==="flex")requestClose()});
-$("copyRefBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("detailRef").textContent);toast("Référence copiée.")}catch{}});
+$("copyRefBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("detailRef").textContent);afficherBulle("✔️ Référence copiée.","success")}catch{}});
 $("closeCaseBtn").addEventListener("click",async()=>{
  if(!currentCase||isClosedStatus(currentCase.statut))return;
  if(isMailCase(currentCase)){if(!confirm("Cette demande vient d’un e-mail : avez-vous bien envoyé la réponse par e-mail depuis la boîte générique ? Clôturer maintenant ? Le patient ne pourra plus échanger."))return;await saveCurrentCase({statut:"cloturee"});return}
@@ -792,13 +800,13 @@ $("snipSelect").addEventListener("change",()=>{const k=$("snipSelect").value;if(
 /* demande de précisions */
 const ASK=["la date et l’heure de votre passage","le service ou l’unité concerné","le nom ou la fonction des personnes concernées","une description précise des faits","une copie de votre pièce d’identité","un justificatif de votre qualité de proche / représentant","une copie du document ou de la facture concerné","un numéro de téléphone pour vous rappeler"];
 $("askBox").innerHTML=ASK.map((l,i)=>`<label class="chk"><input type="checkbox" value="${i}"> ${l}</label>`).join("");
-$("askInsertBtn").addEventListener("click",()=>{const l=[...$("askBox").querySelectorAll("input:checked")].map(i=>"- "+ASK[i.value]);if(!l.length)return toast("Cochez au moins une précision.");insertText("Afin de poursuivre l’analyse de votre demande, pourriez-vous nous communiquer :\n"+l.join("\n")+"\n");$("askBox").querySelectorAll("input").forEach(i=>i.checked=false)});
+$("askInsertBtn").addEventListener("click",()=>{const l=[...$("askBox").querySelectorAll("input:checked")].map(i=>"- "+ASK[i.value]);if(!l.length)return afficherBulle("⚠️ Cochez au moins une précision.","warning");insertText("Afin de poursuivre l’analyse de votre demande, pourriez-vous nous communiquer :\n"+l.join("\n")+"\n");$("askBox").querySelectorAll("input").forEach(i=>i.checked=false)});
 /* analyse automatique */
 const KEYS=[[/douleur|souffr|antalgi|morphine/,"Douleur non soulagée","Prise en charge et soins","haute","douleur"],[/attente|delai|longtemps|heures/,"Temps d’attente","Délais d’attente","","attente"],[/erreur|diagnostic|oubli|rate |fracture|infection|aggrav|mal soign/,"Prise en charge contestée","Prise en charge et soins","haute","soins"],[/agress|impoli|irrespect|mepris|humili|insult|raciste|hurl/,"Comportement du personnel","Respect et comportement","haute","comportement"],[/factur|rembours|paiement|tarif|mutuelle|depassement/,"Facturation","Facturation / administratif","","facture"],[/dossier medical|compte rendu|certificat|radio|ordonnance|resultat/,"Demande de documents","Information et communication","","dossier"],[/perdu|vol |vole|disparu|bijou|lunettes|portefeuille|effets personnels/,"Effets personnels","Organisation et locaux","","effets"],[/confidenti|secret|divulg|sans mon accord/,"Confidentialité","Respect et comportement","haute","confid"],[/sale|propre|hygiene|odeur|bruit|toilette|repas/,"Hygiène / confort","Organisation et locaux","","hygiene"],[/deces|decede|avocat|plainte|tribunal|faute|negligence|sequelle|handicap/,"Risque juridique / événement grave","Prise en charge et soins","urgente","mediation"],[/pas informe|sans explication|pas compris|aucune information/,"Défaut d’information","Information et communication","","info"]];
 function runAnalysis(c){
  const t=norm([c.objet,c.description,c.attente].join(" ")),m=KEYS.filter(k=>k[0].test(t)).slice(0,5),box=$("analysisBox");
  box.innerHTML=m.length?m.map((k,i)=>`<button type="button" class="btn" data-k="${i}" ${locked?"disabled":""}>${esc(k[1])}${k[3]?` · priorité ${k[3]}`:""} → appliquer</button>`).join(""):'<span class="subtext">Aucun motif reconnu : choisissez un modèle manuellement.</span>';
- box.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click",()=>{const k=m[b.dataset.k],o={urgente:3,haute:2,normale:1,"":0};$("dCategory").value=k[2];if(o[k[3]]>o[$("dPriority").value])$("dPriority").value=k[3];useTemplate(k[4]);if(k[3]==="urgente")toast("Risque juridique détecté : pensez à escalader le dossier.");updateSaveState()}));
+ box.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click",()=>{const k=m[b.dataset.k],o={urgente:3,haute:2,normale:1,"":0};$("dCategory").value=k[2];if(o[k[3]]>o[$("dPriority").value])$("dPriority").value=k[3];useTemplate(k[4]);if(k[3]==="urgente")afficherBulle("⚠️ Risque juridique détecté : pensez à escalader le dossier.","warning");updateSaveState()}));
 }
 /* délai */
 function renderSla(c){const t=slaTarget(c),d=Math.ceil((t-Date.now())/864e5),ans=(c.messages||[]).some(m=>m.auteurType==="professionnel");
@@ -812,8 +820,8 @@ function renderChecklist(){const st=ckState();$("ckBox").innerHTML=CK.map((l,i)=
  $("ckBox").querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>{const x=ckState();x[i.dataset.i]=i.checked;const b="[CHECKLIST]\n"+CK.map((l,k)=>(x[k]?"☑ ":"☐ ")+l).join("\n")+"\n[/CHECKLIST]\n",v=$("dInternal").value;$("dInternal").value=CKRE.test(v)?v.replace(CKRE,()=>b):b+v;updateSaveState();renderChecklist()}))}
 /* notes horodatées, contacts, escalade */
 function addNote(t){const d=new Date().toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}),el=$("dInternal");el.value=(el.value.trim()?el.value.trimEnd()+"\n":"")+`[${d} — ${window.medecinNom||currentUser?.email||""}] ${t}`;updateSaveState()}
-$("contactBtn").addEventListener("click",()=>{addNote($("contactType").value);toast("Contact ajouté à la note interne. Pensez à enregistrer.")});
-$("escalateBtn").addEventListener("click",()=>{if(!currentCase||locked)return;const m=prompt(`Motif de l’escalade vers « ${$("escTo").value} » ?`,"");if(m===null)return;$("dPriority").value="urgente";addNote(`ESCALADE → ${$("escTo").value} — ${m.trim()||"sans motif précisé"}`);toast("Priorité passée en « urgente ». Enregistrez pour valider.")});
+$("contactBtn").addEventListener("click",()=>{addNote($("contactType").value);afficherBulle("✔️ Contact ajouté à la note interne. Pensez à enregistrer.","success")});
+$("escalateBtn").addEventListener("click",()=>{if(!currentCase||locked)return;const m=prompt(`Motif de l’escalade vers « ${$("escTo").value} » ?`,"");if(m===null)return;$("dPriority").value="urgente";addNote(`ESCALADE → ${$("escTo").value} — ${m.trim()||"sans motif précisé"}`);afficherBulle("⚠️ Priorité passée en « urgente ». Enregistrez pour valider.","warning")});
 /* dossiers du même demandeur */
 function renderSimilar(c){const e=norm(c.email),n=norm([c.prenom,c.nom].join(" ")).trim(),l=allCases.filter(x=>x.id!==c.id&&((e&&norm(x.email)===e)||(n&&norm([x.prenom,x.nom].join(" ")).trim()===n)));
  $("similarBox").innerHTML=l.length?`<div class="subtext">${l.length} autre(s) réclamation(s) : vérifiez s’il s’agit d’une récidive.</div>`+l.map((x,i)=>`<button type="button" class="simi" data-i="${i}">${esc(x.reference||x.id)} · ${esc(x.objet||"Sans objet")} · ${esc(statusLabel(x.statut))}</button>`).join(""):'<span class="subtext">Aucune autre réclamation pour ce demandeur.</span>';
@@ -829,8 +837,8 @@ function qcUpdate(){const t=$("dReply").value,w=[];if(t.trim()){
  $("qcBox").innerHTML=!t.trim()?"":w.length?w.map(x=>`<div class="w">⚠ ${x}</div>`).join(""):'<div class="g">✓ Contrôle qualité : aucun point à corriger.</div>'}
 $("dReply").addEventListener("input",qcUpdate);
 /* courrier imprimable */
-$("printBtn").addEventListener("click",()=>{const c=currentCase;if(!c)return;const body=$("dReply").value.trim();if(!body)return toast("Rédigez d’abord une réponse à imprimer.");
- const w=window.open("","_blank");if(!w)return toast("Le navigateur a bloqué la fenêtre d’impression.");
+$("printBtn").addEventListener("click",()=>{const c=currentCase;if(!c)return;const body=$("dReply").value.trim();if(!body)return afficherBulle("⚠️ Rédigez d’abord une réponse à imprimer.","warning");
+ const w=window.open("","_blank");if(!w)return afficherBulle("❌ Le navigateur a bloqué la fenêtre d’impression.","error");
  w.document.write(`<!DOCTYPE html><meta charset="utf-8"><title>Réponse ${esc(c.reference||"")}</title><style>body{font:14px/1.6 Georgia,serif;max-width:700px;margin:50px auto;color:#111}.r{text-align:right}.s{white-space:pre-wrap}</style><p><strong>${esc(SIGN)}</strong></p><p class="r">${new Date().toLocaleDateString("fr-FR")}</p><p>${esc([c.civilite,c.prenom,c.nom].filter(Boolean).join(" "))}<br>${esc(c.email||"")}</p><p><strong>Objet : réponse à votre réclamation ${esc(c.reference||"")}</strong></p><p class="s">${esc(body)}</p>`);w.document.close();w.focus();w.print()});
 function initTools(c){initMail(c);renderSla(c);renderChecklist();renderSimilar(c);runAnalysis(c);qcUpdate();["snipSelect","askInsertBtn","escalateBtn","slaFixBtn","tplSelect"].forEach(id=>$(id).disabled=locked)}
 
@@ -849,16 +857,16 @@ function initMail(c){
   b.innerHTML=`<strong>✉ Demande reçue par e-mail — espace de suivi sécurisé</strong>${c.accesEnvoyeLe?`Identifiants envoyés à ${esc(c.email)} le ${esc(dateText(c.accesEnvoyeLe))}. Le demandeur peut échanger via l’espace de suivi.`:"⚠ Les identifiants n’ont pas pu être envoyés par e-mail : utilisez « Renvoyer les identifiants »."}${meta}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${resend}</div>`;
  }else{
   b.innerHTML=`<strong>✉ Demande reçue par e-mail — réponse par e-mail uniquement</strong>Ce dossier a été créé avant l’espace de suivi : la messagerie est désactivée. Vous pouvez la réactiver en créant l’espace de suivi du demandeur.${meta}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" id="mCopy">Copier le brouillon</button><button type="button" class="btn" id="mOpen">Ouvrir dans ma messagerie</button><button type="button" class="btn ok" id="mDone" ${locked?"disabled":""}>Marquer « répondu par e-mail »</button>${resend}</div>`;
-  $("mCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("dReply").value);toast("Brouillon copié.")}catch{toast("Copie impossible.")}};
+  $("mCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("dReply").value);afficherBulle("✔️ Brouillon copié.","success")}catch{afficherBulle("❌ Copie impossible.","error")}};
   $("mOpen").onclick=()=>{location.href=`mailto:${encodeURIComponent(c.email||"")}?subject=${encodeURIComponent("Re: "+(c.mailSubject||c.objet||"Votre message")+" ["+(c.reference||"")+"]")}&body=${encodeURIComponent($("dReply").value)}`};
-  $("mDone").onclick=()=>{addNote("Réponse envoyée par e-mail à "+(c.email||""));toast("Ajouté à la note interne. Pensez à enregistrer.")};
+  $("mDone").onclick=()=>{addNote("Réponse envoyée par e-mail à "+(c.email||""));afficherBulle("✔️ Ajouté à la note interne. Pensez à enregistrer.","success")};
   $("dMessages").innerHTML='<div class="subtext">Demande reçue par e-mail : les échanges se font par e-mail, hors espace de suivi.</div>';
  }
  $("mResend").onclick=async()=>{
   if(!confirm(`Générer un nouveau code de suivi et l’envoyer par e-mail à ${c.email} ?\nL’ancien code et les sessions ouvertes seront invalidés.`))return;
   const btn=$("mResend");btn.disabled=true;
-  try{const r=await api(`/api/reclamations/${encodeURIComponent(c.id)}/renvoyer-acces`,{method:"POST",body:"{}"});toast(r.message||"Identifiants envoyés.");closeModal();await loadCases(true)}
-  catch(e){toast(e.message||"Envoi impossible.");btn.disabled=false}
+  try{const r=await api(`/api/reclamations/${encodeURIComponent(c.id)}/renvoyer-acces`,{method:"POST",body:"{}"});afficherBulle("✔️ "+(r.message||"Identifiants envoyés."),"success");closeModal();await loadCases(true)}
+  catch(e){afficherBulle("❌ "+(e.message||"Envoi impossible."),"error");btn.disabled=false}
  };
 }
 
@@ -896,15 +904,16 @@ $("mailClose").addEventListener("click",()=>{$("mailOverlay").style.display="non
 $("mailOverlay").addEventListener("click",e=>{if(e.target===$("mailOverlay"))$("mailOverlay").style.display="none"});
 $("mailRefresh").addEventListener("click",loadMailbox);
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.t)));
-$("emlFile").addEventListener("change",async()=>{const f=$("emlFile").files[0];if(!f)return;try{fillMailForm(parseEml(await f.text()))}catch{toast("Fichier illisible.")}});
-$("pParse").addEventListener("click",()=>{if(!$("pBody").value.trim())return toast("Collez d’abord le message.");const f=parseFrom($("pFrom").value);fillMailForm({fromName:f.name,fromEmail:f.email,subject:$("pSubject").value.trim(),body:$("pBody").value.trim()})});
+$("emlFile").addEventListener("change",async()=>{const f=$("emlFile").files[0];if(!f)return;try{fillMailForm(parseEml(await f.text()))}catch{afficherBulle("❌ Fichier illisible.","error")}});
+$("pParse").addEventListener("click",()=>{if(!$("pBody").value.trim())return afficherBulle("⚠️ Collez d’abord le message.","warning");const f=parseFrom($("pFrom").value);fillMailForm({fromName:f.name,fromEmail:f.email,subject:$("pSubject").value.trim(),body:$("pBody").value.trim()})});
 $("mailForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("mailCreate");btn.disabled=true;btn.textContent="Création…";$("mailError").style.display="none";
  try{const r=await api("/api/reclamations/import-mail",{method:"POST",body:JSON.stringify({...mailMeta,nom:$("mNom").value.trim(),prenom:$("mPrenom").value.trim(),email:$("mEmail").value.trim(),telephone:$("mTel").value.trim(),lien:$("mLien").value,categorie:$("mCat").value,objet:$("mObjet").value.trim(),description:$("mDesc").value.trim()})});
 const rec=r.reclamation||r,ref=rec.reference||rec.numero;
-toast(r.emailEnvoye===false
-  ?`Demande ${ref||""} créée, mais l’e-mail d’identifiants n’a pas pu être envoyé : utilisez « Renvoyer les identifiants ».`
-  :`Demande ${ref||""} créée. Identifiants envoyés au demandeur.`);
+afficherBulle(r.emailEnvoye===false
+  ?`⚠️ Demande ${ref||""} créée, mais l’e-mail d’identifiants n’a pas pu être envoyé : utilisez « Renvoyer les identifiants ».`
+  :`✔️ Demande ${ref||""} créée. Identifiants envoyés au demandeur.`,
+  r.emailEnvoye===false?"warning":"success");
 $("mailOverlay").style.display="none";
  await loadCases(true);const c=allCases.find(x=>(ref&&x.reference===ref)||(rec.id&&x.id===rec.id));if(c)openCase(c);
  }catch(err){$("mailError").textContent=err.message||"Création impossible.";$("mailError").style.display="block"}

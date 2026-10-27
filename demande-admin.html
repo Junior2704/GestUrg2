@@ -77,6 +77,8 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 #toasts{position:fixed;right:18px;bottom:18px;display:grid;gap:8px;z-index:100}.toast{background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(10,25,41,.3);font-weight:600;font-size:14px;max-width:340px;white-space:pre-line;animation:in .2s ease}@keyframes in{from{opacity:0;transform:translateY(8px)}}
 .tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tool{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff;min-width:0}.tool.wide{grid-column:1/-1}.tool h3{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.tool .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tool .late{color:var(--late);font-weight:700}.tool .btn{min-height:38px;font-size:13px;padding:0 12px}.tool select,.tool input[type=number]{min-height:38px;font-size:13px;width:auto}.tool .chk{margin:3px 0;font-weight:500;font-size:13.5px}.tool .stack{display:grid;gap:2px}
 .qc{margin-top:8px;display:grid;gap:4px;font-size:13px}.qc .w{color:var(--warn)}.qc .g{color:var(--ok)}.simi{display:block;width:100%;text-align:left;margin-top:6px;padding:9px 12px;border:1px solid var(--line);background:#fff;border-radius:10px;font:600 13px var(--font);cursor:pointer}.simi:hover{border-color:var(--primary);background:var(--primary-soft)}
+.pri.mail{background:var(--primary-soft);color:var(--primary-d);margin-right:4px}.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 16px;font:600 14px var(--font);cursor:pointer}.tab.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+.mailrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;margin-top:8px;background:#fff}.mailrow>div{min-width:0}.mailrow .subtext{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1000px){.stats{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:1fr 1fr}.filters .search{grid-column:1/-1}}
 @media(max-width:600px){.tools{grid-template-columns:1fr}.top{padding:8px 14px}.layout{padding:16px 12px 40px}.stats{grid-template-columns:1fr 1fr}.filters,.twocol,.inner-grid{grid-template-columns:1fr}.user{max-width:130px}.patient-search{grid-template-columns:1fr}.modalfoot .btn{flex:1}}
 </style></head>
@@ -86,7 +88,7 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 <div id="toasts" aria-live="polite"></div>
 <section class="access hidden" id="accessDenied"><div class="brand" style="margin:auto">!</div><h1>Accès non autorisé</h1><p>Votre compte ne dispose pas du droit d’accès à la gestion des réclamations. Si cet accès est nécessaire, contactez un administrateur GestUrg2.</p></section>
 <main class="layout hidden" id="app">
-<div class="heading"><div><h1>Réclamations</h1><p class="hint">Consulter, qualifier et suivre les demandes des usagers.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="exportCsvBtn">⇩ Exporter la vue (CSV)</button><button class="btn" id="refreshBtn">↻ Actualiser</button></div></div>
+<div class="heading"><div><h1>Réclamations</h1><p class="hint">Consulter, qualifier et suivre les demandes des usagers.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="mailImportBtn">✉ Importer un e-mail</button><button class="btn" id="exportCsvBtn">⇩ Exporter la vue (CSV)</button><button class="btn" id="refreshBtn">↻ Actualiser</button></div></div>
 <div class="stats">
 <button class="stat" data-q=""><div class="label">Total</div><div class="value" id="statTotal">—</div></button>
 <button class="stat" data-q="nouvelle"><div class="label">Nouvelles</div><div class="value" id="statNew">—</div></button>
@@ -104,6 +106,17 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 <div class="error" id="pageError" role="alert"></div><div class="hidden" id="pageNotice"></div></section>
 <section class="panel" style="padding:0"><div class="tablewrap"><table><thead><tr><th>Référence</th><th>Demandeur</th><th>Objet</th><th>Créée le</th><th>Échéance</th><th>Statut / affectation</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="empty">Chargement des demandes…</td></tr></tbody></table></div></section>
 </main>
+<div class="overlay" id="mailOverlay" role="dialog" aria-modal="true"><section class="modal"><div class="modalhead"><div><div class="eyebrow">Nouvelle demande</div><h2>Créer une réclamation depuis un e-mail</h2></div><button class="close" id="mailClose" aria-label="Fermer">×</button></div><div class="modalbody">
+<div class="tabs"><button type="button" class="tab on" data-t="box">📬 Boîte mail générique</button><button type="button" class="tab" data-t="file">📎 Fichier .eml / texte collé</button></div>
+<div id="tabBox"><div style="display:flex;gap:10px;align-items:center"><button type="button" class="btn" id="mailRefresh">↻ Actualiser</button><span class="subtext">E-mails non lus de la boîte générique</span></div><div id="mailList"></div></div>
+<div id="tabFile" class="hidden"><div class="field"><label class="l">Fichier e-mail (.eml)</label><input type="file" id="emlFile" accept=".eml,message/rfc822"></div><p class="subtext" style="margin:12px 0">ou collez le contenu du mail :</p><div class="twocol"><div class="field"><label class="l" for="pFrom">De</label><input id="pFrom" placeholder="Nom Prénom &lt;adresse@mail.fr&gt;"></div><div class="field"><label class="l" for="pSubject">Objet</label><input id="pSubject"></div><div class="field full"><label class="l" for="pBody">Message</label><textarea id="pBody"></textarea></div></div><button type="button" class="btn" id="pParse" style="margin-top:10px">Analyser le texte</button></div>
+<form id="mailForm" class="hidden" style="margin-top:18px;border-top:1px solid var(--line);padding-top:18px"><div class="banner" style="margin-bottom:14px"><strong>Vérifiez les informations avant de créer la demande</strong><span id="mailDetect"></span></div><div class="twocol">
+<div class="field"><label class="l" for="mNom">Nom *</label><input id="mNom" required maxlength="100"></div><div class="field"><label class="l" for="mPrenom">Prénom</label><input id="mPrenom" maxlength="100"></div>
+<div class="field"><label class="l" for="mEmail">E-mail *</label><input id="mEmail" type="email" required></div><div class="field"><label class="l" for="mTel">Téléphone</label><input id="mTel" maxlength="30"></div>
+<div class="field"><label class="l" for="mLien">Demandeur</label><select id="mLien"><option value="patient">Le patient</option><option value="proche">Un proche / représentant</option><option value="autre">Autre</option></select></div><div class="field"><label class="l" for="mCat">Catégorie</label><select id="mCat"><option>Accueil et orientation</option><option>Délais d’attente</option><option>Information et communication</option><option>Prise en charge et soins</option><option>Respect et comportement</option><option>Organisation et locaux</option><option>Facturation / administratif</option><option>Autre</option></select></div>
+<div class="field full"><label class="l" for="mObjet">Objet *</label><input id="mObjet" required maxlength="180"></div><div class="field full"><label class="l" for="mDesc">Contenu du mail *</label><textarea id="mDesc" required minlength="5" maxlength="10000" style="min-height:160px"></textarea></div></div>
+<div class="error" id="mailError"></div><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="mailCreate" type="submit">Créer la demande</button></div></form>
+</div></section></div>
 <div class="overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><section class="modal">
 <div class="modalhead"><div><div class="eyebrow"><span id="detailRef">Dossier</span><button type="button" class="mini" id="copyRefBtn">Copier</button></div><h2 id="detailTitle">Détail de la réclamation</h2><div class="badges" id="dBadges"></div></div><button class="close" id="closeModal" aria-label="Fermer">×</button></div>
 <form id="detailForm"><div class="modalbody"><div class="twocol">
@@ -117,7 +130,7 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 <div class="field"><label for="dAssignee">Personne / service en charge</label><input id="dAssignee" maxlength="180"></div>
 <div class="field"><label for="dCategory">Catégorie</label><select id="dCategory"><option>Accueil et orientation</option><option>Délais d’attente</option><option>Information et communication</option><option>Prise en charge et soins</option><option>Respect et comportement</option><option>Organisation et locaux</option><option>Facturation / administratif</option><option>Autre</option></select></div>
 <div class="field"><label for="dDueDate">Échéance (facultatif)</label><input id="dDueDate" type="date"></div></div></div></details>
-<details class="full accordion" open><summary>✉️ Réponse à l’usager</summary><div class="accordion-content"><div class="field"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><label for="dReply" style="margin:0">Réponse / message (facultatif)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><select id="tplSelect" style="width:auto;min-height:38px;font-size:13px"><option value="">Modèle de réponse…</option><option value="accuse">Accusé de réception</option><option value="attente">Temps d’attente</option><option value="douleur">Douleur non soulagée</option><option value="soins">Prise en charge / diagnostic contesté</option><option value="comportement">Comportement du personnel</option><option value="info">Défaut d’information</option><option value="facture">Facturation</option><option value="dossier">Demande de dossier médical</option><option value="effets">Effets personnels perdus</option><option value="hygiene">Hygiène / confort</option><option value="confid">Confidentialité</option><option value="mediation">Événement grave / médiation</option><option value="refus">Demande non recevable</option></select><select id="snipSelect" style="width:auto;min-height:38px;font-size:13px"><option value="">Phrase type…</option><option value="excuses">Excuses</option><option value="empathie">Empathie</option><option value="merci">Remerciement</option><option value="amelio">Action d’amélioration</option><option value="rdv">Proposer un échange</option><option value="delai">Annoncer un délai</option><option value="secret">Secret médical</option><option value="recours">Voies de recours</option></select></div></div><textarea id="dReply" maxlength="5000" placeholder="Ce message sera visible dans l’espace de suivi de la réclamation."></textarea><div class="subtext" id="replyCount" style="text-align:right">0 / 5000</div><div id="qcBox" class="qc"></div></div></div></details>
+<details class="full accordion" open><summary>✉️ Réponse à l’usager</summary><div class="accordion-content"><div id="mailBanner" class="banner hidden" style="margin-bottom:12px"></div><div class="field"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><label for="dReply" style="margin:0">Réponse / message (facultatif)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><select id="tplSelect" style="width:auto;min-height:38px;font-size:13px"><option value="">Modèle de réponse…</option><option value="accuse">Accusé de réception</option><option value="attente">Temps d’attente</option><option value="douleur">Douleur non soulagée</option><option value="soins">Prise en charge / diagnostic contesté</option><option value="comportement">Comportement du personnel</option><option value="info">Défaut d’information</option><option value="facture">Facturation</option><option value="dossier">Demande de dossier médical</option><option value="effets">Effets personnels perdus</option><option value="hygiene">Hygiène / confort</option><option value="confid">Confidentialité</option><option value="mediation">Événement grave / médiation</option><option value="refus">Demande non recevable</option></select><select id="snipSelect" style="width:auto;min-height:38px;font-size:13px"><option value="">Phrase type…</option><option value="excuses">Excuses</option><option value="empathie">Empathie</option><option value="merci">Remerciement</option><option value="amelio">Action d’amélioration</option><option value="rdv">Proposer un échange</option><option value="delai">Annoncer un délai</option><option value="secret">Secret médical</option><option value="recours">Voies de recours</option></select></div></div><textarea id="dReply" maxlength="5000" placeholder="Ce message sera visible dans l’espace de suivi de la réclamation."></textarea><div class="subtext" id="replyCount" style="text-align:right">0 / 5000</div><div id="qcBox" class="qc"></div></div></div></details>
 <details class="full accordion" open><summary>🧰 Outils pour répondre</summary><div class="accordion-content"><div class="tools">
 <div class="tool wide"><h3>🔎 Analyse automatique de la réclamation</h3><div id="analysisBox" class="row"></div></div>
 <div class="tool"><h3>⏱ Délai de réponse</h3><div id="slaInfo" style="margin-bottom:8px"></div><div class="row"><label style="margin:0;font-size:13px">Délai cible (jours)</label><input type="number" id="slaDays" value="8" min="1" max="60" style="width:70px"><button type="button" class="btn" id="slaFixBtn">Fixer l’échéance</button></div></div>
@@ -547,7 +560,7 @@ $("closeModal").addEventListener("click",requestClose);$("cancelModal").addEvent
 $("refreshBtn").addEventListener("click",loadCases);$("filterBtn").addEventListener("click",loadCases);$("search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadCases()}});
 async function saveCurrentCase(overrides = {}) {
   if (!currentCase) return;
-  if (/…|\{\{/.test($("dReply").value) && !confirm("La réponse contient encore des passages à compléter (« … »). L’enregistrer quand même ?")) return;
+  if (!isMailCase(currentCase) && /…|\{\{/.test($("dReply").value) && !confirm("La réponse contient encore des passages à compléter (« … »). L’enregistrer quand même ?")) return;
   $("detailError").style.display = "none";
   const saveButton = $("saveBtn");
   saveButton.disabled = true;
@@ -569,7 +582,7 @@ async function saveCurrentCase(overrides = {}) {
     categorie: $("dCategory").value,
     noteInterne: $("dInternal").value.trim(),
     echeance: $("dDueDate").value || null,
-    reponseUsager: $("dReply").value.trim(),
+    reponseUsager: isMailCase(currentCase) ? "" : $("dReply").value.trim(),
     patientId: currentCase.patientId || null,
     ...overrides
   };
@@ -653,10 +666,10 @@ function renderRows(list){
  viewList=list;
  if(!list.length){$("rows").innerHTML='<tr><td colspan="7" class="empty">Aucune réclamation pour ces filtres.</td></tr>';return}
  $("rows").innerHTML=list.map((c,i)=>{const closed=isClosedStatus(c.statut),late=isLate(c),pr=c.priorite||"normale";
-  return `<tr class="${closed?"closed":""}"><td><div class="ref">${esc(c.reference||c.numero||c.id||"—")}</div>${pr!=="normale"?`<span class="pri ${esc(pr)}">${esc(pr)}</span>`:""}</td><td><strong>${esc([c.prenom,c.nom].filter(Boolean).join(" ")||c.demandeurNom||"Demandeur")}</strong><div class="subtext">${esc(c.email||"")}</div></td><td><div class="subject">${esc(c.objet||c.titre||"Sans objet")}</div><div class="subtext">${esc(c.categorie||"")}</div></td><td>${esc(dateText(c.dateCreation||c.createdAt))}</td><td class="${late?"late":""}">${esc(frDate(c.echeance))}${late?" ⚠":""}</td><td><span class="pill ${statusClass(c.statut)}">${closed?"🔒 ":""}${esc(statusLabel(c.statut))}</span>${needsReply(c)?' <span class="pri haute">À répondre</span>':""}<div class="subtext">${esc(c.assigneA||"Non affecté")}</div></td><td><button class="rowbtn" data-index="${i}">${closed?"Consulter":"Ouvrir"} →</button></td></tr>`}).join("");
+  return `<tr class="${closed?"closed":""}"><td><div class="ref">${esc(c.reference||c.numero||c.id||"—")}</div>${isMailCase(c)?'<span class="pri mail">✉ e-mail</span>':""}${pr!=="normale"?`<span class="pri ${esc(pr)}">${esc(pr)}</span>`:""}</td><td><strong>${esc([c.prenom,c.nom].filter(Boolean).join(" ")||c.demandeurNom||"Demandeur")}</strong><div class="subtext">${esc(c.email||"")}</div></td><td><div class="subject">${esc(c.objet||c.titre||"Sans objet")}</div><div class="subtext">${esc(c.categorie||"")}</div></td><td>${esc(dateText(c.dateCreation||c.createdAt))}</td><td class="${late?"late":""}">${esc(frDate(c.echeance))}${late?" ⚠":""}</td><td><span class="pill ${statusClass(c.statut)}">${closed?"🔒 ":""}${esc(statusLabel(c.statut))}</span>${needsReply(c)?' <span class="pri haute">À répondre</span>':""}<div class="subtext">${esc(c.assigneA||"Non affecté")}</div></td><td><button class="rowbtn" data-index="${i}">${closed?"Consulter":"Ouvrir"} →</button></td></tr>`}).join("");
  $("rows").querySelectorAll("[data-index]").forEach(b=>b.addEventListener("click",()=>openCase(list[Number(b.dataset.index)])));
 }
-const formState=()=>JSON.stringify(["dStatus","dPriority","dAssignee","dCategory","dInternal","dDueDate","dReply"].map(id=>$(id).value));
+const formState=()=>JSON.stringify(["dStatus","dPriority","dAssignee","dCategory","dInternal","dDueDate","dReply"].map(id=>id==="dReply"&&isMailCase(currentCase)?"":$(id).value));
 function updateSaveState(){$("saveBtn").disabled=formState()===snapshot;$("replyCount").textContent=$("dReply").value.length+" / 5000"}
 function applyLock(c){
  locked=isClosedStatus(c.statut);
@@ -680,6 +693,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("detailOverlay").
 $("copyRefBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("detailRef").textContent);toast("Référence copiée.")}catch{}});
 $("closeCaseBtn").addEventListener("click",async()=>{
  if(!currentCase||isClosedStatus(currentCase.statut))return;
+ if(isMailCase(currentCase)){if(!confirm("Cette demande vient d’un e-mail : avez-vous bien envoyé la réponse par e-mail depuis la boîte générique ? Clôturer maintenant ? Le patient ne pourra plus échanger."))return;await saveCurrentCase({statut:"cloturee"});return}
  const answered=$("dReply").value.trim()||(currentCase.messages||[]).some(m=>m.auteurType==="professionnel");
  if(!confirm(answered?"Clôturer cette demande ? L’usager ne pourra plus envoyer de message.":"Aucune réponse n’a été transmise à l’usager. Clôturer quand même ? Il ne pourra plus envoyer de message."))return;
  await saveCurrentCase({statut:"cloturee"});
@@ -758,6 +772,63 @@ $("dReply").addEventListener("input",qcUpdate);
 $("printBtn").addEventListener("click",()=>{const c=currentCase;if(!c)return;const body=$("dReply").value.trim();if(!body)return toast("Rédigez d’abord une réponse à imprimer.");
  const w=window.open("","_blank");if(!w)return toast("Le navigateur a bloqué la fenêtre d’impression.");
  w.document.write(`<!DOCTYPE html><meta charset="utf-8"><title>Réponse ${esc(c.reference||"")}</title><style>body{font:14px/1.6 Georgia,serif;max-width:700px;margin:50px auto;color:#111}.r{text-align:right}.s{white-space:pre-wrap}</style><p><strong>${esc(SIGN)}</strong></p><p class="r">${new Date().toLocaleDateString("fr-FR")}</p><p>${esc([c.civilite,c.prenom,c.nom].filter(Boolean).join(" "))}<br>${esc(c.email||"")}</p><p><strong>Objet : réponse à votre réclamation ${esc(c.reference||"")}</strong></p><p class="s">${esc(body)}</p>`);w.document.close();w.focus();w.print()});
-function initTools(c){renderSla(c);renderChecklist();renderSimilar(c);runAnalysis(c);qcUpdate();["snipSelect","askInsertBtn","escalateBtn","slaFixBtn","tplSelect"].forEach(id=>$(id).disabled=locked)}
+function initTools(c){initMail(c);renderSla(c);renderChecklist();renderSimilar(c);runAnalysis(c);qcUpdate();["snipSelect","askInsertBtn","escalateBtn","slaFixBtn","tplSelect"].forEach(id=>$(id).disabled=locked)}
+
+/* ===== Création depuis un e-mail ===== */
+const isMailCase=c=>c?.canal==="email"||c?.source==="email"||c?.reponseParEmail===true;
+function initMail(c){
+ const m=isMailCase(c),b=$("mailBanner");b.classList.toggle("hidden",!m);
+ $("dReply").placeholder=m?"Brouillon de la réponse (non envoyé via l’espace de suivi)…":"Ce message sera visible dans l’espace de suivi de la réclamation.";
+ if(!m){b.innerHTML="";return}
+ b.innerHTML=`<strong>✉ Demande reçue par e-mail — réponse par e-mail uniquement</strong>La messagerie de l’espace de suivi est désactivée pour ce dossier. Rédigez le brouillon ci-dessous, puis envoyez-le depuis la boîte mail générique.${c.mailFrom?`<div class="subtext">De : ${esc(c.mailFrom)}${c.mailSubject?` · Objet d’origine : ${esc(c.mailSubject)}`:""}${c.mailDate?` · Reçu le ${esc(dateText(c.mailDate))}`:""}</div>`:""}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" id="mCopy">Copier le brouillon</button><button type="button" class="btn" id="mOpen">Ouvrir dans ma messagerie</button><button type="button" class="btn ok" id="mDone" ${locked?"disabled":""}>Marquer « répondu par e-mail »</button></div>`;
+ $("mCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("dReply").value);toast("Brouillon copié.")}catch{toast("Copie impossible.")}};
+ $("mOpen").onclick=()=>{location.href=`mailto:${encodeURIComponent(c.email||"")}?subject=${encodeURIComponent("Re: "+(c.mailSubject||c.objet||"Votre message")+" ["+(c.reference||"")+"]")}&body=${encodeURIComponent($("dReply").value)}`};
+ $("mDone").onclick=()=>{addNote("Réponse envoyée par e-mail à "+(c.email||""));toast("Ajouté à la note interne. Pensez à enregistrer.")};
+ $("dMessages").innerHTML='<div class="subtext">Demande reçue par e-mail : les échanges se font par e-mail, hors espace de suivi.</div>';
+}
+/* analyse d'un fichier .eml (côté navigateur) */
+function decWord(s){return s.replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g,(m,cs,e,t)=>{try{const x=e.toUpperCase()==="B"?atob(t):t.replace(/_/g," ").replace(/=([0-9A-F]{2})/gi,(a,h)=>String.fromCharCode(parseInt(h,16)));return new TextDecoder(cs).decode(Uint8Array.from(x,c=>c.charCodeAt(0)))}catch{return t}})}
+function decBody(t,enc,cs){try{enc=(enc||"").toLowerCase();let x;if(enc==="base64")x=atob(t.replace(/\s/g,""));else if(enc==="quoted-printable")x=t.replace(/=\r?\n/g,"").replace(/=([0-9A-F]{2})/gi,(a,h)=>String.fromCharCode(parseInt(h,16)));else return t;return new TextDecoder(cs||"utf-8").decode(Uint8Array.from(x,c=>c.charCodeAt(0)))}catch{return t}}
+function splitMsg(raw){const i=raw.search(/\r?\n\r?\n/),h=i<0?raw:raw.slice(0,i),b=i<0?"":raw.slice(i).replace(/^\r?\n\r?\n/,""),H={};h.replace(/\r?\n[ \t]+/g," ").split(/\r?\n/).forEach(l=>{const k=l.indexOf(":");if(k>0)H[l.slice(0,k).toLowerCase()]=l.slice(k+1).trim()});return{H,b}}
+function emlBody(raw){const{H,b}=splitMsg(raw),ct=H["content-type"]||"text/plain",bm=ct.match(/boundary="?([^";]+)"?/i);
+ if(/multipart/i.test(ct)&&bm){let pl="",ht="";for(const p of b.split("--"+bm[1]).slice(1,-1)){const r=emlBody(p.replace(/^\r?\n/,""));if(r.type==="plain"&&!pl)pl=r.text;else if(r.type==="html"&&!ht)ht=r.text}return pl?{type:"plain",text:pl}:{type:"html",text:ht}}
+ return{type:/text\/html/i.test(ct)?"html":"plain",text:decBody(b,H["content-transfer-encoding"],(ct.match(/charset="?([^";]+)"?/i)||[])[1])}}
+function parseEml(raw){const{H}=splitMsg(raw),f=parseFrom(decWord(H.from||"")),r=emlBody(raw);
+ const txt=r.type==="html"?(new DOMParser().parseFromString(r.text,"text/html").body.textContent||""):r.text;
+ return{fromName:f.name,fromEmail:f.email,subject:decWord(H.subject||""),date:H.date?new Date(H.date).toISOString():"",messageId:H["message-id"]||"",body:txt.replace(/\r\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim()}}
+function parseFrom(s){const m=s.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);return m?{name:m[1].trim(),email:m[2].trim()}:{name:"",email:s.trim()}}
+function splitName(n){n=n.trim();if(!n)return["",""];if(n.includes(","))return n.split(",").map(x=>x.trim()).reverse().slice(0,2);const p=n.split(/\s+/);return p.length===1?["",p[0]]:[p[0],p.slice(1).join(" ")]}
+/* fenêtre d'import */
+let mailMeta={};
+function showTab(t){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.t===t));$("tabBox").classList.toggle("hidden",t!=="box");$("tabFile").classList.toggle("hidden",t!=="file")}
+function fillMailForm(m){
+ const f=m.fromName||(m.fromEmail||"").split("@")[0].replace(/[._-]+/g," "),[pre,nom]=splitName(f),t=norm((m.subject||"")+" "+(m.body||"")),k=KEYS.find(x=>x[0].test(t));
+ $("mNom").value=nom;$("mPrenom").value=pre;$("mEmail").value=m.fromEmail||"";$("mTel").value="";$("mLien").value="patient";$("mObjet").value=(m.subject||"").slice(0,180);$("mDesc").value=m.body||"";
+ $("mCat").value=k?k[2]:"Autre";$("mailDetect").textContent=k?` Motif détecté : ${k[1]}${k[3]?` (priorité ${k[3]})`:""}.`:" Aucun motif reconnu, catégorie « Autre ».";
+ mailMeta={priorite:k?.[3]||"normale",mailMessageId:m.messageId||"",mailId:m.id||"",mailDate:m.date||"",mailFrom:m.fromName?`${m.fromName} <${m.fromEmail}>`:m.fromEmail||"",mailSubject:m.subject||""};
+ $("mailError").style.display="none";$("mailForm").classList.remove("hidden");$("mailForm").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+async function loadMailbox(){
+ const box=$("mailList");box.innerHTML='<div class="subtext" style="margin-top:12px">Connexion à la boîte mail…</div>';
+ try{const r=await api("/api/reclamations/mailbox?limit=30"),l=r.mails||[];
+  box.innerHTML=l.length?l.map((m,i)=>`<div class="mailrow"><div><strong>${esc(m.fromName||m.fromEmail||"Expéditeur inconnu")}</strong> <span class="subtext">· ${esc(dateText(m.date))}</span><div>${esc(m.subject||"(sans objet)")}</div><div class="subtext">${esc((m.body||"").replace(/\s+/g," ").slice(0,140))}</div></div><button type="button" class="btn" data-i="${i}" ${m.alreadyImported?"disabled":""}>${m.alreadyImported?"Déjà importé":"Importer"}</button></div>`).join(""):'<div class="empty">Aucun nouvel e-mail dans la boîte.</div>';
+  box.querySelectorAll("[data-i]").forEach(b=>b.addEventListener("click",()=>fillMailForm(l[b.dataset.i])));
+ }catch(e){box.innerHTML=`<div class="error" style="display:block;margin-top:12px">${esc(e.message)} Vous pouvez utiliser l’onglet « Fichier .eml / texte collé ».</div>`}
+}
+$("mailImportBtn").addEventListener("click",()=>{$("mailOverlay").style.display="flex";$("mailForm").classList.add("hidden");showTab("box");loadMailbox()});
+$("mailClose").addEventListener("click",()=>{$("mailOverlay").style.display="none"});
+$("mailOverlay").addEventListener("click",e=>{if(e.target===$("mailOverlay"))$("mailOverlay").style.display="none"});
+$("mailRefresh").addEventListener("click",loadMailbox);
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.t)));
+$("emlFile").addEventListener("change",async()=>{const f=$("emlFile").files[0];if(!f)return;try{fillMailForm(parseEml(await f.text()))}catch{toast("Fichier illisible.")}});
+$("pParse").addEventListener("click",()=>{if(!$("pBody").value.trim())return toast("Collez d’abord le message.");const f=parseFrom($("pFrom").value);fillMailForm({fromName:f.name,fromEmail:f.email,subject:$("pSubject").value.trim(),body:$("pBody").value.trim()})});
+$("mailForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=$("mailCreate");btn.disabled=true;btn.textContent="Création…";$("mailError").style.display="none";
+ try{const r=await api("/api/reclamations/import-mail",{method:"POST",body:JSON.stringify({...mailMeta,canal:"email",reponseParEmail:true,nom:$("mNom").value.trim(),prenom:$("mPrenom").value.trim(),email:$("mEmail").value.trim(),telephone:$("mTel").value.trim(),lien:$("mLien").value,categorie:$("mCat").value,objet:$("mObjet").value.trim(),description:$("mDesc").value.trim()})});
+  const rec=r.reclamation||r,ref=rec.reference||rec.numero;toast(`Demande ${ref||""} créée depuis l’e-mail.`);$("mailOverlay").style.display="none";
+  await loadCases(true);const c=allCases.find(x=>(ref&&x.reference===ref)||(rec.id&&x.id===rec.id));if(c)openCase(c);
+ }catch(err){$("mailError").textContent=err.message||"Création impossible.";$("mailError").style.display="block"}
+ finally{btn.disabled=false;btn.textContent="Créer la demande"}
+});
 
 </script></body></html>

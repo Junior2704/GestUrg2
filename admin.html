@@ -173,7 +173,7 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 .modalna h2{margin-bottom:10px;font-size:21px;font-weight:700;color:var(--late)}
 .modalna p{margin-bottom:8px;font-size:16px;color:var(--ink)}
 
-#modalIdentityCheck .card{width:min(620px,100%);max-height:96dvh;overflow:auto;padding:26px 28px;display:flex;flex-direction:column;text-align:center}
+#modalIdentityCheck .card{width:min(620px,100%);max-height:96dvh;overflow-y:auto;overflow-x:hidden;overflow-x:clip;padding:26px 28px;display:flex;flex-direction:column;text-align:center}
 #modalIdentityCheck h2{color:var(--ink)}
 #modalIdentityCheck > .card > p{font-size:15px;color:var(--muted);margin-bottom:16px}
 .idcheck-switch{display:grid;grid-template-columns:1fr 1fr;width:100%;margin-bottom:18px;border-bottom:2px solid var(--line);flex-shrink:0}
@@ -186,16 +186,18 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 }
 @media (hover:hover){.idcheck-tab:hover:not(.active){background:var(--primary-soft);color:var(--primary-d)}}
 .idcheck-tab.active{color:var(--primary);background:var(--primary-soft);border-bottom-color:var(--primary)}
-.idcheck-panel{display:none;min-height:0;position:relative;text-align:center}
+.idcheck-panel{display:none;min-height:0;position:relative;text-align:center;overflow:hidden;overflow:clip}
 @media (min-height:900px){.idcheck-panel{min-height:400px}}
 .idcheck-panel.active{display:block}
-.idcheck-badge-iframe-wrapper,.idcheck-password-iframe-wrapper{width:100%;max-width:540px;height:325px;margin:0 auto;overflow:hidden;position:relative;border-radius:12px;flex-shrink:0}
+.idcheck-badge-iframe-wrapper,.idcheck-password-iframe-wrapper{width:100%;max-width:540px;height:325px;margin:0 auto;overflow:hidden;overflow:clip;position:relative;border-radius:12px;flex-shrink:0}
+.idcheck-badge-anim.oversize,.idcheck-password-anim.oversize{width:calc(100% + 40px);max-width:none;height:365px;margin:-20px 0 0 -20px}
 .idcheck-badge-anim,.idcheck-password-anim{width:100%;height:325px;border:0;display:block;overflow:hidden;margin:0 auto}
 .idcheck-badge-hint,.idcheck-password-hint{margin:10px 0 12px;font-size:15px;color:var(--muted);text-align:center}
-.idcheck-badge-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;border:0;opacity:0;min-height:0}
+.idcheck-badge-input{position:absolute;left:0;top:0;width:1px;height:1px;padding:0 !important;margin:0 !important;overflow:hidden;border:0 !important;opacity:0;min-height:0 !important;pointer-events:none;caret-color:transparent;font-size:16px}
 #idcheckPasswordInput{text-align:center;letter-spacing:.08em}
 #idcheckError{min-height:38px;margin-top:10px;font-size:14px;line-height:18px;text-align:center;color:var(--late);flex-shrink:0}
 .idcheck-actions{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-shrink:0}
+.idcheck-actions[hidden]{display:none}
 .idcheck-actions .btn,.idcheck-actions .btn-add{min-width:160px}
 .idcheck-actions .logout-btn{background:var(--late);border-color:var(--late);color:#fff}
 
@@ -388,7 +390,7 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 
     <div id="idcheckError"></div>
 
-    <div class="idcheck-actions">
+    <div class="idcheck-actions" id="idcheckActions">
       <button class="btn btn-add" onclick="attemptIdentityCheck()"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg> Valider</button>
     </div>
   </div>
@@ -715,18 +717,62 @@ window.switchIdentityTab = function (tab) {
 
   document.getElementById("idcheckError").textContent = "";
 
+  // Le bouton « Valider » ne sert qu'au mot de passe : la lecture du badge valide toute seule
+  document.getElementById("idcheckActions").hidden = isBadge;
+
   if (isBadge) {
     document.getElementById("idcheckBadgeInput").value = "";
     setTimeout(focusIdentityBadgeInput, 50);
   } else {
-    setTimeout(() => document.getElementById("idcheckPasswordInput").focus(), 50);
+    setTimeout(() => document.getElementById("idcheckPasswordInput").focus({ preventScroll: true }), 50);
   }
 };
+
+window.resetIdentityScroll = function () {
+  const card = document.querySelector("#modalIdentityCheck .card");
+  if (!card) return;
+  [card, ...card.querySelectorAll(".idcheck-panel, .idcheck-badge-iframe-wrapper, .idcheck-password-iframe-wrapper")].forEach(el => {
+    if (el.scrollLeft) el.scrollLeft = 0;
+  });
+};
+(function () {
+  const card = document.querySelector("#modalIdentityCheck .card");
+  const input = document.getElementById("idcheckBadgeInput");
+  if (card) card.addEventListener("scroll", window.resetIdentityScroll, true);
+  if (input) {
+    input.addEventListener("input", window.resetIdentityScroll);
+    input.addEventListener("keydown", window.resetIdentityScroll);
+  }
+})();
+
+// Supprime toute barre de défilement DANS les iframes d'animation
+(function () {
+  function masquerScrollIframe(frame) {
+    try {
+      const d = frame.contentDocument;
+      if (!d || !d.documentElement) throw new Error("iframe inaccessible");
+      let st = d.getElementById("no-scroll-fix");
+      if (!st) {
+        st = d.createElement("style");
+        st.id = "no-scroll-fix";
+        st.textContent = "html,body{overflow:hidden !important;max-width:100% !important}::-webkit-scrollbar{display:none !important}";
+        (d.head || d.documentElement).appendChild(st);
+      }
+      frame.classList.remove("oversize");
+    } catch (e) {
+      frame.classList.add("oversize");
+    }
+  }
+  document.querySelectorAll(".idcheck-badge-anim, .idcheck-password-anim").forEach(function (frame) {
+    frame.addEventListener("load", function () { masquerScrollIframe(frame); });
+    masquerScrollIframe(frame);
+  });
+})();
 
 window.focusIdentityBadgeInput = function () {
   const input = document.getElementById("idcheckBadgeInput");
   if (document.getElementById("idcheckPanelBadge").classList.contains("active")) {
-    input.focus();
+    input.focus({ preventScroll: true });
   }
 };
 

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protection des données — Centre Hospitalier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #F6FBFA;
+    --surface: #FFFFFF;
+    --ink: #12312D;
+    --ink-soft: #4C6B66;
+    --teal: #0F766E;
+    --teal-deep: #0B544E;
+    --aqua: #DCF3F0;
+    --coral: #EF6351;
+    --coral-soft: #FDE4DF;
+    --amber: #E2A63A;
+    --line: #E2EEEC;
+    --radius: 22px;
+    --shadow: 0 20px 50px -25px rgba(15, 60, 55, .35);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 500px at 90% -10%, #E7F6F3 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, #FBEDE9 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 32px 16px 80px;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; scroll-behavior:auto !important; } }
+
+  .app{ width:100%; max-width:720px; }
+
+  header.hero{ text-align:center; margin-bottom:22px; }
+  .hero .kicker{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--teal-deep); font-weight:700;
+    background: var(--aqua); padding:6px 14px; border-radius:999px;
+    margin-bottom:14px;
+  }
+  .hero h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(28px, 5vw, 38px);
+    line-height:1.15;
+    margin:0 0 8px;
+    color:var(--teal-deep);
+  }
+  .hero p{ color:var(--ink-soft); margin:0 auto; font-size:15.5px; max-width:520px; }
+
+  .card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    padding:32px;
+    margin-top:18px;
+  }
+  @media (max-width:520px){ .card{ padding:22px; } }
+
+  h2.card-title{
+    font-family:var(--font-display);
+    font-size:22px; font-weight:600; margin:0 0 4px; color:var(--ink);
+  }
+  p.card-sub{ margin:0 0 20px; color:var(--ink-soft); font-size:14.5px; }
+  p, li{ font-size:14.5px; }
+  p{ margin:0 0 12px; }
+  a{ color:var(--teal); font-weight:600; }
+  a:hover{ color:var(--teal-deep); }
+
+  /* ---- points clés ---- */
+  .key-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:520px){ .key-grid{ grid-template-columns:1fr; } }
+  .key{
+    display:flex; gap:12px; align-items:flex-start;
+    background:var(--aqua); border-radius:14px; padding:14px;
+  }
+  .key .emoji{ font-size:22px; line-height:1.2; }
+  .key b{ display:block; font-size:14px; color:var(--teal-deep); margin-bottom:2px; }
+  .key span.d{ font-size:13px; color:var(--ink-soft); line-height:1.45; display:block; }
+
+  /* ---- sommaire ---- */
+  .toc{ display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a{
+    border:1.5px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600;
+    color:var(--ink-soft); background:#FBFDFD; text-decoration:none; transition:all .16s ease;
+  }
+  .toc a:hover{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+  /* ---- sections accordéon ---- */
+  details.sec{
+    border:1.5px solid var(--line); border-radius:16px; background:#FBFDFD; margin-bottom:10px;
+    transition:border-color .18s ease, background .18s ease; scroll-margin-top:16px;
+  }
+  details.sec:hover{ border-color:var(--teal); }
+  details.sec[open]{ background:#fff; border-color:var(--teal); }
+  details.sec summary{
+    list-style:none; cursor:pointer; padding:16px 18px; display:flex; align-items:center; gap:12px;
+    font-weight:700; font-size:15px; color:var(--ink);
+  }
+  details.sec summary::-webkit-details-marker{ display:none; }
+  details.sec summary:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; border-radius:14px; }
+  .sec .num{
+    flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--aqua); color:var(--teal-deep);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
+  }
+  .sec .chev{ margin-left:auto; transition:transform .2s ease; color:var(--ink-soft); font-size:14px; }
+  details.sec[open] .chev{ transform:rotate(180deg); }
+  .sec .body{ padding:0 18px 18px 60px; color:var(--ink); animation: rise .3s ease both; }
+  @media (max-width:520px){ .sec .body{ padding:0 16px 16px 16px; } }
+  @keyframes rise{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .sec ul{ margin:0 0 12px; padding-left:20px; }
+  .sec li{ margin-bottom:6px; }
+
+  /* ---- tableau ---- */
+  .table-wrap{ overflow-x:auto; margin:6px 0 14px; border:1px solid var(--line); border-radius:14px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:420px; }
+  th{ text-align:left; background:var(--aqua); color:var(--teal-deep); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; }
+  td{ padding:11px 14px; border-top:1px solid var(--line); vertical-align:top; }
+
+  /* ---- encadrés ---- */
+  .callout{
+    display:flex; gap:12px; background:var(--coral-soft); border-radius:14px; padding:14px 16px; margin:4px 0 12px;
+    font-size:13.5px;
+  }
+  .callout .emoji{ font-size:20px; line-height:1.3; }
+  .callout.soft{ background:var(--aqua); }
+
+  /* champs à compléter */
+  .ph{
+    background:#FFF3D6; color:#7A5300; border-radius:6px; padding:1px 6px; font-weight:600; font-size:.95em;
+    border:1px dashed var(--amber);
+  }
+
+  /* ---- droits ---- */
+  .rights{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  @media (max-width:520px){ .rights{ grid-template-columns:1fr; } }
+  .right{
+    border:1.5px solid var(--line); border-radius:12px; padding:10px 12px; font-size:13.5px; font-weight:600; background:#fff;
+    display:flex; gap:8px; align-items:center;
+  }
+
+  /* ---- boutons ---- */
+  .nav-row{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
+  .btn{
+    flex:1; padding:15px 18px; border-radius:14px; font-weight:700; font-size:15px; text-decoration:none;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .18s ease; text-align:center;
+    font-family:var(--font-body);
+  }
+  .btn-primary{ background:var(--teal); color:#fff; box-shadow:0 12px 24px -12px rgba(15,118,110,.6); }
+  .btn-primary:hover{ background:var(--teal-deep); color:#fff; transform:translateY(-1px); }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); }
+  .btn-ghost:hover{ border-color:var(--teal); color:var(--teal-deep); }
+
+  .footer-note{ text-align:center; font-size:12px; color:var(--ink-soft); margin-top:18px; opacity:.8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="hero">
+    <span class="kicker">🔒 Protection des données</span>
+    <h1>Vos données, en toute transparence</h1>
+    <p>Voici, simplement, ce que nous collectons lorsque vous répondez à notre enquête de satisfaction, pourquoi, et quels sont vos droits.</p>
+  </header>
+
+  <!-- Points clés -->
+  <section class="card" aria-labelledby="t-cles">
+    <h2 class="card-title" id="t-cles">L'essentiel en un coup d'œil</h2>
+    <p class="card-sub">Mise à jour : 27 octobre 2026</p>
+    <div class="key-grid">
+      <div class="key"><span class="emoji">🕶️</span><div><b>Réponse anonyme</b><span class="d">Nous ne vous demandons ni nom, ni prénom, ni e-mail, ni numéro de dossier.</span></div></div>
+      <div class="key"><span class="emoji">🎯</span><div><b>Un seul but</b><span class="d">Améliorer la qualité de l'accueil et des soins. Aucune utilisation commerciale.</span></div></div>
+      <div class="key"><span class="emoji">🚫</span><div><b>Jamais revendues</b><span class="d">Vos réponses ne sont ni vendues, ni cédées à des fins publicitaires.</span></div></div>
+      <div class="key"><span class="emoji">⚖️</span><div><b>Vos droits</b><span class="d">Vous pouvez nous contacter ou saisir la CNIL à tout moment.</span></div></div>
+    </div>
+  </section>
+
+  <!-- Sommaire -->
+  <section class="card" aria-labelledby="t-som">
+    <h2 class="card-title" id="t-som">Aller directement à…</h2>
+    <p class="card-sub">Touchez une rubrique pour l'ouvrir.</p>
+    <nav class="toc" aria-label="Sommaire">
+      <a href="#s1">Responsable</a>
+      <a href="#s2">Données collectées</a>
+      <a href="#s3">Finalité</a>
+      <a href="#s4">Hébergement</a>
+      <a href="#s5">Durée</a>
+      <a href="#s6">Vos droits</a>
+      <a href="#s7">Contact</a>
+    </nav>
+  </section>
+
+  <!-- Détail -->
+  <section class="card" aria-labelledby="t-detail">
+    <h2 class="card-title" id="t-detail">Le détail</h2>
+    <p class="card-sub">Informations fournies conformément aux articles 13 et 14 du RGPD.</p>
+
+    <details class="sec" id="s1">
+      <summary><span class="num">1</span> Qui est responsable de vos données ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <p>Le responsable du traitement est :</p>
+        <p><b><span class="ph">[Nom de l'établissement]</span></b><br>
+        <span class="ph">[Adresse postale complète]</span><br>
+        Représenté par <span class="ph">[Nom et fonction du représentant légal]</span></p>
+        <p>Un <b>délégué à la protection des données (DPO)</b> veille au respect de la réglementation. Ses coordonnées figurent à la rubrique « Contact ».</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s2" open>
+      <summary><span class="num">2</span> Quelles données collectons-nous ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Donnée</th><th>Précision</th></tr></thead>
+            <tbody>
+              <tr><td>Date du passage</td><td>La date que vous indiquez dans le questionnaire</td></tr>
+              <tr><td>Motif du passage</td><td>Une catégorie générale (consultation, urgences, maternité…), sans détail médical</td></tr>
+              <tr><td>Vos évaluations</td><td>Notes de 1 à 5 par thème (accueil, attente, soins…) et note de recommandation de 0 à 10</td></tr>
+              <tr><td>Points forts et pistes d'amélioration</td><td>Les éléments que vous sélectionnez dans les listes proposées</td></tr>
+              <tr><td>Commentaire libre</td><td>Facultatif, rédigé par vous</td></tr>
+              <tr><td>Date et heure d'envoi</td><td>Enregistrées automatiquement</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="emoji">✍️</span>
+          <div><b>Dans le commentaire libre, merci de ne pas indiquer</b> de nom (le vôtre ou celui d'un tiers), de numéro de dossier, ni d'information sur votre état de santé. Ce champ n'est pas fait pour cela.</div>
+        </div>
+        <p>Nous <b>ne collectons pas</b> votre identité, vos coordonnées ni votre numéro de dossier patient. Aucune donnée n'est rapprochée de votre dossier médical.</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s3">
+      <summary><span class="num">3</span> Pourquoi utilisons-nous ces données ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <p><b>Finalité :</b> mesurer la satisfaction des usagers et identifier des axes d'amélioration de l'accueil, de l'organisation et de la qualité des soins.</p>
+        <ul>
+          <li>Suivi statistique de la satisfaction par service et par motif de passage</li>
+          <li>Analyse des commentaires par l'équipe qualité</li>
+          <li>Pilotage des actions d'amélioration</li>
+        </ul>
+        <p><b>Base légale :</b> <span class="ph">[mission d'intérêt public (art. 6.1.e du RGPD) ou intérêt légitime (art. 6.1.f) — à confirmer avec votre DPO]</span>. Répondre est entièrement facultatif et n'a aucune incidence sur votre prise en charge.</p>
+        <p><b>Destinataires :</b> l'équipe qualité et la direction de l'établissement, uniquement sous forme de résultats ou de réponses non identifiantes.</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s4">
+      <summary><span class="num">4</span> Où sont-elles hébergées ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <p>Les réponses sont enregistrées dans une base de données <b>Google Cloud Firestore</b> (service Firebase, fourni par Google). Google intervient comme <b>sous-traitant</b> : il héberge les données pour notre compte, sans les utiliser pour ses propres finalités.</p>
+        <p>Région d'hébergement : <span class="ph">[ex. Europe — à vérifier dans la console Firebase]</span>.</p>
+        <p>Transferts hors Union européenne : <span class="ph">[préciser s'il y en a et les garanties applicables, par ex. clauses contractuelles types]</span>.</p>
+        <p>Cette page charge aussi des ressources techniques depuis les serveurs de Google (polices de caractères et bibliothèque Firebase). Lors du chargement, votre adresse IP peut être vue par Google, comme pour toute page web.</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s5">
+      <summary><span class="num">5</span> Combien de temps les conservons-nous ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <p>Les réponses sont conservées <b><span class="ph">[durée, ex. 3 ans]</span></b> à compter de leur envoi, puis supprimées ou définitivement anonymisées sous forme de statistiques agrégées.</p>
+        <p>L'accès à la base est limité aux personnes habilitées de l'établissement.</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s6">
+      <summary><span class="num">6</span> Quels sont vos droits ?<span class="chev">▼</span></summary>
+      <div class="body">
+        <div class="rights">
+          <div class="right">👁️ Accès</div>
+          <div class="right">✏️ Rectification</div>
+          <div class="right">🗑️ Effacement</div>
+          <div class="right">⏸️ Limitation</div>
+          <div class="right">✋ Opposition</div>
+          <div class="right">📦 Portabilité <span style="font-weight:500;color:var(--ink-soft)">(si applicable)</span></div>
+        </div>
+        <div class="callout soft">
+          <span class="emoji">💡</span>
+          <div>Vos réponses étant <b>anonymes</b>, nous ne pouvons pas toujours retrouver une réponse précise parmi les autres. Pour que nous puissions la localiser, indiquez-nous la <b>date de votre passage</b>, le <b>motif</b> et, si possible, <b>des extraits de votre commentaire</b>.</div>
+        </div>
+        <p>Pour exercer vos droits, écrivez à notre DPO (voir « Contact »). Nous vous répondons dans un délai d'<b>un mois</b>.</p>
+        <p>Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la <b>CNIL</b> : <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr/fr/plaintes</a>.</p>
+      </div>
+    </details>
+
+    <details class="sec" id="s7">
+      <summary><span class="num">7</span> Nous contacter<span class="chev">▼</span></summary>
+      <div class="body">
+        <p><b>Délégué à la protection des données</b></p>
+        <ul>
+          <li>Par e-mail : <span class="ph">[adresse e-mail du DPO]</span></li>
+          <li>Par courrier : <span class="ph">[Nom de l'établissement — À l'attention du DPO — adresse]</span></li>
+        </ul>
+        <p>Merci de ne pas joindre d'informations médicales à votre message.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- Retour -->
+  <section class="card">
+    <div class="nav-row" style="margin-top:0">
+     <!-- <a class="btn btn-ghost" href="avis-patient.html">← Retour au questionnaire</a>-->
+      <a class="btn btn-primary" href="#t-cles">Remonter en haut ↑</a>
+    </div>
+  </section>
+
+  <p class="footer-note">Dernière mise à jour : 27 octobre 2026<br>
+    🚀 Powered by GestUrg2
+  </p>
+</div>
+
+</body>
+</html>

@@ -65,7 +65,7 @@ input[type=file]{padding:11px 14px;font-size:13.5px}
 <section class="card" id="loginCard"><h2>Retrouver mon dossier</h2><form id="loginForm"><div class="grid"><div><label for="reference">Numéro de référence</label><input id="reference" name="reference" required autocomplete="off" placeholder="Ex. REC-2026-XXXX"></div><div><label for="code">Code de suivi</label><input id="code" name="code" type="password" required autocomplete="current-password" placeholder="Votre code personnel"></div></div><p class="muted">Ne partagez pas votre code de suivi. Il permet d’accéder aux informations de votre dossier.</p><div class="error" id="loginError" role="alert"></div><button class="btn" id="loginBtn" type="submit">Consulter mon dossier →</button></form></section>
 <div id="caseArea" class="hidden">
 <section class="card"><div class="headrow"><div><div class="meta" id="caseRef"></div><h2 id="caseTitle" style="margin:5px 0"></h2><div class="meta" id="caseDate"></div></div><span class="pill" id="caseStatus"></span></div><p id="caseDescription" style="white-space:pre-wrap"></p><h2 style="margin-top:26px">Historique du traitement</h2><div id="timeline" class="timeline"></div></section>
-<section class="card"><h2>Échanges avec l’établissement</h2><div id="messages" class="messages"></div><div class="closed-note" id="closedNote" role="status"><div aria-hidden="true">🔒</div><div><strong>Cette réclamation est clôturée</strong>L’envoi de nouveaux messages n’est plus possible. Pour toute nouvelle demande, vous pouvez déposer une nouvelle réclamation.</div></div><form id="messageForm" class="composer"><div><label for="message">Votre message</label><textarea id="message" name="message" required minlength="2" maxlength="5000" placeholder="Écrivez votre message…"></textarea></div><div><label for="piece">Pièce jointe (facultatif)</label><input id="piece" name="piece" type="file" accept=".pdf,.jpg,.jpeg,.png"><p class="muted" style="margin-bottom:0">Les pièces jointes seront activées lorsque le dépôt sécurisé de fichiers sera raccordé.</p></div><div class="error" id="messageError" role="alert" style="margin:0"></div><button class="btn" id="sendBtn" type="submit">Envoyer le message</button></form></section>
+<section class="card"><div class="headrow" style="align-items:center;margin-bottom:16px"><h2 style="margin:0">Échanges avec l’établissement</h2><button class="btn btn-ghost" id="refreshBtn" type="button" style="margin:0;padding:10px 16px">↻ Actualiser</button></div><div id="messages" class="messages"></div><div class="closed-note" id="closedNote" role="status"><div aria-hidden="true">🔒</div><div><strong>Cette réclamation est clôturée</strong>L’envoi de nouveaux messages n’est plus possible. Pour toute nouvelle demande, vous pouvez déposer une nouvelle réclamation.</div></div><form id="messageForm" class="composer"><div><label for="message">Votre message</label><textarea id="message" name="message" required minlength="2" maxlength="5000" placeholder="Écrivez votre message…"></textarea></div><div><label for="piece">Pièce jointe (facultatif)</label><input id="piece" name="piece" type="file" accept=".pdf,.jpg,.jpeg,.png"><p class="muted" style="margin-bottom:0">Les pièces jointes seront activées lorsque le dépôt sécurisé de fichiers sera raccordé.</p></div><div class="error" id="messageError" role="alert" style="margin:0"></div><button class="btn" id="sendBtn" type="submit">Envoyer le message</button></form></section>
 <button class="btn btn-ghost" id="logoutBtn" type="button">Fermer mon dossier</button>
 </div>
 <p class="foot">En cas de difficulté d’accès, contactez directement l’établissement concerné.</p>
@@ -127,7 +127,7 @@ function isClosed(c){
  const norm=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
  return /(clotur|clos\b|closed|archiv)/.test(norm(c.statut)+" "+norm(c.statutLibelle));
 }
-function isMail(c){return c.canal==="email"||c.source==="email"||c.reponseParEmail===true}
+function isMail(c){return c.canal==="email"}   // ancien mode uniquement
 function applyClosedState(closed,mail){
  caseClosed=closed;
  $("messageForm").classList.toggle("hidden",closed);
@@ -212,6 +212,13 @@ $("messageForm").addEventListener("submit",async e=>{
  }catch(err){showError("messageError",err.message||"Impossible d’envoyer ce message.");}
  finally{$("sendBtn").disabled=false;}
 });
+async function rafraichir(silencieux){
+ if(!patientSession||document.hidden)return;
+ try{renderCase(await api("/api/reclamations/patient/dossier"))}
+ catch(err){if(!silencieux)showError("messageError",err.message||"Actualisation impossible.")}
+}
+$("refreshBtn").addEventListener("click",()=>rafraichir(false));
+setInterval(()=>rafraichir(true),30000);   // actualisation automatique toutes les 30 s
 $("logoutBtn").addEventListener("click",()=>{patientSession=null;$("caseArea").classList.add("hidden");$("loginCard").classList.remove("hidden");$("code").value="";});
 </script>
 </body>

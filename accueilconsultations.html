@@ -74,7 +74,7 @@ input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--
       <div class="field" style="flex:1 1 280px"><label for="q">Rechercher (nom, prénom, numéro, téléphone, naissance, e-mail)</label><input id="q" type="search" autocomplete="off" placeholder="Ex. Martin Léa, 0612…, RDV-1234"></div>
       <div class="field" style="width:170px"><label for="portee">Période</label><select id="portee"><option value="jour">Un jour précis</option><option value="tous">Aujourd'hui et à venir</option></select></div>
       <div class="field" style="width:170px" id="fjour"><label for="jour">Date</label><input id="jour" type="date"></div>
-      <div class="field" style="width:200px"><label for="fstat">Statut</label><select id="fstat"><option value="">Tous</option><option value="pris">Réservé</option><option value="attente">En salle d'attente</option><option value="encours">En consultation</option></select></div>
+      <div class="field" style="width:200px"><label for="fstat">Statut</label><select id="fstat"><option value="">Tous</option><option value="pris">Réservé</option><option value="attente">En salle d'attente</option><option value="encours">En consultation</option><option value="termine">Terminées (à facturer)</option></select></div>
     </div>
     <div class="split">
       <div id="liste"></div>
@@ -94,7 +94,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
-let medecin={},rdvs=[],sel=null,unsub=null,tmr=null;
+let medecin={},rdvs=[],rdvsJ=[],rdvsT=[],sel=null,unsub=null,unsubT=null,tmr=null;
+const VIDE='<div class="card-sec mut">Sélectionnez une consultation pour accueillir le patient.</div>';
 const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
 const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
 /* ---- Notifications : bulle affichée par la page parente ---- */
@@ -130,21 +131,27 @@ $('#jour').onchange=()=>{sel=null;ecouter()};
 $('#portee').onchange=()=>{$('#fjour').hidden=$('#portee').value==='tous';sel=null;ecouter()};
 $('#q').oninput=$('#fstat').onchange=()=>rendreListe();
 
+function fusion(){
+  const m=new Map();[...rdvsJ,...rdvsT].forEach(r=>m.set(r.id,r));
+  rdvs=[...m.values()].sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.heure||'').localeCompare(b.heure||''));
+  rendreListe();const r=rdvs.find(x=>x.id===sel);
+  if(sel&&(!r||r.archive)){sel=null;$('#detail').innerHTML=VIDE;return}
+  if(r&&!document.activeElement.closest('#detail'))ouvrir(r);
+}
 function ecouter(){
   if(unsub)unsub();
-  const col=collection(db,'rdv-urgences');
-  const auj=iso(new Date()); // les consultations des jours passés ne sont jamais chargées
+  const col=collection(db,'rdv-urgences'),erreur=e=>{console.error(e);afficherBulle('Chargement impossible', BULLE.ERR)};
+  const auj=iso(new Date()); // les consultations des jours passés ne sont jamais chargées, sauf les terminées non archivées
   if($('#jour').value<auj)$('#jour').value=auj;
   const q=$('#portee').value==='tous'?query(col,where('date','>=',auj),orderBy('date'),limit(500)):query(col,where('date','==',$('#jour').value));
-  unsub=onSnapshot(q,s=>{
-    rdvs=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.heure.localeCompare(b.heure));
-    rendreListe();const r=rdvs.find(x=>x.id===sel);if(r&&!document.activeElement.closest('#detail'))ouvrir(r);
-  },e=>{console.error(e);afficherBulle('Chargement impossible', BULLE.ERR)});
+  unsub=onSnapshot(q,s=>{rdvsJ=s.docs.map(d=>({id:d.id,...d.data()}));fusion()},erreur);
+  // consultations terminées : elles restent visibles (facturation, impression) tant qu'elles ne sont pas archivées, quelle que soit leur date
+  if(!unsubT)unsubT=onSnapshot(query(col,where('statut','==','termine')),s=>{rdvsT=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.archive);fusion()},erreur);
 }
 function visibles(){
   const t=norm($('#q').value).split(/\s+/).filter(Boolean),st=$('#fstat').value;
   return rdvs.filter(r=>{
-    if(r.statut==='termine'||r.statut==='annule')return false; // consultations terminées ou annulées : jamais affichées
+    if(r.statut==='annule'||r.archive)return false; // annulées et archivées : jamais affichées
     if(st&&r.statut!==st)return false;
     const p=r.patient||{},d=p.dateNaissance?new Date(p.dateNaissance):null;
     const fr=d&&!isNaN(d)?d.toLocaleDateString('fr-FR'):'';
@@ -154,7 +161,7 @@ function visibles(){
 }
 function rendreListe(){
   const l=visibles();
-  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${$('#portee').value==='tous'?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}${demandeurDe(r)?' · pris par '+esc(demandeurDe(r)):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
+  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${($('#portee').value==='tous'||r.date!==$('#jour').value)?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}${r.statut==='termine'?(r.facturation?.regle?' · facturée':' · à facturer'):''}${demandeurDe(r)?' · pris par '+esc(demandeurDe(r)):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
   document.querySelectorAll('.rdv').forEach(b=>b.onclick=()=>{sel=b.dataset.id;rendreListe();ouvrir(rdvs.find(x=>x.id===sel))});
 }
 
@@ -205,6 +212,7 @@ const heureTS=t=>t?.toDate?t.toDate().toLocaleTimeString('fr-FR',{hour:'2-digit'
 async function ouvrir(r){
   if(!r)return;const p=r.patient||{},box=$('#detail');
   const head=`<div class="card-sec"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px"><h2 class="card-title" style="margin:0">${esc(r.date?new Date(r.date+'T12:00').toLocaleDateString('fr-FR'):'')} à ${esc(r.heure)}${r.ref?' · '+esc(r.ref):''}</h2><span class="pill s-${r.statut}">${STAT[r.statut]}</span></div>${r.alerteVitale?'<div class="note s-annule">⚠ Le patient a signalé des signes d’alerte.</div>':''}${F('Motif',r.motif+(r.detail?' — '+r.detail:''))}${demandeurDe(r)?F('Rendez-vous pris par un tiers',demandeurDe(r))+F('Téléphone du demandeur',r.demandeur?.telephone):''}${F('Symptômes',(r.symptomes?.liste||[]).join(', '))}${F('Symptômes ajoutés par le patient',(r.symptomes?.autres||[]).join(', '))}${F('Depuis',r.symptomes?.depuis)}${F('Douleur',r.symptomes?.douleur?r.symptomes.douleur+'/10':'')}${F('Signes d’alerte',(r.symptomes?.signesAlerte||[]).join(', '))}`;
+  if(r.statut==='termine')return ouvrirTermine(r,head);
   if(r.statut!=='pris'){
     box.innerHTML=head+F('Patient',(p.prenom||'')+' '+(p.nom||''))+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('Fiche patient (CIP)',r.patientId)+
       (r.statut==='attente'?`<div class="note s-attente">En salle d’attente depuis ${esc(heureTS(r.arriveLe)||'—')}.</div><div class="actions"><button class="btn-secondary" id="undo">Annuler l’arrivée</button></div>`:'')+'</div>';
@@ -268,9 +276,57 @@ async function ouvrir(r){
     if(!confirm('Annuler ce rendez-vous ? Le créneau sera libéré.'))return;
     try{await runTransaction(db,async tx=>{
       const oref=doc(db,'rdv-occupation',r.date),o=await tx.get(oref);
-      if(o.exists()){const c=o.data().counts||{};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);tx.update(oref,{counts:c})}
+      if(o.exists()){const d=o.data(),c=d.counts||{},md={...(d.med||{})};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);if(r.medecinId)md[r.heure]=(md[r.heure]||[]).filter(u=>u!==r.medecinId);tx.update(oref,{counts:c,med:md})}
       tx.update(doc(db,'rdv-urgences',r.id),{statut:'annule',annuleLe:serverTimestamp(),annulePar:'accueil',motifAnnulation:'Annulé par l’accueil'});
     });afficherBulle('Rendez-vous annulé', BULLE.OK)}catch(e){afficherBulle('Échec de l’annulation', BULLE.ERR)}
+  };
+}
+
+/* ---- Consultation terminée : facturation, documents, archivage ---- */
+function imprimer(titre,corps){
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();
+  d.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${esc(titre)}</title><style>body{font:14px/1.5 Arial,sans-serif;color:#111;margin:32px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 4px}.m{color:#555}table{border-collapse:collapse;width:100%;margin-top:12px}td,th{border:1px solid #bbb;padding:6px 8px;text-align:left}pre{white-space:pre-wrap;font:inherit;margin:0}</style></head><body>${corps}</body></html>`);
+  d.close();setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)},250);
+}
+function ouvrirTermine(r,head){
+  const p=r.patient||{},f=r.facturation||{},box=$('#detail'),nomP=((p.prenom||'')+' '+(p.nom||'')).trim();
+  const MODES=['','CB','Espèces','Chèque','Tiers payant','Gratuit / pris en charge'];
+  box.innerHTML=head+F('Patient',nomP)+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('Fiche patient (CIP)',r.patientId)+
+   `</div><div class="card-sec"><h2 class="card-title">Facturation</h2><div class="form">
+    <div class="field"><label for="f-montant">Montant (€)</label><input id="f-montant" type="number" min="0" step="0.01" value="${esc(f.montant??'')}"></div>
+    <div class="field"><label for="f-mode">Mode de règlement</label><select id="f-mode">${MODES.map(m=>`<option value="${esc(m)}"${m===(f.mode||'')?' selected':''}>${esc(m||'—')}</option>`).join('')}</select></div>
+    <div class="field" style="grid-column:1/-1"><label for="f-note">Note de facturation</label><input id="f-note" value="${esc(f.note||'')}"></div></div>
+    <label class="choice${f.regle?' on':''}" style="margin-top:12px"><input type="checkbox" id="f-regle"${f.regle?' checked':''}><span><b>Facturation réalisée / réglée</b></span></label>
+    <div class="actions"><button class="btn-primary" id="fsave">Enregistrer la facturation</button></div></div>
+    <div class="card-sec"><h2 class="card-title">Documents</h2><div class="actions" style="margin-top:0"><button class="btn-secondary" id="pRecu">Imprimer le reçu</button><button class="btn-secondary" id="pCR">Imprimer le compte rendu</button><button class="btn-secondary" id="pOpen"${r.consultationId?'':' disabled'}>Ouvrir la consultation</button></div></div>
+    <div class="card-sec"><h2 class="card-title">Archivage</h2><p class="mut">Une fois archivée, la consultation disparaît de cette liste.</p><div class="actions"><button class="btn-danger" id="archive">Archiver la consultation</button></div></div>`;
+  const fact=()=>({montant:$('#f-montant').value===''?null:parseFloat($('#f-montant').value),mode:$('#f-mode').value,note:$('#f-note').value.trim(),regle:$('#f-regle').checked});
+  $('#f-regle').onchange=e=>e.target.closest('.choice').classList.toggle('on',e.target.checked);
+  $('#fsave').onclick=async()=>{
+    try{await updateDoc(doc(db,'rdv-urgences',r.id),{facturation:{...fact(),par:medecin.uid,le:serverTimestamp()}});afficherBulle('Facturation enregistrée', BULLE.OK)}
+    catch(e){console.error(e);afficherBulle('Échec de l’enregistrement', BULLE.ERR)}
+  };
+  $('#pOpen').onclick=()=>window.parent.postMessage({type:'OPEN_TAB',title:('Consultation '+nomP).trim(),url:'ficheconsultation.html?id='+encodeURIComponent(r.consultationId)},'*');
+  $('#pRecu').onclick=()=>{
+    const x=fact(),lieu=window.medecinLieu||'Service des urgences',dt=new Date(r.date+'T12:00').toLocaleDateString('fr-FR');
+    imprimer('Reçu '+(r.ref||''),`<h1>Reçu de consultation</h1><p class="m">${esc(lieu)}</p>
+      <table><tr><th>Patient</th><td>${esc(nomP)}</td></tr><tr><th>Date de consultation</th><td>${esc(dt)} à ${esc(r.heure)}</td></tr><tr><th>Référence</th><td>${esc(r.ref||'—')}</td></tr>
+      <tr><th>Montant</th><td>${x.montant==null?'—':x.montant.toFixed(2).replace('.',',')+' €'}</td></tr><tr><th>Mode de règlement</th><td>${esc(x.mode||'—')}</td></tr></table>
+      <p class="m" style="margin-top:24px">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>`);
+  };
+  $('#pCR').onclick=async()=>{
+    if(!r.consultationId){afficherBulle('Aucune consultation liée à ce rendez-vous', BULLE.WARN);return}
+    try{
+      const c=(await getDoc(doc(db,'consultations',r.consultationId))).data()||{};
+      const S=(t,v)=>v?`<h2>${t}</h2><pre>${esc(v)}</pre>`:'';
+      imprimer('Compte rendu '+nomP,`<h1>Compte rendu de consultation</h1><p class="m">${esc(nomP)} · né(e) le ${esc(p.dateNaissance||'—')} · ${esc(c.date||r.date)} ${esc(c.heure||r.heure)}<br>${esc(c.medecinNom||'')}${c.medecinSpecialite?' — '+esc(c.medecinSpecialite):''}</p>${S('Motif',c.motif)}${S('Histoire',c.histoire)}${S('Examen clinique',c.examenClinique)}${S('Diagnostic',c.diagnostic)}${S('Conduite à tenir',c.conduite)}`);
+    }catch(e){console.error(e);afficherBulle('Impossible de charger la consultation', BULLE.ERR)}
+  };
+  $('#archive').onclick=async()=>{
+    if(!(r.facturation?.regle)&&!confirm('La facturation n’est pas marquée comme réalisée. Archiver quand même ?'))return;
+    try{await updateDoc(doc(db,'rdv-urgences',r.id),{archive:true,archiveLe:serverTimestamp(),archivePar:medecin.uid});sel=null;$('#detail').innerHTML=VIDE;afficherBulle('Consultation archivée', BULLE.OK)}
+    catch(e){console.error(e);afficherBulle('Échec de l’archivage', BULLE.ERR)}
   };
 }
 </script>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Affectations</title>
+<link rel="icon" type="image/png" href="logog2.png">
+<style>
+:root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--bg:#fff;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--ok:#16784a;--ok-soft:#e1f4e9;--late:#b92a30;--late-soft:#fdecec;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.07);--ring:0 0 0 4px rgba(11,111,164,.15)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--font);font-size:16px;line-height:1.45;color:var(--ink);background:var(--bg)}
+h1,h2,h3,p{margin:0}
+header{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
+.brand{width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,var(--primary),var(--primary-d));border-radius:11px;box-shadow:0 4px 10px rgba(11,111,164,.25)}
+.brand svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.kicker{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+main{max-width:980px;margin:0 auto;padding:24px clamp(16px,3vw,32px) 48px}
+.card-sec{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-bottom:20px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.hint{font-size:14px;color:var(--muted);margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px}.row>.field{flex:1 1 140px}
+.field label,.lbl{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;min-height:44px;padding:0 12px;font:500 15px var(--font);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px}
+input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--ring);background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;margin:0;font-size:14px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.chips label:has(input:checked){background:var(--primary-soft);border-color:var(--primary);color:var(--primary-d)}
+.chips input{width:auto;min-height:0}
+.btn-primary,.btn-secondary,.btn-danger{appearance:none;min-height:44px;padding:0 18px;font:600 15px var(--font);border-radius:12px;cursor:pointer;border:1px solid var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:disabled{opacity:.5;cursor:wait}
+.btn-secondary{background:#fff;color:var(--primary);border-color:var(--line);min-height:36px;padding:0 12px;font-size:14px}.btn-secondary:hover{background:var(--primary-soft)}
+.btn-danger{background:#fff;color:var(--late);border-color:#f0c3c5;min-height:36px;padding:0 12px;font-size:14px}.btn-danger:hover{background:var(--late-soft)}
+:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.users{max-height:210px;overflow:auto;padding:2px}
+.tools{display:flex;gap:8px;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td{padding:10px 8px;border-top:1px solid var(--line-soft);vertical-align:middle}td:last-child{text-align:right;white-space:nowrap}
+.who{margin:18px 0 2px;font-weight:700}.who small{font-weight:500;color:var(--muted)}
+.pill{display:inline-block;padding:3px 10px;font-size:13px;font-weight:700;border-radius:999px;background:var(--line-soft);color:var(--muted)}
+.pill.cs{background:var(--ok-soft);color:var(--ok)}
+.vide{color:var(--muted);padding:12px 8px}
+.msg{padding:14px 16px;border-radius:12px;background:var(--late-soft);color:var(--late);font-weight:600}
+.now{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
+.modalna .card{max-width:440px;text-align:center;padding:30px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.modalna h2{margin-bottom:10px;font-size:21px;color:var(--late)}.modalna p{margin-bottom:8px}
+*{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.8.7 3 2.4 3.3 5.2"/></svg></div>
+  <div><div class="kicker">Urgences · Administration</div><h1>Affectations</h1></div>
+</header>
+<div id="modal-no-access" class="modalna"><div class="card"><h2>Accès refusé</h2><p>Vous n’avez pas accès à cette page.</p><p>Veuillez contacter un administrateur pour plus d'informations.</p></div></div>
+<div id="modal-error" class="modalna"><div class="card"><h2>Oups, une erreur est survenue</h2><p>Veuillez réessayer un peu plus tard.</p><p>Si le problème persiste, contactez un administrateur.</p></div></div>
+<main>
+  <div id="gate" class="msg">Connexion en cours…</div>
+  <div id="app" hidden>
+
+    <section class="card-sec">
+      <h2 class="card-title">En ce moment</h2>
+      <p class="hint">Les médecins affectés à un poste de consultation ouvrent des places de rendez-vous : une place par médecin et par créneau.</p>
+      <div class="now" id="now"></div>
+    </section>
+
+    <section class="card-sec">
+      <h2 class="card-title">Nouvelle affectation</h2>
+      <p class="hint">Choisissez un ou plusieurs utilisateurs, un poste et un horaire. Seul le poste « Consultation » ouvre des rendez-vous.</p>
+      <div class="tools"><button type="button" class="btn-secondary" id="uAll">Tout sélectionner</button><button type="button" class="btn-secondary" id="uNone">Tout désélectionner</button></div>
+      <div class="users chips" id="users"></div>
+      <div class="row">
+        <div class="field"><label for="poste">Poste</label><select id="poste"></select></div>
+        <div class="field"><label for="type">Répétition</label><select id="type"><option value="hebdo">Chaque semaine</option><option value="date">Une date précise</option></select></div>
+      </div>
+      <div class="row" id="bHebdo">
+        <div class="chips" id="days" style="flex-basis:100%"></div>
+        <div class="field"><label for="depuis">À partir du <small>(facultatif)</small></label><input id="depuis" type="date"></div>
+        <div class="field"><label for="jusqu">Jusqu’au <small>(facultatif)</small></label><input id="jusqu" type="date"></div>
+      </div>
+      <div class="row" id="bDate" hidden>
+        <div class="field"><label for="date">Date</label><input id="date" type="date"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="start">Début</label><input id="start" type="time" value="08:00"></div>
+        <div class="field"><label for="end">Fin</label><input id="end" type="time" value="18:00"></div>
+        <button class="btn-primary" id="add">Ajouter l’affectation</button>
+      </div>
+    </section>
+
+    <section class="card-sec">
+      <h2 class="card-title">Affectations enregistrées</h2>
+      <div class="row" style="margin-top:6px"><div class="field" style="max-width:320px"><label for="fuser">Utilisateur</label><select id="fuser"></select></div></div>
+      <div id="list"></div>
+    </section>
+
+    <section class="card-sec">
+      <h2 class="card-title">Durée d’un rendez-vous</h2>
+      <p class="hint">Un médecin affecté en consultation reçoit un patient par créneau de cette durée. Les créneaux sont alignés sur les heures rondes (ex. 08:00, 08:20, 08:40 pour 20 min).</p>
+      <div class="row" style="margin-top:0"><div class="field" style="max-width:200px"><label for="dur">Durée (min)</label><input id="dur" type="number" min="5" max="120" step="5" value="20"></div><button class="btn-secondary" id="durSave" style="min-height:44px">Enregistrer</button></div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+const auth=getAuth(app),db=getFirestore(app);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
+const tmin=t=>{const[a,b]=String(t).split(':');return +a*60+ +b};
+const JOURS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const fmtD=s=>new Date(s+'T00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+// Postes proposés. « rdv:true » = le médecin est en consultation et ouvre des places de rendez-vous.
+const POSTES=[{k:'consultation',l:'Consultation',rdv:true},{k:'urgences',l:'Urgences'},{k:'uhcd',l:'UHCD / hospitalisation'},{k:'garde',l:'Garde / astreinte'},{k:'conge',l:'Repos / congé'},{k:'autre',l:'Autre'}];
+let users=[],affs=[],dur=20,medecin={};
+
+/* ---- Notifications : bulle affichée par la page parente ---- */
+const ORIGINE_PARENT_BULLE="*";
+const BULLE={OK:"succes",ERR:"erreur",WARN:"avertissement",INFO:"info"};
+function afficherBulle(message,typeBulle){
+  if(window.parent===window){console.warn("afficherBulle appelée sans parent, message perdu :",message);return}
+  window.parent.postMessage({source:"notification-bulle",message,typeBulle},ORIGINE_PARENT_BULLE);
+}
+window.afficherLoader=()=>{let l=document.getElementById("loadingScreen");if(!l){l=document.createElement("iframe");l.id="loadingScreen";l.src="loader.html?modal=true";l.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";document.body.appendChild(l)}l.style.display="block";l.style.opacity="1"};
+window.masquerLoader=()=>{const l=document.getElementById("loadingScreen");if(l){l.style.transition="opacity .3s";l.style.opacity="0";setTimeout(()=>l.style.display="none",300)}};
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
+  try{
+    window.afficherLoader();
+    const s=await getDoc(doc(db,"medecins",user.uid));
+    if(!s.exists()){window.masquerLoader();afficherBulle("Utilisateur non trouvé, veuillez vous reconnecter.",BULLE.ERR);return}
+    const data=s.data();medecin={...data,uid:user.uid};
+    const page=location.pathname.substring(location.pathname.lastIndexOf("/")+1).replace(".html","");
+    if(!(data.pages||{})[page]){window.masquerLoader();$('#modal-no-access').style.display="flex";return}
+    $('#gate').hidden=true;$('#app').hidden=false;
+    await charger();window.masquerLoader();
+  }catch(e){window.masquerLoader();$('#modal-error').style.display="flex";console.error(e)}
+});
+
+/* ---- Règles : une affectation s'applique-t-elle à une date ? ---- */
+const applique=(a,d)=>a.date?a.date===d:(a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
+function seChevauchent(a,b){
+  if(!(tmin(a.start)<tmin(b.end)&&tmin(b.start)<tmin(a.end)))return false;
+  if(a.date&&b.date)return a.date===b.date;
+  if(a.date||b.date){const x=a.date?a:b,y=a.date?b:a;return applique(y,x.date)}
+  if(!a.jours.some(j=>b.jours.includes(j)))return false;
+  return(!a.jusqu||!b.depuis||b.depuis<=a.jusqu)&&(!b.jusqu||!a.depuis||a.depuis<=b.jusqu);
+}
+const couvre=(a,date,heure,d)=>applique(a,date)&&tmin(heure)>=tmin(a.start)&&tmin(heure)+d<=tmin(a.end);
+
+/* ---- Chargement ---- */
+async function charger(){
+  const [u,a,c]=await Promise.all([getDocs(collection(db,'medecins')),getDocs(collection(db,'affectations')),getDoc(doc(db,'rdv-config','consultations'))]);
+  users=u.docs.map(d=>({uid:d.id,nom:d.data().nom||d.id,specialite:d.data().specialite||''})).sort((x,y)=>x.nom.localeCompare(y.nom,'fr'));
+  affs=a.docs.map(d=>({id:d.id,...d.data()}));
+  dur=c.exists()&&c.data().dur?+c.data().dur:20;$('#dur').value=dur;
+  if(!$('#users').children.length){
+    $('#users').innerHTML=users.map(x=>`<label><input type="checkbox" value="${esc(x.uid)}">${esc(x.nom)}${x.specialite?' <small style="font-weight:500;color:var(--muted)">'+esc(x.specialite)+'</small>':''}</label>`).join('')||'<p class="vide">Aucun utilisateur.</p>';
+    $('#poste').innerHTML=POSTES.map(p=>`<option value="${p.k}">${esc(p.l)}${p.rdv?' (ouvre des rendez-vous)':''}</option>`).join('');
+    $('#days').innerHTML=[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" value="${d}" ${d>=1&&d<=5?'checked':''}>${JOURS[d]}</label>`).join('');
+    $('#fuser').innerHTML='<option value="">Tous les utilisateurs</option>'+users.map(x=>`<option value="${esc(x.uid)}">${esc(x.nom)}</option>`).join('');
+  }
+  rendre();
+}
+
+/* ---- Document public lu par la page de réservation : uniquement les affectations « consultation », sans nom ---- */
+async function miroir(){
+  const s=await getDocs(collection(db,'affectations'));
+  const items=s.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.consultation).map(a=>({id:a.id,uid:a.uid,jours:a.jours||null,date:a.date||null,depuis:a.depuis||null,jusqu:a.jusqu||null,start:a.start,end:a.end}));
+  await setDoc(doc(db,'rdv-config','consultations'),{dur,items});
+}
+
+/* ---- Affichage ---- */
+const nomDe=uid=>users.find(u=>u.uid===uid)?.nom||uid;
+function quand(a){
+  if(a.date)return esc(fmtD(a.date));
+  const j=[1,2,3,4,5,6,0].filter(d=>a.jours.includes(d)).map(d=>JOURS[d]).join(', ');
+  const p=a.depuis||a.jusqu?` <small style="color:var(--muted)">${a.depuis?'du '+esc(fmtD(a.depuis)):''}${a.jusqu?' jusqu’au '+esc(fmtD(a.jusqu)):''}</small>`:'';
+  return esc(j)+p;
+}
+function rendre(){
+  const n=new Date(),k=iso(n),m=n.getHours()*60+n.getMinutes();
+  const enCours=affs.filter(a=>applique(a,k)&&tmin(a.start)<=m&&m<tmin(a.end));
+  const cs=[...new Set(enCours.filter(a=>a.consultation).map(a=>a.uid))];
+  $('#now').innerHTML=cs.length?`<span class="pill cs">${cs.length} médecin${cs.length>1?'s':''} en consultation</span>`+cs.map(u=>`<span class="pill">${esc(nomDe(u))}</span>`).join(''):'<span class="pill">Personne en consultation en ce moment</span>';
+  const f=$('#fuser').value,l=affs.filter(a=>!f||a.uid===f).sort((a,b)=>nomDe(a.uid).localeCompare(nomDe(b.uid),'fr')||(a.date||'').localeCompare(b.date||'')||tmin(a.start)-tmin(b.start));
+  const g={};l.forEach(a=>(g[a.uid]??=[]).push(a));
+  $('#list').innerHTML=Object.keys(g).map(u=>`<div class="who">${esc(nomDe(u))}</div><table><tbody>`+g[u].map(a=>`<tr><td><span class="pill ${a.consultation?'cs':''}">${esc(a.posteLabel||a.poste)}</span></td><td>${quand(a)}</td><td>${esc(a.start)}–${esc(a.end)}</td><td><button class="btn-danger" data-del="${a.id}">Supprimer</button></td></tr>`).join('')+'</tbody></table>').join('')||'<p class="vide">Aucune affectation. Les patients ne verront aucun créneau tant qu’aucun médecin n’est affecté en consultation.</p>';
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>supprimer(b.dataset.del));
+}
+$('#fuser').onchange=rendre;
+$('#type').onchange=()=>{const h=$('#type').value==='hebdo';$('#bHebdo').hidden=!h;$('#bDate').hidden=h};
+$('#uAll').onclick=()=>document.querySelectorAll('#users input').forEach(i=>i.checked=true);
+$('#uNone').onclick=()=>document.querySelectorAll('#users input').forEach(i=>i.checked=false);
+setInterval(()=>{if(!$('#app').hidden)rendre()},60000);
+
+/* ---- Ajout ---- */
+$('#add').onclick=async()=>{
+  const uids=[...document.querySelectorAll('#users input:checked')].map(i=>i.value);
+  const p=POSTES.find(x=>x.k===$('#poste').value),hebdo=$('#type').value==='hebdo';
+  const jours=[...document.querySelectorAll('#days input:checked')].map(i=>+i.value);
+  if(!uids.length)return afficherBulle('Choisissez au moins un utilisateur',BULLE.WARN);
+  if(tmin($('#end').value)<=tmin($('#start').value))return afficherBulle('L’heure de fin doit être après le début',BULLE.WARN);
+  if(hebdo&&!jours.length)return afficherBulle('Choisissez au moins un jour',BULLE.WARN);
+  if(!hebdo&&!$('#date').value)return afficherBulle('Indiquez la date',BULLE.WARN);
+  if(hebdo&&$('#depuis').value&&$('#jusqu').value&&$('#jusqu').value<$('#depuis').value)return afficherBulle('La date de fin précède la date de début',BULLE.WARN);
+  const base={poste:p.k,posteLabel:p.l,consultation:!!p.rdv,start:$('#start').value,end:$('#end').value,
+    jours:hebdo?jours:null,date:hebdo?null:$('#date').value,depuis:hebdo?($('#depuis').value||null):null,jusqu:hebdo?($('#jusqu').value||null):null};
+  const conflits=uids.filter(u=>affs.some(a=>a.uid===u&&seChevauchent(a,base))).map(nomDe);
+  if(conflits.length)return afficherBulle('Chevauchement avec une affectation existante : '+conflits.join(', '),BULLE.ERR);
+  $('#add').disabled=true;
+  try{
+    for(const u of uids)await addDoc(collection(db,'affectations'),{...base,uid:u,creeLe:serverTimestamp(),creePar:medecin.uid});
+    await miroir();await charger();afficherBulle('Affectation enregistrée',BULLE.OK);
+  }catch(e){console.error(e);afficherBulle('Échec de l’enregistrement',BULLE.ERR)}
+  $('#add').disabled=false;
+};
+
+/* ---- Suppression : on prévient si des rendez-vous futurs dépendent de l'affectation ---- */
+async function supprimer(id){
+  const a=affs.find(x=>x.id===id);if(!a)return;
+  try{
+    let orph=[];
+    if(a.consultation){
+      const auj=iso(new Date()),autres=affs.filter(x=>x.uid===a.uid&&x.consultation&&x.id!==id);
+      const s=await getDocs(query(collection(db,'rdv-urgences'),where('medecinId','==',a.uid)));
+      orph=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.date>=auj&&(r.statut==='pris'||r.statut==='attente')&&couvre(a,r.date,r.heure,r.duree||dur)&&!autres.some(x=>couvre(x,r.date,r.heure,r.duree||dur)));
+    }
+    const msg=orph.length?`${orph.length} rendez-vous à venir sont attribués à ${nomDe(a.uid)} sur cette affectation. Ils resteront réservés mais sans médecin attribué. Supprimer quand même ?`:'Supprimer cette affectation ?';
+    if(!confirm(msg))return;
+    for(const r of orph)await runTransaction(db,async tx=>{
+      const oref=doc(db,'rdv-occupation',r.date),o=await tx.get(oref);
+      if(o.exists()){const med={...(o.data().med||{})};med[r.heure]=(med[r.heure]||[]).filter(u=>u!==a.uid);tx.update(oref,{med})}
+      tx.update(doc(db,'rdv-urgences',r.id),{medecinId:null});
+    });
+    await deleteDoc(doc(db,'affectations',id));await miroir();await charger();afficherBulle('Affectation supprimée',BULLE.OK);
+  }catch(e){console.error(e);afficherBulle('Échec de la suppression',BULLE.ERR)}
+}
+
+/* ---- Durée des créneaux ---- */
+$('#durSave').onclick=async()=>{
+  const v=Math.min(120,Math.max(5,parseInt($('#dur').value)||20));
+  try{dur=v;$('#dur').value=v;await miroir();afficherBulle('Durée enregistrée',BULLE.OK)}catch(e){console.error(e);afficherBulle('Échec de l’enregistrement',BULLE.ERR)}
+};
+</script>
+</body>
+</html>

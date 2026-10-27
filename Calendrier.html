@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<title>Calendrier – Médecin</title>
+<title>Mon calendrier</title>
 <link rel="icon" type="image/png" href="logog2.png">
 <style>
 :root{--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--primary-soft:#e3f1f9;--late:#b92a30;--late-soft:#fdecec;--shadow:0 1px 2px rgba(17,35,54,.05),0 8px 24px rgba(17,35,54,.1);--ring:0 0 0 4px rgba(11,111,164,.15)}
@@ -47,6 +47,9 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 .ev.s-encours{background:var(--c);color:#fff}.ev.s-encours b,.ev.s-encours small{color:#fff}
 .ev.s-annule{background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 5px,#fff 5px,#fff 10px);color:var(--muted);border-left:5px dashed var(--c);opacity:.8;z-index:0}
 .ev.s-annule .nm{text-decoration:line-through}.ev.s-annule::after{content:"ⓘ";position:absolute;right:5px;top:2px;color:var(--c);font-weight:700}
+.aff{position:absolute;left:0;right:0;z-index:0;pointer-events:none;overflow:hidden;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);background:rgba(88,106,126,.09);border-left:4px solid #9aa9b8}
+.aff.cs{color:#16784a;background:rgba(22,120,74,.10);border-left-color:#16784a}
+.etat{padding:6px 12px;font-size:13px;font-weight:700;border-radius:999px;color:var(--muted);background:var(--line-soft)}.etat.cs{color:#16784a;background:#e1f4e9}.etat.oth{color:var(--primary-d);background:var(--primary-soft)}
 .raison{margin-top:12px;padding:12px;border-radius:12px;background:var(--late-soft);border:1px dashed var(--late);color:var(--late);font-weight:600}
 .raison small{display:block;font-weight:500;color:var(--muted);margin-top:4px}
 .ev[aria-current=true]{outline:3px solid var(--ink);z-index:3}
@@ -79,7 +82,7 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
 <body>
 <header>
   <div class="brand"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M12 13v5M9.5 15.5h5"/></svg></div>
-  <div><div class="kicker">Urgences · Médecin</div><h1>Calendrier des rendez-vous</h1></div>
+  <div><div class="kicker">Urgences · Mon calendrier</div><h1>Mon calendrier</h1></div>
   <span id="who"></span>
 </header>
 <div id="modal-no-access" class="modalna"><div class="card"><h2>Accès refusé</h2><p>Vous n’avez pas accès à cette page.</p><p>Veuillez contacter un administrateur pour plus d'informations.</p></div></div>
@@ -90,7 +93,7 @@ input[type=date]{min-height:40px;padding:0 10px;font:500 14px var(--font);border
     <div class="tools">
       <button class="b" id="today">Aujourd’hui</button>
       <button class="b" id="prev" aria-label="Précédent">‹</button><button class="b" id="next" aria-label="Suivant">›</button>
-      <span id="titre"></span>
+      <span id="titre"></span><span id="etat" class="etat"></span>
       <input id="jour" type="date" aria-label="Aller à la date" style="margin-left:auto">
       <div class="seg"><button class="b" id="v-day">Jour</button><button class="b" id="v-week">Semaine</button></div>
     </div>
@@ -112,7 +115,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
 const PX=120,DUR=15; // 120 px par heure, créneau affiché = 15 min
-let medecin={},rdvs=[],sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
+let medecin={},rdvs=[],affs=[],unsubA=null,sel=null,unsub=null,view=innerWidth<820?'day':'week',anchor=new Date(),hid=new Set(),go=true;
 const tm=h=>{const[a,b]=String(h).split(':');return +a*60+ +b};
 const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
 const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
@@ -142,7 +145,7 @@ onAuthStateChanged(auth,async user=>{
     const page=location.pathname.substring(location.pathname.lastIndexOf("/")+1).replace(".html","");
     if(!(data.pages||{})[page]){window.masquerLoader();$('#modal-no-access').style.display="flex";return}
     $('#gate').hidden=true;$('#app').hidden=false;
-    ecouter();window.masquerLoader();
+    ecouter();ecouterAffectations();window.masquerLoader();
   }catch(e){window.masquerLoader();$('#modal-error').style.display="flex";console.error(e)}
 });
 
@@ -156,7 +159,7 @@ $('#prev').onclick=()=>bouger(-1);$('#next').onclick=()=>bouger(1);
 $('#today').onclick=()=>{anchor=new Date();ecouter()};
 $('#jour').onchange=e=>{if(e.target.value){anchor=new Date(e.target.value+'T12:00');ecouter()}};
 $('#v-day').onclick=()=>{view='day';ecouter()};$('#v-week').onclick=()=>{view='week';ecouter()};
-$('#legend').onclick=e=>{const c=e.target.closest('.chip');if(!c)return;const s=c.dataset.s;hid.has(s)?hid.delete(s):hid.add(s);rendre()};
+$('#legend').onclick=e=>{const c=e.target.closest('.chip');if(!c||!c.dataset.s)return;const s=c.dataset.s;hid.has(s)?hid.delete(s):hid.add(s);rendre()};
 const pick=e=>{const b=e.target.closest('.ev');if(!b)return null;sel=b.dataset.id;document.querySelectorAll('.ev').forEach(x=>x.setAttribute('aria-current',x===b));return b};
 $('#cal').onclick=pick;
 $('#cal').ondblclick=e=>{if(pick(e))ouvrir()};
@@ -167,17 +170,31 @@ function ecouter(){
   const[a,b]=plage();
   $('#jour').value=iso(anchor);$('#v-day').classList.toggle('on',view==='day');$('#v-week').classList.toggle('on',view==='week');
   unsub=onSnapshot(query(collection(db,'rdv-urgences'),where('date','>=',iso(a)),where('date','<=',iso(b))),s=>{
-    rdvs=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>x.heure.localeCompare(y.heure));
+    // calendrier personnel : uniquement mes consultations (les rendez-vous sans médecin attribué restent visibles pour pouvoir être pris en charge)
+    rdvs=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.medecinId||r.medecinId===medecin.uid).sort((x,y)=>x.heure.localeCompare(y.heure));
     rendre();if(sel&&!$('#detail').contains(document.activeElement))ouvrir();
   },e=>{console.error(e);afficherBulle('Chargement impossible', BULLE.ERR)});
 }
+
+/* ---- Affectations : elles déterminent si je suis en consultation ---- */
+const applique=(a,d)=>a.date?a.date===d:(a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
+function ecouterAffectations(){
+  if(unsubA)unsubA();
+  unsubA=onSnapshot(query(collection(db,'affectations'),where('uid','==',medecin.uid)),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));rendre()},e=>{console.error(e);afficherBulle('Affectations indisponibles', BULLE.ERR)});
+}
+function majEtat(){
+  const n=new Date(),k=iso(n),m=n.getHours()*60+n.getMinutes(),a=affs.filter(x=>applique(x,k)&&tm(x.start)<=m&&m<tm(x.end)),c=a.find(x=>x.consultation),e=$('#etat');
+  e.textContent=c?'En consultation · rendez-vous ouverts':a.length?(a[0].posteLabel||a[0].poste):'Aucune affectation en ce moment';
+  e.className='etat '+(c?'cs':a.length?'oth':'');
+}
+setInterval(majEtat,60000);
 
 /* ---- Rendu du calendrier ---- */
 function rendre(){
   const[a,b]=plage(),days=[],today=iso(new Date()),L={weekday:'short',day:'numeric',month:'short'};
   for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1))days.push(new Date(d));
   $('#titre').textContent=view==='day'?a.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):a.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' – '+b.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  $('#legend').innerHTML=Object.keys(STAT).map(s=>`<button class="chip s-${s}" data-s="${s}" aria-pressed="${!hid.has(s)}">${STAT[s]} · ${rdvs.filter(r=>r.statut===s).length}</button>`).join('');
+  $('#legend').innerHTML=Object.keys(STAT).map(s=>`<button class="chip s-${s}" data-s="${s}" aria-pressed="${!hid.has(s)}">${STAT[s]} · ${rdvs.filter(r=>r.statut===s).length}</button>`).join('')+'<span class="chip" style="--c:#16784a;--bg:#e1f4e9;cursor:default">Affecté en consultation</span><span class="chip" style="--c:#586a7e;--bg:#eef2f6;cursor:default">Autre affectation</span>';
   const h0=0,h1=24,H=h1*PX; // plage complète 00:00 – 24:00
   const cal=$('#cal');cal.style.gridTemplateColumns=`56px repeat(${days.length},minmax(${view==='day'?0:120}px,1fr))`;
   let h='<div class="gh"></div>'+days.map(d=>`<div class="gh ${iso(d)===today?'today':''}">${view==='day'?'':d.toLocaleDateString('fr-FR',{weekday:'short'})}<b>${d.getDate()}</b></div>`).join('');
@@ -187,14 +204,15 @@ function rendre(){
     const k=iso(d),grp={};
     rdvs.filter(r=>r.date===k&&!hid.has(r.statut)).forEach(r=>(grp[r.heure]??=[]).push(r));
     h+=`<div class="col ${k===today?'today':''}" style="height:${H}px;background-size:100% ${PX/4*4}px">`;
+    h+=affs.filter(a=>applique(a,k)).map(a=>`<div class="aff ${a.consultation?'cs':''}" style="top:${(tm(a.start)-h0*60)/60*PX}px;height:${(tm(a.end)-tm(a.start))/60*PX}px">${esc(a.posteLabel||a.poste||'')} · ${esc(a.start)}–${esc(a.end)}</div>`).join('');
     for(const hr in grp)grp[hr].forEach((r,i,arr)=>{
       const p=r.patient||{},top=(tm(hr)-h0*60)/60*PX;
-      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', ')+(r.statut==='annule'?' · Annulation : '+(r.motifAnnulation||'motif non renseigné'):''))}" style="top:${top}px;height:${Math.max(26,PX*DUR/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.statut==='annule'?'✕ ':''}${r.alerteVitale?'⚠ ':''}${demandeurDe(r)?'👤 ':''}<span class="nm">${esc(p.prenom)} ${esc(p.nom)}</span>${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
+      h+=`<button class="ev s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''} title="${esc(hr+' · '+STAT[r.statut]+' · '+(p.prenom||'')+' '+(p.nom||'')+' · '+(r.motif||'')+' · '+symsDe(r).join(', ')+(r.statut==='annule'?' · Annulation : '+(r.motifAnnulation||'motif non renseigné'):''))}" style="top:${top}px;height:${Math.max(26,PX*(r.duree||DUR)/60-2)}px;left:${i*100/arr.length}%;width:calc(${100/arr.length}% - 2px)"><b>${esc(hr)}</b> ${r.statut==='annule'?'✕ ':''}${r.alerteVitale?'⚠ ':''}${demandeurDe(r)?'👤 ':''}<span class="nm">${esc(p.prenom)} ${esc(p.nom)}</span>${view==='day'?` <small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}</small>`:''}</button>`;
     });
     if(k===today&&nm>=h0*60&&nm<h1*60)h+=`<div class="now" style="top:${(nm-h0*60)/60*PX}px"></div>`;
     h+='</div>';
   }
-  cal.innerHTML=h;
+  cal.innerHTML=h;majEtat();
   if(go){go=false;$('#wrap').scrollTop=Math.max(0,(days.some(d=>iso(d)===today)?nm-60:480)/60*PX)}
 }
 
@@ -222,7 +240,7 @@ async function creerConsultation(r,pid){
     motif:r.motif,histoire:[r.detail,symsDe(r).length?'Symptômes déclarés : '+symsDe(r).join(', '):'',r.symptomes?.depuis?'Depuis : '+r.symptomes.depuis:''].filter(Boolean).join('\n'),symptomes:r.symptomes||{},pourQui:r.pourQui||'moi',demandeur:r.demandeur||null,examenClinique:'',diagnostic:'',conduite:'',statut:'encours',
     medecinId:medecin.uid,medecinNom:medecin.nom||'',medecinSpecialite:medecin.specialite||'',origine:'rdv-urgences'});
   await updateDoc(doc(db,'patients',pid),{consultations:arrayUnion(ref.id)});
-  await updateDoc(doc(db,'rdv-urgences',r.id),{patientId:pid,consultationId:ref.id,statut:'encours'});
+  await updateDoc(doc(db,'rdv-urgences',r.id),{patientId:pid,consultationId:ref.id,statut:'encours',medecinId:medecin.uid});
   return ref.id;
 }
 
@@ -269,7 +287,7 @@ async function ouvrir(){
     if(!confirm('Annuler ce rendez-vous ? Le créneau sera libéré.'))return;
     try{await runTransaction(db,async tx=>{
       const oref=doc(db,'rdv-occupation',r.date),o=await tx.get(oref);
-      if(o.exists()){const c=o.data().counts||{};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);tx.update(oref,{counts:c})}
+      if(o.exists()){const d=o.data(),c=d.counts||{},md={...(d.med||{})};c[r.heure]=Math.max(0,(c[r.heure]||1)-1);if(r.medecinId)md[r.heure]=(md[r.heure]||[]).filter(u=>u!==r.medecinId);tx.update(oref,{counts:c,med:md})}
       tx.update(doc(db,'rdv-urgences',r.id),{statut:'annule',annuleLe:serverTimestamp(),annulePar:'medecin',motifAnnulation:'Annulé par le service'});
     });afficherBulle('Rendez-vous annulé', BULLE.OK)}catch(e){afficherBulle('Échec de l’annulation', BULLE.ERR)}
   };

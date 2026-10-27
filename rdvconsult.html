@@ -256,25 +256,27 @@ const telOk=s=>{const d=s.replace(/\D/g,'');return d.length>=9&&d.length<=15};
 
 /* ---------- Créneaux ---------- */
 const PAGE=8;let showAll=false;
-let rules=[],specials=[],date=iso(new Date()),time=null,caps={},durs={},counts={};
-// Capacité (nb de médecins) par créneau : un jour « particulier » remplace les créneaux génériques
+let items=[],dur=20,date=iso(new Date()),time=null,caps={},elig={},durs={},counts={},meds={};
+// Capacité d'un créneau = nombre de médecins affectés en consultation sur toute sa durée (créneaux alignés sur la durée à partir de minuit)
 function capacites(d){
-  const sp=specials.filter(s=>s.date===d);
-  const src=sp.length?sp:rules.filter(r=>r.days.includes(new Date(d+'T00:00').getDay()));
-  const m={};durs={};
-  src.filter(r=>!r.closed).forEach(r=>{for(let x=tmin(r.start);x+ +r.dur<=tmin(r.end);x+= +r.dur){const t=mt(x);m[t]=Math.max(m[t]||0,+r.docs);durs[t]=+r.dur}});
+  const dow=new Date(d+'T00:00').getDay(),m={};durs={};elig={};
+  const ap=items.filter(a=>a.date?a.date===d:(a.jours||[]).includes(dow)&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu));
+  for(let x=0;x+dur<=1440;x+=dur){
+    const u=[...new Set(ap.filter(a=>tmin(a.start)<=x&&tmin(a.end)>=x+dur).map(a=>a.uid))];
+    if(u.length){const t=mt(x);m[t]=u.length;elig[t]=u;durs[t]=dur}
+  }
   return m;
 }
 async function charger(){
   try{
-    const [g,p]=await Promise.all([getDoc(doc(db,'rdv-config','generiques')),getDoc(doc(db,'rdv-config','particuliers'))]);
-    rules=g.exists()?g.data().rules||[]:[]; specials=p.exists()?p.data().items||[]:[];
+    const g=await getDoc(doc(db,'rdv-config','consultations'));
+    items=g.exists()?g.data().items||[]:[];dur=g.exists()&&g.data().dur?+g.data().dur:20;
   }catch(e){$('#slots').innerHTML='<p class="err">Impossible de charger les créneaux. Réessayez dans un instant.</p>'}
   await choisirJour(date);
 }
 async function choisirJour(d){
-  date=d;time=null;showAll=false;caps=capacites(d);counts={};
-  try{const o=await getDoc(doc(db,'rdv-occupation',d));if(o.exists())counts=o.data().counts||{}}catch(e){}
+  date=d;time=null;showAll=false;caps=capacites(d);counts={};meds={};
+  try{const o=await getDoc(doc(db,'rdv-occupation',d));if(o.exists()){counts=o.data().counts||{};meds=o.data().med||{}}}catch(e){}
   rendre();
 }
 function rendre(){
@@ -285,7 +287,7 @@ function rendre(){
     b.onclick=()=>choisirJour(s);days.appendChild(b)}
   const now=new Date(),nm=now.getHours()*60+now.getMinutes(),box=$('#slots'),isToday=date===iso(now),all=Object.keys(caps).sort();
   // on ne garde que les créneaux à venir et encore libres
-  const dispo=all.filter(t=>caps[t]-(counts[t]||0)>0&&!(isToday&&tmin(t)<=nm));
+  const dispo=all.filter(t=>caps[t]-(counts[t]||0)>0&&(elig[t]||[]).some(u=>!(meds[t]||[]).includes(u))&&!(isToday&&tmin(t)<=nm));
   if(time&&!dispo.includes(time))time=null;
   box.innerHTML=dispo.length?'':`<p class="mut">${!all.length?'Aucun créneau ouvert ce jour-là. Essayez une autre date.':isToday?'Plus de créneau disponible aujourd’hui. Essayez demain ou une autre date.':'Tous les créneaux sont complets ce jour-là. Essayez une autre date.'}</p>`;
   (showAll?dispo:dispo.slice(0,PAGE)).forEach(t=>{const left=caps[t]-(counts[t]||0);
@@ -486,11 +488,13 @@ async function envoyer(){
         await runTransaction(db,async tx=>{
           const [ex,o]=await Promise.all([tx.get(ref),tx.get(occ)]);
           if(ex.exists())throw new Error('COLLISION');
-          const cts=o.exists()?{...(o.data().counts||{})}:{};
-          if((cts[time]||0)>=(caps[time]||0))throw new Error('COMPLET');
-          cts[time]=(cts[time]||0)+1;
-          o.exists()?tx.update(occ,{counts:cts}):tx.set(occ,{counts:cts});
-          tx.set(ref,{...c,ref:cand,date,heure:time,statut:'pris',creeLe:serverTimestamp()});
+          const od=o.exists()?o.data():{},cts={...(od.counts||{})},med={...(od.med||{})};
+          const pris=med[time]||[],libres=(elig[time]||[]).filter(u=>!pris.includes(u));
+          if((cts[time]||0)>=(caps[time]||0)||!libres.length)throw new Error('COMPLET');
+          const mid=libres[Math.floor(Math.random()*libres.length)]; // le patient ne choisit pas : un médecin affecté et libre sur ce créneau lui est attribué
+          cts[time]=(cts[time]||0)+1;med[time]=[...pris,mid];
+          o.exists()?tx.update(occ,{counts:cts,med}):tx.set(occ,{counts:cts,med});
+          tx.set(ref,{...c,ref:cand,date,heure:time,duree:dur,medecinId:mid,statut:'pris',creeLe:serverTimestamp()});
         });
         code=cand;
       }catch(e){if(e.message!=='COLLISION')throw e}

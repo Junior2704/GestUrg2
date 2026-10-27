@@ -81,6 +81,10 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 .mailrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;margin-top:8px;background:#fff}.mailrow>div{min-width:0}.mailrow .subtext{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1000px){.stats{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:1fr 1fr}.filters .search{grid-column:1/-1}}
 @media(max-width:600px){.tools{grid-template-columns:1fr}.top{padding:8px 14px}.layout{padding:16px 12px 40px}.stats{grid-template-columns:1fr 1fr}.filters,.twocol,.inner-grid{grid-template-columns:1fr}.user{max-width:130px}.patient-search{grid-template-columns:1fr}.modalfoot .btn{flex:1}}
+.doc-tools{display:grid;grid-template-columns:minmax(160px,1fr) auto auto;gap:8px;align-items:center;margin-bottom:10px}
+.doc-tools input,.doc-tools select{min-height:40px;font-size:14px;width:100%}
+.doc-tools .count{grid-column:1/-1;margin:0}
+@media(max-width:600px){.doc-tools{grid-template-columns:1fr}}
 </style></head>
 <body>
 <header class="top"><div class="left"><div class="brand">+</div><div class="ht"><span class="kick">GestUrg2</span><b>Gestion des réclamations</b></div></div><div class="user" id="userInfo">Vérification de l’accès…</div></header>
@@ -147,7 +151,23 @@ td.late{color:var(--late);font-weight:700}.ref{font-weight:800;color:var(--prima
 <div class="patient-search"><div class="field"><label for="patientSearchInput">Rechercher / choisir un autre patient</label><input id="patientSearchInput" placeholder="Nom, prénom, e-mail ou téléphone"></div><button type="button" class="btn" id="manualPatientSearchBtn">Rechercher</button></div>
 <div id="patientSuggestions" class="patient-suggestions" aria-live="polite"></div>
 <div class="patient-actions"><button type="button" class="btn primary" id="confirmPatientBtn" disabled>Confirmer le patient sélectionné</button><button type="button" class="btn" id="noPatientBtn">Aucun patient correspondant</button></div></div></div></details>
-<details class="full accordion"><summary>📄 Documents du patient et envoi sécurisé</summary><div class="accordion-content"><p class="subtext" style="margin-bottom:8px">L’envoi crée un lien individuel temporaire (7 jours) protégé par la date de naissance du patient.</p><div id="patientDocuments" class="detailbox">Associez un patient pour consulter ses documents.</div></div></details>
+<details class="full accordion"><summary>📄 Documents du patient et envoi sécurisé</summary><div class="accordion-content"><p class="subtext" style="margin-bottom:8px">L’envoi crée un lien individuel temporaire (7 jours) protégé par la date de naissance du patient.</p><div class="doc-tools" id="docTools" hidden>
+  <input id="docSearch" type="search" placeholder="Rechercher (type, date, hospitalisation…)" autocomplete="off">
+  <select id="docSort" aria-label="Trier les documents">
+    <option value="recent">Plus récents</option>
+    <option value="ancien">Plus anciens</option>
+    <option value="type">Type (A → Z)</option>
+    <option value="type_desc">Type (Z → A)</option>
+    <option value="partage">Liens actifs d’abord</option>
+  </select>
+  <select id="docFilter" aria-label="Filtrer les documents">
+    <option value="">Tous</option>
+    <option value="actif">Lien actif</option>
+    <option value="aucun">Sans lien actif</option>
+  </select>
+  <span class="count" id="docCount"></span>
+</div>
+<div id="patientDocuments" class="detailbox">Associez un patient pour consulter ses documents.</div></div></details>
 <details class="full accordion"><summary>🔒 Notes internes</summary><div class="accordion-content"><div class="field"><label for="dInternal">Note interne (non visible par l’usager)</label><textarea id="dInternal" maxlength="5000" placeholder="Notes réservées à l’équipe habilitée…"></textarea></div></div></details>
 <details class="full accordion"><summary>🕓 Historique et traçabilité</summary><div class="accordion-content"><div class="history" id="dHistory"></div></div></details>
 </div><div class="error" id="detailError"></div></div>
@@ -503,18 +523,48 @@ async function confirmSelectedPatient(patient){
  const ok=confirm(`Confirmer l’association avec ${[patient.prenom,patient.nom].filter(Boolean).join(' ')} ?\nVérifiez l’identité avant de poursuivre.`);if(!ok)return;
  await saveCurrentCase({patientId:patient.id});
 }
+let patientDocs=[];
 async function loadPatientDocuments(patientId){
  const box=$("patientDocuments");box.textContent="Chargement des documents…";
  try{
   const result=await api(`/api/reclamations/patients/${encodeURIComponent(patientId)}/documents?reclamationId=${encodeURIComponent(currentCase?.id||"")}`);
-  const docs=Array.isArray(result.documents)?result.documents:[];
-  if(!docs.length){box.textContent="Aucun document trouvé pour ce patient.";return;}
-  box.innerHTML=docs.map(d=>`<div class="doc-row"><div><strong>${esc(d.type||'Document')}</strong><small>${esc(dateText(d.dateCreation))}${d.hospitalisationId?` · Hospitalisation : ${esc(d.hospitalisationId)}`:''}</small><small>${esc(d.mime||'Type de fichier non renseigné')}</small>${d.partage?`<small class="share-state">${d.partage.actif?`Lien actif jusqu’au ${esc(dateText(d.partage.dateExpiration))}`:`Dernier lien révoqué ou inactif`}</small>`:''}</div><div class="doc-actions"><button class="rowbtn" type="button" data-open-doc="${esc(d.id)}">Ouvrir</button>${d.partage?.actif?`<button class="rowbtn revoke-doc-btn" type="button" data-revoke-share="${esc(d.partage.id)}">Révoquer le lien</button>`:`<button class="rowbtn share-doc-btn" type="button" data-share-doc="${esc(d.id)}">Envoyer au patient</button>`}</div></div>`).join('');
-  box.querySelectorAll('[data-open-doc]').forEach(btn=>btn.addEventListener('click',()=>openPatientDocument(btn.dataset.openDoc)));
-  box.querySelectorAll('[data-share-doc]').forEach(btn=>btn.addEventListener('click',()=>sharePatientDocument(btn.dataset.shareDoc,btn)));
-  box.querySelectorAll('[data-revoke-share]').forEach(btn=>btn.addEventListener('click',()=>revokePatientDocumentShare(btn.dataset.revokeShare,btn)));
- }catch(e){box.textContent=`Impossible de charger les documents : ${e.message}`;}
+  patientDocs=Array.isArray(result.documents)?result.documents:[];
+  renderPatientDocuments();
+ }catch(e){patientDocs=[];$("docTools").hidden=true;box.textContent=`Impossible de charger les documents : ${e.message}`;}
 }
+function renderPatientDocuments(){
+ const box=$("patientDocuments");
+ $("docTools").hidden=!patientDocs.length;
+ if(!patientDocs.length){box.textContent="Aucun document trouvé pour ce patient.";return;}
+ const q=norm($("docSearch").value).trim(),f=$("docFilter").value,s=$("docSort").value;
+ const l=patientDocs.filter(d=>{
+  if(f==="actif"&&!d.partage?.actif)return false;
+  if(f==="aucun"&&d.partage?.actif)return false;
+  if(!q)return true;
+  const hay=norm([d.type,dateText(d.dateCreation),d.hospitalisationId,d.mime].join(" "));
+  return q.split(/\s+/).every(w=>hay.includes(w));
+ });
+ const byDate=(a,b)=>ms(b.dateCreation)-ms(a.dateCreation);
+ const byType=(a,b)=>String(a.type||"").localeCompare(String(b.type||""),"fr",{sensitivity:"base"});
+ l.sort(
+  s==="ancien"?(a,b)=>-byDate(a,b):
+  s==="type"?(a,b)=>byType(a,b)||byDate(a,b):
+  s==="type_desc"?(a,b)=>byType(b,a)||byDate(a,b):
+  s==="partage"?(a,b)=>(b.partage?.actif?1:0)-(a.partage?.actif?1:0)||byDate(a,b):
+  byDate
+ );
+ $("docCount").textContent=`${l.length} document${l.length>1?"s":""} sur ${patientDocs.length}`;
+ if(!l.length){box.textContent="Aucun document ne correspond à votre recherche.";return;}
+ box.innerHTML=l.map(d=>`<div class="doc-row"><div><strong>${esc(d.type||'Document')}</strong><small>${esc(dateText(d.dateCreation))}${d.hospitalisationId?` · Hospitalisation : ${esc(d.hospitalisationId)}`:''}</small><small>${esc(d.mime||'Type de fichier non renseigné')}</small>${d.partage?`<small class="share-state">${d.partage.actif?`Lien actif jusqu’au ${esc(dateText(d.partage.dateExpiration))}`:`Dernier lien révoqué ou inactif`}</small>`:''}</div><div class="doc-actions"><button class="rowbtn" type="button" data-open-doc="${esc(d.id)}">Ouvrir</button>${d.partage?.actif?`<button class="rowbtn revoke-doc-btn" type="button" data-revoke-share="${esc(d.partage.id)}">Révoquer le lien</button>`:`<button class="rowbtn share-doc-btn" type="button" data-share-doc="${esc(d.id)}">Envoyer au patient</button>`}</div></div>`).join('');
+ box.querySelectorAll('[data-open-doc]').forEach(btn=>btn.addEventListener('click',()=>openPatientDocument(btn.dataset.openDoc)));
+ box.querySelectorAll('[data-share-doc]').forEach(btn=>btn.addEventListener('click',()=>sharePatientDocument(btn.dataset.shareDoc,btn)));
+ box.querySelectorAll('[data-revoke-share]').forEach(btn=>btn.addEventListener('click',()=>revokePatientDocumentShare(btn.dataset.revokeShare,btn)));
+}
+function resetDocTools(){patientDocs=[];$("docSearch").value="";$("docSort").value="recent";$("docFilter").value="";$("docTools").hidden=true}
+$("docSearch").addEventListener("input",renderPatientDocuments);
+$("docSearch").addEventListener("keydown",e=>{if(e.key==="Enter")e.preventDefault()});   // évite d'enregistrer le dossier
+$("docSort").addEventListener("change",renderPatientDocuments);
+$("docFilter").addEventListener("change",renderPatientDocuments);
 async function sharePatientDocument(documentId, button){
  if(!currentCase?.id || !currentCase?.patientId){toast("Associez et confirmez d’abord le patient concerné.");return;}
  if(!currentCase.patientAssociationConfirmee){toast("L’association du patient doit être confirmée avant l’envoi d’un document.");return;}
@@ -523,8 +573,7 @@ async function sharePatientDocument(documentId, button){
  const previous=button.textContent;button.disabled=true;button.textContent="Envoi…";
  try{
   const result=await api(`/api/reclamations/${encodeURIComponent(currentCase.id)}/documents/${encodeURIComponent(documentId)}/share`,{method:"POST",body:JSON.stringify({})});
-  toast(`Lien sécurisé envoyé à ${result.email}.
-Expiration : ${dateText(result.dateExpiration)}.`);
+  toast(result.message||"Le lien du document a été ajouté au chat sécurisé.");
   await loadPatientDocuments(currentCase.patientId);
  }catch(e){toast(e.message||"L’envoi du document a échoué.");button.disabled=false;button.textContent=previous;}
 }
@@ -681,7 +730,7 @@ function applyLock(c){
  $("lockBanner").innerHTML=locked?`<strong>🔒 Dossier « ${esc(statusLabel(c.statut))} »</strong> L’usager ne peut plus envoyer de messages et le traitement est verrouillé. Seule la note interne reste modifiable ; rouvrez la demande pour la traiter à nouveau.`:"";
  $("dBadges").innerHTML=`<span class="pill ${statusClass(c.statut)}">${esc(statusLabel(c.statut))}</span>${(c.priorite&&c.priorite!=="normale")?`<span class="pri ${esc(c.priorite)}">${esc(c.priorite)}</span>`:""}${isLate(c)?'<span class="pill late">En retard</span>':""}`;
 }
-function openCase(c){openCaseBase(c);applyLock(c);initTools(c);snapshot=formState();updateSaveState()}
+function openCase(c){resetDocTools();openCaseBase(c);applyLock(c);initTools(c);snapshot=formState();updateSaveState()}
 function requestClose(){if(currentCase&&formState()!==snapshot&&!confirm("Des modifications n’ont pas été enregistrées. Fermer quand même ?"))return;closeModal()}
 $("detailForm").addEventListener("input",updateSaveState);$("detailForm").addEventListener("change",updateSaveState);
 ["filterStatus","filterPriority","sortBy","mine","toAnswer"].forEach(id=>$(id).addEventListener("change",refreshView));

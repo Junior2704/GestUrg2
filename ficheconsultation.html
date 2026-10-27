@@ -501,13 +501,18 @@ $('#btnTransfert').onclick=async()=>{
   addEventListener('orientationchange',()=>nav.classList.remove('expanded'));
 })();
 
+/* ---- Relais des messages entre docs.html et le shell ---- */
 window.addEventListener("message", (event) => {
+  // N'accepter que les messages provenant de l'iframe Documents
+  if (event.source !== document.getElementById("docsFrame")?.contentWindow) {
+    return;
+  }
 
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage(
-      event.data,      
-      "*"              
-    );
+  console.log("[Consultation] Message reçu de docs.html :", event.data);
+
+  // Transmettre le message au shell GestUrg2
+  if (window.parent !== window) {
+    window.parent.postMessage(event.data, "*");
   }
 });
 </script>

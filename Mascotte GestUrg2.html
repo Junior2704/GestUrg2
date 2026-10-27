@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mascotte GestUrg2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8f0fa;--ink:#1b2a41;--btn:#fff;--edge:#c3d2e6;--accent:#e2403b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a2b;--ink:#eaf1fa;--btn:#1d2c44;--edge:#2b3f5e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a2b;--ink:#eaf1fa;--btn:#1d2c44;--edge:#2b3f5e;color-scheme:dark}
+html,body{height:100%;margin:0}
+body{background:transparent;color:var(--ink);font-family:Nunito,system-ui,sans-serif;display:flex;flex-direction:column}
+#stage{flex:1;position:relative;min-height:0;overflow:hidden}
+#stage canvas{position:absolute;inset:0;display:block}
+#bubble{position:absolute;top:12%;left:56%;max-width:min(230px,38vw);padding:10px 14px;background:var(--btn);border:2px solid var(--edge);border-radius:18px 18px 18px 4px;font-weight:800;font-size:.95rem;line-height:1.3;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none}
+#bubble.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div id="stage"><div id="bubble" role="status" aria-live="polite"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const T=THREE,$=id=>document.getElementById(id);
+const stage=$('stage'),bubble=$('bubble');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer=new T.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+stage.prepend(renderer.domElement);
+const scene=new T.Scene(),cam=new T.PerspectiveCamera(28,1,.1,60);
+scene.add(new T.HemisphereLight(0xffffff,0xb7c9e2,1));
+const key=new T.DirectionalLight(0xffffff,.85);key.position.set(3,5,6);scene.add(key);
+const rim=new T.DirectionalLight(0x9ec5ff,.5);rim.position.set(-5,2,-4);scene.add(rim);
+const gyro=new T.PointLight(0xff2a2a,0,0,1);gyro.position.set(0,2.6,2.6);scene.add(gyro);
+
+const M=(c,r=.5)=>new T.MeshStandardMaterial({color:c,roughness:r});
+const navy=M(0x2a4168,.45),belly=M(0xf7faff,.6),white=M(0xffffff,.35),ink=M(0x1b2a41,.3),
+  orange=M(0xff9f1c,.45),pink=M(0xff9aa8,.7),red=M(0xe2403b,.42),brow=M(0xdce9ff,.5);
+const S=(r,m,x=1,y=1,z=1)=>{const o=new T.Mesh(new T.SphereGeometry(r,40,28),m);o.scale.set(x,y,z);return o};
+const root=new T.Group();scene.add(root);
+const add=(o,x=0,y=0,z=0,p=root)=>{o.position.set(x,y,z);p.add(o);return o};
+const cone=(r,l,m,sx,sz)=>{const o=new T.Mesh(new T.ConeGeometry(r,l,24),m);o.rotation.x=Math.PI/2;o.scale.set(sx,1,sz);return o};
+
+/* Corps de pingouin */
+add(S(1,navy,.95,1.2,.85));
+add(S(1,belly,.72,.8,.5),0,-.3,.5);
+add(S(1,belly,.78,.42,.42),0,.42,.52);
+const eyes=[],brows=[],arms=[];
+[-1,1].forEach(s=>{
+  const e=new T.Group();add(e,s*.3,.5,.88);
+  add(S(.31,navy,1,1.1,.5),0,0,-.02,e);
+  add(S(.26,white,1,1.1,.55),0,0,.03,e);
+  const pu=add(S(.14,ink,1,1,.8),0,0,.12,e);
+  add(S(.05,white),.05,.06,.13,pu);
+  e.userData.pu=pu;eyes.push(e);
+  const b=add(new T.Mesh(new T.BoxGeometry(.3,.07,.07),brow),s*.3,.88,.56);b.userData.s=s;brows.push(b);
+  add(S(.1,pink,1.5,.8,.3),s*.52,.28,.78);
+  const a=new T.Group();add(a,s*.92,.15,0);add(S(.17,navy,.8,2.4,.55),0,-.5,0,a);a.userData.s=s;arms.push(a);
+  add(S(.3,orange,1.1,.35,1.4),s*.4,-1.15,.35);
+});
+
+/* Bec */
+add(cone(.17,.34,orange,1.2,.65),0,.28,.95);
+const jaw=new T.Group();add(jaw,0,.23,.8);
+add(cone(.14,.26,orange,1.1,.5),0,0,.15,jaw);
+
+/* Casquette de secours */
+const cap=new T.Group();add(cap,0,1,0);
+add(new T.Mesh(new T.SphereGeometry(.62,40,20,0,Math.PI*2,0,Math.PI/2),white),0,0,0,cap).scale.y=.75;
+add(new T.Mesh(new T.CylinderGeometry(.62,.62,.07,48),M(0xdfe8f3,.5)),0,0,0,cap);
+add(S(.32,white,1,.12,.75),0,.01,.58,cap);
+add(new T.Mesh(new T.BoxGeometry(.26,.08,.04),red),0,.24,.55,cap);
+add(new T.Mesh(new T.BoxGeometry(.08,.26,.04),red),0,.24,.55,cap);
+
+/* Ombre au sol */
+const cv=document.createElement('canvas');cv.width=cv.height=128;
+const g2=cv.getContext('2d'),gr=g2.createRadialGradient(64,64,0,64,64,64);
+gr.addColorStop(0,'rgba(20,30,50,.55)');gr.addColorStop(1,'rgba(20,30,50,0)');
+g2.fillStyle=gr;g2.fillRect(0,0,128,128);
+const shadow=new T.Mesh(new T.PlaneGeometry(3.2,3.2),new T.MeshBasicMaterial({map:new T.CanvasTexture(cv),transparent:true,depthWrite:false}));
+shadow.rotation.x=-Math.PI/2;shadow.position.y=-1.27;scene.add(shadow);
+
+/* Animation */
+let px=0,py=0;
+function suivrePointeur(x,y,w,h){
+  if(!w||!h)return;
+  px=Math.max(-1,Math.min(1,(x/w-.5)*2));
+  py=Math.max(-1,Math.min(1,(y/h-.5)*2));
+}
+addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();
+  suivrePointeur(e.clientX-r.left,e.clientY-r.top,r.width,r.height);
+});
+addEventListener('message',e=>{
+  const d=e.data;
+  if(d&&d.type==='mascotte-pointer')suivrePointeur(d.x,d.y,d.width,d.height);
+});
+const lerp=(a,b,k)=>a+(b-a)*k;
+const base=()=>({armL:.15,armR:.15,brow:0,byL:0,byR:0,open:0,eye:1,lx:px*.8,ly:-py*.6,tilt:0,turn:px*.3});
+const env=p=>Math.min(1,p*5,(1-p)*5);
+const ACT={
+  wave:{d:2.3,say:'Bonjour ! Prêt pour la garde ?',fn:(g,p,t,r)=>{const e=env(p);
+    g.armR=lerp(.15,2.5,e);r.wave=e*Math.sin(t*13)*.28;g.open=.25*e;g.tilt=.07*e}},
+  joy:{d:2,say:'Patient pris en charge. Bravo l’équipe !',fn:(g,p,t,r)=>{const e=env(p);
+    g.armL=g.armR=lerp(.15,2.4,e);g.eye=.8;g.open=.7*e;r.jump=Math.abs(Math.sin(p*Math.PI*3))*.75*e}},
+  alert:{d:2.8,say:'Code rouge ! Box 2, tout de suite.',fn:(g,p,t,r)=>{const e=env(p);
+    g.armL=g.armR=lerp(.15,1.2,e);g.brow=.5*e;g.eye=lerp(1,1.2,e);g.open=.5*e;
+    g.lx=0;g.ly=0;r.shake=Math.sin(t*34)*.05*e;r.gyro=e}},
+  think:{d:2.8,say:'Je consulte le dossier…',fn:(g,p)=>{const e=env(p);
+    g.tilt=.2*e;g.lx=lerp(g.lx,-.8,e);g.ly=lerp(g.ly,.7,e);g.byR=.12*e;g.armR=lerp(.15,.5,e);g.turn=-.2*e}}
+};
+ACT.talk={d:2,say:'',fn:(g,p,t)=>{g.open=(.5+.5*Math.sin(t*12))*.4*env(p)}};
+const cur=base(),clock=new T.Clock();
+let act=null,t0=0,nb=2,b0=-9;
+/* API : play(animation, texte) — animations : wave, joy, think, alert, talk */
+function play(n,text){
+  const a=ACT[n]||ACT.talk,txt=text==null?a.say:String(text);
+  act={...a,d:Math.max(a.d,1.2+txt.length*.05)};t0=clock.elapsedTime;
+  bubble.textContent=txt;bubble.classList.toggle('show',!!txt);
+}
+const say=text=>play('talk',text);
+window.GestUrgMascotte={play,say};
+addEventListener('message',e=>{const d=e.data;if(d&&d.type==='mascotte')play(d.action||'talk',d.text)});
+const q=new URLSearchParams(location.search);
+if(q.get('auto')!=='0')setTimeout(()=>play(q.get('anim')||'wave',q.get('text')),500);
+
+function tick(){
+  requestAnimationFrame(tick);
+  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  const g=base(),r={wave:0,jump:0,shake:0,gyro:0};
+  if(act){const p=(t-t0)/act.d;if(p>=1){act=null;bubble.classList.remove('show')}else act.fn(g,p,t,r)}
+  const k=1-Math.exp(-dt*11);
+  for(const n in g)cur[n]=lerp(cur[n],g[n],k);
+  if(t>nb){b0=t;nb=t+2.4+Math.random()*3}
+  const bl=t-b0<.15?Math.sin((t-b0)/.15*Math.PI):0;
+  const br=reduce?0:Math.sin(t*2.2)*.015;
+  eyes.forEach(e=>{e.scale.y=Math.max(.06,cur.eye*(1-bl*.95));e.userData.pu.position.set(cur.lx*.08,cur.ly*.08,.12)});
+  brows.forEach(b=>{const s=b.userData.s;b.rotation.z=s*cur.brow;b.position.y=.88+(s>0?cur.byR:cur.byL)});
+  arms.forEach(a=>{const s=a.userData.s;a.rotation.z=s*(s>0?cur.armR+r.wave:cur.armL)});
+  jaw.rotation.x=cur.open*.6;
+  const j=r.jump,sq=j<.1&&cur.open>.3?(.1-j)*.6:0;
+  root.position.y=j;
+  root.scale.set(1-br*.5+sq*.6-j*.05,1+br-sq+j*.1,1-br*.5+sq*.6-j*.05);
+  root.rotation.set(0,cur.turn,cur.tilt+r.shake);
+  shadow.scale.setScalar(1-j*.3);shadow.material.opacity=1-j*.35;
+  const gs=Math.sin(t*10);
+  gyro.color.setHex(gs>0?0xff2a2a:0x2a6bff);gyro.intensity=r.gyro*1.6*(.6+.4*Math.abs(gs));
+  renderer.render(scene,cam);
+}
+function fit(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  renderer.setSize(w,h);cam.aspect=w/h;
+  cam.position.set(0,.5,10.5*Math.max(1,1.05/cam.aspect));
+  cam.lookAt(0,.1,0);cam.updateProjectionMatrix();
+}
+new ResizeObserver(fit).observe(stage);fit();
+tick();
+</script>
+</body>
+</html>

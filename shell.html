@@ -2000,14 +2000,6 @@ button,input{font-family:inherit}
 }
 @media (prefers-reduced-motion:reduce){.tab,.btn-id,.dropdown-item,.home-message{transition:none !important}}
 </style>
-<style>
-/* Mascotte 3D intégrée à l'accueil */
-#welcome-container{gap:12px}
-#welcome-avatar.mascotte-accueil{display:block;flex:0 1 auto;width:clamp(120px,min(24vh,24vw),270px);height:clamp(170px,min(34vh,34vw),340px);max-width:38%;border:0;border-radius:14px;background:transparent;overflow:hidden;opacity:0;transform:translateY(15px) scale(.96);transition:opacity .8s ease,transform .8s ease}
-#welcome-avatar.mascotte-accueil.show{opacity:1;transform:translateY(0) scale(1)}
-@media(max-height:520px){#welcome-avatar.mascotte-accueil{display:none}}
-@media(max-width:600px){#welcome-container{gap:4px}#welcome-avatar.mascotte-accueil{width:clamp(86px,26vw,150px);height:clamp(130px,39vw,210px);max-width:35%}}
-</style>
 </head>
 <body>
 
@@ -2204,7 +2196,7 @@ button,input{font-family:inherit}
 <div id="home-center">
 
     <div id="welcome-container">
-    <iframe id="welcome-avatar" class="mascotte-accueil" src="MascotteGestUrg2.html?auto=0" title="Mascotte GestUrg2" loading="eager" allow="autoplay"></iframe>
+    <img id="welcome-avatar" src="robotgesturg2.png" alt="Assistant">
     <div id="welcome-text"></div>
 </div>
 
@@ -3152,58 +3144,28 @@ if (user) {
     }
     const snap = await getDoc(doc(db, "medecins", user.uid));
 
-    {
-      const medecin = snap.exists() ? snap.data() : {};
-      const heure = new Date().getHours();
-      const salutation = (heure >= 18 || heure < 5) ? "Bonsoir" : "Bonjour";
-      const prenom = (medecin.prenom || user.displayName || "").trim();
-      const welcome = document.getElementById("welcome-text");
+    if (snap.exists()) {
+       const heure = new Date().getHours();
+  const salutation = heure >= 19 ? "Bonsoir" : "Bonjour";
       const avatar = document.getElementById("welcome-avatar");
-      welcome.textContent = prenom ? `${salutation} ${prenom}` : salutation;
-      requestAnimationFrame(() => { welcome.classList.add("show"); avatar.classList.add("show"); });
-
-      const envoyerMascotte = (action, text) => {
-        const frame = document.getElementById("welcome-avatar");
-        if (frame && frame.contentWindow) frame.contentWindow.postMessage({type:"mascotte", action, text}, "*");
-      };
-      const phrases = [
-        "Un café, une bonne équipe… et on est prêts !",
-        "Pensez à souffler quelques secondes entre deux dossiers.",
-        "Chaque détail compte. On avance ensemble !",
-        "Je garde un œil sur l'accueil… enfin, mes deux yeux !",
-        "Une bonne transmission, c'est déjà un soin de qualité.",
-        "L'équipe des urgences, toujours au rendez-vous !",
-        "Allez, on garde le cap. Vous gérez, docteur !",
-        "Petite pause réflexion… Hmm, quel dossier ensuite ?",
-        "N'oublions pas : l'hydratation, c'est important !",
-        "Un patient à la fois, toute l'attention qu'il mérite.",
-        "Je suis là pour mettre un peu de bonne humeur dans la garde.",
-        "Les urgences bougent, mais on reste organisés !",
-        "Je réfléchis… enfin, j'essaie de ne pas penser au café.",
-        "Bravo pour le travail d'équipe, c'est précieux.",
-        "Tout est sous contrôle… enfin, presque toujours !"
-      ];
-      const lancerAccueilMascotte = () => {
-        envoyerMascotte("wave", `${salutation} ${prenom || "docteur"} ! Ravi de vous retrouver. Prêt pour la garde ?`);
-        if (window.__gestUrgMascotteTimer) clearTimeout(window.__gestUrgMascotteTimer);
-        let derniere = -1;
-        const programmer = () => {
-          window.__gestUrgMascotteTimer = setTimeout(() => {
-            if (Math.random() < 0.28) envoyerMascotte("think", "Je réfléchis…");
-            else {
-              let i;
-              do { i = Math.floor(Math.random() * phrases.length); } while (i === derniere);
-              derniere = i;
-              envoyerMascotte("talk", phrases[i]);
-            }
-            programmer();
-          }, 24000 + Math.random() * 36000);
-        };
-        programmer();
-      };
-      setTimeout(lancerAccueilMascotte, 900);
+        document.getElementById("welcome-text").textContent =` ${salutation} ${snap.data().prenom}`;
+          const welcome = document.getElementById("welcome-text");
+        requestAnimationFrame(() => {
+        welcome.classList.add("show");
+avatar.classList.add("show");
+    });
     }
-  }
+    else{
+      const heure = new Date().getHours();
+  const salutation = heure >= 18 ? "Bonsoir" : "Bonjour";
+      
+        document.getElementById("welcome-text").textContent =` ${salutation}`;
+          const welcome = document.getElementById("welcome-text");
+        requestAnimationFrame(() => {
+        welcome.classList.add("show");
+    }); 
+    }
+}
   if (!user) {
     console.log("Aucun utilisateur connecté");
 	const modal = document.getElementById("modal-error");
@@ -4309,16 +4271,6 @@ surveillerMessagesNonLus();
   new MutationObserver(planifier).observe(actions, { subtree: true, attributes: true, attributeFilter: ["style", "hidden"] });
 
   planifier();
-})();
-</script>
-<script>
-(function(){
-  window.addEventListener("pointermove", function(e){
-    const frame=document.getElementById("welcome-avatar");
-    if(!frame||!frame.contentWindow)return;
-    const r=frame.getBoundingClientRect();
-    frame.contentWindow.postMessage({type:"mascotte-pointer",x:e.clientX-r.left,y:e.clientY-r.top,width:r.width,height:r.height},"*");
-  },{passive:true});
 })();
 </script>
 </body>

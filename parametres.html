@@ -287,6 +287,7 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;flex:non
 .idcheck-panel.active{display:block}
 .idcheck-badge-iframe-wrapper,.idcheck-password-iframe-wrapper{width:100%;max-width:540px;height:325px;margin:0 auto 6px;overflow:hidden;overflow:clip;position:relative;border-radius:12px}
 .idcheck-badge-anim,.idcheck-password-anim{width:100%;height:325px;border:0;display:block;overflow:hidden}
+.idcheck-badge-anim.oversize,.idcheck-password-anim.oversize{width:calc(100% + 40px);max-width:none;height:365px;margin:-20px 0 0 -20px}
 .idcheck-badge-hint,.idcheck-password-hint{text-align:center;color:var(--ink) !important;font-weight:600}
 .idcheck-badge-input{position:absolute;left:0;top:0;width:1px;height:1px;padding:0 !important;margin:0 !important;min-height:0 !important;overflow:hidden;border:0 !important;opacity:0;pointer-events:none;caret-color:transparent;font-size:16px}
 #idcheckError{min-height:22px;margin-top:6px;color:var(--late);font-size:14px;font-weight:600;text-align:center}
@@ -753,6 +754,32 @@ window.resetIdentityScroll = function () {
     input.addEventListener("input", window.resetIdentityScroll);
     input.addEventListener("keydown", window.resetIdentityScroll);
   }
+})();
+
+// Les animations (animation-badge.html / animation-mdp.html) peuvent avoir leur propre
+// barre de défilement horizontale : on la supprime dans l'iframe lui-même.
+(function () {
+  function masquerScrollIframe(frame) {
+    try {
+      const d = frame.contentDocument;
+      if (!d || !d.documentElement) throw new Error("iframe inaccessible");
+      let st = d.getElementById("no-scroll-fix");
+      if (!st) {
+        st = d.createElement("style");
+        st.id = "no-scroll-fix";
+        st.textContent = "html,body{overflow:hidden !important;max-width:100% !important}::-webkit-scrollbar{display:none !important}";
+        (d.head || d.documentElement).appendChild(st);
+      }
+      frame.classList.remove("oversize");
+    } catch (e) {
+      // Contenu inaccessible : on agrandit l'iframe et le cadre (overflow:clip) rogne les barres
+      frame.classList.add("oversize");
+    }
+  }
+  document.querySelectorAll(".idcheck-badge-anim, .idcheck-password-anim").forEach(function (frame) {
+    frame.addEventListener("load", function () { masquerScrollIframe(frame); });
+    masquerScrollIframe(frame);
+  });
 })();
 
 window.focusIdentityBadgeInput = function () {

@@ -48,6 +48,7 @@ main{width:100%;max-width:760px}
 .day b{display:block;font-family:var(--font-display);font-size:1.5rem;color:var(--teal-deep)}
 .day[aria-pressed=true]{background:var(--teal-deep);color:#fff;border-color:var(--teal-deep)}.day[aria-pressed=true] b{color:#fff}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.slots>p{grid-column:1/-1;margin:0;padding:14px 16px;border-radius:14px;background:var(--aqua);line-height:1.45} /* message (aucun créneau, erreur) sur toute la largeur */
 .slot{padding:12px 6px;border:2px solid var(--teal);background:var(--aqua);border-radius:14px;font:700 1.1rem var(--font-body);color:var(--teal-deep);cursor:pointer}
 .slot small{display:block;font-weight:600;font-size:.72rem;color:var(--coral)}
 .slot[aria-pressed=true]{background:var(--teal);color:#fff}.slot[aria-pressed=true] small{color:#fff}
@@ -295,7 +296,7 @@ function rendre(){
   box.innerHTML=dispo.length?'':`<p class="mut">${!all.length?'Aucun créneau ouvert ce jour-là dans les 48 prochaines heures. Essayez un autre jour.':isToday?'Plus de créneau disponible aujourd’hui. Essayez demain.':'Aucun créneau disponible ce jour-là dans les 48 prochaines heures. Essayez un autre jour.'}</p>`;
   (showAll?dispo:dispo.slice(0,PAGE)).forEach(t=>{const left=caps[t]-(counts[t]||0);
     const b=document.createElement('button');b.type='button';b.className='slot';b.setAttribute('aria-pressed',t===time);
-    b.innerHTML=t+(left===1?'':'');
+    b.innerHTML=t+(left===1?'<small>Dernière place</small>':'');
     b.onclick=()=>{time=t;rendre()};box.appendChild(b)});
   const more=$('#more');more.hidden=dispo.length<=PAGE;
   more.textContent=showAll?'Voir moins':`Voir plus de créneaux (${dispo.length-PAGE})`;

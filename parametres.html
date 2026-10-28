@@ -954,40 +954,92 @@ window.saveModeSysteme = async function () {
     modeStatus.style.color = "#b92a30";
   }
 };
+
 async function saveToFirestore() {
   try {
-
     const prix = {};
-    actes.forEach(n => { prix[n] = Number(actesPrix[n]) || 0; });
-    await setDoc(doc(db, "referentiels", "actes"), { liste: actes, prix });
-    await setDoc(doc(db, "referentiels", "personnel"), { liste: personnel });
-    await setDoc(doc(db, "referentiels", "spécialités"), { spécialités });
+    actes.forEach(n => {
+      prix[n] = Number(actesPrix[n]) || 0;
+    });
 
+    await setDoc(doc(db, "referentiels", "actes"), {
+      liste: actes,
+      prix
+    });
+
+    // Personnel : référentiel indépendant
+    await setDoc(doc(db, "referentiels", "personnel"), {
+      liste: personnel
+    });
+
+    // Moyens : référentiel indépendant
+    await setDoc(doc(db, "referentiels", "moyens"), {
+      liste: moyens
+    });
+
+    await setDoc(doc(db, "referentiels", "spécialités"), {
+      spécialités
+    });
 
     afficherBulle("✅ Données enregistrées avec succès", "administratif");
+
   } catch (error) {
     console.error("Erreur lors de l'enregistrement :", error);
     afficherBulle("❌ Échec de l'enregistrement", "alerte");
   }
 }
+
 const toggleBureaux = document.getElementById("toggleBureaux");
 let bureauGeneralActive = false;
 
 async function loadData() {
-  
+  try {
+    // ACTES
+    const actesSnap = await getDoc(doc(db, "referentiels", "actes"));
 
-  const actesSnap = await getDoc(doc(db, "referentiels", "actes"));
-  actes = actesSnap.exists() ? actesSnap.data().liste || [] : [];
-  actesPrix = actesSnap.exists() ? { ...(actesSnap.data().prix || {}) } : {};
-  renderList("actes", actes);
+    actes = actesSnap.exists()
+      ? actesSnap.data().liste || []
+      : [];
 
-  const persSnap = await getDoc(doc(db, "referentiels", "personnel"));
-  personnel = persSnap.exists() ? persSnap.data().liste || [] : [];
-  renderList("personnel", personnel);
-  
-  const spécialitésSnap = await getDoc(doc(db, "referentiels", "spécialités"));
-spécialités = spécialitésSnap.exists() ? spécialitésSnap.data().spécialités || [] : [];
-  renderList("spécialités", spécialités);
+    actesPrix = actesSnap.exists()
+      ? { ...(actesSnap.data().prix || {}) }
+      : {};
+
+    renderList("actes", actes);
+
+    // PERSONNEL
+    const persSnap = await getDoc(doc(db, "referentiels", "personnel"));
+
+    personnel = persSnap.exists()
+      ? persSnap.data().liste || []
+      : [];
+
+    renderList("personnel", personnel);
+
+    // MOYENS — lecture du bon document Firestore
+    const moyensSnap = await getDoc(doc(db, "referentiels", "moyens"));
+
+    moyens = moyensSnap.exists()
+      ? moyensSnap.data().liste || []
+      : [];
+
+    renderList("moyens", moyens);
+
+    // SPÉCIALITÉS
+    const specialitesSnap = await getDoc(
+      doc(db, "referentiels", "spécialités")
+    );
+
+    spécialités = specialitesSnap.exists()
+      ? specialitesSnap.data().spécialités || []
+      : [];
+
+    renderList("spécialités", spécialités);
+
+  } catch (error) {
+    console.error("Erreur lors du chargement des référentiels :", error);
+    afficherBulle("❌ Impossible de charger les référentiels", "alerte");
+  }
 }
 
 function renderList(type, array) {

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lettres</title>
+<link rel="icon" type="image/jpeg" href="logog2.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--c-bg:#f2f6fb;--c-surface:#fff;--c-border:#e2e8f0;--c-border-strong:#cbd5e1;--c-primary:#1657c4;--c-primary-dark:#0f3f92;--c-primary-light:#eaf1ff;--c-text:#1e293b;--c-text-soft:#64748b;--c-text-faint:#94a3b8;--c-danger:#dc2626;--c-danger-light:#fdecec;--c-success:#16a34a;--c-success-light:#eafaf0;--radius:10px;--radius-lg:14px;--shadow:0 6px 20px rgba(15,40,90,.08)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--c-bg);color:var(--c-text);font-family:'Inter','Segoe UI',Roboto,Arial,sans-serif;font-size:14px}
+body{display:flex;flex-direction:column}
+button{font:inherit}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#b9c8e6;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#93aada}
+*{scrollbar-width:thin;scrollbar-color:#b9c8e6 transparent}
+
+#pro-header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:var(--c-surface);border-bottom:1px solid var(--c-border)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:34px;height:34px;border-radius:9px;background:var(--c-primary-light);color:var(--c-primary);display:flex;align-items:center;justify-content:center}
+.brand-icon svg{width:18px;height:18px}
+.brand h1{margin:0;font:600 17px 'Poppins',sans-serif}
+.brand span{display:block;font-size:12px;color:var(--c-text-soft)}
+.meta{display:flex;align-items:center;gap:16px}
+.meta-block{text-align:right;line-height:1.3}
+.medecin-nom{font-weight:600;font-size:13px}.medecin-sub{font-size:12px;color:var(--c-text-soft)}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text-soft);cursor:pointer}
+.icon-btn:hover{background:var(--c-primary-light);border-color:var(--c-primary);color:var(--c-primary)}
+.icon-btn svg{width:16px;height:16px}
+
+.btn-id{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 14px;font-weight:600;font-size:14px;color:var(--c-primary);background:#fff;border:1px solid var(--c-border-strong);border-radius:var(--radius);cursor:pointer}
+.btn-id:hover{background:var(--c-primary-light);border-color:var(--c-primary)}
+.btn-id svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-id-v{color:#fff;background:var(--c-success);border-color:var(--c-success)}.btn-id-v:hover{background:#12873f;border-color:#12873f}
+.btn-id-c{color:var(--c-text-soft)}
+.btn-id:disabled{opacity:.5;cursor:not-allowed}
+
+.wrap{flex:1;min-height:0;display:grid;grid-template-columns:minmax(380px,1fr) minmax(400px,540px);gap:16px;padding:16px}
+.col{min-height:0;overflow:auto}
+.card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--c-text-soft)}
+.models{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.model{text-align:left;padding:12px;background:#fff;border:2px solid var(--c-border);border-radius:var(--radius);cursor:pointer;color:var(--c-text)}
+.model b{display:block;font-size:14px;margin-bottom:3px}.model small{color:var(--c-text-soft);font-size:12px;line-height:1.35;display:block}
+.model[aria-pressed=true]{border-color:var(--c-primary);background:var(--c-primary-light)}
+.model:hover{border-color:var(--c-primary)}
+
+label.l{display:block;font-size:12px;font-weight:600;color:var(--c-text-soft);margin:0 0 5px}
+input[type=text],select,textarea{width:100%;padding:9px 11px;font:500 14px 'Inter',sans-serif;color:var(--c-text);background:#f8fafc;border:1px solid var(--c-border);border-radius:var(--radius)}
+input[type=text]:focus,select:focus,textarea:focus{outline:0;border-color:var(--c-primary);background:#fff;box-shadow:0 0 0 3px rgba(22,87,196,.15)}
+textarea{resize:vertical;min-height:70px;line-height:1.45}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g3{display:grid;grid-template-columns:150px 1fr 1fr;gap:10px}
+.mt{margin-top:10px}
+.chip{display:inline-flex;align-items:center;margin:8px 0 0;padding:5px 11px;font-size:12px;font-weight:600;color:var(--c-primary);background:var(--c-primary-light);border:1px solid transparent;border-radius:999px;cursor:pointer}.chip:hover{border-color:var(--c-primary)}
+
+.bloc{border:1px solid var(--c-border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;background:#fff}
+.bloc.off{opacity:.55;background:#f8fafc}
+.bloc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.bloc-h .chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;flex:1;min-width:0}
+.bloc-h .bt{padding:5px 8px;font-size:13px;font-weight:600}
+.mini{width:28px;height:28px;font-size:14px;color:var(--c-text-soft);background:#fff;border:1px solid var(--c-border);border-radius:7px;cursor:pointer}.mini:hover{background:var(--c-primary-light);color:var(--c-primary)}
+.bloc textarea{min-height:56px;overflow:hidden}
+.foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.foot .sp{flex:1}
+#apres{display:none;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;padding:12px;background:var(--c-success-light);border:1px solid #bde5cc;border-radius:var(--radius);font-weight:600;color:#166534}
+#status{margin-left:auto;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--c-primary-light);color:var(--c-primary)}
+#status.locked{background:var(--c-success-light);color:var(--c-success)}
+
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{padding:8px 14px;font-weight:600;color:var(--c-text-soft);background:#fff;border:1px solid var(--c-border);border-radius:999px;cursor:pointer}
+.tab[aria-selected=true]{color:#fff;background:var(--c-primary);border-color:var(--c-primary)}
+.page{background:#fff;border:1px solid var(--c-border);border-radius:6px;box-shadow:var(--shadow);padding:30px 34px;font-family:Georgia,'Times New Roman',serif;font-size:12.5px;line-height:1.5;color:#111}
+.lt-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.lt-med{line-height:1.4}.lt-date{text-align:right;white-space:nowrap}
+.lt-dest{margin:22px 0 0 auto;width:55%;line-height:1.4}
+.lt-obj{margin:20px 0 0}
+.lt-b{margin:0 0 10px}.lt-t{font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#334155;margin:0 0 2px}
+.lt-x{white-space:pre-wrap}
+.lt-sig{margin:24px 0 0 auto;width:45%;text-align:center;line-height:1.4}.lt-sig img{display:block;max-height:70px;max-width:100%;margin:6px auto 0}
+.lt-ph{color:#94a3b8}
+.hrow{padding:11px 12px;margin-bottom:8px;background:#fff;border:1px solid var(--c-border);border-radius:var(--radius);cursor:pointer}
+.hrow:hover{border-color:var(--c-primary)}
+.hh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.hd{font-size:12px;font-weight:600;color:var(--c-text-soft)}.ht{font-size:12px;font-weight:700;color:var(--c-primary)}
+.hp{font-size:12.5px;color:var(--c-text-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reuse{font-size:12px;font-weight:600;color:var(--c-primary);background:var(--c-primary-light);border:0;border-radius:7px;padding:4px 9px;cursor:pointer}
+
+.modal{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:16px;background:rgba(15,25,45,.45)}
+.modal-content{width:min(720px,100%);max-height:100%;overflow:auto;background:#fff;border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.modal-content h2{margin:0 0 10px}
+.banner{padding:10px 12px;border-radius:var(--radius);background:var(--c-primary-light);color:var(--c-primary-dark);font-weight:600;font-size:13px;margin-bottom:12px}
+.modal-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.modalna{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
+.modalna .card{max-width:440px;text-align:center;padding:30px}.modalna h2{color:var(--c-danger);text-transform:none;font-size:20px;letter-spacing:0}
+.vide{padding:16px;color:var(--c-text-faint);text-align:center}
+@media(max-width:900px){html,body{overflow:auto}.wrap{display:block;overflow:visible}.col{overflow:visible}}
+</style>
+</head>
+<body>
+<header id="pro-header">
+  <div class="brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></div>
+    <div><h1>Lettres</h1><span id="sous-titre">Orientation · Admission · Confrère</span></div>
+  </div>
+  <div class="meta">
+    <div class="meta-block"><div class="medecin-nom" id="header-medecin">—</div><div class="medecin-sub" id="header-date">—</div></div>
+    <button class="icon-btn" id="btnNouvelle" title="Nouvelle lettre" aria-label="Nouvelle lettre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="col" id="colEditeur">
+    <div class="card">
+      <h2>Modèle</h2>
+      <div class="models" id="models"></div>
+    </div>
+
+    <div class="card" id="editor">
+      <div style="display:flex;align-items:center"><h2 style="margin:0">Lettre</h2><span id="status">Brouillon</span></div>
+
+      <div class="mt g3">
+        <div><label class="l" for="dRole">Destinataire</label>
+          <select id="dRole"><option value="">Non précisé</option><option value="confrere">Docteur</option><option value="consoeur">Docteure</option><option value="prof_m">Professeur</option><option value="prof_f">Professeure</option><option value="equipe">Équipe / service</option></select></div>
+        <div><label class="l" for="dNom">Nom</label><input type="text" id="dNom" placeholder="Nom du destinataire" autocomplete="off"></div>
+        <div><label class="l" for="dSpec">Spécialité / service</label><input type="text" id="dSpec" list="specs" placeholder="Ex : Cardiologie" autocomplete="off"></div>
+      </div>
+      <div class="mt g2">
+        <div><label class="l" for="dEtab">Établissement</label><input type="text" id="dEtab" placeholder="Ex : CHU de …" autocomplete="off"></div>
+        <div><label class="l" for="dAdr">Adresse</label><textarea id="dAdr" rows="2" style="min-height:40px" placeholder="Adresse postale"></textarea></div>
+      </div>
+      <button class="chip" id="chipMT" type="button" hidden>Adresser au médecin traitant du dossier</button>
+
+      <div class="mt"><label class="l" for="objet">Objet</label><input type="text" id="objet" autocomplete="off"></div>
+      <div class="mt"><label class="l" for="appel">Formule d’appel</label><input type="text" id="appel" autocomplete="off"></div>
+
+      <div class="mt" id="blocs"></div>
+      <div class="foot">
+        <button class="btn-id" type="button" id="btnAjout"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Paragraphe</button>
+        <button class="btn-id btn-id-c" type="button" id="btnReappliquer">Réappliquer le modèle</button>
+        <span class="sp"></span>
+        <button class="btn-id btn-id-v" type="button" id="btnValider"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Valider la lettre</button>
+      </div>
+      <div id="apres">
+        <span>✓ Lettre enregistrée dans le dossier patient.</span>
+        <button class="btn-id" type="button" id="btnOuvrir">Ouvrir la lettre</button>
+        <button class="btn-id" type="button" id="btnImprimer">Imprimer</button>
+        <button class="btn-id btn-id-c" type="button" id="btnNouvelle2">Nouvelle lettre</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabApercu" aria-selected="true">Aperçu</button>
+      <button class="tab" role="tab" id="tabHisto" aria-selected="false">Historique <span id="nbHisto"></span></button>
+    </div>
+    <div id="pApercu"><div class="page" id="apercu"></div></div>
+    <div id="pHisto" hidden>
+      <input type="text" id="histoSearch" placeholder="Rechercher dans l’historique…" style="margin-bottom:10px">
+      <div id="listeLettres"></div>
+    </div>
+  </div>
+</div>
+
+<datalist id="specs"><option>Médecine générale</option><option>Cardiologie</option><option>Chirurgie orthopédique</option><option>Chirurgie viscérale</option><option>Dermatologie</option><option>Gastro-entérologie</option><option>Gériatrie</option><option>Gynécologie-obstétrique</option><option>Médecine interne</option><option>Neurologie</option><option>Ophtalmologie</option><option>ORL</option><option>Pédiatrie</option><option>Pneumologie</option><option>Psychiatrie</option><option>Radiologie</option><option>Réanimation</option><option>Urologie</option></datalist>
+
+<div id="confirmModal" class="modal"><div class="modal-content">
+  <h2>Confirmation</h2>
+  <div class="banner">Valider la lettre verrouille sa modification et l’enregistre définitivement dans le dossier patient.</div>
+  <div class="page" id="previewConfirm"></div>
+  <div class="modal-buttons"><button class="btn-id btn-id-c" id="cNon">Annuler</button><button class="btn-id btn-id-v" id="cOui">Valider</button></div>
+</div></div>
+<div id="modal-no-access" class="modalna"><div class="card"><h2>Accès refusé</h2><p>Vous n’avez pas accès à cette page.</p></div></div>
+<div id="modal-error" class="modalna"><div class="card"><h2>Une erreur est survenue</h2><p>Veuillez réessayer un peu plus tard.</p><p>Si le problème persiste, contactez un administrateur.</p></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({ apiKey: "AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo", authDomain: "urgences-a8ed4.firebaseapp.com", projectId: "urgences-a8ed4" });
+const auth = getAuth(app), db = getFirestore(app);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const params = new URLSearchParams(location.search);
+const patientId = params.get("id") || "";
+const consultationId = params.get("consultationId") || "";
+window.medecinNom = ""; window.medecinSpecialite = ""; window.medecinLieu = ""; window.medecinSignature = "";
+
+/* =========================================================
+   NOTIFICATIONS / LOADER (identiques à l'ordonnancier)
+   ========================================================= */
+const ORIGINE_PARENT_BULLE = "*";
+function afficherBulle(message, typeBulle) {
+  if (window.parent === window) { console.warn("afficherBulle sans parent :", message); return; }
+  window.parent.postMessage({ source: "notification-bulle", message, typeBulle }, ORIGINE_PARENT_BULLE);
+}
+window.afficherLoader = function () {
+  let l = document.getElementById("loadingScreen");
+  if (!l) {
+    l = document.createElement("iframe"); l.id = "loadingScreen"; l.src = "loader.html?modal=true";
+    l.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:transparent;pointer-events:none";
+    document.body.appendChild(l);
+  }
+  l.style.display = "block"; l.style.opacity = "1";
+};
+window.masquerLoader = function () {
+  const l = document.getElementById("loadingScreen");
+  if (l) { l.style.transition = "opacity .3s ease"; l.style.opacity = "0"; setTimeout(() => l.style.display = "none", 300); }
+};
+
+/* =========================================================
+   CONTEXTE : patient, consultation / hospitalisation, utilisateur
+   ========================================================= */
+const today = () => new Date().toLocaleDateString("fr-FR");
+const fmtDN = s => /^\d{4}-\d{2}-\d{2}$/.test(s || "") ? s.split("-").reverse().join("/") : (s || "");
+function calculerAge(dn) {
+  if (!dn) return "";
+  const n = new Date(dn), a = new Date(); if (isNaN(n)) return "";
+  let age = a.getFullYear() - n.getFullYear(); const m = a.getMonth() - n.getMonth();
+  if (m < 0 || (m === 0 && a.getDate() < n.getDate())) age--; return age;
+}
+const ctx = {
+  p: { sexe: "", nom: "", prenom: "", dn: "", age: "", allergies: "", vigilances: "", medtraitant: "" },
+  src: { kind: "", date: "", motif: "", histoire: "", atcd: "", traitements: "", examen: "", diagnostic: "", conduite: "", evolution: "" },
+  hospitalisationId: ""
+};
+async function chargerContexte() {
+  if (!patientId) return;
+  const ps = await getDoc(doc(db, "patients", patientId));
+  if (!ps.exists()) return;
+  const d = ps.data();
+  ctx.p = { sexe: d.sexe || "", nom: d.nom || "", prenom: d.prenom || "", dn: d.dateNaissance || "", age: calculerAge(d.dateNaissance), allergies: d.allergies || "", vigilances: d.vigilances || "", medtraitant: d.medtraitant || "" };
+  if (consultationId) {
+    const c = await getDoc(doc(db, "consultations", consultationId));
+    if (c.exists()) {
+      const x = c.data();
+      ctx.src = { kind: "consultation", date: x.date || "", motif: x.motif || "", histoire: x.histoire || "", atcd: x.antecedents || "", traitements: x.traitements || "",
+        examen: x.examenClinique || x.examen || x.auscultation || "", diagnostic: x.diagnostic || x.conclusion || "", conduite: x.conduite || x.conduiteATenir || "", evolution: "" };
+    }
+  } else {
+    const hid = d.hospitalisationActiveId || (Array.isArray(d.hospitalisations) ? d.hospitalisations.slice(-1)[0] : "");
+    ctx.hospitalisationId = d.hospitalisationActiveId || "";
+    if (hid) {
+      const h = await getDoc(doc(db, "hospitalisations", hid));
+      if (h.exists()) {
+        const x = h.data(), dm = x.dossierMedical || {}, dt = x.dateDebutTS?.toDate ? x.dateDebutTS.toDate() : null;
+        ctx.src = { kind: "hospitalisation", date: dt ? dt.toLocaleDateString("fr-FR") : "", motif: x.motif || "", histoire: dm.histoire || "", atcd: dm.antecedents || "",
+          traitements: dm.traitements || "", examen: dm.auscultation || "", diagnostic: "", conduite: "", evolution: x.evolution || "" };
+      }
+    }
+  }
+}
+
+/* =========================================================
+   MODÈLES : les textes sont générés à partir du contexte
+   ========================================================= */
+const G = () => { const s = ctx.p.sexe, f = s === "Mme", m = s === "M";
+  return { e: f ? "e" : m ? "" : "(e)", art: f ? "la" : m ? "le" : "le/la", civ: f ? "Madame" : m ? "Monsieur" : "l’enfant" }; };
+const identite = () => `${G().civ} ${(ctx.p.nom || "…").toUpperCase()} ${ctx.p.prenom || ""}`.trim();
+const nee = () => `né${G().e} le ${fmtDN(ctx.p.dn) || "…"}${ctx.p.age !== "" ? ` (${ctx.p.age} ans)` : ""}`;
+const lieuPEC = () => ctx.src.kind === "consultation" ? "en consultation" : "aux urgences";
+const quand = () => ctx.src.date || today();
+const motifPour = () => ctx.src.motif ? ` pour ${ctx.src.motif}` : "";
+
+const ROLES = {
+  confrere: { civ: "Docteur", appel: "Cher confrère," }, consoeur: { civ: "Docteure", appel: "Chère consœur," },
+  prof_m: { civ: "Professeur", appel: "Cher confrère," }, prof_f: { civ: "Professeure", appel: "Chère consœur," },
+  equipe: { civ: "", appel: "Chères consœurs, chers confrères," }
+};
+const appelDe = () => ROLES[S.dest.role]?.appel || "Chère consœur, cher confrère,";
+const appelBas = () => { const a = appelDe().replace(/,$/, ""); return a.charAt(0).toLowerCase() + a.slice(1); };
+
+const gMotif = () => ctx.src.motif, gHisto = () => ctx.src.histoire, gAtcd = () => ctx.src.atcd, gTrait = () => ctx.src.traitements, gExam = () => ctx.src.examen;
+const gAllerg = () => {
+  const l = [], a = (ctx.p.allergies || "").trim(), v = (ctx.p.vigilances || "").trim();
+  if (a) l.push(/^aucun/i.test(a) ? "Pas d’allergie connue." : "Allergie(s) : " + a);
+  if (v && !/^aucun/i.test(v)) l.push("Vigilance(s) : " + v);
+  return l.join("\n");
+};
+const gConclu = () => [ctx.src.diagnostic && "Diagnostic retenu : " + ctx.src.diagnostic, ctx.src.conduite && "Prise en charge : " + ctx.src.conduite, ctx.src.evolution && "Évolution : " + ctx.src.evolution].filter(Boolean).join("\n");
+const B = (id, titre, gen, ph = "") => ({ id, titre, gen, ph, texte: gen ? gen() : "", actif: true, dirty: false, custom: false });
+const politesse = fin => () => `${fin}\nAvec mes remerciements, je vous prie d’agréer, ${appelBas()}, l’expression de mes salutations confraternelles.`;
+
+const MODELES = {
+  orientation: {
+    label: "Lettre d’orientation", type: "Lettre d'orientation", desc: "Adresser le patient à un confrère ou à une structure pour un avis ou une prise en charge",
+    objet: () => `Orientation — ${identite()}, ${nee()}`,
+    blocs: () => [
+      B("intro", "", () => `Je vous adresse ${identite()}, ${nee()}, vu${G().e} ${lieuPEC()} le ${quand()}${motifPour()}, afin d’obtenir votre avis et, si vous le jugez utile, une prise en charge spécialisée.`),
+      B("motif", "Motif de l’orientation", gMotif, "Question posée / objectif de l’orientation"),
+      B("histoire", "Histoire de la maladie", gHisto),
+      B("atcd", "Antécédents", gAtcd),
+      B("trait", "Traitement habituel", gTrait),
+      B("allerg", "Allergies et vigilances", gAllerg),
+      B("exam", "Examen clinique", gExam),
+      B("compl", "Examens complémentaires", null, "Biologie, imagerie, ECG… (résultats)"),
+      B("conclu", "Conduite tenue", gConclu),
+      B("fin", "", politesse("Je reste à votre disposition pour tout renseignement complémentaire."))
+    ]
+  },
+  admission: {
+    label: "Lettre d’admission", type: "Lettre d'admission", desc: "Demander l’admission du patient dans un service ou un établissement",
+    objet: () => `Demande d’admission — ${identite()}, ${nee()}`,
+    blocs: () => [
+      B("intro", "", () => `Je sollicite l’admission de ${identite()}, ${nee()}, vu${G().e} ${lieuPEC()} le ${quand()}${motifPour()}, dans votre service${S.dest.spec ? " (" + S.dest.spec + ")" : ""}.`),
+      B("urgence", "Degré d’urgence", null, "Immédiat / dans les 24 h / programmé"),
+      B("motif", "Motif d’admission", gMotif),
+      B("histoire", "Histoire de la maladie", gHisto),
+      B("atcd", "Antécédents", gAtcd),
+      B("trait", "Traitement habituel", gTrait),
+      B("allerg", "Allergies et vigilances", gAllerg),
+      B("exam", "Examen clinique", gExam),
+      B("compl", "Examens complémentaires", null, "Biologie, imagerie, ECG… (résultats)"),
+      B("evol", "Évolution aux urgences", () => ctx.src.evolution),
+      B("just", "Justification de l’admission et surveillance souhaitée", null, "Pourquoi l’admission est nécessaire, surveillance ou examens à prévoir"),
+      B("fin", "", politesse("Je vous remercie de l’accueil que vous voudrez bien lui réserver et reste joignable pour toute information complémentaire."))
+    ]
+  },
+  confrere: {
+    label: "Lettre à un confrère", type: "Lettre à un confrère", desc: "Courrier confraternel : compte rendu, demande d’avis ou transmission d’informations",
+    objet: () => `Concerne : ${identite()}, ${nee()}`,
+    blocs: () => [
+      B("intro", "", () => `Je me permets de vous écrire au sujet de ${identite()}, ${nee()}, que j’ai pris${G().e} en charge ${lieuPEC()} le ${quand()}${motifPour()}.`),
+      B("histoire", "Résumé de la prise en charge", gHisto),
+      B("atcd", "Antécédents", gAtcd),
+      B("trait", "Traitement habituel", gTrait),
+      B("allerg", "Allergies et vigilances", gAllerg),
+      B("exam", "Examen clinique", gExam),
+      B("conclu", "Conclusion et conduite tenue", gConclu),
+      B("question", "Question posée / informations à transmettre", null, "Ce que vous attendez du confrère, ou ce que vous souhaitez lui transmettre"),
+      B("fin", "", politesse("Je reste à votre disposition pour échanger à ce sujet."))
+    ]
+  }
+};
+
+/* =========================================================
+   ÉTAT DE LA LETTRE
+   ========================================================= */
+let S = { modele: "orientation", dest: { role: "", nom: "", spec: "", etab: "", adresse: "" }, objet: "", objetDirty: false, appel: "", appelDirty: false, blocs: [] };
+let verrou = false, docIdExistant = "", lettresHisto = [], uid = 0;
+
+function appliquerModele(cle) {
+  S.modele = cle;
+  const m = MODELES[cle];
+  S.blocs = m.blocs(); S.objetDirty = false; S.appelDirty = false;
+  S.objet = m.objet(); S.appel = appelDe();
+  rendreTout();
+}
+// Régénère les champs automatiques qui n'ont pas été modifiés à la main
+function regenerer() {
+  const m = MODELES[S.modele];
+  S.blocs.forEach((b, i) => { if (b.gen && !b.dirty) { b.texte = b.gen(); const t = document.querySelector(`#blocs textarea[data-i="${i}"]`); if (t) { t.value = b.texte; fit(t); } } });
+  if (!S.objetDirty) { S.objet = m.objet(); $("#objet").value = S.objet; }
+  if (!S.appelDirty) { S.appel = appelDe(); $("#appel").value = S.appel; }
+  majApercu();
+}
+
+/* =========================================================
+   AFFICHAGE
+   ========================================================= */
+const fit = t => { t.style.height = "auto"; t.style.height = Math.max(56, t.scrollHeight + 2) + "px"; };
+function rendreModeles() {
+  $("#models").innerHTML = Object.entries(MODELES).map(([k, m]) => `<button type="button" class="model" data-k="${k}" aria-pressed="${k === S.modele}"><b>${esc(m.label)}</b><small>${esc(m.desc)}</small></button>`).join("");
+}
+function rendreBlocs() {
+  $("#blocs").innerHTML = S.blocs.map((b, i) => `
+    <div class="bloc ${b.actif ? "" : "off"}" data-i="${i}">
+      <div class="bloc-h">
+        <label class="chk"><input type="checkbox" data-act ${b.actif ? "checked" : ""}>${b.custom ? `<input type="text" class="bt" data-titre value="${esc(b.titre)}" placeholder="Titre du paragraphe">` : esc(b.titre || "Introduction / conclusion")}</label>
+        <span><button type="button" class="mini" data-up title="Monter">↑</button> <button type="button" class="mini" data-down title="Descendre">↓</button>${b.custom ? ` <button type="button" class="mini" data-del title="Supprimer">×</button>` : ""}</span>
+      </div>
+      <textarea data-i="${i}" lang="fr" spellcheck="true" placeholder="${esc(b.ph || "")}">${esc(b.texte)}</textarea>
+    </div>`).join("");
+  document.querySelectorAll("#blocs textarea").forEach(fit);
+  appliquerVerrou();
+}
+function rendreTout() {
+  rendreModeles();
+  $("#dRole").value = S.dest.role; $("#dNom").value = S.dest.nom; $("#dSpec").value = S.dest.spec; $("#dEtab").value = S.dest.etab; $("#dAdr").value = S.dest.adresse;
+  $("#objet").value = S.objet; $("#appel").value = S.appel;
+  rendreBlocs(); majApercu();
+}
+
+const LETTER_CSS = `.lt-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.lt-med{line-height:1.4}.lt-date{text-align:right;white-space:nowrap}.lt-dest{margin:22px 0 0 auto;width:55%;line-height:1.4}.lt-obj{margin:20px 0 0}.lt-b{margin:0 0 10px}.lt-t{font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#334155;margin:0 0 2px}.lt-x{white-space:pre-wrap}.lt-sig{margin:24px 0 0 auto;width:45%;text-align:center;line-height:1.4}.lt-sig img{display:block;max-height:70px;max-width:100%;margin:6px auto 0}.lt-ph{color:#94a3b8}`;
+const nomMedecin = () => window.medecinNom ? "Dr " + window.medecinNom : "Dr";
+function lettreHTML() {
+  const D = S.dest, role = ROLES[D.role];
+  const dest = [[role?.civ, D.nom].filter(Boolean).join(" "), D.spec, D.etab, ...String(D.adresse || "").split("\n")].filter(x => x && x.trim());
+  const corps = S.blocs.filter(b => b.actif && b.texte.trim()).map(b => `<div class="lt-b">${b.titre ? `<div class="lt-t">${esc(b.titre)}</div>` : ""}<div class="lt-x">${esc(b.texte.trim())}</div></div>`).join("");
+  const sig = /^(data:|https?:)/.test(window.medecinSignature || "") ? `<img src="${esc(window.medecinSignature)}" alt="">` : "";
+  return `<div class="lt">
+    <div class="lt-top"><div class="lt-med"><b>${esc(nomMedecin())}</b>${window.medecinSpecialite ? "<br>" + esc(window.medecinSpecialite) : ""}</div>
+      <div class="lt-date">${esc(window.medecinLieu ? window.medecinLieu + ", le " : "Le ")}${esc(today())}</div></div>
+    <div class="lt-dest">${dest.length ? dest.map(esc).join("<br>") : '<span class="lt-ph">Destinataire</span>'}</div>
+    <div class="lt-obj"><b>Objet :</b> ${esc(S.objet)}</div>
+    <div class="lt-x" style="margin:16px 0 12px">${esc(S.appel)}</div>
+    ${corps}
+    <div class="lt-sig">${esc(nomMedecin())}${window.medecinSpecialite ? "<br>" + esc(window.medecinSpecialite) : ""}${sig}</div>
+  </div>`;
+}
+function majApercu() { $("#apercu").innerHTML = lettreHTML(); }
+
+/* =========================================================
+   ÉDITION
+   ========================================================= */
+$("#models").addEventListener("click", e => {
+  const b = e.target.closest(".model"); if (!b || verrou) return;
+  if (b.dataset.k === S.modele) return;
+  if (S.blocs.some(x => x.dirty || x.custom) && !confirm("Changer de modèle remplace le texte actuel (vos modifications seront perdues). Continuer ?")) return;
+  appliquerModele(b.dataset.k);
+});
+$("#btnReappliquer").onclick = () => {
+  if (verrou) return;
+  if (S.blocs.some(x => x.dirty || x.custom) && !confirm("Réappliquer le modèle remplace le texte actuel. Continuer ?")) return;
+  appliquerModele(S.modele);
+};
+const champsDest = { dRole: "role", dNom: "nom", dSpec: "spec", dEtab: "etab", dAdr: "adresse" };
+Object.entries(champsDest).forEach(([id, k]) => $("#" + id).addEventListener("input", () => { S.dest[k] = $("#" + id).value; regenerer(); }));
+$("#objet").addEventListener("input", () => { S.objet = $("#objet").value; S.objetDirty = true; majApercu(); });
+$("#appel").addEventListener("input", () => { S.appel = $("#appel").value; S.appelDirty = true; majApercu(); });
+$("#chipMT").onclick = () => {
+  const l = String(ctx.p.medtraitant || "").split("\n").map(x => x.trim()).filter(Boolean)[0] || "";
+  S.dest = { role: "", nom: l.replace(/^(dr|docteur)\.?\s+/i, ""), spec: "Médecin traitant", etab: "", adresse: "" };
+  $("#dRole").value = ""; $("#dNom").value = S.dest.nom; $("#dSpec").value = S.dest.spec; $("#dEtab").value = ""; $("#dAdr").value = "";
+  regenerer();
+};
+$("#blocs").addEventListener("input", e => {
+  const bloc = e.target.closest(".bloc"); if (!bloc) return; const b = S.blocs[+bloc.dataset.i];
+  if (e.target.matches("textarea")) { b.texte = e.target.value; b.dirty = true; fit(e.target); }
+  else if (e.target.matches("[data-titre]")) b.titre = e.target.value;
+  majApercu();
+});
+$("#blocs").addEventListener("change", e => {
+  if (!e.target.matches("[data-act]")) return;
+  const bloc = e.target.closest(".bloc"); S.blocs[+bloc.dataset.i].actif = e.target.checked; bloc.classList.toggle("off", !e.target.checked); majApercu();
+});
+$("#blocs").addEventListener("click", e => {
+  const bloc = e.target.closest(".bloc"); if (!bloc || verrou) return; const i = +bloc.dataset.i;
+  if (e.target.closest("[data-up]") && i > 0) { [S.blocs[i - 1], S.blocs[i]] = [S.blocs[i], S.blocs[i - 1]]; rendreBlocs(); majApercu(); }
+  else if (e.target.closest("[data-down]") && i < S.blocs.length - 1) { [S.blocs[i + 1], S.blocs[i]] = [S.blocs[i], S.blocs[i + 1]]; rendreBlocs(); majApercu(); }
+  else if (e.target.closest("[data-del]")) { S.blocs.splice(i, 1); rendreBlocs(); majApercu(); }
+});
+$("#btnAjout").onclick = () => {
+  if (verrou) return;
+  const n = { id: "p" + (++uid), titre: "", gen: null, ph: "Texte du paragraphe", texte: "", actif: true, dirty: true, custom: true };
+  const k = S.blocs.length - 1; // avant la formule de politesse
+  S.blocs.splice(k < 0 ? 0 : k, 0, n); rendreBlocs();
+  document.querySelector(`#blocs .bloc[data-i="${k < 0 ? 0 : k}"] [data-titre]`)?.focus();
+};
+
+function appliquerVerrou() {
+  document.querySelectorAll("#editor input, #editor select, #editor textarea, #editor .mini, #models .model, #btnAjout, #btnReappliquer, #chipMT").forEach(el => { el.disabled = verrou; });
+  document.querySelectorAll("#chipMT").forEach(el => el.style.pointerEvents = verrou ? "none" : "");
+  $("#btnValider").style.display = verrou ? "none" : "";
+  $("#apres").style.display = verrou ? "flex" : "none";
+  $("#status").textContent = verrou ? "Enregistrée" : "Brouillon"; $("#status").classList.toggle("locked", verrou);
+}
+
+/* =========================================================
+   ENREGISTREMENT (même mécanique que l'ordonnancier : collection « documents »)
+   ========================================================= */
+function formatDate(d) {
+  const p = n => n.toString().padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+const blocsActifs = () => S.blocs.filter(b => b.actif && b.texte.trim());
+function lettreTexte() {
+  const D = S.dest, role = ROLES[D.role];
+  const dest = [[role?.civ, D.nom].filter(Boolean).join(" "), D.spec, D.etab, ...String(D.adresse || "").split("\n")].filter(x => x && x.trim());
+  return [dest.join("\n"), "Objet : " + S.objet, S.appel, ...blocsActifs().map(b => (b.titre ? b.titre + "\n" : "") + b.texte.trim())].filter(Boolean).join("\n\n");
+}
+// Même format de contenu que l'ordonnance : nœuds text / newline / separator
+function versNoeuds() {
+  const n = [], T = v => n.push({ type: "text", value: v }), NL = () => n.push({ type: "newline" });
+  const lignes = txt => String(txt).split("\n").forEach((l, i) => { if (i) NL(); if (l) T(l); });
+  const D = S.dest, role = ROLES[D.role];
+  const dest = [[role?.civ, D.nom].filter(Boolean).join(" "), D.spec, D.etab, ...String(D.adresse || "").split("\n")].filter(x => x && x.trim());
+  if (dest.length) { lignes(dest.join("\n")); NL(); NL(); }
+  T("Objet : " + S.objet); NL(); NL();
+  T(S.appel); NL(); NL();
+  blocsActifs().forEach(b => { if (b.titre) { T(b.titre); NL(); } lignes(b.texte.trim()); NL(); NL(); });
+  return n;
+}
+function construireORD() {
+  const m = MODELES[S.modele], p = ctx.p, D = S.dest, role = ROLES[D.role];
+  return {
+    version: "1.0", type: "lettre", titre: m.label, date: today(), lieu: window.medecinLieu || "",
+    patient: { nom: p.nom, prenom: p.prenom, date_Naissance: p.dn, sexe: p.sexe },
+    hospitalisationId: consultationId ? "" : ctx.hospitalisationId, consultationId,
+    medecin: { nom: window.medecinNom || "Dr Non renseigné", specialite: window.medecinSpecialite || "", signature: window.medecinSignature || "" },
+    destinataire: { civilite: role?.civ || "", nom: D.nom, specialite: D.spec, etablissement: D.etab, adresse: D.adresse },
+    objet: S.objet, appel: S.appel,
+    contenu: versNoeuds(), signature: true
+  };
+}
+function ouvrirConfirm() {
+  if (!patientId) { afficherBulle("🚨 Aucun dossier patient : enregistrement impossible", "alerte"); return; }
+  if (!blocsActifs().length) { afficherBulle("⛔ La lettre est vide !", "alerte"); return; }
+  $("#previewConfirm").innerHTML = lettreHTML();
+  $("#confirmModal").style.display = "flex";
+}
+$("#btnValider").onclick = ouvrirConfirm;
+$("#cNon").onclick = () => $("#confirmModal").style.display = "none";
+$("#cOui").onclick = async () => { $("#confirmModal").style.display = "none"; await valider(); };
+
+async function valider() {
+  const m = MODELES[S.modele];
+  verrou = true; appliquerVerrou();
+  try {
+    const ref = doc(collection(db, "documents"));
+    docIdExistante(ref.id);
+    await setDoc(ref, {
+      patientId, consultationId, dateCreation: formatDate(new Date()), type: m.type,
+      contenu: lettreTexte(),
+      lettre: { modele: S.modele, dest: S.dest, objet: S.objet, appel: S.appel, blocs: S.blocs.map(({ gen, ...b }) => b) },
+      ord: construireORD()
+    });
+    await chargerHistorique();
+    afficherBulle("✅ Lettre enregistrée !", "success");
+  } catch (err) {
+    console.error("❌ Erreur enregistrement lettre :", err);
+    verrou = false; docIdExistante(""); appliquerVerrou();
+    afficherBulle("❌ Échec de l’enregistrement de la lettre", "error");
+  }
+}
+function docIdExistante(v) { docIdExistant = v; }
+
+$("#btnOuvrir").onclick = () => {
+  if (!docIdExistant) { afficherBulle("❌ Aucun document disponible", "alerte"); return; }
+  window.parent.postMessage({ type: "OPEN_TAB", title: `${MODELES[S.modele].label} ${ctx.p.nom} ${ctx.p.prenom}`.trim(), url: `viewer.html?docId=${docIdExistant}` }, "*");
+};
+$("#btnImprimer").onclick = () => {
+  const f = document.createElement("iframe"); f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0"; document.body.appendChild(f);
+  const d = f.contentWindow.document; d.open();
+  d.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${esc(MODELES[S.modele].label)}</title><style>@page{size:A4;margin:18mm}body{font:13px/1.5 Georgia,'Times New Roman',serif;color:#111;margin:0}${LETTER_CSS}</style></head><body>${lettreHTML()}</body></html>`);
+  d.close(); setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => f.remove(), 2000); }, 250);
+};
+function nouvelle() {
+  verrou = false; docIdExistant = "";
+  S.dest = { role: "", nom: "", spec: "", etab: "", adresse: "" };
+  appliquerModele(S.modele); appliquerVerrou();
+}
+$("#btnNouvelle").onclick = $("#btnNouvelle2").onclick = nouvelle;
+
+/* =========================================================
+   HISTORIQUE
+   ========================================================= */
+const TYPES = Object.values(MODELES).map(m => m.type);
+function parseDateFR(s) {
+  const m = String(s || "").match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) : new Date(0);
+}
+async function chargerHistorique() {
+  if (!patientId) return;
+  const c = $("#listeLettres"); c.innerHTML = '<div class="vide">Chargement…</div>';
+  try {
+    const snap = await getDocs(query(collection(db, "documents"), where("patientId", "==", patientId)));
+    lettresHisto = [];
+    snap.forEach(s => { const d = s.data(); if (TYPES.includes(d.type)) lettresHisto.push({ id: s.id, ...d }); });
+    lettresHisto.sort((a, b) => parseDateFR(b.dateCreation) - parseDateFR(a.dateCreation));
+    $("#nbHisto").textContent = lettresHisto.length ? `(${lettresHisto.length})` : "";
+    rendreHistorique(lettresHisto);
+  } catch (e) { console.error(e); c.innerHTML = '<div class="vide" style="color:var(--c-danger)">Erreur de chargement</div>'; }
+}
+function rendreHistorique(l) {
+  const c = $("#listeLettres"); c.innerHTML = "";
+  if (!l.length) { c.innerHTML = '<div class="vide">Aucune lettre.</div>'; return; }
+  l.forEach(d => {
+    const r = document.createElement("div"); r.className = "hrow"; r.title = "Double-cliquez pour ouvrir la lettre";
+    r.innerHTML = `<div class="hh"><span class="hd">${esc(d.dateCreation || "")}</span><button type="button" class="reuse">Réutiliser</button></div><div class="ht">${esc(d.type)}${d.lettre?.dest?.nom ? " — " + esc(d.lettre.dest.nom) : ""}</div><div class="hp">${esc((d.contenu || "").replace(/\n+/g, " "))}</div>`;
+    r.querySelector(".reuse").addEventListener("click", e => { e.stopPropagation(); reutiliser(d); });
+    r.addEventListener("dblclick", () => window.parent.postMessage({ type: "OPEN_TAB", title: `${d.type} ${ctx.p.nom} ${ctx.p.prenom}`.trim(), url: `viewer.html?docId=${d.id}` }, "*"));
+    c.appendChild(r);
+  });
+}
+$("#histoSearch").addEventListener("input", function () {
+  const t = this.value.toLowerCase().trim();
+  rendreHistorique(t ? lettresHisto.filter(o => (o.contenu || "").toLowerCase().includes(t) || (o.dateCreation || "").toLowerCase().includes(t) || (o.type || "").toLowerCase().includes(t)) : lettresHisto);
+});
+function reutiliser(d) {
+  if (!d.lettre) { afficherBulle("⚠️ Cette lettre ne peut pas être réutilisée", "warning"); return; }
+  verrou = false; docIdExistant = "";
+  S.modele = d.lettre.modele in MODELES ? d.lettre.modele : "orientation";
+  S.dest = { role: "", nom: "", spec: "", etab: "", adresse: "", ...(d.lettre.dest || {}) };
+  S.objet = d.lettre.objet || ""; S.appel = d.lettre.appel || ""; S.objetDirty = true; S.appelDirty = true;
+  S.blocs = (d.lettre.blocs || []).map(b => ({ ...b, gen: null, dirty: true }));
+  rendreTout(); appliquerVerrou(); montrerOnglet("apercu");
+  afficherBulle("📋 Lettre recopiée dans l’éditeur", "success");
+}
+function montrerOnglet(k) {
+  $("#pApercu").hidden = k !== "apercu"; $("#pHisto").hidden = k !== "histo";
+  $("#tabApercu").setAttribute("aria-selected", k === "apercu"); $("#tabHisto").setAttribute("aria-selected", k === "histo");
+}
+$("#tabApercu").onclick = () => montrerOnglet("apercu"); $("#tabHisto").onclick = () => montrerOnglet("histo");
+
+/* =========================================================
+   AUTHENTIFICATION ET DROITS (page « lettres »)
+   ========================================================= */
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  window.afficherLoader();
+  try {
+    const s = await getDoc(doc(db, "medecins", user.uid));
+    if (!s.exists()) { window.masquerLoader(); alert("Utilisateur non trouvé, veuillez vous reconnecter."); return; }
+    const data = s.data();
+    window.medecinNom = data.nom || ""; window.medecinSpecialite = data.specialite || ""; window.medecinLieu = data.lieu || ""; window.medecinSignature = data.signature || "";
+    $("#header-medecin").textContent = window.medecinNom ? `Dr ${window.medecinNom}${window.medecinSpecialite ? " — " + window.medecinSpecialite : ""}` : "Médecin non renseigné";
+    $("#header-date").textContent = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+    const page = "Ordonnancier";
+    if (!(data.pages || {})[page]) { window.masquerLoader(); $("#modal-no-access").style.display = "flex"; return; }
+
+    if (!patientId) afficherBulle("🚨 Aucun dossier patient trouvé", "alerte");
+    await chargerContexte();
+    $("#chipMT").hidden = !String(ctx.p.medtraitant || "").trim();
+    const ou = ctx.src.kind === "consultation" ? "consultation" : ctx.src.kind === "hospitalisation" ? "dossier d’hospitalisation" : "";
+    $("#sous-titre").textContent = ctx.p.nom ? `${ctx.p.nom.toUpperCase()} ${ctx.p.prenom}${ou ? " · " + ou : ""}` : "Orientation · Admission · Confrère";
+    appliquerModele("orientation");
+    await chargerHistorique();
+    window.masquerLoader();
+  } catch (e) {
+    console.error("Erreur chargement :", e); window.masquerLoader(); $("#modal-error").style.display = "flex";
+  }
+});
+rendreTout();
+</script>
+</body>
+</html>

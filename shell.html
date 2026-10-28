@@ -1999,6 +1999,21 @@ button,input{font-family:inherit}
   .modal-actions .btn-id,.modal-actions button,.lock-actions button{flex:1 1 auto}
 }
 @media (prefers-reduced-motion:reduce){.tab,.btn-id,.dropdown-item,.home-message{transition:none !important}}
+/* ===== MASCOTTE ANIMÉE (iframe transparente, remplace l'ancienne image) ===== */
+#welcome-avatar{
+  display:block !important;border:0 !important;background:transparent !important;
+  pointer-events:none !important;overflow:hidden;position:relative;z-index:0;
+  animation:none !important; /* la mascotte flotte déjà d'elle-même */
+  height:var(--av-h) !important;width:calc(var(--av-h) * .8167) !important;
+}
+@supports (height:1cqh){
+  #welcome-avatar{
+    height:clamp(56px, 28cqh, 300px) !important;
+    width:calc(clamp(56px, 28cqh, 300px) * .8167) !important;
+    max-width:none !important;aspect-ratio:auto !important;
+  }
+}
+@media (max-height:520px){#welcome-avatar{display:none !important}}
 </style>
 </head>
 <body>
@@ -2034,8 +2049,7 @@ button,input{font-family:inherit}
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></symbol>
   <symbol id="i-stats" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
   <symbol id="i-requests" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/> <path d="M8 9h8M8 13h5"/></symbol>
-  <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18V5a1 1 0 0 1 1-1h4a4 4 0 0 1 4 4 4 4 0 0 1 4-4h4a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-4a4 4 0 0 0-4 2 4 4 0 0 0-4-2H4a1 1 0 0 1-1-1Z"/></symbol>
-  <symbol id="i-affectations" viewBox="0 0 24 24"><path d="M21 10.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="17" cy="15.5" r="2.5"/><path d="M12.5 22c.4-2.2 2-3.5 4.5-3.5s4.1 1.3 4.5 3.5"/></symbol>
+<symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18V5a1 1 0 0 1 1-1h4a4 4 0 0 1 4 4 4 4 0 0 1 4-4h4a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-4a4 4 0 0 0-4 2 4 4 0 0 0-4-2H4a1 1 0 0 1-1-1Z"/></symbol>
 </svg>
 
 
@@ -2119,14 +2133,14 @@ button,input{font-family:inherit}
   <svg class="i sm" aria-hidden="true"><use href="#i-user-check"/></svg>Accueil des consultations
   <span onclick="openTab('Accueil consultations','accueilconsultations.html')">Ouvrir</span>
 </div>
- <!--<div class="dropdown-item" data-desc="Créneaux d'ouverture et médecins disponibles" data-page="rdvadmin">
+ <div class="dropdown-item" data-desc="Créneaux d'ouverture et médecins disponibles" data-page="rdvadmin">
   <svg class="i sm" aria-hidden="true"><use href="#i-calendar-key"/></svg>Administration rendez-vous urgences
   <span onclick="openTab('Admin rendez-vous','rdvadmin.html')">Ouvrir</span>
-</div>-->
+</div>
 
-<div class="dropdown-item" data-desc="Mes affectations et mes consultations" data-page="Calendrier">
-  <svg class="i sm" aria-hidden="true"><use href="#i-calendar-clock"/></svg>Mon calendrier
-  <span onclick="openTab('Mon calendrier','Calendrier.html')">Ouvrir</span>
+<div class="dropdown-item" data-desc="Calendrier des consultations" data-page="Calendrier">
+  <svg class="i sm" aria-hidden="true"><use href="#i-calendar-clock"/></svg>Calendrier des consultations
+  <span onclick="openTab('Calendrier','Calendrier.html')">Ouvrir</span>
 </div>
 <div class="dropdown-item" data-desc="Statistiques du service." data-page="Statistiques">
       <svg class="i sm" aria-hidden="true"><use href="#i-stats"/></svg>Statistiques générales
@@ -2136,10 +2150,6 @@ button,input{font-family:inherit}
       <svg class="i sm" aria-hidden="true"><use href="#i-requests"/></svg>Requêtes Patient
       <span onclick="openTab('Requêtes Patients','demande-admin.html')">Ouvrir</span>
     </div>
-    <div class="dropdown-item" data-desc="Affecter les utilisateurs à un poste et à des horaires." data-page="affectations">
-  <svg class="i sm" aria-hidden="true"><use href="#i-affectations"/></svg>Affectations
-  <span onclick="openTab('Affectations','affectations.html')">Ouvrir</span>
-</div>
     <div class="dropdown-item" data-desc="Administration et paramétrage de GestUrg2" data-page="parametres">
       <svg class="i sm" aria-hidden="true"><use href="#i-sliders"/></svg>Administration GestUrg2
       <span onclick="openTab('Administration','parametres.html')">Ouvrir</span>
@@ -2201,7 +2211,7 @@ button,input{font-family:inherit}
 <div id="home-center">
 
     <div id="welcome-container">
-    <img id="welcome-avatar" src="robotgesturg2.png" alt="Assistant">
+    <iframe id="welcome-avatar" src="mascotte.html" title="Assistant" tabindex="-1" scrolling="no" allowtransparency="true"></iframe>
     <div id="welcome-text"></div>
 </div>
 
@@ -3158,6 +3168,7 @@ if (user) {
         requestAnimationFrame(() => {
         welcome.classList.add("show");
 avatar.classList.add("show");
+        window.mascotteBonjour && window.mascotteBonjour();
     });
     }
     else{
@@ -4276,6 +4287,40 @@ surveillerMessagesNonLus();
   new MutationObserver(planifier).observe(actions, { subtree: true, attributes: true, attributeFilter: ["style", "hidden"] });
 
   planifier();
+})();
+</script>
+<script>
+/* ===== MASCOTTE : pilotage de l'iframe par postMessage ===== */
+(function(){
+  // true = les yeux suivent la souris ; false = elle ne regarde que de temps en temps autour d'elle
+  const SUIVRE_SOURIS = true;
+
+  const frame = document.getElementById('welcome-avatar');
+  if(!frame) return;
+  let ready = false; const file = [];
+  function send(msg){
+    if(ready && frame.contentWindow) frame.contentWindow.postMessage(msg, '*');
+    else file.push(msg);
+  }
+  window.addEventListener('message', function(e){
+    if(e.source === frame.contentWindow && e.data && e.data.type === 'mascot-ready'){
+      ready = true; file.splice(0).forEach(function(m){ frame.contentWindow.postMessage(m, '*'); });
+    }
+  });
+  // Utilisable depuis la console :  mascotte.send({action:'wave'})
+  window.mascotte = { send: send };
+  window.mascotteBonjour = function(){ send({action:'hello'}); };
+
+  if(SUIVRE_SOURIS){
+    let dernier = 0;
+    window.addEventListener('mousemove', function(e){
+      const t = performance.now(); if(t - dernier < 50) return; dernier = t;
+      const r = frame.getBoundingClientRect(); if(!r.width) return;
+      const cx = r.left + r.width/2, cy = r.top + r.height*0.38;   // hauteur des yeux
+      send({action:'look', x:(e.clientX-cx)/(innerWidth*0.35), y:-(e.clientY-cy)/(innerHeight*0.35)});
+    });
+    document.addEventListener('mouseleave', function(){ send({action:'look', x:0, y:0}); });
+  }
 })();
 </script>
 </body>

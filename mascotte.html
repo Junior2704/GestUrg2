@@ -129,15 +129,33 @@ window.mascot=m;
 //   frame.contentWindow.postMessage({action:'talk', value:true}, '*') // parler / arrêter (value:false)
 //   frame.contentWindow.postMessage({action:'look', x:0.5, y:0}, '*') // regarder (x,y entre -1 et 1)
 //   frame.contentWindow.postMessage({action:'stop'}, '*')             // arrêter les animations en boucle
+//   frame.contentWindow.postMessage({action:'life', value:false}, '*') // couper les mouvements aléatoires
 // Animations : hello, wave, nod, shake, jump, think. Ajouter loop:true pour répéter jusqu'à stop.
+// ---- Vie autonome : mouvements aléatoires, regards, clignements ----
+let life=true, lastLook=0, glanceTimer=0;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=(t)=>{let r=Math.random()*t.reduce((s,x)=>s+x[1],0);for(const [v,w] of t){if((r-=w)<=0)return v;}return t[0][0];};
+function glance(){ m.lookAt(rnd(-0.9,0.9),rnd(-0.5,0.6)); clearTimeout(glanceTimer); glanceTimer=setTimeout(()=>{ if(performance.now()-lastLook>2500) m.lookAt(0,0); },rnd(1200,2600)); }
+function lifeStep(){
+  if(life){
+    const following=performance.now()-lastLook<2500;
+    const act=pick([['glance',following?0:40],['glance2',following?0:12],['think',10],['nod',8],['wave',10],['shake',4],['jump',3],['hello',4],['rest',15]]);
+    if(act==='glance') glance();
+    else if(act==='glance2'){ glance(); setTimeout(glance,rnd(900,1500)); }
+    else if(act!=='rest') m.play(act);
+  }
+  setTimeout(lifeStep,rnd(2800,6500));
+}
+setInterval(()=>{ if(performance.now()-lastLook>3000 && lastLook>0 && !glanceTimer) m.lookAt(0,0); },500);
 addEventListener('message',(e)=>{
   const d=e.data; if(!d||typeof d!=='object') return;
   const a=d.action; if(!a) return;
   if(a==='play') m.play(d.name,{loop:!!d.loop});
   else if(m.actions.includes(a)) m.play(a,{loop:!!d.loop});
   else if(a==='talk') m.setTalking(d.value!==false);
-  else if(a==='look') m.lookAt(+d.x||0,+d.y||0);
+  else if(a==='look'){ lastLook=performance.now(); clearTimeout(glanceTimer); glanceTimer=0; m.lookAt(+d.x||0,+d.y||0); }
+  else if(a==='life') life=d.value!==false;
   else if(a==='stop') m.stop(d.name);
 });
-m.ready.then(()=>{ try{ parent.postMessage({type:'mascot-ready',actions:m.actions},'*'); }catch(_){} });
+m.ready.then(()=>{ try{ parent.postMessage({type:'mascot-ready',actions:m.actions},'*'); }catch(_){} setTimeout(lifeStep,6000); });
 </script></body></html>

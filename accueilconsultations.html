@@ -57,6 +57,11 @@ input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(11,111,164,.35);border-radius:20px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(8,90,134,.6)}
+.ctl{width:min(480px,calc(100% - 24px));padding:0;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);color:var(--ink)}
+.ctl::backdrop{background:rgba(17,35,54,.45)}
+.ctl h2{padding:18px 22px 0;font-size:18px;color:#a35a00}.ctl .cb{padding:10px 22px 4px}.ctl ul{margin:8px 0;padding-left:20px}.ctl li{margin:4px 0}.ctl small{color:var(--muted)}
+.ctl .df{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding:14px 22px 18px}
+.reste ul{margin:6px 0 0;padding-left:20px}.reste li{margin:4px 0}.reste.ok{color:var(--ok,#16784a);font-weight:600}.reste small{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -83,6 +88,7 @@ input:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:var(--
   </div>
 </main>
 
+<dialog id="dlgCtl" class="ctl"><h2 id="ctlTitre"></h2><div class="cb"><p id="ctlIntro"></p><ul id="ctlListe"></ul><p id="ctlQ" style="font-weight:600"></p></div><div class="df" id="ctlActions"></div></dialog>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -95,7 +101,7 @@ const iso=d=>{const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const STAT={pris:'Réservé',attente:"En salle d'attente",encours:'En consultation',termine:'Terminé',annule:'Annulé'};
 let medecin={},rdvs=[],rdvsJ=[],rdvsT=[],sel=null,unsub=null,unsubT=null,tmr=null;
-const VIDE='<div class="card-sec mut">Sélectionnez une consultation pour accueillir le patient.</div>';
+const VIDE='<div class="card-sec mut">Sélectionnez une consultation pour accueillir le patient ou finaliser un dossier.</div>';
 const symsDe=r=>{const s=r.symptomes||{};return[...(s.liste||[]),...(s.autres||[])]}; // symptômes proposés + saisis par le patient
 const demandeurDe=r=>{const d=r.demandeur;return r.pourQui==='proche'&&d?`${d.prenom||''} ${d.nom||''}${d.lien?' ('+d.lien+')':''}`.trim():''}; // personne qui a pris le rendez-vous pour le patient
 /* ---- Notifications : bulle affichée par la page parente ---- */
@@ -161,7 +167,7 @@ function visibles(){
 }
 function rendreListe(){
   const l=visibles();
-  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${($('#portee').value==='tous'||r.date!==$('#jour').value)?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}${r.statut==='termine'?(r.facturation?.regle?' · facturée':' · à facturer'):''}${demandeurDe(r)?' · pris par '+esc(demandeurDe(r)):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
+  $('#liste').innerHTML=l.map(r=>{const p=r.patient||{};return `<button class="rdv s-${r.statut}" data-id="${r.id}" ${r.id===sel?'aria-current="true"':''}><span><b>${($('#portee').value==='tous'||r.date!==$('#jour').value)?esc(new Date(r.date+'T12:00').toLocaleDateString('fr-FR'))+' ':''}${esc(r.heure)}</b> ${r.alerteVitale?'⚠ ':''}${esc(p.prenom)} ${esc(p.nom)}<small>${esc([r.motif,...symsDe(r)].filter(Boolean).join(' · '))}${r.ref?' · '+esc(r.ref):''}${demandeurDe(r)?' · pris par '+esc(demandeurDe(r)):''}</small></span><span class="pill s-${r.statut}">${STAT[r.statut]}</span></button>`}).join('')||'<p class="mut">Aucune consultation ne correspond.</p>';
   document.querySelectorAll('.rdv').forEach(b=>b.onclick=()=>{sel=b.dataset.id;rendreListe();ouvrir(rdvs.find(x=>x.id===sel))});
 }
 
@@ -282,6 +288,54 @@ async function ouvrir(r){
   };
 }
 
+/* ---- Reste à facturer : même calcul que la fiche patient et que Facturation.html (computeBilled) ---- */
+const tsCtl=v=>v?.toDate?v.toDate():(v?new Date(v):null);
+const fmtCtl=d=>d&&!isNaN(d)?d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'-';
+async function calculerResteAFacturer(patientId,patient){
+  const get=async(col,ids)=>(await Promise.all((ids||[]).map(i=>getDoc(doc(db,col,i))))).filter(s=>s.exists()).map(s=>({id:s.id,...s.data()}));
+  const [consults,hospis,invSnap]=await Promise.all([
+    get('consultations',patient.consultations),
+    get('hospitalisations',patient.hospitalisations),
+    getDocs(query(collection(db,'facture'),where('patientId','==',patientId),limit(200)))
+  ]);
+  const billed={};
+  consults.forEach(c=>{if(c.facturee)billed['c'+c.id]=c.factureRef||'initialisation'});
+  hospis.forEach(h=>{if(h.facturee)billed['h'+h.id]=h.factureRef||'initialisation'});
+  invSnap.docs.forEach(d=>{
+    const data=d.data();if(data.statut==='annulee')return;
+    const lab=data.numero||d.id;
+    (data.sources?.consultationIds||[]).forEach(i=>billed['c'+i]=lab);
+    (data.sources?.hospitalisationIds||[]).forEach(i=>billed['h'+i]=lab);
+  });
+  return{consults:consults.filter(c=>!billed['c'+c.id]&&c.statut!=='encours'),hospis:hospis.filter(h=>!billed['h'+h.id])};
+}
+const cacheReste=new Map(); // patientId -> {t,items}
+async function resteDe(r,force){
+  const c=cacheReste.get(r.patientId);
+  if(!force&&c&&Date.now()-c.t<15000)return c.items;
+  const ps=await getDoc(doc(db,'patients',r.patientId));
+  if(!ps.exists())throw new Error('patient introuvable');
+  const reste=await calculerResteAFacturer(r.patientId,ps.data());
+  const items=[
+    ...reste.hospis.map(h=>{const fin=tsCtl(h.dateFinTS);return '<b>Hospitalisation</b> du '+esc(fmtCtl(tsCtl(h.dateDebutTS)))+(fin?' au '+esc(fmtCtl(fin)):' (en cours)')+(h.motif?' <small>– '+esc(h.motif)+'</small>':'')}),
+    ...reste.consults.map(x=>'<b>Consultation</b> du '+esc(((x.date||'')+' '+(x.heure||'')).trim())+(x.motif?' <small>– '+esc(x.motif)+'</small>':''))
+  ];
+  cacheReste.set(r.patientId,{t:Date.now(),items});
+  return items;
+}
+function modaleControle({titre,intro,items,question,boutons}){
+  return new Promise(resolve=>{
+    const d=$('#dlgCtl');
+    $('#ctlTitre').textContent=titre;$('#ctlIntro').textContent=intro||'';
+    $('#ctlListe').innerHTML=(items||[]).map(i=>'<li>'+i+'</li>').join('');
+    $('#ctlQ').textContent=question||'';
+    const z=$('#ctlActions');z.innerHTML='';
+    boutons.forEach(b=>{const x=document.createElement('button');x.type='button';x.className=b.principal?'btn-primary':'btn-secondary';x.textContent=b.label;x.onclick=()=>{d.close();resolve(b.valeur)};z.appendChild(x)});
+    d.oncancel=()=>resolve('annuler');
+    d.showModal();
+  });
+}
+
 /* ---- Consultation terminée : facturation, documents, archivage ---- */
 function imprimer(titre,corps){
   const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
@@ -289,32 +343,33 @@ function imprimer(titre,corps){
   d.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${esc(titre)}</title><style>body{font:14px/1.5 Arial,sans-serif;color:#111;margin:32px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 4px}.m{color:#555}table{border-collapse:collapse;width:100%;margin-top:12px}td,th{border:1px solid #bbb;padding:6px 8px;text-align:left}pre{white-space:pre-wrap;font:inherit;margin:0}</style></head><body>${corps}</body></html>`);
   d.close();setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)},250);
 }
+// Même ouverture que le bouton « Facturer » de la fiche patient
+function ouvrirFacturation(r){
+  const p=r.patient||{};
+  window.parent.postMessage({type:'OPEN_TAB',title:('Facturation '+(p.nom||'')+' '+(p.prenom||'')).trim(),url:'Facturation.html?id='+encodeURIComponent(r.patientId)},'*');
+}
 function ouvrirTermine(r,head){
-  const p=r.patient||{},f=r.facturation||{},box=$('#detail'),nomP=((p.prenom||'')+' '+(p.nom||'')).trim();
-  const MODES=['','CB','Espèces','Chèque','Tiers payant','Gratuit / pris en charge'];
+  const p=r.patient||{},box=$('#detail'),nomP=((p.prenom||'')+' '+(p.nom||'')).trim(),ok=!!r.patientId;
   box.innerHTML=head+F('Patient',nomP)+F('Naissance',p.dateNaissance)+F('Téléphone',p.telephone)+F('Fiche patient (CIP)',r.patientId)+
-   `</div><div class="card-sec"><h2 class="card-title">Facturation</h2><div class="form">
-    <div class="field"><label for="f-montant">Montant (€)</label><input id="f-montant" type="number" min="0" step="0.01" value="${esc(f.montant??'')}"></div>
-    <div class="field"><label for="f-mode">Mode de règlement</label><select id="f-mode">${MODES.map(m=>`<option value="${esc(m)}"${m===(f.mode||'')?' selected':''}>${esc(m||'—')}</option>`).join('')}</select></div>
-    <div class="field" style="grid-column:1/-1"><label for="f-note">Note de facturation</label><input id="f-note" value="${esc(f.note||'')}"></div></div>
-    <label class="choice${f.regle?' on':''}" style="margin-top:12px"><input type="checkbox" id="f-regle"${f.regle?' checked':''}><span><b>Facturation réalisée / réglée</b></span></label>
-    <div class="actions"><button class="btn-primary" id="fsave">Enregistrer la facturation</button></div></div>
-    <div class="card-sec"><h2 class="card-title">Documents</h2><div class="actions" style="margin-top:0"><button class="btn-secondary" id="pRecu">Imprimer le reçu</button><button class="btn-secondary" id="pCR">Imprimer le compte rendu</button><button class="btn-secondary" id="pOpen"${r.consultationId?'':' disabled'}>Ouvrir la consultation</button></div></div>
+   `</div><div class="card-sec"><h2 class="card-title">Facturation</h2>
+    <div class="reste mut" id="resteFact">${ok?'Vérification de la facturation…':'Aucune fiche patient liée : facturation impossible depuis cette page.'}</div>
+    <div class="actions"><button class="btn-primary" id="bFacturer"${ok?'':' disabled'}>Facturer</button><button class="btn-secondary" id="bRecheck"${ok?'':' disabled'}>Actualiser</button></div></div>
+    <div class="card-sec"><h2 class="card-title">Documents</h2><div class="actions" style="margin-top:0"><button class="btn-secondary" id="pCR">Imprimer le compte rendu</button><button class="btn-secondary" id="pOpen"${r.consultationId?'':' disabled'}>Ouvrir la consultation</button></div></div>
     <div class="card-sec"><h2 class="card-title">Archivage</h2><p class="mut">Une fois archivée, la consultation disparaît de cette liste.</p><div class="actions"><button class="btn-danger" id="archive">Archiver la consultation</button></div></div>`;
-  const fact=()=>({montant:$('#f-montant').value===''?null:parseFloat($('#f-montant').value),mode:$('#f-mode').value,note:$('#f-note').value.trim(),regle:$('#f-regle').checked});
-  $('#f-regle').onchange=e=>e.target.closest('.choice').classList.toggle('on',e.target.checked);
-  $('#fsave').onclick=async()=>{
-    try{await updateDoc(doc(db,'rdv-urgences',r.id),{facturation:{...fact(),par:medecin.uid,le:serverTimestamp()}});afficherBulle('Facturation enregistrée', BULLE.OK)}
-    catch(e){console.error(e);afficherBulle('Échec de l’enregistrement', BULLE.ERR)}
+  const afficher=async force=>{
+    if(!ok)return;
+    const z=$('#resteFact');if(z){z.className='reste mut';z.textContent='Vérification de la facturation…'}
+    try{
+      const items=await resteDe(r,force),z2=$('#resteFact');
+      if(sel!==r.id||!z2)return; // le détail a changé entre-temps
+      if(items.length){z2.className='reste';z2.innerHTML='Il reste des éléments à facturer :<ul>'+items.map(i=>'<li>'+i+'</li>').join('')+'</ul>'}
+      else{z2.className='reste ok';z2.textContent='✓ Tout est facturé.'}
+    }catch(e){console.error(e);const z2=$('#resteFact');if(z2){z2.className='reste mut';z2.textContent='Vérification de la facturation impossible.'}}
   };
+  afficher(false);
+  $('#bRecheck').onclick=()=>afficher(true);
+  $('#bFacturer').onclick=()=>ouvrirFacturation(r);
   $('#pOpen').onclick=()=>window.parent.postMessage({type:'OPEN_TAB',title:('Consultation '+nomP).trim(),url:'ficheconsultation.html?id='+encodeURIComponent(r.consultationId)},'*');
-  $('#pRecu').onclick=()=>{
-    const x=fact(),lieu=window.medecinLieu||'Service des urgences',dt=new Date(r.date+'T12:00').toLocaleDateString('fr-FR');
-    imprimer('Reçu '+(r.ref||''),`<h1>Reçu de consultation</h1><p class="m">${esc(lieu)}</p>
-      <table><tr><th>Patient</th><td>${esc(nomP)}</td></tr><tr><th>Date de consultation</th><td>${esc(dt)} à ${esc(r.heure)}</td></tr><tr><th>Référence</th><td>${esc(r.ref||'—')}</td></tr>
-      <tr><th>Montant</th><td>${x.montant==null?'—':x.montant.toFixed(2).replace('.',',')+' €'}</td></tr><tr><th>Mode de règlement</th><td>${esc(x.mode||'—')}</td></tr></table>
-      <p class="m" style="margin-top:24px">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>`);
-  };
   $('#pCR').onclick=async()=>{
     if(!r.consultationId){afficherBulle('Aucune consultation liée à ce rendez-vous', BULLE.WARN);return}
     try{
@@ -323,8 +378,23 @@ function ouvrirTermine(r,head){
       imprimer('Compte rendu '+nomP,`<h1>Compte rendu de consultation</h1><p class="m">${esc(nomP)} · né(e) le ${esc(p.dateNaissance||'—')} · ${esc(c.date||r.date)} ${esc(c.heure||r.heure)}<br>${esc(c.medecinNom||'')}${c.medecinSpecialite?' — '+esc(c.medecinSpecialite):''}</p>${S('Motif',c.motif)}${S('Histoire',c.histoire)}${S('Examen clinique',c.examenClinique)}${S('Diagnostic',c.diagnostic)}${S('Conduite à tenir',c.conduite)}`);
     }catch(e){console.error(e);afficherBulle('Impossible de charger la consultation', BULLE.ERR)}
   };
+  // Archivage : contrôle non bloquant du reste à facturer, comme avant la clôture dans la fiche
   $('#archive').onclick=async()=>{
-    if(!(r.facturation?.regle)&&!confirm('La facturation n’est pas marquée comme réalisée. Archiver quand même ?'))return;
+    if(ok){
+      try{
+        const items=await resteDe(r,true);
+        if(items.length){
+          const choix=await modaleControle({titre:'Il reste des éléments à facturer',intro:'Ces éléments ne sont pas encore facturés :',items,
+            question:'Voulez-vous archiver la consultation malgré tout ?',
+            boutons:[{label:'Annuler',valeur:'annuler'},{label:'Facturer',valeur:'facturer'},{label:'Archiver quand même',valeur:'continuer',principal:true}]});
+          if(choix==='facturer'){ouvrirFacturation(r);return}
+          if(choix!=='continuer')return;
+        }
+      }catch(e){
+        // La vérification de facturation ne doit jamais empêcher l'archivage
+        console.error('Contrôle facturation avant archivage :',e);afficherBulle('⚠️ Vérification de la facturation impossible', BULLE.WARN);
+      }
+    }
     try{await updateDoc(doc(db,'rdv-urgences',r.id),{archive:true,archiveLe:serverTimestamp(),archivePar:medecin.uid});sel=null;$('#detail').innerHTML=VIDE;afficherBulle('Consultation archivée', BULLE.OK)}
     catch(e){console.error(e);afficherBulle('Échec de l’archivage', BULLE.ERR)}
   };

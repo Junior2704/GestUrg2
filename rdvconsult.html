@@ -279,20 +279,23 @@ async function choisirJour(d){
   try{const o=await getDoc(doc(db,'rdv-occupation',d));if(o.exists()){counts=o.data().counts||{};meds=o.data().med||{}}}catch(e){}
   rendre();
 }
+// Seuls les créneaux des 48 prochaines heures sont réservables
+const HORIZON_H=48;
+const dansFenetre=(d,t,now)=>{const ms=new Date(d+'T'+t).getTime();return ms>now&&ms<=now+HORIZON_H*36e5};
 function rendre(){
   const days=$('#days');days.innerHTML='';
-  for(let i=0;i<10;i++){const d=new Date();d.setDate(d.getDate()+i);const s=iso(d);
+  for(let i=0;i<3;i++){const d=new Date();d.setDate(d.getDate()+i);const s=iso(d); // aujourd'hui, demain, après-demain (48 h = 3 jours civils au plus)
     const b=document.createElement('button');b.type='button';b.className='day';b.setAttribute('aria-pressed',s===date);
     b.innerHTML=`${i?JOURS[d.getDay()]:'Auj.'}<b>${d.getDate()}</b>${d.toLocaleDateString('fr-FR',{month:'short'})}`;
     b.onclick=()=>choisirJour(s);days.appendChild(b)}
   const now=new Date(),nm=now.getHours()*60+now.getMinutes(),box=$('#slots'),isToday=date===iso(now),all=Object.keys(caps).sort();
   // on ne garde que les créneaux à venir et encore libres
-  const dispo=all.filter(t=>caps[t]-(counts[t]||0)>0&&(elig[t]||[]).some(u=>!(meds[t]||[]).includes(u))&&!(isToday&&tmin(t)<=nm));
+  const dispo=all.filter(t=>caps[t]-(counts[t]||0)>0&&(elig[t]||[]).some(u=>!(meds[t]||[]).includes(u))&&dansFenetre(date,t,now.getTime()));
   if(time&&!dispo.includes(time))time=null;
-  box.innerHTML=dispo.length?'':`<p class="mut">${!all.length?'Aucun créneau ouvert ce jour-là. Essayez une autre date.':isToday?'Plus de créneau disponible aujourd’hui. Essayez demain ou une autre date.':'Tous les créneaux sont complets ce jour-là. Essayez une autre date.'}</p>`;
+  box.innerHTML=dispo.length?'':`<p class="mut">${!all.length?'Aucun créneau ouvert ce jour-là dans les 48 prochaines heures. Essayez un autre jour.':isToday?'Plus de créneau disponible aujourd’hui. Essayez demain.':'Aucun créneau disponible ce jour-là dans les 48 prochaines heures. Essayez un autre jour.'}</p>`;
   (showAll?dispo:dispo.slice(0,PAGE)).forEach(t=>{const left=caps[t]-(counts[t]||0);
     const b=document.createElement('button');b.type='button';b.className='slot';b.setAttribute('aria-pressed',t===time);
-    b.innerHTML=t;
+    b.innerHTML=t+(left===1?'<small>Dernière place</small>':'');
     b.onclick=()=>{time=t;rendre()};box.appendChild(b)});
   const more=$('#more');more.hidden=dispo.length<=PAGE;
   more.textContent=showAll?'Voir moins':`Voir plus de créneaux (${dispo.length-PAGE})`;
@@ -474,6 +477,7 @@ $('#recap').addEventListener('click',e=>{const b=e.target.closest('[data-edit]')
 async function envoyer(){
   const btn=$('#next'),err=$('#err'),c=collect();
   const now=new Date();if(date===iso(now)&&tmin(time)<=now.getHours()*60+now.getMinutes()){time=null;rendre();return go(0,-1)}
+  if(!dansFenetre(date,time,Date.now())){await choisirJour(date);go(0,-1);err.textContent='Ce créneau n’est plus réservable (rendez-vous possibles dans les 48 prochaines heures). Choisissez-en un autre.';return}
   err.textContent='';btn.disabled=true;
   $('#loadm').hidden=false;document.body.style.overflow='hidden';
   const occ=doc(db,'rdv-occupation',date);

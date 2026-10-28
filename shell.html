@@ -4579,7 +4579,7 @@ function ecouterConsultations() {
 }
 
 async function chargerMesPatients() {
-  if (!pages.fichepatient || !uid) return;
+  if (!pages.fiche || !uid) return;
   const hospis = new Map();
   await Promise.all(Object.keys(ROLES).map(async role => {
     try {
@@ -4611,10 +4611,10 @@ function rendreRaccourcis() {
 
   // mes patients
   const pc = $("hwPatCard");
-  pc.hidden = !pages.fichepatient;
+  pc.hidden = !pages.fiche;
   $("hwPatCount").textContent = mesPatients.length || "";
   $("hwPat").innerHTML = mesPatients.length
-    ? mesPatients.slice(0, MAX_PAT).map(p => `<button type="button" class="hw-item" data-title="${esc("Fiche Patient " + (p.prenom || "") + " " + (p.nom || ""))}" data-url="fichepatient.html?id=${encodeURIComponent(p.id)}">`
+    ? mesPatients.slice(0, MAX_PAT).map(p => `<button type="button" class="hw-item" data-title="${esc("Fiche Patient " + (p.prenom || "") + " " + (p.nom || ""))}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
       + `<span class="hw-av">${esc(initiales(p))}</span><span class="hw-tx"><b>${esc(nomPatient(p))}</b>`
       + `<small>${esc((p._roles || []).map(r => ROLES[r]).join(" · "))}</small></span>${ico("i-chevron", "i hw-go")}</button>`).join("")
       + (mesPatients.length > MAX_PAT ? `<button type="button" class="hw-more" data-title="Patients" data-url="patients.html">Voir les ${mesPatients.length - MAX_PAT} autres</button>` : "")

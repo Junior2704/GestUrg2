@@ -4848,7 +4848,7 @@ function rendreRaccourcis() {
     if (p.aFaire) tags.push(`<span class="tg amber">${p.aFaire} ${pl(p.aFaire, "examen à réaliser", "examens à réaliser")}</span>`);
     if (p.sortie) tags.push(`<span class="tg green">Sortie enregistrée</span>`);
     const sub = [p.roles.map(r => ROLES[r]).join(" / "), p.pdc].filter(Boolean).join(" · ");
-    return `<button type="button" class="hw-item" data-title="${esc("Fiche Patient " + p.prenom + " " + p.nom)}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
+    return `<button type="button" class="hw-item" data-title="${esc("Fiche Urgences " + p.prenom + " " + p.nom)}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
       + `<span class="hw-av">${esc(initiales(p))}${p.nonLus ? '<i class="pip"></i>' : ""}</span><span class="hw-tx"><b>${esc(nomPatient(p))}</b>`
       + (sub ? `<small>${esc(sub)}</small>` : "") + (tags.length ? `<span class="hw-tags">${tags.join("")}</span>` : "")
       + `</span>${ico("i-chevron", "i hw-go")}</button>`;
@@ -4914,7 +4914,7 @@ function sourcesLocales() {
   mesPatients.forEach(p => L.push({
     groupe: "Mes patients", icone: "i-user-check", label: nomPatient(p), sub: [p.roles.map(r => ROLES[r]).join(" / "), p.pdc].filter(Boolean).join(" · "),
     tag: p.nonLus ? `${p.nonLus} ${pl(p.nonLus, "résultat non ouvert", "résultats non ouverts")}` : "", tagc: "red",
-    titre: "Fiche Patient " + p.prenom + " " + p.nom, url: "fiche.html?id=" + encodeURIComponent(p.id), cle: sans(p.nom + " " + p.prenom)
+    titre: "Fiche Urgences " + p.prenom + " " + p.nom, url: "fiche.html?id=" + encodeURIComponent(p.id), cle: sans(p.nom + " " + p.prenom)
   }));
   consEnCours.forEach(c => L.push({
     groupe: "Consultations en cours", icone: "i-consultation", label: nomPatient(c._p), sub: ["Depuis " + (c.heure || "—"), c.motif].filter(Boolean).join(" · "),
@@ -4966,7 +4966,7 @@ async function rechercheGlobale(q) {
         groupe: "Patients", icone: "i-users", label: nomPatient(p),
         sub: d && !isNaN(d) ? "Né(e) le " + d.toLocaleDateString("fr-FR") : (p.dateNaissance || ""),
         tag: p.hospitalisationActiveId ? "Hospitalisé(e)" : "", tagc: "blue",
-        titre: "Fiche Patient " + (p.prenom || "") + " " + (p.nom || ""), url: (p.hospitalisationActiveId ? "fiche.html" : "fichepatient.html") + "?id=" + encodeURIComponent(p.id)
+        titre: (p.hospitalisationActiveId ? "Fiche Urgences " : "Fiche Patient ") + (p.prenom || "") + " " + (p.nom || ""), url: (p.hospitalisationActiveId ? "fiche.html" : "fichepatient.html") + "?id=" + encodeURIComponent(p.id)
       };
     });
 }

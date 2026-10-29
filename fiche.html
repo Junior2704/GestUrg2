@@ -3979,7 +3979,12 @@ async function executerClotureSansAvertissement() {
             }
         );
 
-
+        // Sortie de l'équipe des requêtes « mes patients » (non bloquant si ça échoue)
+        try {
+            await updateDoc(hospiRef, { equipeUids: [] });
+        } catch (e) {
+            console.warn("equipeUids non vidé à la clôture :", e);
+        }
         // ==================================================
         // 9. TERMINÉ
         // ==================================================
@@ -5160,9 +5165,10 @@ async function saveEquipe(roleKey, equipeData) {
       [roleKey]: equipeData
     };
 
-    tx.update(hospiRef, {
+       tx.update(hospiRef, {
       ...data,
-      equipe: nouvelleEquipe
+      equipe: nouvelleEquipe,
+      equipeUids: getUidsEquipe(nouvelleEquipe)
     });
 
     equipeApresMiseAJour = nouvelleEquipe;
@@ -5228,7 +5234,7 @@ async function removeEquipe(roleKey) {
       const nouvelleEquipe = { ...data.equipe };
       delete nouvelleEquipe[roleKey];
 
-      tx.update(hospiRef, { equipe: nouvelleEquipe });
+tx.update(hospiRef, { equipe: nouvelleEquipe, equipeUids: getUidsEquipe(nouvelleEquipe) });
       equipeApresSuppression = nouvelleEquipe;
     } else {
       equipeApresSuppression = data.equipe || {};
@@ -6635,6 +6641,24 @@ document.getElementById("btnContinuerVerificationQR")?.addEventListener("click",
   document.getElementById("modalVerificationIdentiteQR").style.display = "none";
   document.getElementById("modalVerificationIdentite").style.display = "flex";
 });
+async function marquerExamenLu(index) {
+  try {
+    const ex = window.examensCourants?.[index];
+    const monUid = auth.currentUser?.uid;
+    if (!ex || !ex.realise || !monUid || !hospitalisationId) return;
+    if (Array.isArray(ex.luPar) && ex.luPar.includes(monUid)) return;
+    const ref = doc(db, "hospitalisations", hospitalisationId);
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      const exs = snap.data().examens || [];
+      const e = exs[index];
+      if (!e || !e.realise || e.type !== ex.type) return;   // sécurité si la liste a changé
+      exs[index] = { ...e, luPar: [...new Set([...(e.luPar || []), monUid])] };
+      tx.update(ref, { examens: exs });
+    });
+    ex.luPar = [...(ex.luPar || []), monUid];
+  } catch (e) { console.warn("marquerExamenLu :", e); }
+}
 </script>
 
 </body>

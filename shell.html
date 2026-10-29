@@ -2016,26 +2016,61 @@ button,input{font-family:inherit}
 @media (max-height:520px){#welcome-avatar{display:none !important}}
 
 /* =====================================================
-   WIDGETS D'ACCUEIL : calendrier (gauche) + raccourcis intelligents (droite)
-   Visibles uniquement quand l'écran est assez large (≥ 1100 px).
+   WIDGETS D'ACCUEIL + RECHERCHE GÉNÉRALE
+   ≥ 1100 px : colonnes latérales  |  < 1100 px : tiroirs (onglets sur les bords)
    ===================================================== */
-.hw{display:none;position:absolute;top:16px;bottom:16px;width:var(--wside,260px);z-index:2;flex-direction:column;gap:12px;box-sizing:border-box;min-height:0}
-.hw[hidden]{display:none !important}
-.hw-card[hidden]{display:none !important}
+.hw{position:absolute;top:16px;bottom:16px;width:var(--wside,280px);z-index:2;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;min-height:0}
+.hw[hidden],.hw-card[hidden],.hw-tab[hidden]{display:none !important}
 #hw-left{left:16px}
-#hw-right{right:16px}
+#hw-right{right:16px;overflow-y:auto;overflow-x:hidden;padding:2px;scrollbar-width:thin}
+.hw-tab,.hw-backdrop{display:none}
+
 @media (min-width:1100px){
-  #home{--wside:clamp(240px,22vw,320px)}
-  .hw{display:flex}
+  #home{--wside:clamp(240px,22vw,340px)}
   #home-center{padding-left:calc(var(--wside) + 36px);padding-right:calc(var(--wside) + 36px)}
   #home-messages-container{max-width:min(700px,calc(100% - 2 * (var(--wside) + 36px)))}
 }
+#home-center{padding-top:64px}
+
+@media (max-width:1099.98px){
+  .hw{top:0;bottom:0;width:min(340px,88vw);padding:14px;background:#f4f7fa;box-shadow:0 0 40px rgba(17,35,54,.28);z-index:30;overflow-y:auto;visibility:hidden;transition:transform .28s cubic-bezier(.22,1,.36,1),visibility .28s}
+  #hw-left{left:0;transform:translateX(-105%);border-radius:0 18px 18px 0}
+  #hw-right{right:0;transform:translateX(105%);border-radius:18px 0 0 18px}
+  .hw.open{transform:none;visibility:visible}
+  .hw-backdrop{display:block;position:absolute;inset:0;z-index:25;background:rgba(10,25,41,.35);opacity:0;pointer-events:none;transition:opacity .25s}
+  .hw-backdrop.show{opacity:1;pointer-events:auto}
+  .hw-tab{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:34px;height:96px;padding:0;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--primary-d);box-shadow:var(--shadow-sm);cursor:pointer}
+  #hwTabL{left:0;border-left:0;border-radius:0 14px 14px 0}
+  #hwTabR{right:0;border-right:0;border-radius:14px 0 0 14px}
+  .hw-tab .i{width:20px;height:20px}
+  .hw-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+  .hw-tab .bdg{min-width:18px;padding:3px 5px;border-radius:99px;background:var(--late);color:#fff;font:700 11px/1 var(--font);text-align:center}
+}
+/* adaptation à la hauteur */
+@media (max-height:780px){.cw-week{display:none}.cw-day{font-size:42px}}
+@media (max-height:620px){.cw-sum{display:none}.hw-card{padding:10px}.hw{gap:8px}}
+
 .hw-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-sm);padding:14px;box-sizing:border-box;min-height:0;flex:none}
-.hw-grow{flex:1 1 auto;display:flex;flex-direction:column}
+.hw-grow{flex:1 1 auto;display:flex;flex-direction:column;min-height:170px}
 .hw-title{margin:0 0 10px;display:flex;align-items:center;gap:8px;font:700 12px/1 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .hw-count{margin-left:auto;min-width:20px;padding:3px 7px;border-radius:99px;background:var(--primary-soft);color:var(--primary-d);font:700 11px/1 var(--font);text-align:center;letter-spacing:0}
+.hw-count.red{margin-left:0;background:var(--late-soft);color:var(--late)}
+.hw-count:empty{display:none}
 .hw-live{width:8px;height:8px;border-radius:50%;background:#6b3fc4;box-shadow:0 0 0 0 rgba(107,63,196,.5);animation:hwPulse 1.8s infinite}
 @keyframes hwPulse{70%{box-shadow:0 0 0 7px rgba(107,63,196,0)}100%{box-shadow:0 0 0 0 rgba(107,63,196,0)}}
+
+/* chargement (squelettes) et erreurs */
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#eef2f6 25%,#f7f9fb 37%,#eef2f6 63%);background-size:400% 100%;animation:skSh 1.4s ease infinite}
+@keyframes skSh{0%{background-position:100% 0}100%{background-position:0 0}}
+.sk-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.sk-av{flex:none;width:36px;height:36px;border-radius:50%}
+.sk-bar{flex:none;width:4px;height:34px;border-radius:4px}
+.sk-tx{flex:1;display:flex;flex-direction:column;gap:7px}
+.sk-l1{height:12px;width:62%}.sk-l2{height:10px;width:40%}
+.sk-btn{height:44px;border-radius:12px;margin-bottom:6px}
+.hw-err{padding:6px 2px;text-align:center}
+.hw-err p{margin:0 0 6px;font:500 13.5px/1.4 var(--font);color:var(--muted)}
+.hw-err .hw-more{display:inline-block;margin:0;padding:8px 14px;border:1px solid var(--line)}
 
 /* --- Calendrier --- */
 .cw-head{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"dow dow" "day month" "sum sum";column-gap:12px;align-items:end;width:100%;cursor:pointer;border-radius:12px}
@@ -2051,7 +2086,7 @@ button,input{font-family:inherit}
 .cw-wd .dot{width:5px;height:5px;border-radius:50%;background:transparent}
 .cw-wd.has .dot{background:var(--primary)}
 .cw-wd.today.has .dot{background:var(--late)}
-.cw-list-card{flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden}
+.cw-list-card{flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;min-height:120px}
 .cw-list{flex:1;min-height:0;overflow-y:auto;margin:0 -6px;padding:0 6px}
 .cw-dayhd{position:sticky;top:0;z-index:1;margin:0;padding:8px 0 5px;background:#fff;font:700 12px/1 var(--font);color:var(--late);text-transform:capitalize}
 .cw-dayhd:not(.today){color:var(--muted)}
@@ -2065,29 +2100,65 @@ button,input{font-family:inherit}
 .cw-ev.now b::after{content:"En cours";margin-left:8px;padding:2px 6px;border-radius:99px;background:var(--c);color:#fff;font:700 10px/1 var(--font);vertical-align:2px}
 .cw-empty,.hw-empty{margin:6px 0 2px;font:500 13.5px/1.4 var(--font);color:var(--muted)}
 
-/* --- Raccourcis --- */
-.hw-items{display:flex;flex-direction:column;gap:4px;min-height:0;overflow-y:auto;margin:0 -6px;padding:0 6px}
+/* --- Raccourcis / patients --- */
+.hw-items{display:flex;flex-direction:column;gap:4px;min-height:0;flex:1;overflow-y:auto;margin:0 -6px;padding:0 6px}
 .hw-item{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:12px;cursor:pointer;border:1px solid transparent}
 @media (hover:hover){.hw-item:hover{background:var(--primary-soft);border-color:#cfe5f2}}
 .hw-item:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:-1px}
-.hw-av{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary-d);font:700 13px/1 var(--font)}
+.hw-av{position:relative;flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary-d);font:700 13px/1 var(--font)}
 .hw-av.cons{background:#ece5fb;color:#6b3fc4}
 .hw-av .i{width:18px;height:18px}
+.hw-av .pip{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;background:var(--late);border:2px solid #fff}
 .hw-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .hw-tx b{font:600 14px/1.2 var(--font);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hw-tx small{font:500 12.5px/1.2 var(--font);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hw-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.tg{display:inline-flex;align-items:center;padding:3px 7px;border-radius:99px;font:700 11px/1 var(--font);white-space:nowrap}
+.tg.red{background:var(--late-soft);color:var(--late)}
+.tg.amber{background:#ffefc7;color:#a35a00}
+.tg.green{background:var(--ok-soft);color:var(--ok)}
+.tg.blue{background:var(--primary-soft);color:var(--primary-d)}
 .hw-go{flex:none;width:16px;height:16px;color:var(--muted);transform:rotate(-90deg)}
 .hw-more{all:unset;box-sizing:border-box;display:block;margin-top:6px;padding:8px;border-radius:10px;text-align:center;cursor:pointer;font:600 13px/1 var(--font);color:var(--primary-d)}
 @media (hover:hover){.hw-more:hover{background:var(--primary-soft)}}
 .hw-quick{display:flex;flex-direction:column;gap:6px}
 .hw-qbtn{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;font:600 14px/1 var(--font);color:var(--ink);transition:background .15s,border-color .15s}
-.hw-qbtn .i{width:18px;height:18px;color:var(--primary)}
+.hw-qbtn .i{width:18px;height:18px;color:var(--primary);flex:none}
 .hw-qbtn .badge{margin-left:auto;padding:4px 8px;border-radius:99px;background:#ffefc7;color:#a35a00;font:700 12px/1 var(--font)}
-@media (hover:hover){.hw-qbtn:hover{background:var(--primary-soft);border-color:#b5d6ea}}
 .hw-qbtn.ctx{min-height:52px;background:var(--primary-soft);border-color:#b5d6ea}
-.hw-qbtn .hw-tx{gap:3px}
+@media (hover:hover){.hw-qbtn:hover{background:var(--primary-soft);border-color:#b5d6ea}}
 .hw-qbtn:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:1px}
-@media (prefers-reduced-motion:reduce){.hw-live{animation:none}}
+
+/* --- Barre de recherche (accueil) --- */
+.gs-bar{all:unset;box-sizing:border-box;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:10px;width:min(520px,calc(100% - 2 * (var(--wside,0px) + 36px)));min-width:240px;max-width:calc(100% - 24px);height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow-sm);color:var(--muted);cursor:text;font:500 15px/1 var(--font)}
+.gs-bar .i{width:18px;height:18px;flex:none;color:var(--primary)}
+.gs-bar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-bar:hover{border-color:#b5d6ea}
+.gs-bar:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+kbd.gs-k{padding:4px 7px;border-radius:7px;border:1px solid var(--line);background:var(--field);font:600 11px/1 var(--font);color:var(--muted)}
+@media (hover:none){kbd.gs-k{display:none}}
+
+/* --- Palette de recherche --- */
+.gs-overlay{position:fixed;inset:0;z-index:25000;display:none;align-items:flex-start;justify-content:center;padding:max(56px,9vh) 12px 12px;background:rgba(10,25,41,.5);backdrop-filter:blur(5px)}
+.gs-overlay.open{display:flex}
+.gs-panel{width:min(660px,100%);max-height:min(600px,calc(100dvh - 80px));display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.35);overflow:hidden}
+.gs-inwrap{display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
+.gs-inwrap .i{width:20px;height:20px;color:var(--primary);flex:none}
+#gsInput{all:unset;box-sizing:border-box;flex:1;min-width:0;min-height:58px;font:500 17px/1.2 var(--font);color:var(--ink)}
+#gsInput::placeholder{color:var(--muted)}
+.gs-res{overflow-y:auto;padding:4px 8px 10px;min-height:60px}
+.gs-grp{margin:12px 8px 4px;font:700 11px/1 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gs-it{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border-radius:12px;cursor:pointer}
+.gs-it[aria-selected="true"]{background:var(--primary-soft)}
+.gs-ic{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--field);color:var(--primary-d)}
+.gs-ic .i{width:18px;height:18px}
+.gs-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.gs-tx b{font:600 14.5px/1.2 var(--font);color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-tx small{font:500 12.5px/1.2 var(--font);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-msg{padding:18px 12px;text-align:center;font:500 14px/1.4 var(--font);color:var(--muted)}
+.gs-foot{display:flex;gap:16px;padding:9px 16px;border-top:1px solid var(--line-soft);background:var(--field);font:500 12px/1 var(--font);color:var(--muted)}
+@media (hover:none){.gs-foot{display:none}}
+@media (prefers-reduced-motion:reduce){.sk,.hw-live{animation:none}.hw,.hw-backdrop{transition:none}}
 </style>
 </head>
 <body>
@@ -2124,6 +2195,8 @@ button,input{font-family:inherit}
   <symbol id="i-stats" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
   <symbol id="i-requests" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/> <path d="M8 9h8M8 13h5"/></symbol>
   <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18V5a1 1 0 0 1 1-1h4a4 4 0 0 1 4 4 4 4 0 0 1 4-4h4a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-4a4 4 0 0 0-4 2 4 4 0 0 0-4-2H4a1 1 0 0 1-1-1Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-affectations" viewBox="0 0 24 24"><path d="M21 10.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="17" cy="15.5" r="2.5"/><path d="M12.5 22c.4-2.2 2-3.5 4.5-3.5s4.1 1.3 4.5 3.5"/></symbol>
 
 </svg>
@@ -2147,6 +2220,7 @@ button,input{font-family:inherit}
         onclick="openTab('Tableau','regulation.html')">
     <span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg></span><span class="btn-label">Tableau</span>
 </button>
+<button class="btn-id" id="btnSearch" title="Recherche (Ctrl K)" aria-label="Recherche"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span><span class="btn-label">Recherche</span></button>
 <div class="dropdown" id="dropdownOutils">
   <button class="btn-id" id="btnOutils" title="Outils" aria-label="Outils"><span class="btn-ico"><svg class="i" aria-hidden="true"><use href="#i-briefcase"/></svg></span><span class="btn-label">Outils</span><svg class="i sm" aria-hidden="true"><use href="#i-chevron"/></svg></button>
 
@@ -2289,36 +2363,52 @@ button,input{font-family:inherit}
 
 <div id="content">
  <div id="home">
+<!-- ===== RECHERCHE GÉNÉRALE (bouton de l'accueil) ===== -->
+<button type="button" class="gs-bar" id="gsBar" aria-label="Recherche générale (Ctrl K)">
+  <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+  <span>Rechercher un patient, un module, un rendez-vous…</span>
+  <kbd class="gs-k">Ctrl K</kbd>
+</button>
+
+<!-- onglets des tiroirs (écrans < 1100 px) -->
+<button type="button" class="hw-tab" id="hwTabL" aria-label="Agenda" aria-expanded="false" hidden>
+  <svg class="i" aria-hidden="true"><use href="#i-calendar-clock"/></svg><span class="bdg" id="hwBdgL" hidden></span>
+</button>
+<button type="button" class="hw-tab" id="hwTabR" aria-label="Raccourcis et patients" aria-expanded="false" hidden>
+  <svg class="i" aria-hidden="true"><use href="#i-user-check"/></svg><span class="bdg" id="hwBdgR" hidden></span>
+</button>
+<div class="hw-backdrop" id="hwBackdrop"></div>
+
 <!-- ===== WIDGET CALENDRIER (gauche) ===== -->
-<aside id="hw-left" class="hw" aria-label="Calendrier" hidden>
+<aside id="hw-left" class="hw" aria-label="Calendrier">
   <section class="hw-card" aria-label="Aujourd'hui">
     <button type="button" class="cw-head" id="cwHead" title="Ouvrir mon calendrier">
       <span class="cw-dow" id="cwDow"></span>
       <span class="cw-day" id="cwDay"></span>
       <span class="cw-month" id="cwMonth"></span>
-      <span class="cw-sum" id="cwSum"></span>
+      <span class="cw-sum" id="cwSum"><span class="sk" style="height:12px;width:150px"></span></span>
     </button>
     <div class="cw-week" id="cwWeek"></div>
   </section>
   <section class="hw-card cw-list-card" aria-label="Événements à venir">
     <h3 class="hw-title">À venir</h3>
-    <div class="cw-list" id="cwList"></div>
+    <div class="cw-list" id="cwList" aria-live="polite"><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div>
   </section>
 </aside>
 
 <!-- ===== RACCOURCIS INTELLIGENTS (droite) ===== -->
-<aside id="hw-right" class="hw" aria-label="Raccourcis" hidden>
+<aside id="hw-right" class="hw" aria-label="Raccourcis">
   <section class="hw-card" id="hwConsCard" hidden>
     <h3 class="hw-title"><span class="hw-live"></span>Consultations en cours</h3>
     <div class="hw-items" id="hwCons"></div>
   </section>
-  <section class="hw-card hw-grow" id="hwPatCard" hidden>
-    <h3 class="hw-title">Mes patients <span class="hw-count" id="hwPatCount"></span></h3>
-    <div class="hw-items" id="hwPat"></div>
+  <section class="hw-card hw-grow" id="hwPatCard">
+    <h3 class="hw-title">Mes patients <span class="hw-count red" id="hwPatAttn" title="Patients avec des résultats non ouverts"></span><span class="hw-count" id="hwPatCount"></span></h3>
+    <div class="hw-items" id="hwPat" aria-live="polite"><div class="sk-row"><span class="sk sk-av"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-av"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-av"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div>
   </section>
-  <section class="hw-card" id="hwQuickCard" hidden>
+  <section class="hw-card" id="hwQuickCard">
     <h3 class="hw-title">Accès rapide</h3>
-    <div class="hw-quick" id="hwQuick"></div>
+    <div class="hw-quick" id="hwQuick"><span class="sk sk-btn"></span><span class="sk sk-btn"></span></div>
   </section>
 </aside>
 
@@ -2447,6 +2537,19 @@ button,input{font-family:inherit}
     </div>
   </div>
 </div>
+<!-- ===== PALETTE DE RECHERCHE GÉNÉRALE ===== -->
+<div id="gsOverlay" class="gs-overlay" role="dialog" aria-modal="true" aria-label="Recherche générale">
+  <div class="gs-panel">
+    <div class="gs-inwrap">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="gsInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Rechercher un patient, un module, un rendez-vous…" aria-controls="gsRes">
+      <kbd class="gs-k">Échap</kbd>
+    </div>
+    <div class="gs-res" id="gsRes" role="listbox"></div>
+    <div class="gs-foot"><span>↑ ↓ naviguer</span><span>↵ ouvrir</span><span>Échap fermer</span></div>
+  </div>
+</div>
+
 <div id="notification-container" style="position:fixed; top:12px; right:12px; z-index:99999; display:flex; flex-direction:column; gap:10px; align-items:flex-end;"></div>
 <script>
 let tabs = [];
@@ -4439,39 +4542,59 @@ surveillerMessagesNonLus();
 </script>
 <script type="module">
 /* =====================================================
-   WIDGETS D'ACCUEIL
+   WIDGETS D'ACCUEIL + RECHERCHE GÉNÉRALE
    - Gauche : calendrier + prochains événements (rdv-urgences + affectations)
-   - Droite : consultations en cours, mes patients (équipe), accès rapide
+   - Droite : consultations en cours, mes patients (avec état), accès rapide
+   - Recherche générale (Ctrl K) : patients, modules, agenda, consultations
    Réutilise l'app Firebase déjà initialisée plus haut (même version = même instance).
    ===================================================== */
 import { getApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, limit, onSnapshot }
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, limit, onSnapshot, updateDoc }
   from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+/* Tant que des hospitalisations n'ont pas encore le champ `equipeUids` (créées avant la modif de fiche.html),
+   on les retrouve par l'ancienne méthode et on les migre au passage. Mettre false une fois tout migré. */
+const SCAN_LEGACY = true;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sans = s => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const iso = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
 const tm = h => { const [a, b] = String(h || "0:0").split(":"); return (+a || 0) * 60 + (+b || 0); };
 const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
 const ico = (id, cls = "i") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+const pl = (n, s, p) => n > 1 ? p : s;
 const DUR = 15, JOURS = 7;
 const COUL = { pris: "#0b6fa4", attente: "#a35a00", encours: "#6b3fc4", cs: "#16784a", autre: "#586a7e" };
 const STAT = { pris: "Réservé", attente: "En salle d'attente", encours: "En consultation" };
-const ROLES = {
-  medecinReferent: "Médecin référent",
-  infirmierReferent: "Infirmier(ère) référent(e)",
-  interneReferent: "Interne référent(e)",
-  externeReferent: "Externe référent(e)"
-};
+const ROLES = { medecinReferent: "Médecin", infirmierReferent: "Infirmier(ère)", interneReferent: "Interne", externeReferent: "Externe" };
 
 let db, uid = null, pages = {};
-let rdvs = [], affs = [], consEnCours = [], mesPatients = [], jourAbonne = "";
-let unsubRdv = null, unsubAff = null, unsubCons = null;
-const cachePatients = new Map();
+let rdvs = [], affs = [], consEnCours = [], mesPatients = [];
+const etat = { rdv: "load", aff: "load", cons: "load", pat: "load" };   // load | ok | err
+let jourAbonne = "", unsubRdv = null, unsubAff = null, unsubCons = null, unsubEq = null;
+let hospisEq = new Map(), hospisAnciens = new Map(), patientsParHospi = new Map(), cleResolue = "", seqResol = 0, timerPlan = 0;
+const migres = new Set(), cachePatients = new Map();
 
 const ouvrir = (titre, url) => { if (typeof window.openTab === "function") window.openTab(titre, url); };
 const ouvrirCalendrier = () => ouvrir("Mon calendrier", "Calendrier.html");
+const skRows = (n, ev) => Array.from({ length: n }, () => `<div class="sk-row"><span class="sk ${ev ? "sk-bar" : "sk-av"}"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div>`).join("");
+const erreur = (msg, act) => `<div class="hw-err"><p>${esc(msg)}</p><button type="button" class="hw-more" data-retry="${act}">Réessayer</button></div>`;
+
+/* ---------- Tiroirs (petits écrans) ---------- */
+const tiroirs = () => [["hw-left", "hwTabL"], ["hw-right", "hwTabR"]];
+function fermerTiroirs() {
+  tiroirs().forEach(([a, t]) => { $(a).classList.remove("open"); $(t).setAttribute("aria-expanded", "false"); });
+  $("hwBackdrop").classList.remove("show");
+}
+function basculerTiroir(id) {
+  const el = $(id), ouvert = !el.classList.contains("open");
+  fermerTiroirs();
+  if (ouvert) { el.classList.add("open"); $("hwBackdrop").classList.add("show"); $(id === "hw-left" ? "hwTabL" : "hwTabR").setAttribute("aria-expanded", "true"); }
+}
+const modeTiroir = () => window.matchMedia("(max-width:1099.98px)").matches;
+const pastille = (id, n) => { const b = $(id); b.textContent = n > 99 ? "99+" : n; b.hidden = !n; };
 
 /* ---------- CALENDRIER ---------- */
 const applique = (a, d) => a.date ? a.date === d
@@ -4480,12 +4603,11 @@ const applique = (a, d) => a.date ? a.date === d
 function evenements() {
   const now = new Date(), nm = now.getHours() * 60 + now.getMinutes(), auj = iso(now), out = [];
   const jours = Array.from({ length: JOURS }, (_, i) => { const d = new Date(now); d.setDate(d.getDate() + i); return iso(d); });
-
   rdvs.forEach(r => {
     if (!STAT[r.statut] || !jours.includes(r.date)) return;
-    if (r.medecinId && r.medecinId !== uid) return;                 // même règle que Calendrier.html
+    if (r.medecinId && r.medecinId !== uid) return;
     const deb = tm(r.heure), fin = deb + (r.duree || DUR);
-    if (r.date === auj && fin < nm && r.statut === "pris") return;  // créneau réservé déjà passé
+    if (r.date === auj && fin < nm && r.statut === "pris") return;
     const p = r.patient || {};
     out.push({
       date: r.date, deb, fin, couleur: COUL[r.statut], maintenant: r.date === auj && deb <= nm && nm < fin,
@@ -4493,7 +4615,6 @@ function evenements() {
       detail: [hhmm(deb), STAT[r.statut], r.motif, !r.medecinId ? "à prendre en charge" : ""].filter(Boolean).join(" · ")
     });
   });
-
   affs.forEach(a => jours.forEach(k => {
     if (!applique(a, k)) return;
     const deb = tm(a.start), fin = tm(a.end);
@@ -4516,15 +4637,12 @@ function libelleJour(k) {
 }
 
 function rendreCalendrier() {
-  const now = new Date(), auj = iso(now), evs = evenements();
+  const now = new Date(), auj = iso(now);
   $("cwDow").textContent = now.toLocaleDateString("fr-FR", { weekday: "long" });
   $("cwDay").textContent = now.getDate();
   $("cwMonth").textContent = now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-
-  const nAuj = evs.filter(e => e.date === auj).length;
-  $("cwSum").textContent = nAuj ? `${nAuj} événement${nAuj > 1 ? "s" : ""} à venir aujourd'hui` : "Rien d'autre de prévu aujourd'hui";
-
-  // bandeau de la semaine (lundi → dimanche)
+  const charge = etat.rdv === "load" || etat.aff === "load", err = etat.rdv === "err" || etat.aff === "err";
+  const evs = charge || err ? [] : evenements();
   const lundi = new Date(now); lundi.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   $("cwWeek").innerHTML = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(lundi); d.setDate(lundi.getDate() + i); const k = iso(d);
@@ -4532,7 +4650,12 @@ function rendreCalendrier() {
       + `${d.toLocaleDateString("fr-FR", { weekday: "narrow" })}<i>${d.getDate()}</i><span class="dot"></span></div>`;
   }).join("");
 
-  // liste groupée par jour
+  if (err) { $("cwSum").textContent = "Agenda indisponible"; $("cwList").innerHTML = erreur("Impossible de charger votre agenda.", "agenda"); pastille("hwBdgL", 0); return; }
+  if (charge) { $("cwSum").innerHTML = '<span class="sk" style="height:12px;width:150px"></span>'; $("cwList").innerHTML = skRows(4, true); return; }
+
+  const nAuj = evs.filter(e => e.date === auj).length;
+  $("cwSum").textContent = nAuj ? `${nAuj} ${pl(nAuj, "événement", "événements")} à venir aujourd'hui` : "Rien d'autre de prévu aujourd'hui";
+  pastille("hwBdgL", nAuj);
   if (!evs.length) { $("cwList").innerHTML = `<p class="cw-empty">Rien de prévu dans les ${JOURS} prochains jours.</p>`; return; }
   let h = "", dernier = "";
   evs.slice(0, 40).forEach(e => {
@@ -4544,18 +4667,21 @@ function rendreCalendrier() {
 }
 
 function ecouterCalendrier() {
-  unsubRdv && unsubRdv(); unsubAff && unsubAff();
+  unsubRdv && unsubRdv(); unsubAff && unsubAff(); unsubRdv = unsubAff = null;
   const a = new Date(), b = new Date(); b.setDate(b.getDate() + JOURS - 1);
   jourAbonne = iso(a);
+  etat.rdv = pages.Calendrier ? (etat.rdv === "err" ? "load" : etat.rdv) : "ok";
+  if (etat.aff === "err") etat.aff = "load";
+  rendreCalendrier();
   if (pages.Calendrier) unsubRdv = onSnapshot(query(collection(db, "rdv-urgences"), where("date", ">=", iso(a)), where("date", "<=", iso(b))),
-    s => { rdvs = s.docs.map(d => ({ id: d.id, ...d.data() })); rendreCalendrier(); rendreRaccourcis(); },
-    e => console.warn("Widget calendrier (rdv) :", e));
+    s => { rdvs = s.docs.map(d => ({ id: d.id, ...d.data() })); etat.rdv = "ok"; rendreCalendrier(); rendreRaccourcis(); },
+    e => { console.warn("Widget calendrier (rdv) :", e); etat.rdv = "err"; rendreCalendrier(); });
   unsubAff = onSnapshot(query(collection(db, "affectations"), where("uid", "==", uid)),
-    s => { affs = s.docs.map(d => ({ id: d.id, ...d.data() })); rendreCalendrier(); rendreRaccourcis(); },
-    e => console.warn("Widget calendrier (affectations) :", e));
+    s => { affs = s.docs.map(d => ({ id: d.id, ...d.data() })); etat.aff = "ok"; rendreCalendrier(); rendreRaccourcis(); },
+    e => { console.warn("Widget calendrier (affectations) :", e); etat.aff = "err"; rendreCalendrier(); });
 }
 
-/* ---------- RACCOURCIS ---------- */
+/* ---------- CONSULTATIONS EN COURS ---------- */
 async function patientDe(id) {
   if (!id) return null;
   if (cachePatients.has(id)) return cachePatients.get(id);
@@ -4563,7 +4689,7 @@ async function patientDe(id) {
   catch (e) { return null; }
 }
 const nomPatient = p => p ? `${p.prenom || ""} ${(p.nom || "").toUpperCase()}`.trim() : "Patient";
-const initiales = p => ((p?.prenom || "?")[0] + (p?.nom || "")[0] || "").toUpperCase();
+const initiales = p => (((p?.prenom || "?")[0] || "") + ((p?.nom || "")[0] || "")).toUpperCase();
 
 function ecouterConsultations() {
   unsubCons && unsubCons();
@@ -4571,86 +4697,323 @@ function ecouterConsultations() {
     async s => {
       const liste = s.docs.map(d => ({ id: d.id, ...d.data() }));
       const pats = await Promise.all(liste.map(c => patientDe(c.patientId)));
-      consEnCours = liste.map((c, i) => ({ ...c, _p: pats[i] }))
-        .sort((x, y) => String(y.heure || "").localeCompare(String(x.heure || "")));
-      rendreRaccourcis();
+      consEnCours = liste.map((c, i) => ({ ...c, _p: pats[i] })).sort((x, y) => String(y.heure || "").localeCompare(String(x.heure || "")));
+      etat.cons = "ok"; rendreRaccourcis();
     },
-    e => console.warn("Widget consultations :", e));
+    e => { console.warn("Widget consultations :", e); etat.cons = "err"; rendreRaccourcis(); });
 }
 
-async function chargerMesPatients() {
-  if (!pages.fiche || !uid) return;
-  const hospis = new Map();
+/* ---------- MES PATIENTS (équipe) + ÉTAT ---------- */
+const uidsDe = eq => Object.values(eq || {}).map(m => m && m.id).filter(Boolean);
+const rolesDe = h => Object.keys(ROLES).filter(r => h.equipe?.[r]?.id === uid);
+
+function ecouterEquipe() {
+  unsubEq && unsubEq(); unsubEq = null;
+  if (etat.pat === "err") etat.pat = "load";
+  if (!pages.fichepatient) { etat.pat = "ok"; mesPatients = []; rendreRaccourcis(); return; }
+  unsubEq = onSnapshot(query(collection(db, "hospitalisations"), where("equipeUids", "array-contains", uid), limit(300)),
+    s => { hospisEq = new Map(s.docs.map(d => [d.id, { id: d.id, ...d.data() }])); planifier(); },
+    e => { console.warn("Widget patients (équipe) :", e); etat.pat = "err"; rendreRaccourcis(); });
+  if (SCAN_LEGACY) scannerAnciens();
+}
+
+async function scannerAnciens() {
+  if (!uid || !pages.fichepatient) return;
+  const trouves = new Map();
   await Promise.all(Object.keys(ROLES).map(async role => {
     try {
       const s = await getDocs(query(collection(db, "hospitalisations"), where(`equipe.${role}.id`, "==", uid), limit(300)));
-      s.forEach(d => { const e = hospis.get(d.id) || []; e.push(role); hospis.set(d.id, e); });
-    } catch (e) { console.warn("Widget patients (" + role + ") :", e); }
+      s.forEach(d => trouves.set(d.id, { id: d.id, ...d.data() }));
+    } catch (e) { console.warn("Widget patients (ancien scan " + role + ") :", e); }
   }));
-  const ids = [...hospis.keys()], res = [];
-  for (let i = 0; i < ids.length; i += 30) {                       // une hospitalisation encore active = pointée par le patient
-    try {
-      const s = await getDocs(query(collection(db, "patients"), where("hospitalisationActiveId", "in", ids.slice(i, i + 30))));
-      s.forEach(d => res.push({ id: d.id, ...d.data(), _roles: hospis.get(d.data().hospitalisationActiveId) || [] }));
-    } catch (e) { console.warn("Widget patients :", e); }
-  }
-  res.forEach(p => cachePatients.set(p.id, p));
-  mesPatients = res.sort((a, b) => nomPatient(a).localeCompare(nomPatient(b), "fr"));
-  rendreRaccourcis();
+  hospisAnciens = trouves; cleResolue = ""; planifier();
 }
 
-const MAX_PAT = 6;
+function planifier() { clearTimeout(timerPlan); timerPlan = setTimeout(resoudre, 250); }
+
+function construire(p, h) {
+  const exs = Array.isArray(h.examens) ? h.examens : [];
+  return {
+    id: p.id, nom: p.nom || "", prenom: p.prenom || "", pdc: p.pdcStatut || "", hospiId: h.id, roles: rolesDe(h),
+    // « non ouvert » = résultat rendu avec un tableau luPar qui ne contient pas mon uid (les anciens examens sans luPar sont ignorés)
+    nonLus: exs.filter(e => e && e.realise && Array.isArray(e.luPar) && !e.luPar.includes(uid)).length,
+    aFaire: exs.filter(e => e && !e.realise).length,
+    sortie: !!h.hospitalisationTerminee
+  };
+}
+
+async function resoudre() {
+  if (!uid) return;
+  const ma = ++seqResol;
+  const tous = new Map([...hospisAnciens, ...hospisEq]);
+  const ids = [...tous.keys()].sort(), cle = ids.join("|");
+  if (cle !== cleResolue) {
+    const trouves = new Map();
+    for (let i = 0; i < ids.length; i += 30) {
+      try {
+        const s = await getDocs(query(collection(db, "patients"), where("hospitalisationActiveId", "in", ids.slice(i, i + 30))));
+        s.forEach(d => { const p = { id: d.id, ...d.data() }; trouves.set(p.hospitalisationActiveId, p); cachePatients.set(p.id, p); });
+      } catch (e) { console.warn("Widget patients :", e); if (ma === seqResol) { etat.pat = "err"; rendreRaccourcis(); } return; }
+    }
+    if (ma !== seqResol) return;
+    patientsParHospi = trouves; cleResolue = cle;
+  }
+  mesPatients = [...patientsParHospi.entries()].map(([hid, p]) => tous.get(hid) && construire(p, tous.get(hid))).filter(Boolean)
+    .sort((a, b) => (b.nonLus > 0) - (a.nonLus > 0) || `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, "fr"));
+  etat.pat = "ok"; rendreRaccourcis();
+  // migration paresseuse : on ajoute equipeUids aux anciennes hospitalisations encore actives
+  patientsParHospi.forEach((p, hid) => {
+    if (hospisEq.has(hid) || migres.has(hid) || !hospisAnciens.has(hid)) return;
+    migres.add(hid);
+    updateDoc(doc(db, "hospitalisations", hid), { equipeUids: uidsDe(hospisAnciens.get(hid).equipe) }).catch(() => {});
+  });
+}
+
+/* ---------- RACCOURCIS (droite) ---------- */
 function rendreRaccourcis() {
   if (!uid) return;
-  // consultations en cours
+  // consultations
   const cc = $("hwConsCard");
-  cc.hidden = !(pages.Calendrier && consEnCours.length);
+  cc.hidden = !(pages.Calendrier && etat.cons === "ok" && consEnCours.length);
   $("hwCons").innerHTML = consEnCours.map(c => `<button type="button" class="hw-item" data-title="${esc("Consultation " + (c._p?.nom || "") + " " + (c._p?.prenom || ""))}" data-url="ficheconsultation.html?id=${encodeURIComponent(c.id)}">`
     + `<span class="hw-av cons">${ico("i-consultation")}</span><span class="hw-tx"><b>${esc(nomPatient(c._p))}</b>`
     + `<small>${esc(["Depuis " + (c.heure || "—"), c.motif].filter(Boolean).join(" · "))}</small></span>${ico("i-chevron", "i hw-go")}</button>`).join("");
 
   // mes patients
-  const pc = $("hwPatCard");
-  pc.hidden = !pages.fiche;
-  $("hwPatCount").textContent = mesPatients.length || "";
-  $("hwPat").innerHTML = mesPatients.length
-    ? mesPatients.slice(0, MAX_PAT).map(p => `<button type="button" class="hw-item" data-title="${esc("Fiche Urgences " + (p.prenom || "") + " " + (p.nom || ""))}" data-url="fiche.html?id=${encodeURIComponent(p.id)}">`
-      + `<span class="hw-av">${esc(initiales(p))}</span><span class="hw-tx"><b>${esc(nomPatient(p))}</b>`
-      + `<small>${esc((p._roles || []).map(r => ROLES[r]).join(" · "))}</small></span>${ico("i-chevron", "i hw-go")}</button>`).join("")
-      + (mesPatients.length > MAX_PAT ? `<button type="button" class="hw-more" data-title="Patients" data-url="patients.html">Voir les ${mesPatients.length - MAX_PAT} autres</button>` : "")
-    : `<p class="hw-empty">Vous n'êtes responsables d'aucun patients</p>`;
+  $("hwPatCard").hidden = !pages.fichepatient;
+  const attn = mesPatients.filter(p => p.nonLus > 0).length;
+  $("hwPatCount").textContent = etat.pat === "ok" && mesPatients.length ? mesPatients.length : "";
+  $("hwPatAttn").textContent = etat.pat === "ok" && attn ? `${attn} à lire` : "";
+  if (etat.pat === "load") $("hwPat").innerHTML = skRows(3);
+  else if (etat.pat === "err") $("hwPat").innerHTML = erreur("Impossible de charger vos patients.", "patients");
+  else $("hwPat").innerHTML = mesPatients.length ? mesPatients.map(p => {
+    const tags = [];
+    if (p.nonLus) tags.push(`<span class="tg red">${p.nonLus} ${pl(p.nonLus, "résultat non ouvert", "résultats non ouverts")}</span>`);
+    if (p.aFaire) tags.push(`<span class="tg amber">${p.aFaire} ${pl(p.aFaire, "examen à réaliser", "examens à réaliser")}</span>`);
+    if (p.sortie) tags.push(`<span class="tg green">Sortie enregistrée</span>`);
+    const sub = [p.roles.map(r => ROLES[r]).join(" / "), p.pdc].filter(Boolean).join(" · ");
+    return `<button type="button" class="hw-item" data-title="${esc("Fiche Patient " + p.prenom + " " + p.nom)}" data-url="fichepatient.html?id=${encodeURIComponent(p.id)}">`
+      + `<span class="hw-av">${esc(initiales(p))}${p.nonLus ? '<i class="pip"></i>' : ""}</span><span class="hw-tx"><b>${esc(nomPatient(p))}</b>`
+      + (sub ? `<small>${esc(sub)}</small>` : "") + (tags.length ? `<span class="hw-tags">${tags.join("")}</span>` : "")
+      + `</span>${ico("i-chevron", "i hw-go")}</button>`;
+  }).join("") : `<p class="hw-empty">Aucun patient hospitalisé dans votre équipe.</p>`;
 
-  // accès rapide
-  const auj = iso(new Date());
+  // accès rapide (contextuel selon les affectations en cours)
+  const auj = iso(new Date()), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes();
   const attente = rdvs.filter(r => r.statut === "attente" && r.date === auj && (!r.medecinId || r.medecinId === uid)).length;
   const q = [];
-  // raccourcis contextuels : selon mes affectations en cours (poste = consultation / urgences / radiologie)
-  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
-  const postes = new Set(affs.filter(a => applique(a, auj) && tm(a.start) <= nowM && nowM < tm(a.end)).map(a => a.poste));
   const ctx = (titre, url, icone, label, sub) => q.push(`<button type="button" class="hw-qbtn ctx" data-title="${esc(titre)}" data-url="${url}">${ico(icone)}<span class="hw-tx"><b>${esc(label)}</b><small>${esc(sub)}</small></span></button>`);
-  let calendrierDejaPropose = false;
-  if (postes.has("urgences") && pages.urgences) ctx("Urgences", "urgences.html", "i-ambulance", "Urgences", "Vous êtes affecté(e) aux urgences");
-  if (postes.has("radiologie") && pages.gestionnaireradiologie) ctx("Imagerie", "gestionnaireradiologie.html", "i-scan", "Gestionnaire d'imagerie", "Vous êtes affecté(e) à l'imagerie");
-  if (postes.has("consultation")) {
-    if (pages.accueilconsultations) ctx("Accueil consultations", "accueilconsultations.html", "i-consultation", "Accueil consultations", "Vous êtes affecté(e) en consultation");
-    else if (pages.Calendrier) { ctx("Mon calendrier", "Calendrier.html", "i-calendar-clock", "Mes consultations", "Affecté(e) en consultation · calendrier"); calendrierDejaPropose = true; }
+  let calDeja = false;
+  if (etat.aff === "ok") {
+    const postes = new Set(affs.filter(a => applique(a, auj) && tm(a.start) <= nowM && nowM < tm(a.end)).map(a => a.poste));
+    if (postes.has("urgences") && pages.urgences) ctx("Urgences", "urgences.html", "i-ambulance", "Urgences", "Vous êtes affecté(e) aux urgences");
+    if (postes.has("radiologie") && pages.gestionnaireradiologie) ctx("Imagerie", "gestionnaireradiologie.html", "i-scan", "Gestionnaire d'imagerie", "Vous êtes affecté(e) à l'imagerie");
+    if (postes.has("consultation")) {
+      if (pages.accueilconsultations) ctx("Accueil consultations", "accueilconsultations.html", "i-consultation", "Accueil consultations", "Vous êtes affecté(e) en consultation");
+      else if (pages.Calendrier) { ctx("Mon calendrier", "Calendrier.html", "i-calendar-clock", "Mes consultations", "Affecté(e) en consultation · calendrier"); calDeja = true; }
+    }
   }
-  if (pages.Calendrier && !calendrierDejaPropose) q.push(`<button type="button" class="hw-qbtn" data-title="Mon calendrier" data-url="Calendrier.html">${ico("i-calendar-clock")}Mon calendrier${attente ? `<span class="badge">${attente} en attente</span>` : ""}</button>`);
+  if (pages.Calendrier && !calDeja) q.push(`<button type="button" class="hw-qbtn" data-title="Mon calendrier" data-url="Calendrier.html">${ico("i-calendar-clock")}Mon calendrier${attente ? `<span class="badge">${attente} en attente</span>` : ""}</button>`);
   if (pages.ajouterpatient) q.push(`<button type="button" class="hw-qbtn" data-title="Entrées patients" data-url="ajouterpatient.html">${ico("i-plus")}Entrée aux urgences</button>`);
   if (pages.fichepatient) q.push(`<button type="button" class="hw-qbtn" data-title="Patients" data-url="patients.html">${ico("i-users")}Rechercher un patient</button>`);
   $("hwQuick").innerHTML = q.join("");
   $("hwQuickCard").hidden = !q.length;
-  $("hw-right").hidden = cc.hidden && pc.hidden && !q.length;
+  const vide = cc.hidden && $("hwPatCard").hidden && !q.length;
+  $("hw-right").hidden = vide; $("hwTabR").hidden = vide;
+  pastille("hwBdgR", (etat.pat === "ok" ? attn : 0) + (etat.cons === "ok" ? consEnCours.length : 0));
 }
 
-/* ---------- Démarrage ---------- */
+/* ---------- RECHERCHE GÉNÉRALE ---------- */
+const RK = "gu_recents_";
+const lireRecents = () => { try { return JSON.parse(localStorage.getItem(RK + uid) || "[]"); } catch (e) { return []; } };
+function noterRecent(t, u) {
+  if (!uid || !t || !u || /^(login|index)/.test(u)) return;
+  try { localStorage.setItem(RK + uid, JSON.stringify([{ t, u }, ...lireRecents().filter(x => x.u !== u)].slice(0, 8))); } catch (e) { }
+}
+const OPEN_RE = /openTab\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/;
+const iconeDe = el => (el?.querySelector("use")?.getAttribute("href") || "#i-briefcase").slice(1);
+
+function modules() {
+  const out = [];
+  document.querySelectorAll("#menuOutils .dropdown-item").forEach(it => {
+    if (it.style.display === "none") return;
+    const sp = it.querySelector("span[onclick]"), m = sp && OPEN_RE.exec(sp.getAttribute("onclick") || "");
+    if (!m) return;
+    const c = it.cloneNode(true); c.querySelectorAll("span,svg").forEach(n => n.remove());
+    out.push({ groupe: "Modules", icone: iconeDe(it), label: c.textContent.replace(/\s+/g, " ").trim(), sub: it.dataset.desc || "", titre: m[1], url: m[2] });
+  });
+  document.querySelectorAll("#actions > button[onclick]").forEach(b => {
+    if (b.style.display === "none") return;
+    const m = OPEN_RE.exec(b.getAttribute("onclick") || ""); if (!m) return;
+    out.push({ groupe: "Modules", icone: iconeDe(b), label: b.querySelector(".btn-label")?.textContent.trim() || b.title, sub: "", titre: m[1], url: m[2] });
+  });
+  return out;
+}
+
+const gs = { items: [], sel: 0, seq: 0, timer: 0, globaux: [], charge: false, err: false, ouvert: false, retour: null };
+const ORDRE = ["Mes patients", "Consultations en cours", "Patients", "Agenda", "Récemment ouverts", "Modules"];
+
+function sourcesLocales() {
+  const L = [];
+  mesPatients.forEach(p => L.push({
+    groupe: "Mes patients", icone: "i-user-check", label: nomPatient(p), sub: [p.roles.map(r => ROLES[r]).join(" / "), p.pdc].filter(Boolean).join(" · "),
+    tag: p.nonLus ? `${p.nonLus} ${pl(p.nonLus, "résultat non ouvert", "résultats non ouverts")}` : "", tagc: "red",
+    titre: "Fiche Patient " + p.prenom + " " + p.nom, url: "fichepatient.html?id=" + encodeURIComponent(p.id), cle: sans(p.nom + " " + p.prenom)
+  }));
+  consEnCours.forEach(c => L.push({
+    groupe: "Consultations en cours", icone: "i-consultation", label: nomPatient(c._p), sub: ["Depuis " + (c.heure || "—"), c.motif].filter(Boolean).join(" · "),
+    titre: "Consultation " + (c._p?.nom || "") + " " + (c._p?.prenom || ""), url: "ficheconsultation.html?id=" + encodeURIComponent(c.id), cle: sans((c._p?.nom || "") + " " + (c._p?.prenom || "") + " consultation " + (c.motif || ""))
+  }));
+  if (etat.rdv === "ok" && etat.aff === "ok") evenements().forEach(e => L.push({
+    groupe: "Agenda", icone: "i-calendar-clock", label: e.titre, sub: `${libelleJour(e.date)} · ${e.detail}`,
+    titre: "Mon calendrier", url: "Calendrier.html", cle: sans(e.titre + " " + e.detail + " " + libelleJour(e.date))
+  }));
+  modules().forEach(m => L.push({ ...m, cle: sans(m.label + " " + m.sub) }));
+  return L;
+}
+
+function filtrer(q) {
+  const toks = sans(q).split(/\s+/).filter(Boolean);
+  if (!toks.length) {
+    const rec = lireRecents().map(r => ({ groupe: "Récemment ouverts", icone: "i-history", label: r.t, sub: "", titre: r.t, url: r.u }));
+    const urg = mesPatients.filter(p => p.nonLus).slice(0, 3).map(p => sourcesLocales().find(x => x.url.endsWith(encodeURIComponent(p.id)))).filter(Boolean);
+    return [...urg, ...rec.slice(0, 6), ...modules().slice(0, 8).map(m => ({ ...m }))];
+  }
+  const res = [];
+  sourcesLocales().forEach(it => {
+    if (!toks.every(t => it.cle.includes(t))) return;
+    const l = sans(it.label);
+    it.score = l.startsWith(toks[0]) ? 0 : l.split(/[\s-]+/).some(w => w.startsWith(toks[0])) ? 1 : 2;
+    res.push(it);
+  });
+  const cap = { "Modules": 6 };
+  const n = {};
+  return res.sort((a, b) => a.score - b.score || a.label.localeCompare(b.label, "fr"))
+    .filter(it => (n[it.groupe] = (n[it.groupe] || 0) + 1) <= (cap[it.groupe] || 6));
+}
+
+async function rechercheGlobale(q) {
+  if (!pages.fichepatient) return [];
+  const brut = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const cleRaw = [...brut].sort((a, b) => b.length - a.length)[0];
+  if (!cleRaw || cleRaw.length < 2) return [];
+  const cles = new Set([cleRaw, sans(cleRaw)]), out = new Map();
+  await Promise.all([...cles].map(async k => {
+    const s = await getDocs(query(collection(db, "patients"), where("searchIndex", "array-contains", k), limit(20)));
+    s.forEach(d => out.set(d.id, { id: d.id, ...d.data() }));
+  }));
+  const toks = brut.map(sans), miens = new Set(mesPatients.map(p => p.id));
+  return [...out.values()].filter(p => !miens.has(p.id) && toks.every(t => /\d/.test(t) || sans(p.nom + " " + p.prenom).includes(t)))
+    .sort((a, b) => nomPatient(a).localeCompare(nomPatient(b), "fr")).slice(0, 8).map(p => {
+      const d = p.dateNaissance ? new Date(p.dateNaissance) : null;
+      return {
+        groupe: "Patients", icone: "i-users", label: nomPatient(p),
+        sub: d && !isNaN(d) ? "Né(e) le " + d.toLocaleDateString("fr-FR") : (p.dateNaissance || ""),
+        tag: p.hospitalisationActiveId ? "Hospitalisé(e)" : "", tagc: "blue",
+        titre: "Fiche Patient " + (p.prenom || "") + " " + (p.nom || ""), url: "fichepatient.html?id=" + encodeURIComponent(p.id)
+      };
+    });
+}
+
+function gsRendre() {
+  const q = $("gsInput").value.trim(), tous = [...gs.locaux, ...gs.globaux];
+  gs.items = ORDRE.flatMap(g => tous.filter(x => x.groupe === g));
+  let h = "", cur = "", i = 0;
+  gs.items.forEach(it => {
+    if (it.groupe !== cur) { cur = it.groupe; h += `<div class="gs-grp">${esc(cur)}</div>`; }
+    h += `<button type="button" class="gs-it" role="option" data-i="${i}" aria-selected="${i === gs.sel}"><span class="gs-ic">${ico(it.icone)}</span>`
+      + `<span class="gs-tx"><b>${esc(it.label)}</b>${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</span>`
+      + (it.tag ? `<span class="tg ${it.tagc || "blue"}">${esc(it.tag)}</span>` : "") + `</button>`;
+    i++;
+  });
+  if (gs.charge) h += `<div class="gs-msg">${skRows(2)}</div>`;
+  else if (gs.err) h += `<div class="gs-msg">La recherche dans les dossiers patients a échoué.</div>`;
+  else if (!gs.items.length) h = `<div class="gs-msg">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Commencez à taper pour rechercher."}</div>`;
+  $("gsRes").innerHTML = h;
+  $("gsRes").querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+}
+
+function gsMaj() {
+  const q = $("gsInput").value.trim(); gs.seq++; gs.sel = 0; gs.globaux = []; gs.err = false; gs.charge = false;
+  gs.locaux = filtrer(q); clearTimeout(gs.timer);
+  if (q.length >= 2 && pages.fichepatient) {
+    gs.charge = true; const mon = gs.seq;
+    gs.timer = setTimeout(async () => {
+      try { const r = await rechercheGlobale(q); if (mon !== gs.seq) return; gs.globaux = r; }
+      catch (e) { console.warn("Recherche patients :", e); if (mon !== gs.seq) return; gs.err = true; }
+      gs.charge = false; gsRendre();
+    }, 250);
+  }
+  gsRendre();
+}
+
+const bloque = () => document.body.classList.contains("locked") || document.body.classList.contains("system-blocked");
+function gsOuvrir() {
+  if (!uid || bloque()) return;
+  fermerTiroirs();
+  gs.retour = document.activeElement; gs.ouvert = true;
+  $("gsOverlay").classList.add("open"); $("gsInput").value = ""; gsMaj();
+  setTimeout(() => $("gsInput").focus(), 0);
+}
+function gsFermer() { gs.ouvert = false; gs.seq++; $("gsOverlay").classList.remove("open"); try { gs.retour?.focus?.(); } catch (e) { } }
+function gsChoisir(i) { const it = gs.items[i]; if (!it) return; gsFermer(); ouvrir(it.titre, it.url); }
+
+function clavierGlobal(e) {
+  const k = (e.key || "").toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === "k") { e.preventDefault(); gs.ouvert ? $("gsInput").focus() : gsOuvrir(); return; }
+  if (k === "escape") { if (gs.ouvert) { e.preventDefault(); gsFermer(); } else fermerTiroirs(); return; }
+  if (k === "/" && !gs.ouvert && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(input|textarea|select)$/i.test(e.target.tagName || "") && !e.target.isContentEditable) { e.preventDefault(); gsOuvrir(); }
+}
+
+/* ---------- Câblage ---------- */
 function brancher() {
   $("cwHead").addEventListener("click", ouvrirCalendrier);
-  $("cwList").addEventListener("click", e => { if (e.target.closest(".cw-ev")) ouvrirCalendrier(); });
+  $("cwList").addEventListener("click", e => { if (e.target.closest(".cw-ev")) { ouvrirCalendrier(); fermerTiroirs(); } });
   $("hw-right").addEventListener("click", e => {
     const b = e.target.closest("[data-url]");
-    if (b) ouvrir(b.dataset.title, b.dataset.url);
+    if (b) { ouvrir(b.dataset.title, b.dataset.url); fermerTiroirs(); }
   });
+  document.querySelectorAll(".hw").forEach(a => a.addEventListener("click", e => {
+    const r = e.target.closest("[data-retry]"); if (!r) return;
+    if (r.dataset.retry === "agenda") { etat.rdv = etat.aff = "load"; ecouterCalendrier(); } else { etat.pat = "load"; rendreRaccourcis(); ecouterEquipe(); }
+  }));
+  $("hwTabL").addEventListener("click", () => basculerTiroir("hw-left"));
+  $("hwTabR").addEventListener("click", () => basculerTiroir("hw-right"));
+  $("hwBackdrop").addEventListener("click", fermerTiroirs);
+  window.matchMedia("(max-width:1099.98px)").addEventListener("change", fermerTiroirs);
+
+  $("gsBar").addEventListener("click", gsOuvrir);
+  $("gsOverlay").addEventListener("pointerdown", e => { if (e.target === $("gsOverlay")) gsFermer(); });
+  $("gsInput").addEventListener("input", gsMaj);
+  $("gsInput").addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); if (!gs.items.length) return;
+      gs.sel = (gs.sel + (e.key === "ArrowDown" ? 1 : -1) + gs.items.length) % gs.items.length; gsRendre();
+    } else if (e.key === "Enter") { e.preventDefault(); gsChoisir(gs.sel); }
+  });
+  $("gsRes").addEventListener("click", e => { const b = e.target.closest(".gs-it"); if (b) gsChoisir(+b.dataset.i); });
+  $("gsRes").addEventListener("pointermove", e => { const b = e.target.closest(".gs-it"); if (b && +b.dataset.i !== gs.sel) { gs.sel = +b.dataset.i; $("gsRes").querySelectorAll(".gs-it").forEach((x, j) => x.setAttribute("aria-selected", j === gs.sel)); } });
+  document.addEventListener("keydown", clavierGlobal);
+  const bs = $("btnSearch"); bs && bs.addEventListener("click", gsOuvrir);
+  // Ctrl K aussi quand le focus est dans une page ouverte (iframes de même origine)
+  const hook = f => { try { f.contentWindow.document.addEventListener("keydown", clavierGlobal, true); } catch (e) { } };
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.tagName === "IFRAME") n.addEventListener("load", () => hook(n)); }))).observe($("content"), { childList: true, subtree: true });
+}
+
+function memoriserOuvertures() {
+  const o = window.openTab;
+  if (typeof o !== "function" || o.__gu) return;
+  const w = function (t, u) { try { noterRecent(t, u); } catch (e) { } return o.apply(this, arguments); };
+  w.__gu = true; window.openTab = w;
+}
+
+function masquer() {
+  ["hw-left", "hw-right", "hwTabL", "hwTabR"].forEach(id => $(id).hidden = true);
+}
+function arreter() {
+  [unsubRdv, unsubAff, unsubCons, unsubEq].forEach(u => u && u()); unsubRdv = unsubAff = unsubCons = unsubEq = null;
+  rdvs = []; affs = []; consEnCours = []; mesPatients = []; hospisEq = new Map(); hospisAnciens = new Map(); patientsParHospi = new Map(); cleResolue = "";
+  etat.rdv = etat.aff = etat.cons = etat.pat = "load";
 }
 
 let dernierRefresh = 0;
@@ -4659,36 +5022,39 @@ function rafraichir(force) {
   if (!uid || document.hidden || !home || home.style.display === "none") return;
   if (!force && Date.now() - dernierRefresh < 45000) return;
   dernierRefresh = Date.now();
-  chargerMesPatients();
+  cleResolue = "";
+  if (SCAN_LEGACY) scannerAnciens(); else planifier();
 }
 
 try {
   db = getFirestore(getApp());
-  brancher();
+  rendreCalendrier();
+  brancher(); memoriserOuvertures();
   onAuthStateChanged(getAuth(getApp()), async user => {
-    if (!user) { uid = null; return; }
+    arreter(); uid = null;
+    if (!user) { masquer(); return; }
     try {
       const snap = await getDoc(doc(db, "medecins", user.uid));
-      if (!snap.exists()) return;                                   // pas de fiche médecin : pas de widgets
+      if (!snap.exists()) { masquer(); return; }
       pages = snap.data().pages || {};
-    } catch (e) { return; }
+    } catch (e) { masquer(); return; }
     uid = user.uid;
-    $("hw-left").hidden = !pages.Calendrier;
+    $("hw-left").hidden = $("hwTabL").hidden = !pages.Calendrier;
+    $("hw-right").hidden = $("hwTabR").hidden = false;
     ecouterCalendrier();
-    if (pages.Calendrier) ecouterConsultations();
-    rendreCalendrier(); rendreRaccourcis(); rafraichir(true);
+    if (pages.Calendrier) ecouterConsultations(); else etat.cons = "ok";
+    ecouterEquipe();
+    rendreCalendrier(); rendreRaccourcis();
+    dernierRefresh = Date.now();
   });
-
-  // minuit passé → on se réabonne ; sinon simple rafraîchissement de l'affichage (créneaux terminés, « En cours »)
   setInterval(() => {
     if (!uid) return;
     if (iso(new Date()) !== jourAbonne) ecouterCalendrier(); else { rendreCalendrier(); rendreRaccourcis(); }
     rafraichir(false);
   }, 60000);
   document.addEventListener("visibilitychange", () => rafraichir(false));
-  // retour sur l'accueil (fermeture du dernier onglet) → on remet à jour mes patients
   new MutationObserver(() => rafraichir(false)).observe($("home"), { attributes: true, attributeFilter: ["style"] });
-} catch (e) { console.warn("Widgets d'accueil indisponibles :", e); }
+} catch (e) { console.warn("Widgets d'accueil indisponibles :", e); masquer(); }
 </script>
 
 </body>

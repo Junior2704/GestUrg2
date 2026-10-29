@@ -2148,7 +2148,7 @@ kbd.gs-k{padding:4px 7px;border-radius:7px;border:1px solid var(--line);backgrou
 @media (hover:none){kbd.gs-k{display:none}}
 
 /* --- Palette de recherche --- */
-.gs-overlay{position:fixed;inset:0;z-index:25000;display:none;align-items:flex-start;justify-content:center;padding:max(56px,9vh) 12px 12px;background:rgba(10,25,41,.5);backdrop-filter:blur(5px)}
+.gs-overlay{position:fixed;inset:0;z-index:150000;display:none;align-items:flex-start;justify-content:center;padding:max(56px,9vh) 12px 12px;background:rgba(10,25,41,.5);backdrop-filter:blur(5px)}
 .gs-overlay.open{display:flex}
 .gs-panel{width:min(660px,100%);max-height:min(600px,calc(100dvh - 80px));display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(10,25,41,.35);overflow:hidden}
 .gs-inwrap{display:flex;align-items:center;gap:10px;margin:12px 12px 4px;padding:0 8px 0 14px;border:1.5px solid #b5d6ea;border-radius:14px;background:var(--field)}
@@ -5058,6 +5058,7 @@ function brancher() {
   $("gsRes").addEventListener("click", e => { const b = e.target.closest(".gs-it"); if (b) gsChoisir(+b.dataset.i); });
   $("gsRes").addEventListener("pointermove", e => { const b = e.target.closest(".gs-it"); if (b && +b.dataset.i !== gs.sel) { gs.sel = +b.dataset.i; $("gsRes").querySelectorAll(".gs-it").forEach((x, j) => x.setAttribute("aria-selected", j === gs.sel)); } });
   document.addEventListener("keydown", clavierGlobal);
+  new MutationObserver(() => { if (gs.ouvert && bloque()) gsFermer(); }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
   const bs = $("btnSearch"); bs && bs.addEventListener("click", gsOuvrir);
   // Ctrl K aussi quand le focus est dans une page ouverte (iframes de même origine)
   const hook = f => { try { f.contentWindow.document.addEventListener("keydown", clavierGlobal, true); } catch (e) { } };

@@ -384,6 +384,7 @@ const I={plus:'<path d="M12 5v14M5 12h14"/>',inbox:'<path d="M4 13l2-8h12l2 8v6H
 const ic=k=>`<svg viewBox="0 0 24 24">${I[k]}</svg>`;
 const TYPES={doc:"Médecin",infirmier:"Infirmier",AS:"Aide Soignant",Int:"Interne",Ext:"Externe"};
 let U=null,UN="",convs=[],act=null,actD=null,unsub=null,genAttr=[],genAll=[],admAttr=[],users=[],fCompte=null,fStat="ouvert",MSGS=[],SD={},DR={},diffs=[],sonds=[],dems=[],sel=new Set(),cMode="message",sTab="hist";
+let convCible=new URLSearchParams(location.search).get("conv");   // ouverture directe depuis l'accueil du shell
 const nom=uid=>users.find(u=>u.uid===uid)?.nom||uid;
 function toast(m,err){const t=$("toast");t.textContent=m;t.className=err?"err":"";t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",3500)}
 function notif(uid){if(window.parent===window)return;try{window.parent.postMessage({type:"NOTIFICATION",userId:uid,titre:"🔔 Nouveau message",contenu:"Ouvrez GestUrg2 pour le consulter !"},"*")}catch(e){}}
@@ -393,6 +394,10 @@ const membre=d=>genAttr.some(c=>c.id===d.compteGeneriqueId);
 const visible=c=>!(c.type==="compte-administratif"&&c.destinataireUid&&c.destinataireUid!==U.uid);
 const nl=c=>c.nonLus?.[U.uid]||0;
 
+/* le shell peut demander d'ouvrir une conversation précise quand la messagerie est déjà ouverte */
+window.addEventListener("message",e=>{
+ if(e.source!==window.parent||!e.data||e.data.type!=="OUVRIR_CONVERSATION"||!e.data.id)return;
+ const x=convs.find(c=>c.id===e.data.id);if(x&&visible(x.data))ouvrir(x.id,x.data)});
 onAuthStateChanged(auth,async u=>{
  if(!u)return;U=u;
  const s=await getDoc(doc(db,"medecins",u.uid));UN=s.exists()?(s.data().nom||"Utilisateur"):"Utilisateur";
@@ -402,6 +407,7 @@ onAuthStateChanged(auth,async u=>{
  onSnapshot(query(collection(db,"comptes-administrateurs"),where("membres","array-contains",u.uid)),s=>{admAttr=s.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.actif!==false);rail();suivre()},()=>{});
  onSnapshot(query(collection(db,"messageries"),where("participants","array-contains",u.uid)),s=>{
   convs=s.docs.map(d=>({id:d.id,data:d.data()})).sort((a,b)=>(b.data.updatedAt?.toMillis?.()||0)-(a.data.updatedAt?.toMillis?.()||0));
+  if(convCible){const x=convs.find(c=>c.id===convCible);convCible=null;if(x&&visible(x.data))ouvrir(x.id,x.data)}
   try{window.parent.postMessage({source:"messagerie",type:"non-lus",nonLus:convs.filter(x=>visible(x.data)).reduce((n,x)=>n+nl(x.data),0)},ORIGINE)}catch(e){}
   rail();liste()});
 });

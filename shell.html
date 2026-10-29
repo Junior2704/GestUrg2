@@ -2129,6 +2129,15 @@ button,input{font-family:inherit}
 @media (hover:hover){.hw-qbtn:hover{background:var(--primary-soft);border-color:#b5d6ea}}
 .hw-qbtn:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:1px}
 
+/* --- Messages non lus (sous le calendrier) --- */
+.mw-card{flex:none}
+.mw-card .hw-items{flex:none;max-height:min(230px,30vh)}
+.mw-av{background:#fff3e0;font-size:18px}
+.mw-it .hw-tx b{font-weight:700}
+.mw-meta{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.mw-meta i{font:600 11px/1 var(--font);font-style:normal;color:var(--muted)}
+@media (max-height:700px){.mw-card .hw-items{max-height:120px}}
+
 /* --- Barre de recherche (accueil) --- */
 .gs-bar{all:unset;box-sizing:border-box;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:10px;width:min(520px,calc(100% - 2 * (var(--wside,0px) + 36px)));min-width:240px;max-width:calc(100% - 24px);height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow-sm);color:var(--muted);cursor:text;font:500 15px/1 var(--font)}
 .gs-bar .i{width:18px;height:18px;flex:none;color:var(--primary)}
@@ -2381,7 +2390,7 @@ kbd.gs-k{padding:4px 7px;border-radius:7px;border:1px solid var(--line);backgrou
 
 <!-- ===== WIDGET CALENDRIER (gauche) ===== -->
 <aside id="hw-left" class="hw" aria-label="Calendrier">
-  <section class="hw-card" aria-label="Aujourd'hui">
+  <section class="hw-card" id="cwTodayCard" aria-label="Aujourd'hui">
     <button type="button" class="cw-head" id="cwHead" title="Ouvrir mon calendrier">
       <span class="cw-dow" id="cwDow"></span>
       <span class="cw-day" id="cwDay"></span>
@@ -2390,9 +2399,13 @@ kbd.gs-k{padding:4px 7px;border-radius:7px;border:1px solid var(--line);backgrou
     </button>
     <div class="cw-week" id="cwWeek"></div>
   </section>
-  <section class="hw-card cw-list-card" aria-label="Événements à venir">
+  <section class="hw-card cw-list-card" id="cwListCard" aria-label="Événements à venir">
     <h3 class="hw-title">À venir</h3>
     <div class="cw-list" id="cwList" aria-live="polite"><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-bar"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div>
+  </section>
+  <section class="hw-card mw-card" id="mwCard" aria-label="Messages non lus" hidden>
+    <h3 class="hw-title">Messages <span class="hw-count red" id="mwCount"></span></h3>
+    <div class="hw-items" id="mwList" aria-live="polite"></div>
   </section>
 </aside>
 
@@ -4571,7 +4584,7 @@ const STAT = { pris: "Réservé", attente: "En salle d'attente", encours: "En co
 const ROLES = { medecinReferent: "Médecin", infirmierReferent: "Infirmier(ère)", interneReferent: "Interne", externeReferent: "Externe" };
 
 let db, uid = null, pages = {};
-let rdvs = [], affs = [], consEnCours = [], mesPatients = [];
+let rdvs = [], affs = [], consEnCours = [], mesPatients = [], msgConvs = [], unsubMsg = null, nAujCache = 0;
 const etat = { rdv: "load", aff: "load", cons: "load", pat: "load" };   // load | ok | err
 let jourAbonne = "", unsubRdv = null, unsubAff = null, unsubCons = null, unsubEq = null;
 let hospisEq = new Map(), hospisAnciens = new Map(), patientsParHospi = new Map(), cleResolue = "", seqResol = 0, timerPlan = 0;
@@ -4594,6 +4607,7 @@ function basculerTiroir(id) {
   if (ouvert) { el.classList.add("open"); $("hwBackdrop").classList.add("show"); $(id === "hw-left" ? "hwTabL" : "hwTabR").setAttribute("aria-expanded", "true"); }
 }
 const modeTiroir = () => window.matchMedia("(max-width:1099.98px)").matches;
+const majBadgeL = () => pastille("hwBdgL", nAujCache + msgConvs.reduce((n, c) => n + c.nb, 0));
 const pastille = (id, n) => { const b = $(id); b.textContent = n > 99 ? "99+" : n; b.hidden = !n; };
 
 /* ---------- CALENDRIER ---------- */
@@ -4650,12 +4664,12 @@ function rendreCalendrier() {
       + `${d.toLocaleDateString("fr-FR", { weekday: "narrow" })}<i>${d.getDate()}</i><span class="dot"></span></div>`;
   }).join("");
 
-  if (err) { $("cwSum").textContent = "Agenda indisponible"; $("cwList").innerHTML = erreur("Impossible de charger votre agenda.", "agenda"); pastille("hwBdgL", 0); return; }
+  if (err) { $("cwSum").textContent = "Agenda indisponible"; $("cwList").innerHTML = erreur("Impossible de charger votre agenda.", "agenda"); nAujCache = 0; majBadgeL(); return; }
   if (charge) { $("cwSum").innerHTML = '<span class="sk" style="height:12px;width:150px"></span>'; $("cwList").innerHTML = skRows(4, true); return; }
 
   const nAuj = evs.filter(e => e.date === auj).length;
   $("cwSum").textContent = nAuj ? `${nAuj} ${pl(nAuj, "événement", "événements")} à venir aujourd'hui` : "Rien d'autre de prévu aujourd'hui";
-  pastille("hwBdgL", nAuj);
+  nAujCache = nAuj; majBadgeL();
   if (!evs.length) { $("cwList").innerHTML = `<p class="cw-empty">Rien de prévu dans les ${JOURS} prochains jours.</p>`; return; }
   let h = "", dernier = "";
   evs.slice(0, 40).forEach(e => {
@@ -4701,6 +4715,48 @@ function ecouterConsultations() {
       etat.cons = "ok"; rendreRaccourcis();
     },
     e => { console.warn("Widget consultations :", e); etat.cons = "err"; rendreRaccourcis(); });
+}
+
+/* ---------- MESSAGES NON LUS ---------- */
+const quand = t => {
+  if (!t) return "";
+  const d = new Date(t), a = new Date(), h = new Date(a); h.setDate(a.getDate() - 1);
+  if (d.toDateString() === a.toDateString()) return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === h.toDateString()) return "Hier";
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+};
+function ecouterMessages() {
+  unsubMsg && unsubMsg(); unsubMsg = null;
+  unsubMsg = onSnapshot(query(collection(db, "messageries"), where("participants", "array-contains", uid)),
+    s => {
+      msgConvs = s.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(c => !(c.type === "compte-administratif" && c.destinataireUid && c.destinataireUid !== uid) && (c.nonLus?.[uid] || 0) > 0)
+        .map(c => ({ id: c.id, titre: c.titre || c.compteNom || "Discussion", icone: c.icon || "💬", apercu: c.lastMessage || "", nb: c.nonLus[uid], t: c.updatedAt?.toMillis?.() || 0 }))
+        .sort((a, b) => b.t - a.t);
+      rendreMessages();
+    },
+    e => { console.warn("Widget messages :", e); msgConvs = []; rendreMessages(); });
+}
+function rendreMessages() {
+  const MAX = 3, total = msgConvs.reduce((n, c) => n + c.nb, 0);
+  $("mwCard").hidden = !msgConvs.length;
+  $("mwCount").textContent = total || "";
+  $("mwList").innerHTML = msgConvs.slice(0, MAX).map(c => `<button type="button" class="hw-item mw-it" data-conv="${esc(c.id)}">`
+    + `<span class="hw-av mw-av">${esc(c.icone)}</span><span class="hw-tx"><b>${esc(c.titre)}</b>${c.apercu ? `<small>${esc(c.apercu)}</small>` : ""}</span>`
+    + `<span class="mw-meta"><i>${esc(quand(c.t))}</i><span class="tg red">${c.nb}</span></span></button>`).join("")
+    + (msgConvs.length > MAX ? `<button type="button" class="hw-more" data-conv="">Voir les ${msgConvs.length - MAX} autres conversations</button>` : "");
+  majBadgeL();
+}
+// ouvre la messagerie sur la bonne conversation (onglet existant → message ciblé ; sinon ?conv=)
+function ouvrirMessage(id) {
+  const f = [...document.querySelectorAll("iframe[data-id]")].find(x => /(^|\/)messagerie\.html(\?|$)/.test(x.getAttribute("src") || ""));
+  if (f) {
+    $("home").style.display = "none";
+    if (typeof window.setActive === "function") window.setActive(f.dataset.id);
+    if (id) f.contentWindow?.postMessage({ type: "OUVRIR_CONVERSATION", id }, "*");
+    return;
+  }
+  ouvrir("Messagerie", id ? "messagerie.html?conv=" + encodeURIComponent(id) : "messagerie.html");
 }
 
 /* ---------- MES PATIENTS (équipe) + ÉTAT ---------- */
@@ -4977,6 +5033,7 @@ function brancher() {
     const r = e.target.closest("[data-retry]"); if (!r) return;
     if (r.dataset.retry === "agenda") { etat.rdv = etat.aff = "load"; ecouterCalendrier(); } else { etat.pat = "load"; rendreRaccourcis(); ecouterEquipe(); }
   }));
+  $("mwCard").addEventListener("click", e => { const b = e.target.closest("[data-conv]"); if (b) { ouvrirMessage(b.dataset.conv); fermerTiroirs(); } });
   $("hwTabL").addEventListener("click", () => basculerTiroir("hw-left"));
   $("hwTabR").addEventListener("click", () => basculerTiroir("hw-right"));
   $("hwBackdrop").addEventListener("click", fermerTiroirs);
@@ -5011,8 +5068,8 @@ function masquer() {
   ["hw-left", "hw-right", "hwTabL", "hwTabR"].forEach(id => $(id).hidden = true);
 }
 function arreter() {
-  [unsubRdv, unsubAff, unsubCons, unsubEq].forEach(u => u && u()); unsubRdv = unsubAff = unsubCons = unsubEq = null;
-  rdvs = []; affs = []; consEnCours = []; mesPatients = []; hospisEq = new Map(); hospisAnciens = new Map(); patientsParHospi = new Map(); cleResolue = "";
+  [unsubRdv, unsubAff, unsubCons, unsubEq, unsubMsg].forEach(u => u && u()); unsubRdv = unsubAff = unsubCons = unsubEq = unsubMsg = null;
+  msgConvs = []; rdvs = []; affs = []; consEnCours = []; mesPatients = []; hospisEq = new Map(); hospisAnciens = new Map(); patientsParHospi = new Map(); cleResolue = "";
   etat.rdv = etat.aff = etat.cons = etat.pat = "load";
 }
 
@@ -5039,11 +5096,12 @@ try {
       pages = snap.data().pages || {};
     } catch (e) { masquer(); return; }
     uid = user.uid;
-    $("hw-left").hidden = $("hwTabL").hidden = !pages.Calendrier;
+    $("cwTodayCard").hidden = $("cwListCard").hidden = !pages.Calendrier;   // la messagerie est ouverte à tous : la colonne reste
+    $("hw-left").hidden = $("hwTabL").hidden = false;
     $("hw-right").hidden = $("hwTabR").hidden = false;
     ecouterCalendrier();
     if (pages.Calendrier) ecouterConsultations(); else etat.cons = "ok";
-    ecouterEquipe();
+    ecouterEquipe(); ecouterMessages();
     rendreCalendrier(); rendreRaccourcis();
     dernierRefresh = Date.now();
   });

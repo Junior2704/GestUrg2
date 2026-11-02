@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Régulation SAMU</title>
+<style>
+:root{--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--field:#f6f9fc;--primary:#0b6fa4;--soft:#e3f1f9;--late:#b92a30;--ok:#16784a}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink)}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0}small,.k{color:var(--muted);font-size:12px}.k{font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+#who{margin-left:auto;font-weight:600;color:var(--muted)}main{padding:16px 24px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+input,select,textarea{width:100%;min-height:40px;padding:6px 10px;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:10px}
+.tools input,.tools select{width:auto}
+button{font:inherit;font-weight:600;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--primary);cursor:pointer}
+button.on,.p{background:var(--primary);color:#fff;border-color:var(--primary)}button.d{color:var(--late)}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;padding:8px;border-bottom:2px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line)}tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--soft)}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#586a7e);white-space:nowrap}
+dialog{width:min(720px,96vw);border:0;border-radius:14px;padding:0;box-shadow:0 10px 40px #0004}
+.db{padding:18px;display:grid;gap:12px;max-height:75vh;overflow:auto}.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.df{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+label{font-size:13px;font-weight:600;display:block;margin-bottom:3px}
+.v{display:grid;grid-template-columns:2fr 70px 1.3fr 2fr 40px;gap:6px;margin-bottom:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px}.card b{font-size:26px;display:block}
+.bar{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;margin:5px 0;font-size:13px}.bar i{display:block;height:14px;border-radius:7px;background:var(--c,var(--primary))}
+.hrs{display:flex;align-items:flex-end;gap:3px;height:120px}.hrs div{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-height:2px}
+.msg{padding:30px;text-align:center;color:var(--muted)}
+</style></head><body>
+<header><b>🚑</b><div><div class="k">SAMU · Régulation</div><h1>Appels &amp; dossiers de régulation</h1></div><span id="who"></span></header>
+<main><div id="gate" class="msg">Connexion en cours…</div>
+<div id="app" hidden>
+ <div class="tools">
+  <button id="tA" class="on">Appels</button><button id="tS">Statistiques</button>
+  <select id="fSt"><option value="">Tous les statuts</option></select>
+  <select id="fPer"><option value="0">Aujourd’hui</option><option value="7">7 jours</option><option value="30">30 jours</option><option value="9999">Tout</option></select>
+  <input id="q" type="search" placeholder="N°, adresse, motif, appelant…" style="margin-left:auto;min-width:240px">
+  <button class="p" id="bNew">+ Nouvel appel</button>
+ </div>
+ <div id="vA"></div><div id="vS" hidden></div>
+</div></main>
+
+<dialog id="dlg"><div class="db">
+ <h2 id="dT" style="margin:0">Nouvel appel</h2>
+ <div class="g2"><div><label>Appelant</label><input id="aNom"></div><div><label>Téléphone</label><input id="aTel" type="tel"></div></div>
+ <div class="g2"><div><label>Adresse de l’intervention *</label><input id="aAdr" placeholder="N°, rue"></div><div><label>Commune / code postal</label><input id="aCp"></div></div>
+ <div><label>Complément (bâtiment, étage, code, repère)</label><input id="aCompl"></div>
+ <div class="g2"><div><label>Motif *</label><select id="aMotif"></select></div><div><label>Priorité</label><select id="aPrio"></select></div></div>
+ <div><label>Victimes / patients <small id="nbV"></small></label><div id="vics"></div><button id="addV" type="button">+ Ajouter une victime</button></div>
+ <div class="g2"><div><label>Décision de régulation</label><select id="aDec"></select></div><div><label>Statut</label><input id="aSt" disabled></div></div>
+ <div><label>Notes / bilan téléphonique</label><textarea id="aNotes" rows="3"></textarea></div>
+</div>
+<div class="df"><button class="d" id="bDel">Supprimer</button><span style="flex:1"></span><button id="bX">Fermer</button><button id="bClo">Clôturer</button><button id="bSend">Envoyer au déclenchement SMUR</button><button class="p" id="bSave">Enregistrer</button></div></dialog>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
+const auth=getAuth(app),db=getFirestore(app),$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const hm=t=>t?new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
+const PRIO=[['P0 · Vital','#b92a30'],['P1 · Urgent','#c2410c'],['P2 · Non urgent','#a35a00'],['P3 · Conseil','#16784a']];
+const STAT={nouveau:'En régulation',a_declencher:'À déclencher',declenche:'SMUR engagé',cloture:'Clôturé'};
+const DEC=['Conseil médical','Médecin généraliste','Ambulance privée','Pompiers (VSAV)','SMUR','Orientation urgences','Autre'];
+const MOTIFS=['Douleur thoracique','Malaise / perte de connaissance','Arrêt cardio-respiratoire','Détresse respiratoire','AVC suspecté','Traumatisme / chute','Accident de la route','Intoxication','Hémorragie','Accouchement','Trouble psychiatrique','Autre'];
+const ETAT=['Conscient','Conscient agité','Inconscient','Arrêt cardiaque','Décédé','Indéterminé'];
+let medecin={},appels=[],editId=null,vue='A';
+const sel=(el,a,f=x=>x)=>$(el).innerHTML=a.map((x,i)=>`<option value="${i}">${esc(f(x))}</option>`).join('');
+sel('#aMotif',MOTIFS);sel('#aPrio',PRIO,x=>x[0]);sel('#aDec',DEC);
+$('#aMotif').innerHTML=MOTIFS.map(m=>`<option>${esc(m)}</option>`).join('');$('#aDec').innerHTML=DEC.map(m=>`<option>${esc(m)}</option>`).join('');
+$('#fSt').innerHTML+=Object.entries(STAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+
+onAuthStateChanged(auth,async u=>{
+ if(!u){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
+ try{const s=await getDoc(doc(db,'medecins',u.uid));if(!s.exists()){$('#gate').textContent='Utilisateur non trouvé, veuillez vous reconnecter.';return}
+  medecin={...s.data(),uid:u.uid};$('#who').textContent=medecin.nom||'';
+  const page=location.pathname.split('/').pop().replace('.html','');
+  if(!(medecin.pages||{})[page]){$('#gate').textContent='Accès refusé : contactez un administrateur.';return}
+  $('#gate').hidden=true;$('#app').hidden=false;
+  onSnapshot(collection(db,'appels'),s=>{appels=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);rendre()});
+ }catch(e){console.error(e);$('#gate').textContent='Une erreur est survenue, réessayez plus tard.'}
+});
+const filtrer=()=>{const lim=$('#fPer').value==='0'?new Date().setHours(0,0,0,0):Date.now()-(+$('#fPer').value)*864e5,q=$('#q').value.toLowerCase();
+ return appels.filter(a=>a.createdAt>=lim&&(!$('#fSt').value||a.statut===$('#fSt').value)&&(!q||[a.num,a.adresse,a.cp,a.motif,a.appelant,a.tel].join(' ').toLowerCase().includes(q)))};
+const pill=(p)=>`<span class="pill" style="--c:${PRIO[p??2][1]}">${PRIO[p??2][0]}</span>`;
+function rendre(){
+ $('#vA').hidden=vue!=='A';$('#vS').hidden=vue!=='S';$('#tA').classList.toggle('on',vue==='A');$('#tS').classList.toggle('on',vue==='S');
+ const L=filtrer();
+ if(vue==='A')$('#vA').innerHTML=`<table><tr><th>N°</th><th>Heure</th><th>Priorité</th><th>Adresse</th><th>Motif</th><th>Victimes</th><th>Statut</th><th>Régulateur</th></tr>`+
+  (L.map(a=>`<tr data-id="${a.id}"><td><b>${esc(a.num)}</b></td><td>${hm(a.createdAt)}</td><td>${pill(a.priorite)}</td><td>${esc(a.adresse)}<br><small>${esc(a.cp)}</small></td><td>${esc(a.motif)}</td><td>${(a.victimes||[]).length||1}</td><td>${STAT[a.statut]||''}${a.equipe?'<br><small>'+esc(a.equipe)+'</small>':''}</td><td>${esc(a.regulateur)}</td></tr>`).join('')||'<tr><td colspan="8" class="msg">Aucun appel sur cette période.</td></tr>')+'</table>';
+ else stats(L);
+}
+const bar=(l,n,max,c)=>`<div class="bar"><span>${esc(l)}</span><div><i style="width:${max?n/max*100:0}%;${c?'--c:'+c:''}"></i></div><b>${n}</b></div>`;
+function stats(L){
+ const cnt=(f)=>L.reduce((m,a)=>{const k=f(a);m[k]=(m[k]||0)+1;return m},{}),vic=L.reduce((t,a)=>t+((a.victimes||[]).length||1),0),
+  dl=L.filter(a=>a.declencheAt).map(a=>(a.declencheAt-a.createdAt)/6e4),moy=dl.length?Math.round(dl.reduce((x,y)=>x+y,0)/dl.length*10)/10:null,
+  P=cnt(a=>a.priorite??2),D=cnt(a=>a.decision||'—'),M=cnt(a=>a.motif||'—'),H=Array(24).fill(0);L.forEach(a=>H[new Date(a.createdAt).getHours()]++);
+ const bl=(o,c)=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e[0]?.[1]||0;return e.map(([k,v])=>bar(k,v,m,c)).join('')};
+ $('#vS').innerHTML=`<div class="cards"><div class="card"><small>Appels</small><b>${L.length}</b></div><div class="card"><small>Victimes</small><b>${vic}</b></div>
+  <div class="card"><small>SMUR déclenchés</small><b>${L.filter(a=>a.declencheAt).length}</b></div><div class="card"><small>Délai moyen appel → SMUR</small><b>${moy??'—'}${moy!=null?' min':''}</b></div>
+  <div class="card"><small>En cours</small><b>${L.filter(a=>a.statut!=='cloture').length}</b></div></div>
+  <h3>Par priorité</h3>${PRIO.map((p,i)=>bar(p[0],P[i]||0,Math.max(1,...Object.values(P)),p[1])).join('')}
+  <h3>Par décision</h3>${bl(D)}<h3>Par motif</h3>${bl(M)}
+  <h3>Répartition horaire</h3><div class="hrs">${H.map((n,h)=>`<div title="${h}h : ${n}" style="height:${n/Math.max(1,...H)*100}%"></div>`).join('')}</div><small>0 h → 23 h</small>`;
+}
+/* ---- Dossier ---- */
+const vRow=(v={})=>`<div class="v"><input placeholder="Nom / description" value="${esc(v.nom)}"><input placeholder="Âge" value="${esc(v.age)}"><select>${ETAT.map(e=>`<option${e===v.etat?' selected':''}>${e}</option>`).join('')}</select><input placeholder="Bilan / plaintes" value="${esc(v.bilan)}"><button class="d" type="button" title="Retirer">×</button></div>`;
+const lireV=()=>[...$('#vics').children].map(r=>{const i=r.querySelectorAll('input,select');return{nom:i[0].value.trim(),age:i[1].value.trim(),etat:i[2].value,bilan:i[3].value.trim()}});
+const cnt=()=>$('#nbV').textContent=`(${$('#vics').children.length})`;
+function ouvrir(id){
+ editId=id;const a=appels.find(x=>x.id===id)||{};
+ $('#dT').textContent=id?'Dossier '+a.num:'Nouvel appel';
+ $('#aNom').value=a.appelant||'';$('#aTel').value=a.tel||'';$('#aAdr').value=a.adresse||'';$('#aCp').value=a.cp||'';$('#aCompl').value=a.compl||'';
+ $('#aMotif').value=a.motif||MOTIFS[0];$('#aPrio').innerHTML=PRIO.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');$('#aPrio').value=a.priorite??2;
+ $('#aDec').value=a.decision||DEC[0];$('#aNotes').value=a.notes||'';$('#aSt').value=STAT[a.statut]||'Nouveau';
+ $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
+ $('#bDel').hidden=!id;$('#bClo').hidden=!id||a.statut==='cloture';$('#bSend').hidden=!!a.statut&&a.statut!=='nouveau';
+ $('#dlg').showModal();
+}
+async function numero(){const r=doc(db,'samu-config','compteur'),j=iso(new Date());
+ return runTransaction(db,async t=>{const s=await t.get(r),n=s.exists()&&s.data().jour===j?s.data().n+1:1;t.set(r,{jour:j,n});return j.replace(/-/g,'').slice(2)+'-'+String(n).padStart(3,'0')})}
+async function save(extra={}){
+ const d={appelant:$('#aNom').value.trim(),tel:$('#aTel').value.trim(),adresse:$('#aAdr').value.trim(),cp:$('#aCp').value.trim(),compl:$('#aCompl').value.trim(),
+  motif:$('#aMotif').value,priorite:+$('#aPrio').value,decision:$('#aDec').value,notes:$('#aNotes').value.trim(),victimes:lireV(),...extra};
+ if(!d.adresse){alert('L’adresse est obligatoire.');return false}
+ try{if(editId)await updateDoc(doc(db,'appels',editId),d);
+  else await addDoc(collection(db,'appels'),{...d,num:await numero(),statut:'nouveau',createdAt:Date.now(),regulateur:medecin.nom||'',regulateurUid:medecin.uid,...extra});
+  $('#dlg').close();return true}catch(e){console.error(e);alert('Enregistrement impossible.');return false}
+}
+$('#bNew').onclick=()=>ouvrir(null);$('#bX').onclick=()=>$('#dlg').close();
+$('#bSave').onclick=()=>save();
+$('#bSend').onclick=()=>save({statut:'a_declencher',decision:'SMUR'});
+$('#bClo').onclick=()=>save({statut:'cloture',clotureAt:Date.now()});
+$('#bDel').onclick=async()=>{if(confirm('Supprimer ce dossier ?')){await deleteDoc(doc(db,'appels',editId));$('#dlg').close()}};
+$('#addV').onclick=()=>{$('#vics').insertAdjacentHTML('beforeend',vRow());cnt()};
+$('#vics').onclick=e=>{if(e.target.tagName==='BUTTON'){e.target.parentElement.remove();cnt()}};
+$('#vA').onclick=e=>{const r=e.target.closest('tr[data-id]');if(r)ouvrir(r.dataset.id)};
+$('#tA').onclick=()=>{vue='A';rendre()};$('#tS').onclick=()=>{vue='S';rendre()};
+['#fSt','#fPer','#q'].forEach(s=>$(s).oninput=rendre);
+</script></body></html>

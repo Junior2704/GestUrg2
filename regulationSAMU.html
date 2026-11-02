@@ -60,6 +60,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .box{border:1px solid #cfe5f2;background:var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:14px}
 .jr{font-size:13px;padding:3px 0;border-bottom:1px solid var(--line-soft)}.jr small{margin-right:6px}
 .dl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.dl span{background:var(--field);border:1px solid var(--line-soft);border-radius:8px;padding:3px 9px;font-size:12px;color:var(--muted)}.dl b{color:var(--ink)}
+.bd{display:inline-block;min-width:18px;padding:0 5px;border-radius:99px;background:var(--primary);color:#fff;font-size:11px;text-align:center;margin-left:6px;line-height:18px}
+.sv.pd{border-color:#e7c27a;background:#fffaf0}.sv .r2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:4px}
+.sel{display:flex;gap:8px;align-items:center;border:1px solid var(--primary);background:var(--soft);border-radius:10px;padding:5px 10px;margin-bottom:6px}.sel b{flex:1}
+.sel button{min-height:30px;padding:0 10px}.sel .q{min-width:22px;text-align:center;font-weight:700}
+.dn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--ok);background:var(--ok-soft);border-radius:10px;padding:6px 10px;margin-bottom:6px;font-size:14px}.dn small{margin-left:auto}.dn button{min-height:30px;padding:0 10px;font-size:13px}
+.cnt{display:inline-block;margin-left:6px;padding:0 8px;border-radius:99px;background:var(--warn);color:#fff;font-size:11px;line-height:18px}
 dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow:0 10px 40px #0004}
 @media(max-width:980px){#split{grid-template-columns:1fr}#dos{display:none}#split.open #liste{display:none}#split.open #dos{display:block}#bBack{display:inline-block}.dgrid{grid-template-columns:1fr}.v{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
 @media print{header,#strip,#liste,.dh button,#bAddV,#sugg,#note-compose{display:none!important}#split{display:block}#dos{overflow:visible}.dgrid{grid-template-columns:1fr}}
@@ -106,6 +112,9 @@ dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow
      <div class="col">
       <section class="sec"><h3>Décision de régulation</h3><div class="dl" id="delais"></div>
        <div class="tiles" id="decTiles"></div><div id="decPanel" style="margin-top:12px"></div></section>
+      <section class="sec"><h3>Décisions à finaliser <span id="nbPend"></span></h3><div id="decPend"></div></section>
+      <section class="sec" id="secSmur" hidden><h3>Interventions SMUR</h3><div id="decSmur"></div></section>
+      <section class="sec"><h3>Décisions finalisées</h3><div id="decDone"></div></section>
       <section class="sec"><h3>Notes de régulation</h3>
        <div id="note-compose"><div class="g2"><select id="nType"></select><span></span></div>
         <textarea id="nTxt" rows="3" placeholder="Saisir une note… (Ctrl+Entrée pour ajouter)" style="margin-top:8px"></textarea>
@@ -153,7 +162,7 @@ $('#sQual').innerHTML=opts(QUALITE,'— Choisir —');$('#sMotif').innerHTML=opt
 $('#cloMotif').innerHTML=opts(CLOT,'— Choisir —');$('#nType').innerHTML=Object.entries(NT).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
 $('#prio').innerHTML=PRIO.map((p,i)=>`<button type="button" data-p="${i}" style="--c:${p[1]}">${p[0]}</button>`).join('');
 
-let medecin={},users={},affs=[],appels=[],decls=[],cur=null,pend=null,draft={},sigDec='',map=null,mk=null,geoSig='',suggT=0;
+let medecin={},users={},affs=[],appels=[],decls=[],cur=null,sel={},draft={},sigDec='',map=null,mk=null,geoSig='',suggT=0;
 const A=()=>appels.find(x=>x.id===cur),closed=a=>a&&a.statut==='cloture';
 const flash=()=>{$('#saved').textContent='Enregistré à '+hm(Date.now())};
 async function maj(id,f,txt){const u={...f};if(txt)u.journal=arrayUnion({at:Date.now(),par:medecin.nom||'',txt});
@@ -190,7 +199,8 @@ function rendre(){
 }
 function strip(){
  const n1=appels.filter(a=>a.statut==='nouveau'||a.statut==='a_declencher').length,n2=decls.filter(d=>d.actif).length;
- $('#strip').innerHTML=`<div class="chip"><b>${n1}</b><small>en régulation</small></div><div class="chip"><b>${n2}</b><small>SMUR engagé(s)</small></div>`+
+ const n3=appels.filter(a=>!closed(a)).reduce((s,a)=>s+pendL(a).length,0);
+ $('#strip').innerHTML=`<div class="chip"><b>${n1}</b><small>en régulation</small></div><div class="chip"><b>${n3}</b><small>à finaliser</small></div><div class="chip"><b>${n2}</b><small>SMUR engagé(s)</small></div>`+
   SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k),c=e?'#b92a30':m.length?'#16784a':'#aab7c4';
    return `<div class="tm" style="--c:${c}"><b>${l}</b> <span class="pill" style="--c:${c}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><small>${esc(noms(m))||'Personne affecté'}</small></div>`}).join('');
 }
@@ -207,7 +217,7 @@ function liste(){
  $('#cards').innerHTML=L.map(a=>{const p=PRIO[a.priorite??2],s=STAT[a.statut]||STAT.nouveau;
   return `<div class="cd ${a.id===cur?'cur':''} ${closed(a)?'cl':''}" data-id="${a.id}" style="--c:${p[1]}"><div class="r"><b>${esc(a.num)}</b><span class="pill" style="--c:${p[1]}">${p[0]}</span><small>${hm(a.createdAt)}</small></div>
   <div class="mt">${esc(a.motif||'Motif non précisé')}</div><small>${esc([a.adresse,a.ville].filter(Boolean).join(', ')||'Adresse non renseignée')}</small>
-  <div class="r" style="margin-top:4px"><span class="pill" style="--c:${s[1]}">${s[0]}${a.equipe&&a.statut==='declenche'?' · '+esc(a.equipe):''}</span><small>${closed(a)?dur(a.clotureAt-a.createdAt):dur(Date.now()-a.createdAt)}</small><small>${esc(a.regulateur||'')}</small></div></div>`}).join('')||'<div class="msg">Aucun dossier.</div>';
+  <div class="r" style="margin-top:4px"><span class="pill" style="--c:${s[1]}">${s[0]}${a.equipe&&a.statut==='declenche'?' · '+esc(a.equipe):''}</span>${!closed(a)&&pendL(a).length?`<span class="pill" style="--c:#a35a00">${pendL(a).length} à finaliser</span>`:''}<small>${closed(a)?dur(a.clotureAt-a.createdAt):dur(Date.now()-a.createdAt)}</small><small>${esc(a.regulateur||'')}</small></div></div>`}).join('')||'<div class="msg">Aucun dossier.</div>';
 }
 $('#cards').onclick=e=>{const c=e.target.closest('.cd');if(c)ouvrir(c.dataset.id)};
 ['#fEt','#fPer','#q'].forEach(s=>$(s).oninput=liste);
@@ -223,7 +233,7 @@ $('#bNew').onclick=async()=>{
 
 /* ---------- Dossier ---------- */
 function ouvrir(id){
- cur=id;const a=A()||{};pend=a.decisionKey||null;draft={};sigDec='';geoSig='';
+ cur=id;const a=A()||{};sel={};draft={};sigDec='';geoSig='';
  document.querySelectorAll('#fs [data-k]').forEach(e=>e.value=a[e.dataset.k]??'');
  $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
  $('#vide').hidden=true;$('#dossier').hidden=false;$('#split').classList.add('open');$('#saved').textContent='';$('#nTxt').value='';
@@ -248,14 +258,21 @@ function majDos(){
  if(a.transfert?.at)dl.push(['Transfert','+'+dur(a.transfert.at-a.createdAt)]);
  if(a.clotureAt)dl.push(['Clôture','+'+dur(a.clotureAt-a.createdAt)]);
  $('#delais').innerHTML=dl.map(x=>`<span>${x[0]} <b>${x[1]}</b></span>`).join('');
- // décision
- $('#decTiles').innerHTML=DEC.map(([k,l])=>`<button type="button" class="tile ${pend===k?'on':''} ${a.decisionKey===k?'ok':''}" data-dec="${k}">${a.decisionKey===k?'✓ ':''}${l}</button>`).join('');
+ // décisions
+ const L=decsOf(a),nbK=k=>L.filter(d=>d.key===k).length;
+ $('#decTiles').innerHTML=DEC.map(([k,l])=>`<button type="button" class="tile ${sel[k]?'on':''}" data-dec="${k}">${l}${nbK(k)?`<span class="bd" title="Déjà enregistrée(s)">${nbK(k)}</span>`:''}</button>`).join('');
  const ds=decls.filter(d=>d.appelId===a.id).map(d=>d.id+d.etape+d.actif).join(','),
-  eq=SMUR.map(([k])=>k+membres(k).length+(engagee(k)?1:0)).join(''),sig=[pend,a.decisionKey,a.statut,ds,eq,a.transfert?.at,closed(a)].join('|');
+  eq=SMUR.map(([k])=>k+membres(k).length+(engagee(k)?1:0)).join(''),
+  sig=[JSON.stringify(sel),L.map(d=>d.id+d.etat+JSON.stringify(d.fin||{})).join(','),a.statut,ds,eq,a.synthese,closed(a)].join('|');
  if(sig!==sigDec){
-  document.querySelectorAll('#decPanel [data-d]').forEach(e=>draft[e.dataset.d]=e.value);
+  document.querySelectorAll('#fs [data-d]').forEach(e=>draft[e.dataset.d]=e.value);
+  const pe=L.filter(d=>d.etat==='a_finaliser').sort((x,y)=>x.at-y.at),fi=L.filter(d=>d.etat!=='a_finaliser').sort((x,y)=>(y.finAt||y.at)-(x.finAt||x.at));
   $('#decPanel').innerHTML=panel(a);
-  document.querySelectorAll('#decPanel [data-d]').forEach(e=>{const v=draft[e.dataset.d];e.value=v!==undefined?v:defDraft(a,e.dataset.d)});
+  $('#nbPend').innerHTML=pe.length?`<span class="cnt">${pe.length}</span>`:'';
+  $('#decPend').innerHTML=pe.length?'<div class="hint">Complétez chaque moyen demandé. Le SMUR se déclenche depuis cette fenêtre ; pour les autres moyens (pompiers, ambulances…), notez ici ce qui est parti.</div>'+pe.map(d=>pendCard(a,d)).join(''):'<p class="hint">Aucune décision en attente.</p>';
+  const sm=smurSect(a);$('#secSmur').hidden=sm===null;$('#decSmur').innerHTML=sm||'';
+  $('#decDone').innerHTML=fi.map(d=>doneCard(a,d)).join('')||'<p class="hint">Aucune décision finalisée pour le moment.</p>';
+  document.querySelectorAll('#fs [data-d]').forEach(e=>{const v=draft[e.dataset.d];e.value=v!==undefined?v:defDraft(a,e.dataset.d)});
   sigDec=sig}
  // notes
  $('#notes').innerHTML=[...(a.notes||[])].sort((x,y)=>y.at-x.at).map(n=>{const t=NT[n.type]||NT.note;
@@ -263,9 +280,12 @@ function majDos(){
  $('#journal').innerHTML=[...(a.journal||[])].sort((x,y)=>y.at-x.at).map(j=>`<div class="jr"><small>${hm(j.at)} · ${esc(j.par)}</small>${esc(j.txt)}</div>`).join('');
  const g=a.lat+'|'+a.lng;if(g!==geoSig)carte();
 }
-const defDraft=(a,k)=>({synthese:a.synthese,dDetail:a.decisionDetail,tService:a.transfert?.service,tInterloc:a.transfert?.interlocuteur,tRef:a.transfert?.reference,tDetail:a.transfert?.details})[k]??'';
-$('#decPanel').addEventListener('input',e=>{const k=e.target.dataset.d;if(k)draft[k]=e.target.value});
-$('#decPanel').addEventListener('change',e=>{if(e.target.dataset.d==='synthese'){const v=e.target.value.trim();maj(cur,{synthese:v});decls.filter(d=>d.appelId===cur&&d.actif).forEach(d=>updateDoc(doc(db,'declenchements',d.id),{synthese:v}).catch(()=>{}))}});
+function defDraft(a,k){
+ if(k==='synthese')return a.synthese||'';
+ if(k==='dDetail')return '';
+ const[id,f]=k.split(':'),d=decsOf(a).find(x=>x.id===id);return (d&&d.fin&&d.fin[f])||''}
+$('#fs').addEventListener('input',e=>{const k=e.target.dataset.d;if(k)draft[k]=e.target.value});
+$('#fs').addEventListener('change',e=>{if(e.target.dataset.d==='synthese'){const v=e.target.value.trim();maj(cur,{synthese:v});decls.filter(d=>d.appelId===cur&&d.actif).forEach(d=>updateDoc(doc(db,'declenchements',d.id),{synthese:v}).catch(()=>{}))}});
 
 /* ---------- Champs du dossier (enregistrement automatique) ---------- */
 $('#fs').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k||!cur)return;
@@ -319,59 +339,144 @@ $('#sugg').addEventListener('mousedown',e=>{e.preventDefault();const b=e.target.
 $('#aAdr').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#sugg').hidden){e.preventDefault();choisir(0)}});
 $('#aAdr').addEventListener('blur',()=>setTimeout(()=>$('#sugg').hidden=true,150));
 
-/* ---------- Décision ---------- */
-$('#decTiles').onclick=e=>{const b=e.target.closest('[data-dec]');if(!b)return;pend=b.dataset.dec;draft={};sigDec='';majDos()};
+/* ---------- Décisions ---------- */
+/* Une décision = {id,key,label,at,par,detail,etat:'a_finaliser'|'finalisee',finAt,fin:{…}}  (stockées dans appels/{id}.decisions) */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const F_T=(k,l,ph,rq)=>[k,l,'i',ph||'',rq];
+const FIN={
+ conseil:null,sanssuite:null,
+ smur:'smur',
+ vsav:[F_T('caserne','Caserne','ex. CIS Sainte-Geneviève',1),F_T('numero','N° du VSAV','ex. VSAV 2',1)],
+ ambulance:[F_T('societe','Société','ex. Ambulances du Val',1),F_T('numero','N° du véhicule')],
+ mg:[F_T('nom','Médecin / structure','ex. SOS Médecins, Dr Martin',1),['detail','Précisions','a','Heure de passage, remarques…',0]],
+ urgences:[F_T('etab','Établissement de destination','ex. CH Sud Francilien',1),['detail','Précisions','a','Mode de transport, remarques…',0]],
+ transfert:[['service','Service destinataire','s','',1,SERVICES],F_T('interlocuteur','Interlocuteur','Nom / fonction'),F_T('reference','N° de dossier externe'),['details','Éléments transmis','a','Informations communiquées au service',0]]
+};
+const FINBTN={vsav:'Valider le départ',ambulance:'Valider le départ',transfert:'Enregistrer le transfert'};
+/* compat : anciens dossiers (decisionKey sans tableau decisions) */
+function decsOf(a){
+ if(Array.isArray(a.decisions))return a.decisions;
+ if(!a.decisionKey)return [];
+ const t=a.transfert||{},at=a.decisionAt||a.createdAt;
+ return [{id:'ancien',key:a.decisionKey,label:DECL[a.decisionKey]||a.decision||'Décision',at,par:a.decisionPar||'',detail:a.decisionDetail||'',etat:'finalisee',finAt:t.at||at,
+  fin:a.decisionKey==='transfert'?{service:t.service||'',interlocuteur:t.interlocuteur||'',reference:t.reference||'',details:t.details||''}:{}}]}
+const pendL=a=>decsOf(a).filter(d=>d.etat==='a_finaliser');
+/* champs dérivés conservés pour le reste de l'application */
+function derive(a,L,smur){
+ const ks=[...new Set(L.map(x=>x.key))],
+  sm=smur!==undefined?smur:decls.some(d=>d.appelId===a.id&&d.etape!=='annule'),
+  T=[...L].reverse().find(x=>x.key==='transfert'&&x.etat==='finalisee'&&x.fin&&x.fin.service),
+  u={statut:sm?'declenche':T?'transfere':'nouveau'};
+ if(L.length){u.decisionKeys=ks;u.decision=ks.map(k=>DECL[k]).join(' + ');u.decisionKey=L[L.length-1].key;u.decisionAt=a.decisionAt||L[0].at;u.decisionPar=a.decisionPar||L[0].par||''}
+ else{['decisionKeys','decision','decisionKey','decisionAt','decisionPar','decisionDetail'].forEach(k=>u[k]=deleteField())}
+ if(T){u.transfert={service:T.fin.service,interlocuteur:T.fin.interlocuteur||'',reference:T.fin.reference||'',details:T.fin.details||'',at:T.finAt||T.at,par:T.par||''};u.transfertAt=u.transfert.at}
+ else{u.transfert=deleteField();u.transfertAt=deleteField()}
+ return u}
+/* modification atomique des décisions : fn(L,aFraiche) -> {txt, f, smur, abort} */
+async function majDec(fn){
+ try{
+  await runTransaction(db,async t=>{
+   const ref=doc(db,'appels',cur),s=await t.get(ref);if(!s.exists())return;
+   const fa={id:cur,...s.data()};if(closed(fa))return;
+   const L=decsOf(fa).map(x=>({...x,fin:{...(x.fin||{})}})),r=fn(L,fa)||{};if(r.abort)return;
+   const u={decisions:L,...derive(fa,L,r.smur),...(r.f||{})},tx=[].concat(r.txt||[]);
+   if(tx.length)u.journal=arrayUnion(...tx.map(x=>({at:Date.now(),par:medecin.nom||'',txt:x})));
+   t.update(ref,u)});
+  flash()
+ }catch(e){console.error(e);alert('Enregistrement impossible.')}
+}
+const oublier=id=>{Object.keys(draft).filter(k=>k.startsWith(id+':')).forEach(k=>delete draft[k]);const c=document.querySelector('[data-did="'+id+'"]');if(c)c.remove()};
+const dd=k=>{const e=document.querySelector('#fs [data-d="'+k+'"]');return e?e.value.trim():(draft[k]||'').trim()};
+function decActive(a){return decls.some(d=>d.appelId===a.id&&d.actif)}
+
+/* --- choix des décisions à enregistrer (plusieurs possibles, plusieurs fois le même moyen) --- */
+$('#decTiles').onclick=e=>{const b=e.target.closest('[data-dec]');if(!b)return;const k=b.dataset.dec;sel[k]=Math.min(6,(sel[k]||0)+1);sigDec='';majDos()};
 function panel(a){
  if(closed(a))return `<div class="box">Dossier clôturé — ${esc(a.motifCloture||'')}${a.clotureNote?' · '+esc(a.clotureNote):''}</div>`;
- if(!pend)return '<p class="hint">Choisissez une décision de régulation ci-dessus.</p>';
- if(pend==='smur')return smurHTML(a);
- if(pend==='transfert')return `<div class="hint">Indiquez à quel service l’appel est transféré. Le dossier restera consultable ici.</div>
-  ${a.transfert?`<div class="box">Transféré à <b>${esc(a.transfert.service)}</b> à ${hm(a.transfert.at)} par ${esc(a.transfert.par||'')}</div>`:''}
-  <label>Service destinataire *</label><select data-d="tService"><option value="">— Choisir —</option>${SERVICES.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
-  <div class="g2"><div><label>Interlocuteur</label><input data-d="tInterloc" placeholder="Nom / fonction"></div><div><label>N° de dossier externe</label><input data-d="tRef"></div></div>
-  <label>Éléments transmis</label><textarea data-d="tDetail" rows="3" placeholder="Informations communiquées au service"></textarea>
-  <div class="row"><button class="p" data-act="transfert">${a.transfert?'Mettre à jour le transfert':'Enregistrer le transfert'}</button></div>`;
- return `<label>Précisions sur la décision « ${esc(DECL[pend])} »</label><textarea data-d="dDetail" rows="3" placeholder="Conseils donnés, praticien contacté, orientation…"></textarea>
-  <div class="row"><button class="p" data-act="decider">Enregistrer la décision</button></div>`;
+ const ks=Object.keys(sel).filter(k=>sel[k]>0);
+ if(!ks.length)return '<p class="hint">Cliquez sur un ou plusieurs moyens. Un clic de plus sur le même moyen en ajoute un (ex. 2 VSAV). Chaque décision enregistrée passe dans « Décisions à finaliser ».</p>';
+ const n=ks.reduce((s,k)=>s+sel[k],0);
+ return ks.map(k=>`<div class="sel"><b>${esc(DECL[k])}</b><button type="button" data-act="qm" data-k="${k}">−</button><span class="q">${sel[k]}</span><button type="button" data-act="qp" data-k="${k}">+</button><button type="button" class="d" data-act="qx" data-k="${k}" title="Retirer">×</button></div>`).join('')
+  +`<label>Précisions (facultatif)</label><textarea data-d="dDetail" rows="2" placeholder="Conseils donnés, motif de la demande…"></textarea>
+  <div class="row"><button class="p" data-act="enreg">Enregistrer ${n>1?n+' décisions':'la décision'}</button><button type="button" data-act="vider">Vider la sélection</button></div>`}
+async function enregistrer(){
+ const ks=Object.keys(sel).filter(k=>sel[k]>0);if(!ks.length)return;
+ const detail=dd('dDetail'),now=Date.now(),par=medecin.nom||'';
+ await majDec(L=>{const txt=[];
+  ks.forEach(k=>{const auto=FIN[k]===null;
+   for(let i=0;i<sel[k];i++)L.push({id:uid(),key:k,label:DECL[k],at:now,par,detail,etat:auto?'finalisee':'a_finaliser',...(auto?{finAt:now}:{}),fin:{}});
+   txt.push('Décision : '+DECL[k]+(sel[k]>1?' ×'+sel[k]:'')+(detail?' — '+detail:'')+(auto?'':' (à finaliser)'))});
+  return {txt}});
+ const t=document.querySelector('#decPanel [data-d="dDetail"]');if(t)t.value='';draft.dDetail='';sel={};sigDec='';majDos()
 }
-function smurHTML(a){
+
+/* --- carte « à finaliser » --- */
+function pendCard(a,d){
+ const F=FIN[d.key];
+ const corps=F==='smur'?equipesHTML(a,d):
+  `<div class="g2">${F.map(([k,l,t,ph,rq,o])=>{const n=d.id+':'+k,w=t==='i'?'':' style="grid-column:1/-1"',
+    c=t==='s'?`<select data-d="${n}"><option value="">— Choisir —</option>${(o||[]).map(s=>`<option>${esc(s)}</option>`).join('')}</select>`
+     :t==='a'?`<textarea data-d="${n}" rows="2" placeholder="${esc(ph)}"></textarea>`:`<input data-d="${n}" placeholder="${esc(ph)}">`;
+    return `<div${w}><label>${esc(l)}${rq?' *':''}</label>${c}</div>`}).join('')}</div>
+   <div class="row"><button class="p" data-act="fin" data-id="${d.id}">${FINBTN[d.key]||'Finaliser'}</button></div>`;
+ return `<div class="sv pd" data-did="${d.id}"><div class="r2"><span><b>${esc(d.label)}</b> <small>demandé à ${hm(d.at)}${d.par?' par '+esc(d.par):''}</small></span><button class="d" type="button" data-act="ret" data-id="${d.id}">Annuler</button></div>
+  ${d.detail?`<div class="hint">${esc(d.detail)}</div>`:''}${corps}</div>`}
+function equipesHTML(a,d){
+ return `<label>Équipe SMUR à déclencher</label><div class="teams">`+SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k),ok=m.length&&!e;
+  return `<div class="tmb ${ok?'free':''}"><div><b>${l}</b> <span class="pill" style="--c:${e?'#b92a30':m.length?'#16784a':'#586a7e'}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><br><small>${esc(noms(m))||'Personne d’affecté à cette heure'}</small></div><button class="p" data-act="smur" data-eq="${k}" data-did="${d.id}" ${ok?'':'disabled'}>Déclencher</button></div>`}).join('')+'</div>'}
+
+/* --- carte « finalisée » --- */
+function doneCard(a,d){
+ const F=FIN[d.key],f=d.fin||{};
+ const rec=F==='smur'?esc(f.equipe||''):Array.isArray(F)?F.slice(0,3).map(x=>f[x[0]]).filter(Boolean).map(esc).join(' · '):'';
+ const t=F!==null&&d.finAt?` · finalisé ${hm(d.finAt)} (+${dur(d.finAt-d.at)})`:'';
+ const mod=Array.isArray(F)&&!closed(a)?`<button type="button" data-act="mod" data-id="${d.id}">Modifier</button>`:'';
+ const ret=d.key==='smur'?'':`<button class="d" type="button" data-act="ret" data-id="${d.id}">Retirer</button>`;
+ return `<div class="dn"><b>✓ ${esc(d.label)}</b>${rec?`<span>${rec}</span>`:''}${d.detail&&F===null?`<span>— ${esc(d.detail)}</span>`:''}<small>demandé ${hm(d.at)}${t}</small>${mod}${ret}</div>`}
+
+/* --- interventions SMUR (suivi des étapes) --- */
+function smurSect(a){
  const ds=decls.filter(d=>d.appelId===a.id).sort((x,y)=>y.heures.declenche-x.heures.declenche);
- let h='<div class="hint">Seuls les SMUR sont déclenchés depuis GestUrg2 ; les autres services (VSAV, ambulances…) utilisent leur propre logiciel.</div>';
+ if(!ds.length&&!decsOf(a).some(d=>d.key==='smur'))return null;
+ let h='';
  ds.forEach(d=>{const i=ETAPES.findIndex(e=>e[0]===d.etape),nx=ETAPES[i+1],ann=d.etape==='annule';
   h+=`<div class="sv ${d.actif?'act':''}"><b>${esc(d.equipeLabel)}</b> <span class="pill" style="--c:${ann?'#586a7e':d.actif?'#b92a30':'#16784a'}">${ann?'Annulé':d.actif?'En intervention':'Terminé'}</span><br><small>${esc(noms(d.uids))}</small>
   ${ann?`<div><small>Annulé à ${hm(d.heures.annule)}</small></div>`:`<div class="steps">${ETAPES.map((e,j)=>`<span class="${j<=i?'ok':''}">${e[1]}${d.heures?.[e[0]]?'<br>'+hm(d.heures[e[0]]):''}</span>`).join('')}</div>`}
   ${d.actif?`<div class="row" style="margin-top:0">${nx?`<button class="p" data-act="etape" data-id="${d.id}" data-n="${nx[0]}">→ ${nx[1]}</button>`:''}<button class="d" data-act="annul" data-id="${d.id}">Annuler le déclenchement</button></div>`:''}</div>`});
- if(ds.length&&!ds.some(d=>d.actif))h+='<div class="box">Intervention terminée : pensez à clôturer le dossier.</div>';
- h+=`<label>Synthèse transmise à l’équipe</label><textarea data-d="synthese" rows="3" placeholder="Bilan et consignes affichés à l’équipe SMUR"></textarea>
-  <label>${ds.some(d=>d.etape!=='annule')?'Engager une équipe supplémentaire (renfort)':'Équipe SMUR à déclencher'}</label><div class="teams">`
-  +SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k),ok=m.length&&!e;
-   return `<div class="tmb ${ok?'free':''}"><div><b>${l}</b> <span class="pill" style="--c:${e?'#b92a30':m.length?'#16784a':'#586a7e'}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><br><small>${esc(noms(m))||'Personne d’affecté à cette heure'}</small></div><button class="p" data-act="smur" data-eq="${k}" ${ok?'':'disabled'}>Déclencher</button></div>`}).join('')+'</div>';
- return h;
+ if(ds.length&&!ds.some(d=>d.actif)&&ds.some(d=>d.etape!=='annule'))h+='<div class="box">Intervention(s) terminée(s) : pensez à clôturer le dossier.</div>';
+ h+=`<label>Synthèse transmise à l’équipe</label><textarea data-d="synthese" rows="3" placeholder="Bilan et consignes affichés à l’équipe SMUR"></textarea>`;
+ return h}
+
+/* --- actions --- */
+$('#fs').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act,k=b.dataset.k,id=b.dataset.id;
+ const rd=()=>{sigDec='';majDos()};
+ ({qp:()=>{sel[k]=Math.min(6,(sel[k]||0)+1);rd()},qm:()=>{sel[k]=(sel[k]||1)-1;if(sel[k]<1)delete sel[k];rd()},qx:()=>{delete sel[k];rd()},vider:()=>{sel={};rd()},
+  enreg:enregistrer,fin:()=>finaliser(id),ret:()=>retirer(id),mod:()=>modifier(id),
+  smur:()=>engager(b.dataset.eq,b.dataset.did),etape:()=>etape(id,b.dataset.n),annul:()=>annuler(id)})[act]?.()});
+
+async function finaliser(id){
+ const a=A(),d=decsOf(a).find(x=>x.id===id),F=d&&FIN[d.key];if(!Array.isArray(F))return;
+ const fin={};for(const [k,l,,,rq] of F){fin[k]=dd(id+':'+k);if(rq&&!fin[k]){alert('Renseignez : '+l+'.');return}}
+ const now=Date.now();
+ await majDec(L=>{const x=L.find(y=>y.id===id);if(!x)return{abort:1};x.etat='finalisee';x.fin=fin;x.finAt=now;
+  const r=F.slice(0,3).map(f=>fin[f[0]]).filter(Boolean).join(' · ');
+  return {txt:(d.key==='transfert'?'Appel transféré : ':d.label+' : ')+r}});
+ oublier(id);sigDec='';majDos()
 }
-$('#decPanel').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;
- ({decider,transfert,smur:()=>engager(b.dataset.eq),etape:()=>etape(b.dataset.id,b.dataset.n),annul:()=>annuler(b.dataset.id)})[b.dataset.act]()});
-const dd=k=>{const e=document.querySelector('#decPanel [data-d="'+k+'"]');return e?e.value.trim():(draft[k]||'')};
-function decActive(a){return decls.some(d=>d.appelId===a.id&&d.actif)}
-async function decider(){
- const a=A(),now=Date.now();
- if(a.decisionKey==='smur'&&pend!=='smur'&&decActive(a)){alert('Un SMUR est encore engagé : annulez ou terminez l’intervention avant de changer de décision.');return}
- const detail=dd('dDetail');
- await maj(cur,{decision:DECL[pend],decisionKey:pend,decisionDetail:detail,decisionAt:a.decisionAt||now,decisionPar:medecin.nom||'',statut:'nouveau'},'Décision : '+DECL[pend]+(detail?' — '+detail:''));
- draft={};sigDec='';
+async function modifier(id){await majDec(L=>{const x=L.find(y=>y.id===id);if(!x)return{abort:1};x.etat='a_finaliser';delete x.finAt;return{txt:'Décision rouverte : '+x.label}});sigDec='';majDos()}
+async function retirer(id){
+ const a=A(),d=decsOf(a).find(x=>x.id===id);if(!d)return;
+ if(d.key==='smur'&&d.etat==='finalisee'&&decls.some(x=>x.appelId===a.id&&x.etape!=='annule')){alert('Un SMUR est déclenché pour ce dossier : annulez le déclenchement pour pouvoir retirer cette décision.');return}
+ if(!confirm('Retirer la décision « '+d.label+' » ?'))return;
+ await majDec(L=>{const i=L.findIndex(y=>y.id===id);if(i<0)return{abort:1};L.splice(i,1);return{txt:'Décision retirée : '+d.label}});
+ oublier(id);sigDec='';majDos()
 }
-async function transfert(){
- const a=A(),now=Date.now(),service=dd('tService');
- if(!service){alert('Choisissez le service destinataire.');return}
- if(a.decisionKey==='smur'&&decActive(a)){alert('Un SMUR est encore engagé.');return}
- const t={service,interlocuteur:dd('tInterloc'),reference:dd('tRef'),details:dd('tDetail'),at:a.transfert?.at||now,par:a.transfert?.par||medecin.nom||''};
- await maj(cur,{decision:DECL.transfert,decisionKey:'transfert',decisionAt:a.decisionAt||now,decisionPar:medecin.nom||'',transfert:t,transfertAt:t.at,statut:'transfere'},'Appel transféré : '+service+(t.interlocuteur?' ('+t.interlocuteur+')':''));
- draft={};sigDec='';
-}
+
 /* Notification push (relayée par shell.html) à chaque personne affectée */
 function notifier(uids,titre,contenu){
  try{[...new Set((uids||[]).filter(Boolean))].forEach(u=>window.parent.postMessage({type:"NOTIFICATION",userId:u,titre,contenu},"*"))}catch(e){console.warn('Notification impossible',e)}
 }
-async function engager(k){
+async function engager(k,did){
  const a=A(),l=SMUR.find(x=>x[0]===k)[1],m=membres(k);
  if(engagee(k)||!m.length)return;
  if(!(a.adresse||'').trim()){alert('Renseignez l’adresse de l’intervention avant de déclencher.');return}
@@ -381,7 +486,10 @@ async function engager(k){
  const now=Date.now(),syn=dd('synthese'),full=[a.adresse,[a.cp,a.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
  try{
   const r=await addDoc(collection(db,'declenchements'),{appelId:a.id,appelAt:a.createdAt,num:a.num,motif:a.motif,motifPrecision:a.motifPrecision||'',priorite:a.priorite??2,adresse:full,adresseRue:a.adresse||'',cp:a.cp||'',ville:a.ville||'',compl:a.compl||'',lieu:a.lieu||'',lat:a.lat??null,lng:a.lng??null,appelant:a.appelant||'',tel:a.tel||'',victimes:a.victimes||[],synthese:syn,equipe:k,equipeLabel:l,uids:m,actif:true,etape:'declenche',heures:{declenche:now},jour:iso(new Date()),creePar:medecin.nom||'',creeParUid:medecin.uid});
-  await maj(cur,{statut:'declenche',decision:'SMUR',decisionKey:'smur',decisionAt:a.decisionAt||now,decisionPar:a.decisionPar||medecin.nom||'',declencheAt:a.declencheAt||now,equipe:l,equipeKey:k,declenchementId:r.id,synthese:syn},'SMUR déclenché : '+l+' ('+noms(m)+')');
+  await majDec((L,fa)=>{const x=L.find(y=>y.id===did);
+   const fin={equipe:l,declId:r.id};
+   if(x){x.etat='finalisee';x.fin=fin;x.finAt=now}else L.push({id:uid(),key:'smur',label:DECL.smur,at:now,par:medecin.nom||'',detail:'',etat:'finalisee',finAt:now,fin});
+   return {smur:true,f:{declencheAt:fa.declencheAt||now,equipe:l,equipeKey:k,declenchementId:r.id,synthese:syn},txt:'SMUR déclenché : '+l+' ('+noms(m)+')'}});
   notifier(m,'🚨 '+l+' déclenché',[
    'Dossier : '+a.num,
    'Priorité : '+(['P0 · Vital','P1 · Urgent','P2 · Non urgent','P3 · Conseil'][a.priorite??2]||'—'),
@@ -402,19 +510,24 @@ async function annuler(id){
  const d=decls.find(x=>x.id===id);if(!d||!confirm('Annuler le déclenchement de '+d.equipeLabel+' ?'))return;
  try{await updateDoc(doc(db,'declenchements',id),{actif:false,etape:'annule','heures.annule':Date.now()});
   const reste=decls.some(x=>x.appelId===cur&&x.id!==id&&x.etape!=='annule');
-  await maj(cur,reste?{}:{statut:'nouveau',equipe:deleteField(),equipeKey:deleteField(),declenchementId:deleteField()},'Déclenchement annulé : '+d.equipeLabel)}catch(e){console.error(e);alert('Action impossible.')}
+  /* la décision SMUR repasse « à finaliser » : il faudra choisir une autre équipe */
+  await majDec(L=>{const x=L.find(y=>y.fin&&y.fin.declId===id);if(x){x.etat='a_finaliser';x.fin={};delete x.finAt}
+   return {smur:reste,f:reste?{}:{equipe:deleteField(),equipeKey:deleteField(),declenchementId:deleteField()},txt:'Déclenchement annulé : '+d.equipeLabel+(x?' — décision SMUR à finaliser':'')}});
+  sigDec='';majDos()}catch(e){console.error(e);alert('Action impossible.')}
 }
 
 /* ---------- Clôture / réouverture / suppression ---------- */
 const MOTIF_PAR_DEC={conseil:'Conseil donné',mg:'Orientation réalisée',ambulance:'Orientation réalisée',vsav:'Orientation réalisée',smur:'Intervention terminée',transfert:'Transféré à un autre service',urgences:'Orientation réalisée',sanssuite:'Appel non pertinent / sans suite'};
-$('#bClo').onclick=()=>{const a=A();
- if(!a.decisionKey){alert('Enregistrez une décision de régulation avant de clôturer.');return}
+$('#bClo').onclick=()=>{const a=A(),L=decsOf(a);
+ if(!L.length){alert('Enregistrez une décision de régulation avant de clôturer.');return}
  if(decActive(a)){alert('Un SMUR est encore engagé : terminez ou annulez l’intervention.');return}
- $('#cloMotif').value=MOTIF_PAR_DEC[a.decisionKey]||'';$('#cloNote').value='';$('#dClo').showModal()};
+ const p=pendL(a).length;if(p&&!confirm(p+' décision(s) restent à finaliser. Clôturer quand même ?'))return;
+ const pr=['smur','transfert','vsav','ambulance','urgences','mg','conseil','sanssuite'].find(k=>L.some(d=>d.key===k));
+ $('#cloMotif').value=MOTIF_PAR_DEC[pr]||'';$('#cloNote').value='';$('#dClo').showModal()};
 $('#cloX').onclick=()=>$('#dClo').close();
 $('#cloOk').onclick=async()=>{const m=$('#cloMotif').value;if(!m){alert('Choisissez un motif de clôture.');return}
  await maj(cur,{statut:'cloture',clotureAt:Date.now(),motifCloture:m,clotureNote:$('#cloNote').value.trim(),cloturePar:medecin.nom||''},'Dossier clôturé : '+m);$('#dClo').close()};
 $('#bRo').onclick=()=>{const a=A();
- maj(cur,{statut:decls.some(d=>d.appelId===a.id&&d.etape!=='annule')?'declenche':a.decisionKey==='transfert'?'transfere':'nouveau',clotureAt:deleteField(),motifCloture:deleteField(),clotureNote:deleteField()},'Dossier rouvert')};
+ maj(cur,{statut:derive(a,decsOf(a)).statut,clotureAt:deleteField(),motifCloture:deleteField(),clotureNote:deleteField()},'Dossier rouvert')};
 $('#bDel').onclick=async()=>{if(confirm('Supprimer définitivement ce dossier ?')){const id=cur;fermer();await deleteDoc(doc(db,'appels',id))}};
 </script></body></html>

@@ -30,16 +30,29 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .chip{flex:none;padding:6px 12px;border-radius:12px;background:var(--field);border:1px solid var(--line-soft);display:flex;flex-direction:column;justify-content:center}.chip b{font-size:20px;line-height:1}
 .tm{flex:none;min-width:190px;border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:6px 12px}
 .tm small{display:block;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#split{flex:1;min-height:0;display:grid;grid-template-columns:340px 1fr}
-#liste{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-#tools{padding:10px;display:grid;gap:8px;border-bottom:1px solid var(--line-soft)}
-#cards{overflow:auto;padding:8px;display:grid;gap:8px;align-content:start;flex:1}
+body.fiche #strip,body.fiche #mainview{display:none}
+body.main #dos{display:none}
+#mainview{flex:1;min-height:0;display:flex;flex-direction:column}
+.fw{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:13px;font-weight:600;flex:none}
+.fw.on{background:var(--ok-soft);color:var(--ok)}.fw.off{background:var(--late-soft);color:var(--late)}
+.fw button{min-height:30px;padding:0 10px;font-size:13px;margin-left:auto}
+#tools{padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line-soft);flex:none}
+#tools select{width:auto;min-width:130px}#tools #q{flex:1;min-width:220px;width:auto}
+#tools label{margin:0 0 0 6px;font-weight:500;color:var(--muted)}
+.grp{margin-bottom:16px}
+.gh{display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;user-select:none;border-bottom:2px solid var(--c)}
+.gh .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.gh .n{background:var(--c);color:#fff;border-radius:99px;padding:0 8px;font-size:12px;font-weight:700;line-height:20px}
+.gh .chev{margin-left:auto;color:var(--muted)}
+.gc{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;margin-top:10px}
+#vide.msg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+#vide .big{font-size:56px;opacity:.6}#vide b{font-size:20px;color:var(--ink)}
+#cards{overflow:auto;padding:12px 16px 30px;flex:1}
 .cd{border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:9px 12px;cursor:pointer;background:#fff}
 .cd:hover{background:var(--soft)}.cd.cur{background:var(--soft);border-color:var(--primary);border-left-color:var(--c)}.cd.cl{opacity:.65}
 .cd .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.cd .mt{font-weight:600;margin:3px 0 1px}
-#dos{overflow:auto;min-height:0;position:relative}
+#dos{flex:1;overflow:auto;min-height:0;position:relative}
 .dh{position:sticky;top:0;z-index:600;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
-#bBack{display:none}
 .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;padding:14px 16px 40px;align-items:start}
 .col{display:grid;gap:14px;min-width:0}
 .sec{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;min-width:0}
@@ -76,28 +89,30 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .ht input,.ht .hv{min-height:34px;margin:2px 0;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}.ht .hv{display:flex;align-items:center}
 .ht small{display:block}.ht.bad small{color:var(--late);font-weight:600}
 dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow:0 10px 40px #0004}
-@media(max-width:980px){#split{grid-template-columns:1fr}#dos{display:none}#split.open #liste{display:none}#split.open #dos{display:block}#bBack{display:inline-block}.dgrid{grid-template-columns:1fr}.v{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
-@media print{.ht button{display:none}header,#strip,#liste,.dh button,#bAddV,#sugg,#note-compose{display:none!important}#split{display:block}#dos{overflow:visible}.dgrid{grid-template-columns:1fr}}
+@media(max-width:980px){.dgrid{grid-template-columns:1fr}.v{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
+@media print{.ht button{display:none}header,#strip,#mainview,.dh button,#bAddV,#sugg,#note-compose{display:none!important}#dos{overflow:visible}.dgrid{grid-template-columns:1fr}}
 </style></head><body>
-<header><b>🚑</b><div><div class="k">SAMU · Régulation médicale</div><h1>Dossiers de régulation</h1></div><span id="who"></span></header>
+<header><b>🚑</b><div><div class="k">SAMU · Régulation médicale</div><h1 id="h1">Dossiers de régulation</h1></div><span id="who"></span></header>
 <div id="gate" class="msg">Connexion en cours…</div>
 <div id="app" hidden>
  <div id="strip"></div>
- <div id="split">
-  <aside id="liste">
-   <div id="tools">
-    <button class="p" id="bNew">+ Nouvel appel</button>
-    <div class="g2"><select id="fEt"><option value="ouverts">En cours</option><option value="tous">Tous</option><option value="clotures">Clôturés</option></select>
-     <select id="fPer"><option value="0">Aujourd’hui</option><option value="7">7 jours</option><option value="30">30 jours</option><option value="9999">Tout</option></select></div>
-    <input id="q" type="search" placeholder="N°, adresse, motif, appelant, tél…">
-   </div>
-   <div id="cards"></div>
-  </aside>
+ <div id="mainview">
+  <div id="fwBar" class="fw off"><span id="fwTxt">Fenêtre fiche…</span><button id="bFw" type="button">Ouvrir la fenêtre fiche</button></div>
+  <div id="tools">
+   <button class="p" id="bNew">+ Nouvel appel</button>
+   <select id="fEt" title="État"><option value="ouverts">En cours</option><option value="tous">Tous</option><option value="clotures">Clôturés</option></select>
+   <select id="fPer" title="Période"><option value="0">Aujourd’hui</option><option value="7">7 jours</option><option value="30">30 jours</option><option value="9999">Tout</option></select>
+   <select id="fPr" title="Priorité"><option value="">Toutes priorités</option></select>
+   <label for="fGr">Grouper par</label><select id="fGr"><option value="etat">État</option><option value="prio">Priorité</option><option value="motif">Motif / catégorie</option><option value="reg">Régulateur</option><option value="none">Sans regroupement</option></select>
+   <input id="q" type="search" placeholder="N°, adresse, motif, appelant, tél…">
+  </div>
+  <div id="cards"></div>
+ </div>
   <section id="dos">
-   <div id="vide" class="msg">Sélectionnez un dossier ou créez un nouvel appel.</div>
+   <div id="vide" class="msg"><div class="big">🗂️</div><b>Aucune fiche ouverte</b><span>Sélectionnez une intervention dans la fenêtre principale : sa fiche s’affichera ici.</span></div>
    <div id="dossier" hidden>
     <div class="dh">
-     <button id="bBack">← Liste</button>
+     <button id="bBack" type="button">✕ Fermer la fiche</button>
      <div><div class="k">Dossier de régulation</div><h2 id="dNum"></h2></div>
      <span id="dSt" class="pill"></span><span id="dPr" class="pill"></span><small id="dTimer"></small>
      <span style="flex:1"></span><small id="saved"></small>
@@ -134,7 +149,6 @@ dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow
     </div></fieldset>
    </div>
   </section>
- </div>
 </div>
 <dialog id="dClo"><h2 style="margin-bottom:10px">Clôturer le dossier</h2>
  <label>Motif de clôture *</label><select id="cloMotif"></select>
@@ -147,6 +161,10 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, onSnapshot, runTransaction, arrayUnion, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app),$=s=>document.querySelector(s);
+/* Deux modes : fenêtre principale (liste) ou fenêtre « fiche » (?vue=fiche) */
+const MODE=new URLSearchParams(location.search).get('vue')==='fiche'?'fiche':'main';
+document.body.classList.add(MODE);
+if(MODE==='fiche'){$('#h1').textContent='Fiche de régulation';document.title='Fiche de régulation — en attente'}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sans=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -246,7 +264,56 @@ $('#prio').innerHTML=PRIO.map((p,i)=>`<button type="button" data-p="${i}" style=
 
 let medecin={},users={},affs=[],appels=[],decls=[],cur=null,sel={},draft={},sigDec='',map=null,mk=null,geoSig='',suggT=0;
 const A=()=>appels.find(x=>x.id===cur),closed=a=>a&&a.statut==='cloture';
+$('#fPr').innerHTML+=PRIO.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');
+try{const g=localStorage.getItem('samu-grp');if(g)$('#fGr').value=g}catch(e){}
 const flash=()=>{$('#saved').textContent='Enregistré à '+hm(Date.now())};
+
+/* ---------- Communication entre les deux fenêtres ---------- */
+const bc='BroadcastChannel' in window?new BroadcastChannel('samu-regulation'):{postMessage(){}};
+let fw=null,lastFiche=0,lastMain=0,wait=null,autoFail=false;
+const ficheVivante=()=>!!(fw&&!fw.closed)||Date.now()-lastFiche<8000;
+const mainVivante=()=>Date.now()-lastMain<8000;
+const beat=()=>bc.postMessage({t:'beat',from:MODE});
+setInterval(beat,2000);beat();
+addEventListener('beforeunload',()=>{if(MODE==='fiche')bc.postMessage({t:'bye'})});
+const diffuser=()=>bc.postMessage({t:'state',id:cur});
+const relayNotif=(L,titre,contenu)=>{try{L.forEach(u=>window.parent.postMessage({type:"NOTIFICATION",userId:u,titre,contenu},"*"))}catch(e){console.warn('Notification impossible',e)}};
+bc.onmessage=e=>{const m=e.data||{};
+ if(m.t==='ping')beat();
+ else if(m.t==='beat'){if(m.from==='fiche')lastFiche=Date.now();else lastMain=Date.now()}
+ else if(MODE==='fiche'&&m.t==='open')ouvrirDemande(m.id);
+ else if(MODE==='main'&&m.t==='state'){cur=m.id;liste();majFw()}
+ else if(MODE==='main'&&m.t==='bye'){lastFiche=0;cur=null;liste();majFw()}
+ else if(MODE==='main'&&m.t==='notif')relayNotif(m.uids||[],m.titre,m.contenu)};
+
+/* fenêtre principale : ouvrir / piloter la fenêtre fiche */
+function ouvrirFenetre(id){
+ const u=new URL(location.href);u.hash='';u.searchParams.set('vue','fiche');id?u.searchParams.set('id',id):u.searchParams.delete('id');
+ let w=null;try{w=window.open(u.toString(),'samu-fiche','popup=yes,width='+Math.min(1400,screen.availWidth)+',height='+Math.min(950,screen.availHeight))}catch(e){}
+ if(w){fw=w;try{w.focus()}catch(e){}}
+ majFw();return w}
+function demander(id){
+ cur=id;liste();
+ if(ficheVivante()){bc.postMessage({t:'open',id});try{(fw&&!fw.closed?fw:window.open('','samu-fiche'))?.focus()}catch(e){}}
+ else ouvrirFenetre(id);
+ majFw()}
+function majFw(){
+ if(MODE!=='main')return;
+ const v=ficheVivante(),a=cur&&appels.find(x=>x.id===cur);
+ $('#fwBar').className='fw '+(v?'on':'off');
+ $('#fwTxt').textContent=v?'🪟 Fenêtre fiche ouverte'+(a?' — dossier '+a.num:' — en attente'):'🪟 Fenêtre fiche fermée (si rien ne s’ouvre, autorisez les fenêtres pop-up pour ce site)';
+ $('#bFw').textContent=v?'Mettre au premier plan':'Ouvrir la fenêtre fiche'}
+$('#bFw').onclick=()=>{if(ficheVivante()){try{(fw&&!fw.closed?fw:window.open('','samu-fiche'))?.focus()}catch(e){}}else ouvrirFenetre(cur)};
+if(MODE==='main'){
+ setInterval(majFw,1500);
+ /* si le navigateur a bloqué l'ouverture automatique, le premier clic la déclenche */
+ document.addEventListener('click',()=>{if(autoFail&&!ficheVivante()){autoFail=false;ouvrirFenetre(cur)}});
+}
+/* fenêtre fiche : demande d'ouverture d'un dossier */
+function ouvrirDemande(id){
+ if(!id||id===cur)return;
+ if($('#app').hidden||!appels.some(x=>x.id===id)){wait=id;return}
+ wait=null;ouvrir(id)}
 async function maj(id,f,txt){const u={...f};if(txt)u.journal=arrayUnion({at:Date.now(),par:medecin.nom||'',txt});
  try{await updateDoc(doc(db,'appels',id),u);flash()}catch(e){console.error(e);alert('Enregistrement impossible.')}}
 
@@ -262,6 +329,8 @@ onAuthStateChanged(auth,async u=>{
   onSnapshot(collection(db,'appels'),s=>{appels=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
   onSnapshot(collection(db,'affectations'),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
   onSnapshot(collection(db,'declenchements'),s=>{decls=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
+  if(MODE==='main'){bc.postMessage({t:'ping'});setTimeout(()=>{if(!ficheVivante()&&!ouvrirFenetre(null))autoFail=true;majFw()},1200)}
+  else{const id=new URLSearchParams(location.search).get('id');if(id)ouvrirDemande(id)}
   setInterval(()=>{if($('#app').hidden)return;rendre()},30000);
  }catch(e){console.error(e);$('#gate').textContent='Une erreur est survenue, réessayez plus tard.'}
 });
@@ -276,7 +345,8 @@ const noms=u=>(u||[]).map(x=>users[x]?.nom||x).join(', ');
 
 function rendre(){
  if($('#app').hidden)return;
- strip();liste();
+ if(MODE==='main'){strip();liste();majFw();return}
+ if(wait&&appels.some(x=>x.id===wait)){const w=wait;wait=null;ouvrir(w);return}
  if(cur){if(!A())fermer();else majDos()}
 }
 function strip(){
@@ -287,22 +357,40 @@ function strip(){
    return `<div class="tm" style="--c:${c}"><b>${l}</b> <span class="pill" style="--c:${c}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><small>${esc(noms(m))||'Personne affecté'}</small></div>`}).join('');
 }
 
-/* ---------- Liste ---------- */
+/* ---------- Liste (fenêtre principale) ---------- */
 function filtrer(){
- const q=sans($('#q').value),per=+$('#fPer').value,lim=per===0?new Date().setHours(0,0,0,0):Date.now()-per*864e5,e=$('#fEt').value;
+ const q=sans($('#q').value),per=+$('#fPer').value,lim=per===0?new Date().setHours(0,0,0,0):Date.now()-per*864e5,e=$('#fEt').value,pf=$('#fPr').value;
  const L=appels.filter(a=>{const cl=closed(a);if(e==='ouverts'&&cl)return false;if(e==='clotures'&&!cl)return false;if(cl&&a.createdAt<lim)return false;
+  if(pf!==''&&(a.priorite??2)!==+pf)return false;
   return !q||sans([a.num,a.adresse,a.cp,a.ville,a.motif,a.appelant,a.tel].join(' ')).includes(q)});
  return L.sort((a,b)=>(closed(a)-closed(b))||(closed(a)?b.createdAt-a.createdAt:((a.priorite??2)-(b.priorite??2)||a.createdAt-b.createdAt)));
 }
+/* regroupement : renvoie [libellé, couleur, ordre] */
+function grp(a,g){
+ if(g==='etat'){const s=STAT[a.statut]||STAT.nouveau;return [s[0],s[1],closed(a)?3:a.statut==='declenche'?1:a.statut==='transfere'?2:0]}
+ if(g==='prio'){const p=a.priorite??2;return [PRIO[p][0],PRIO[p][1],p]}
+ if(g==='motif')return a.motif?[a.motif,'#0b6fa4',0]:['Motif non précisé','#aab7c4',1];
+ if(g==='reg')return a.regulateur?[a.regulateur,'#0b6fa4',0]:['Non attribué','#aab7c4',1];
+ return ['Dossiers','#586a7e',0]}
+const collapsed=new Set();
+function carteHTML(a){
+ const p=PRIO[a.priorite??2],s=STAT[a.statut]||STAT.nouveau,pn=!closed(a)?pendL(a).length:0;
+ return `<div class="cd ${a.id===cur?'cur':''} ${closed(a)?'cl':''}" data-id="${a.id}" style="--c:${p[1]}"><div class="r"><b>${esc(a.num)}</b><span class="pill" style="--c:${p[1]}">${p[0]}</span><small>${hm(a.createdAt)}</small></div>
+ <div class="mt">${esc(a.motif||'Motif non précisé')}</div><small>${esc([a.adresse,a.ville].filter(Boolean).join(', ')||'Adresse non renseignée')}</small>
+ <div class="r" style="margin-top:4px"><span class="pill" style="--c:${s[1]}">${s[0]}${a.equipe&&a.statut==='declenche'?' · '+esc(a.equipe):''}</span>${pn?`<span class="pill" style="--c:#a35a00">${pn} à finaliser</span>`:''}<small>${closed(a)?dur(a.clotureAt-a.createdAt):dur(Date.now()-a.createdAt)}</small><small>${esc(a.regulateur||'')}</small></div></div>`}
 function liste(){
- const L=filtrer();
- $('#cards').innerHTML=L.map(a=>{const p=PRIO[a.priorite??2],s=STAT[a.statut]||STAT.nouveau;
-  return `<div class="cd ${a.id===cur?'cur':''} ${closed(a)?'cl':''}" data-id="${a.id}" style="--c:${p[1]}"><div class="r"><b>${esc(a.num)}</b><span class="pill" style="--c:${p[1]}">${p[0]}</span><small>${hm(a.createdAt)}</small></div>
-  <div class="mt">${esc(a.motif||'Motif non précisé')}</div><small>${esc([a.adresse,a.ville].filter(Boolean).join(', ')||'Adresse non renseignée')}</small>
-  <div class="r" style="margin-top:4px"><span class="pill" style="--c:${s[1]}">${s[0]}${a.equipe&&a.statut==='declenche'?' · '+esc(a.equipe):''}</span>${!closed(a)&&pendL(a).length?`<span class="pill" style="--c:#a35a00">${pendL(a).length} à finaliser</span>`:''}<small>${closed(a)?dur(a.clotureAt-a.createdAt):dur(Date.now()-a.createdAt)}</small><small>${esc(a.regulateur||'')}</small></div></div>`}).join('')||'<div class="msg">Aucun dossier.</div>';
+ if(MODE!=='main')return;
+ const L=filtrer(),g=$('#fGr').value,M=new Map();
+ L.forEach(a=>{const k=grp(a,g);if(!M.has(k[0]))M.set(k[0],{l:k[0],c:k[1],o:k[2],items:[]});M.get(k[0]).items.push(a)});
+ const G=[...M.values()].sort((x,y)=>x.o-y.o||x.l.localeCompare(y.l,'fr'));
+ $('#cards').innerHTML=G.map(x=>{const key=g+'|'+x.l,col=collapsed.has(key);
+  return `<section class="grp">${g==='none'?'':`<div class="gh" data-k="${esc(key)}" style="--c:${x.c}"><span class="dot"></span><b>${esc(x.l)}</b><span class="n">${x.items.length}</span><span class="chev">${col?'▸':'▾'}</span></div>`}${col?'':`<div class="gc">${x.items.map(carteHTML).join('')}</div>`}</section>`}).join('')||'<div class="msg">Aucun dossier.</div>';
 }
-$('#cards').onclick=e=>{const c=e.target.closest('.cd');if(c)ouvrir(c.dataset.id)};
-['#fEt','#fPer','#q'].forEach(s=>$(s).oninput=liste);
+$('#cards').onclick=e=>{
+ const h=e.target.closest('.gh');if(h){const k=h.dataset.k;collapsed.has(k)?collapsed.delete(k):collapsed.add(k);liste();return}
+ const c=e.target.closest('.cd');if(c)demander(c.dataset.id)};
+['#fEt','#fPer','#fPr','#fGr','#q'].forEach(s=>$(s).oninput=liste);
+$('#fGr').addEventListener('change',()=>{try{localStorage.setItem('samu-grp',$('#fGr').value)}catch(e){}});
 
 /* ---------- Création ---------- */
 async function numero(){const r=doc(db,'samu-config','compteur'),j=iso(new Date());
@@ -310,7 +398,7 @@ async function numero(){const r=doc(db,'samu-config','compteur'),j=iso(new Date(
 $('#bNew').onclick=async()=>{
  try{const now=Date.now(),num=await numero();
   const r=await addDoc(collection(db,'appels'),{num,statut:'nouveau',createdAt:now,regulateur:medecin.nom||'',regulateurUid:medecin.uid,priorite:2,motif:'',victimes:[{}],notes:[],journal:[{at:now,par:medecin.nom||'',txt:'Appel décroché — dossier créé'}]});
-  ouvrir(r.id)}catch(e){console.error(e);alert('Création du dossier impossible.')}
+  demander(r.id)}catch(e){console.error(e);alert('Création du dossier impossible.')}
 };
 
 /* ---------- Dossier ---------- */
@@ -318,16 +406,17 @@ function ouvrir(id){
  cur=id;const a=A()||{};sel={};$('#decQ').value='';draft={};sigDec='';geoSig='';
  document.querySelectorAll('#fs [data-k]').forEach(e=>e.value=a[e.dataset.k]??'');
  $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
- $('#vide').hidden=true;$('#dossier').hidden=false;$('#split').classList.add('open');$('#saved').textContent='';$('#nTxt').value='';
- carte();majDos();liste();
+ $('#vide').hidden=true;$('#dossier').hidden=false;$('#saved').textContent='';$('#nTxt').value='';
+ carte();majDos();diffuser();
 }
-function fermer(){cur=null;$('#dossier').hidden=true;$('#vide').hidden=false;$('#split').classList.remove('open');liste()}
+/* « Fermer la fiche » : on revient simplement à l'écran d'attente, la fenêtre reste ouverte */
+function fermer(){cur=null;wait=null;$('#dossier').hidden=true;$('#vide').hidden=false;document.title='Fiche de régulation — en attente';diffuser()}
 $('#bBack').onclick=fermer;$('#bPrint').onclick=()=>window.print();
 
 function majDos(){
  const a=A();if(!a)return;
  const s=STAT[a.statut]||STAT.nouveau,p=PRIO[a.priorite??2];
- $('#dNum').textContent=a.num;$('#dSt').textContent=s[0];$('#dSt').style.setProperty('--c',s[1]);
+ $('#dNum').textContent=a.num;document.title='Fiche '+a.num+' — Régulation SAMU';$('#dSt').textContent=s[0];$('#dSt').style.setProperty('--c',s[1]);
  $('#dPr').textContent=p[0];$('#dPr').style.setProperty('--c',p[1]);
  $('#dTimer').textContent=closed(a)?'Durée du dossier : '+dur(a.clotureAt-a.createdAt):'Ouvert depuis '+dur(Date.now()-a.createdAt);
  $('#fs').disabled=closed(a);$('#bClo').hidden=closed(a);$('#bRo').hidden=!closed(a);
@@ -610,9 +699,13 @@ async function retirer(id){
  oublier(id);sigDec='';majDos()
 }
 
-/* Notification push (relayée par shell.html) à chaque personne affectée */
+/* Notification push (relayée par shell.html via la fenêtre principale) à chaque personne affectée */
 function notifier(uids,titre,contenu){
- try{[...new Set((uids||[]).filter(Boolean))].forEach(u=>window.parent.postMessage({type:"NOTIFICATION",userId:u,titre,contenu},"*"))}catch(e){console.warn('Notification impossible',e)}
+ const L=[...new Set((uids||[]).filter(Boolean))];
+ /* la fenêtre principale relaie la notification vers shell.html ; sinon, envoi direct */
+ if(MODE==='fiche'&&mainVivante()){bc.postMessage({t:'notif',uids:L,titre,contenu});return}
+ relayNotif(L,titre,contenu);
+ if(MODE==='fiche'&&window.parent===window)alert('Attention : la fenêtre principale est fermée, la notification push n’a peut-être pas été envoyée à l’équipe. Prévenez-la directement.');
 }
 async function engager(k,did){
  const a=A(),l=SMUR.find(x=>x[0]===k)[1],m=membres(k);

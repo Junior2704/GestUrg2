@@ -367,6 +367,10 @@ async function transfert(){
  await maj(cur,{decision:DECL.transfert,decisionKey:'transfert',decisionAt:a.decisionAt||now,decisionPar:medecin.nom||'',transfert:t,transfertAt:t.at,statut:'transfere'},'Appel transféré : '+service+(t.interlocuteur?' ('+t.interlocuteur+')':''));
  draft={};sigDec='';
 }
+/* Notification push (relayée par shell.html) à chaque personne affectée */
+function notifier(uids,titre,contenu){
+ try{[...new Set((uids||[]).filter(Boolean))].forEach(u=>window.parent.postMessage({type:"NOTIFICATION",userId:u,titre,contenu},"*"))}catch(e){console.warn('Notification impossible',e)}
+}
 async function engager(k){
  const a=A(),l=SMUR.find(x=>x[0]===k)[1],m=membres(k);
  if(engagee(k)||!m.length)return;
@@ -378,6 +382,13 @@ async function engager(k){
  try{
   const r=await addDoc(collection(db,'declenchements'),{appelId:a.id,appelAt:a.createdAt,num:a.num,motif:a.motif,motifPrecision:a.motifPrecision||'',priorite:a.priorite??2,adresse:full,adresseRue:a.adresse||'',cp:a.cp||'',ville:a.ville||'',compl:a.compl||'',lieu:a.lieu||'',lat:a.lat??null,lng:a.lng??null,appelant:a.appelant||'',tel:a.tel||'',victimes:a.victimes||[],synthese:syn,equipe:k,equipeLabel:l,uids:m,actif:true,etape:'declenche',heures:{declenche:now},jour:iso(new Date()),creePar:medecin.nom||'',creeParUid:medecin.uid});
   await maj(cur,{statut:'declenche',decision:'SMUR',decisionKey:'smur',decisionAt:a.decisionAt||now,decisionPar:a.decisionPar||medecin.nom||'',declencheAt:a.declencheAt||now,equipe:l,equipeKey:k,declenchementId:r.id,synthese:syn},'SMUR déclenché : '+l+' ('+noms(m)+')');
+  notifier(m,'🚨 '+l+' déclenché',[
+   'Dossier : '+a.num,
+   'Priorité : '+(['P0 · Vital','P1 · Urgent','P2 · Non urgent','P3 · Conseil'][a.priorite??2]||'—'),
+   'Motif : '+(a.motif||'—')+(a.motifPrecision?' ('+a.motifPrecision+')':''),
+   'Adresse : '+(full||'—'),
+   'Équipe : '+noms(m),
+   'Déclenché par : '+(medecin.nom||'—')].join('\n'));
   sigDec='';
  }catch(e){console.error(e);alert('Déclenchement impossible, réessayez.')}
 }

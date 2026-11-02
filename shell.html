@@ -4878,7 +4878,11 @@ function rendreRaccourcis() {
   const ctx = (titre, url, icone, label, sub) => q.push(`<button type="button" class="hw-qbtn ctx" data-title="${esc(titre)}" data-url="${url}">${ico(icone)}<span class="hw-tx"><b>${esc(label)}</b><small>${esc(sub)}</small></span></button>`);
   let calDeja = false;
   if (etat.aff === "ok") {
-    const postes = new Set(affs.filter(a => applique(a, auj) && tm(a.start) <= nowM && nowM < tm(a.end)).map(a => a.poste));
+    const actives = affs.filter(a => applique(a, auj) && tm(a.start) <= nowM && nowM < tm(a.end));
+    const postes = new Set(actives.map(a => a.poste));
+    if (postes.has("regul") && pages.regulationSAMU) ctx("Régulation SAMU", "regulationSAMU.html", "i-headset", "Régulation SAMU", "Vous êtes affecté(e) à la régulation");
+    const smur = actives.find(a => /^smur/.test(a.poste));
+    if (smur && pages.declenchementsSAMU) ctx("Déclenchements SMUR", "declenchementsSAMU.html", "i-ambulance", "Déclenchements SMUR", "Vous êtes affecté(e) au " + (smur.posteLabel || "SMUR"));
     if (postes.has("urgences") && pages.urgences) ctx("Urgences", "urgences.html", "i-ambulance", "Urgences", "Vous êtes affecté(e) aux urgences");
     if (postes.has("radiologie") && pages.gestionnaireradiologie) ctx("Imagerie", "gestionnaireradiologie.html", "i-scan", "Gestionnaire d'imagerie", "Vous êtes affecté(e) à l'imagerie");
     if (postes.has("consultation")) {

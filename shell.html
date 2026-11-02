@@ -2586,47 +2586,36 @@ let tabs = [];
 let activeTab = null;
 
 function openTab(title, url){
- let existing = tabs.find(t=>t.url===url);
-  if(existing){
-    setActive(existing.id);
+
+  // Régulation SAMU : ouverture dans une véritable fenêtre indépendante
+  if (/regulationSAMU\.html(?:[?#]|$)/i.test(url)) {
+
+    const destination = new URL(url, location.href);
+
+    const fenetre = window.open(
+      destination.href,
+      "gesturg2-regulation-samu",
+      "popup=yes,width=1500,height=950"
+    );
+
+    if (fenetre) {
+      fenetre.focus();
+    } else {
+      alert("Autorisez les fenêtres pop-up pour ouvrir la Régulation SAMU.");
+    }
+
+    if (window.logAction) {
+      window.logAction("ouverture_module", {
+        titre: "Régulation SAMU",
+        url: destination.href,
+        mode: "nouvelle_fenetre"
+      });
+    }
+
     return;
   }
-
-  // 🔍 Test de place AVANT ouverture
-  const tempTab = document.createElement("div");
-  tempTab.className = "tab";
-  tempTab.style.visibility = "hidden";
-  tempTab.innerHTML = title;
-  document.getElementById("tabs").appendChild(tempTab);
-
-  const overflow = tabsOverflow();
-  tempTab.remove();
-
-  if (overflow) {
-    showOverflowModal();
-    return;
-  }
-  const id = Date.now();
-  tabs.push({id,title,url});
-
-  const tab = document.createElement('div');
-  tab.className='tab';tab.dataset.id=id;
-  tab.innerHTML=`${title} <span class="close">✕</span>`;
-  tab.onclick=()=>setActive(id);
-  tab.querySelector('.close').onclick=(e)=>{e.stopPropagation();closeTab(id)};
-  enableTabDrag(tab);
-  document.getElementById('tabs').appendChild(tab);
-
-  const iframe=document.createElement('iframe');
-  iframe.src=url;iframe.dataset.id=id;
-  document.getElementById('content').appendChild(iframe);
-  pinnedOpen = false;
-document.getElementById('menuOutils').classList.remove("open");
-  document.getElementById('home').style.display='none';
-  setActive(id);
-  if (window.logAction) window.logAction("ouverture_module", { titre: title, url });
 }
-
+  let existing = tabs.find(t=>t.url===url);
 function setActive(id){
   activeTab=id;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id==id));

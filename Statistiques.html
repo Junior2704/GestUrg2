@@ -61,6 +61,8 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{text-align:left
 .note{padding:10px 12px;border-radius:10px;background:var(--field);border:1px dashed var(--line);color:var(--muted);font-size:13px;margin-top:10px}
 .modalna{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(255,255,255,.96)}
 .modalna .card{max-width:440px;text-align:center;padding:30px}.modalna h2{color:var(--bad);margin-bottom:10px}
+select{min-height:38px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink)}
+#map{height:380px;border-radius:12px;border:1px solid var(--line);z-index:0}
 :focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
 @media print{header,.bar,.tabs{display:none}.card{break-inside:avoid}}
 </style>
@@ -104,6 +106,9 @@ const dt=v=>{let d=v?.toDate?v.toDate():v instanceof Date?v:typeof v==='string'?
 const med=a=>{a=a.filter(Number.isFinite).sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null};
 const avg=a=>{a=a.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
 const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
+const p90=a=>{a=a.filter(Number.isFinite).sort((x,y)=>x-y);return a.length?a[Math.min(a.length-1,Math.ceil(a.length*.9)-1)]:null};
+const SPRIO=[['P0 · Vital','#b92a30'],['P1 · Urgent','#c2410c'],['P2 · Non urgent','#a35a00'],['P3 · Conseil','#16784a']];
+const mm=v=>v==null?null:v/6e4;
 const pct=(a,b)=>b?Math.round(a/b*100)+' %':'—';
 const nf=n=>n==null?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(n);
 const eur=n=>n==null?'—':new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
@@ -159,7 +164,7 @@ function kpi(l,v,cur,prev,{inv=false,fmt=nf,hint=''}={}){
 }
 
 /* ================= Chargement ================= */
-let per='30',tab='syn',S=null,PC=null,FC=null,medecin={};
+let per='30',tab='syn',S=null,PC=null,FC=null,medecin={},reg='',MAPPTS=[],map=null;
 const PERS=[['7','7 jours'],['30','30 jours'],['90','90 jours'],['365','12 mois'],['all','Tout'],['custom','Personnalisé']];
 function plage(){
   let e=new Date();e.setHours(23,59,59,999);let s;
@@ -176,18 +181,32 @@ async function charger(force){
   try{
     const R=plage(),from=R.ps||R.s,T=x=>Timestamp.fromDate(x);
     if(force||!PC){PC=await rdAll('patients');FC=await rdAll('facture').catch(()=>[])}
-    const[H,C,V]=await Promise.all([rd('hospitalisations','dateDebutTS',T(from),T(R.e)),rd('consultations','dateTS',T(from),T(R.e)),rd('rdv-urgences','date',iso(from),iso(R.e))]);
-    S=calc(R,H,C,V);rendre();
+    const[H,C,V,A,D]=await Promise.all([rd('hospitalisations','dateDebutTS',T(from),T(R.e)),rd('consultations','dateTS',T(from),T(R.e)),rd('rdv-urgences','date',iso(from),iso(R.e)),
+      rd('appels','createdAt',+from,+R.e).catch(e=>{console.warn('appels SAMU',e);return[]}),rd('declenchements','heures.declenche',+from,+R.e).catch(e=>{console.warn('declenchements SAMU',e);return[]})]);
+    S=calc(R,H,C,V,A,D);rendre();
   }catch(e){console.error(e);afficherBulle('Chargement des statistiques impossible','erreur')}
   window.masquerLoader();
 }
 
 /* ================= Calculs ================= */
-function calc(R,H,C,V){
+function calc(R,H,C,V,A,D){
   const pm=Object.fromEntries(PC.map(p=>[p.id,p])),inR=(d,a,b)=>d&&d>=a&&d<=b;
   const hd=h=>dt(h.dateDebutTS),cd=c=>dt(c.dateTS),rdt=r=>dt(r.date+'T'+(r.heure||'00:00'));
   const cut=(a,f)=>[a.filter(x=>inR(f(x),R.s,R.e)),R.ps?a.filter(x=>inR(f(x),R.ps,R.pe)):[]];
   const[h,ph]=cut(H,hd),[c,pc]=cut(C,cd),[r,pr]=cut(V,rdt);
+  /* SAMU : appels (createdAt en ms) et déclenchements SMUR (heures.declenche en ms) */
+  const ad=a=>a.createdAt?new Date(a.createdAt):null,dd=d=>d.heures?.declenche?new Date(d.heures.declenche):null;
+  const[ap,pap]=cut(A,ad),[dp,pdp]=cut(D,dd),aById=Object.fromEntries(A.map(a=>[a.id,a]));
+  const samuK=(aa,ds)=>{
+    const ok=ds.filter(d=>d.etape!=='annule'),apps=new Set(ok.map(d=>d.appelId)),clos=aa.filter(a=>a.statut==='cloture');
+    const dDec=aa.filter(a=>a.decisionAt).map(a=>a.decisionAt-a.createdAt).filter(x=>x>=0),
+      dTr=clos.filter(a=>a.clotureAt).map(a=>a.clotureAt-a.createdAt).filter(x=>x>=0),
+      dSm=ok.map(d=>d.heures.declenche-(d.appelAt||aById[d.appelId]?.createdAt)).filter(x=>Number.isFinite(x)&&x>=0),
+      dInt=ok.filter(d=>d.heures.termine).map(d=>d.heures.termine-d.heures.declenche).filter(x=>x>=0);
+    return{n:aa.length,vict:aa.reduce((t,a)=>t+((a.victimes||[]).length||1),0),ouv:aa.filter(a=>a.statut!=='cloture').length,
+      smur:ok.length,annSm:ds.length-ok.length,appSmur:apps.size,transf:aa.filter(a=>a.decisionKey==='transfert'||a.transfert).length,
+      dDec,dTr,dSm,dInt,mDec:mm(med(dDec)),mTr:mm(med(dTr)),mSm:mm(med(dSm)),mInt:mm(avg(dInt))};
+  };
   const fin=x=>dt(x.dateFinTS),dur=x=>fin(x)&&hd(x)?(fin(x)-hd(x))/36e5:null;
   const termine=x=>!!(x.hospitalisationTerminee||x.dateFinTS);
   const consById=Object.fromEntries(C.map(x=>[x.id,x]));
@@ -207,7 +226,8 @@ function calc(R,H,C,V){
       transf:cc.filter(x=>x.statut==='transferee').length};
   };
   const acti=PC.filter(p=>p.hospitalisationActiveId);
-  return{R,pm,h,c,r,ph,pc,pr,hd,cd,rdt,dur,fin,termine,attente,k:kpis(h,c,r),kp:R.ps?kpis(ph,pc,pr):{},acti,consById};
+  return{R,pm,h,c,r,ph,pc,pr,hd,cd,rdt,dur,fin,termine,attente,k:kpis(h,c,r),kp:R.ps?kpis(ph,pc,pr):{},acti,consById,
+    A:ap,pA:pap,D:dp,pD:pdp,aById,samuK,ks:samuK(ap,dp),ksp:R.ps?samuK(pap,pdp):{}};
 }
 function serie(S,items,f){ // série temporelle (jour, ou mois si >92 j)
   const{s,e}=S.R;let a=s;if(per==='all'){const ds=items.map(f).filter(Boolean).sort((x,y)=>x-y);if(!ds.length)return{l:[],k:{}};a=ds[0]}
@@ -218,11 +238,34 @@ function serie(S,items,f){ // série temporelle (jour, ou mois si >92 j)
 }
 const counts=(sr,items)=>{const m={};items.forEach(x=>{const d=sr.f(x);if(d)m[sr.key(d)]=(m[sr.key(d)]||0)+1});return sr.l.map(k=>m[k]||0)};
 
+/* ================= Carte SAMU (Leaflet chargé à la demande) ================= */
+function chargerLeaflet(){
+  if(window.L)return Promise.resolve();
+  return new Promise(res=>{
+    const l=document.createElement('link');l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);
+    const j=document.createElement('script');j.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';j.onload=j.onerror=()=>res();document.head.appendChild(j);
+  });
+}
+function carte(){
+  if(!$('#map'))return;
+  const pts=MAPPTS;$('#mapInfo').textContent=pts.length+' appel(s) localisé(s) sur '+(S.A.length?(reg?S.A.filter(a=>a.regulateur===reg).length:S.A.length):0);
+  chargerLeaflet().then(()=>{
+    const el=$('#map');if(!el||tab!=='samu')return;
+    if(!window.L){el.innerHTML='<div class="vide" style="padding:20px">Carte indisponible.</div>';return}
+    try{if(map)map.remove()}catch(e){}
+    map=L.map(el).setView([46.6,2.4],5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    const g=L.featureGroup(pts.map(a=>L.circleMarker([a.lat,a.lng],{radius:7,color:'#fff',weight:1,fillColor:(SPRIO[a.priorite??2]||SPRIO[2])[1],fillOpacity:.85}).bindPopup('<b>'+esc(a.num||'')+'</b><br>'+esc(a.motif||'')+'<br>'+esc(a.adresse||'')))).addTo(map);
+    if(pts.length)map.fitBounds(g.getBounds().pad(.2),{maxZoom:14});
+    setTimeout(()=>map&&map.invalidateSize(),100);
+  });
+}
+
 /* ================= Onglets ================= */
-const TABS={syn:'Synthèse',urg:'Urgences',pat:'Patients',con:'Consultations & RDV',eq:'Équipe & examens',fin:'Facturation',qual:'Qualité des données'};
+const TABS={syn:'Synthèse',urg:'Urgences',pat:'Patients',con:'Consultations & RDV',samu:'SAMU',eq:'Équipe & examens',fin:'Facturation',qual:'Qualité des données'};
 const T={
-syn(S){const k=S.k,p=S.kp;
-  const sr=serie(S,[...S.h,...S.c,...S.r],x=>x.dateDebutTS?S.hd(x):x.dateTS?S.cd(x):S.rdt(x));
+syn(S){const k=S.k,p=S.kp,sa=S.A.map(a=>({dateTS:new Date(a.createdAt)}));
+  const sr=serie(S,[...S.h,...S.c,...S.r,...sa],x=>x.dateDebutTS?S.hd(x):x.dateTS?S.cd(x):S.rdt(x));
   const mat=Array.from({length:7},()=>Array(24).fill(0));S.h.forEach(x=>{const d=S.hd(x);if(d)mat[dow(d)][d.getHours()]++});
   return`<div class="kpis">
   ${kpi('Passages aux urgences',nf(k.nH),k.nH,p.nH)}${kpi('Consultations',nf(k.nC),k.nC,p.nC)}${kpi('Rendez-vous',nf(k.nR),k.nR,p.nR)}
@@ -231,9 +274,9 @@ syn(S){const k=S.k,p=S.kp;
   ${kpi('Taux d’hospitalisation',pct(k.hosp,k.term),null,null,{hint:'Sorties de type Hospitalisation / sorties terminées'})}${kpi('Retours à domicile',pct(k.dom,k.term))}
   ${kpi('Décès',nf(k.deces),k.deces,p.deces,{inv:true})}${kpi('Examens réalisés',pct(k.exR,k.exD),null,null,{hint:k.exR+' / '+k.exD})}
   ${kpi('Annulation RDV',pct(k.ann,k.nR),k.ann,p.ann,{inv:true})}${kpi('Attente médiane RDV → consultation',fm(k.att),k.att,p.att,{inv:true})}
-  ${kpi('Consultations transférées aux urgences',pct(k.transf,k.nC))}</div>
+  ${kpi('Consultations transférées aux urgences',pct(k.transf,k.nC))}${kpi('Appels SAMU',nf(S.ks.n),S.ks.n,S.ksp.n)}${kpi('SMUR déclenchés',nf(S.ks.smur),S.ks.smur,S.ksp.smur)}${kpi('Délai médian appel → SMUR',fm(S.ks.mSm),S.ks.mSm,S.ksp.mSm,{inv:true})}</div>
   <div class="grid">
-  ${card('Activité dans le temps',line(sr.lab,[{n:'Urgences',v:counts(sr,S.h.map(x=>({...x,_:1})))},{n:'Consultations',v:counts(sr,S.c)},{n:'Rendez-vous',v:counts(sr,S.r)}]),{w:true,sub:'Par jour (par mois au-delà de 3 mois)'})}
+  ${card('Activité dans le temps',line(sr.lab,[{n:'Urgences',v:counts(sr,S.h.map(x=>({...x,_:1})))},{n:'Consultations',v:counts(sr,S.c)},{n:'Rendez-vous',v:counts(sr,S.r)},...(sa.length?[{n:'Appels SAMU',v:counts(sr,sa)}]:[])]),{w:true,sub:'Par jour (par mois au-delà de 3 mois)'})}
   ${card('Répartition par gravité',donut(grp(S.h,x=>x.gravite)))}
   ${card('Motifs les plus fréquents',hb(grp(S.h,x=>cap(norm(x.motif))),{n:10}))}
   ${card('Affluence : jour × heure d’arrivée',heat(mat),{w:true,sub:'Heure de début de prise en charge — plus c’est foncé, plus il y a de passages'})}</div>`},
@@ -276,13 +319,23 @@ pat(S){const pm=S.pm,at=(x,d)=>age(pm[x.patientId],d),
 con(S){const c=S.c,r=S.r,tr=c.filter(x=>x.statut==='terminee'),dc=tr.map(x=>S.cd(x)&&dt(x.clotureLe)?(dt(x.clotureLe)-S.cd(x))/6e4:null);
   const L={encours:'En cours',terminee:'Terminée',transferee:'Transférée aux urgences'},LR={pris:'Réservé',attente:'En salle d’attente',encours:'En consultation',termine:'Terminé',annule:'Annulé'};
   const hrs=Array.from({length:24},(_,i)=>i);
-  return`<div class="kpis">${kpi('Consultations',nf(c.length),c.length,S.kp.nC)}${kpi('Durée médiane',fm(med(dc)))}${kpi('Taux de transfert',pct(S.k.transf,c.length))}${kpi('RDV réservés',nf(r.length),r.length,S.kp.nR)}${kpi('RDV annulés',pct(S.k.ann,r.length),S.k.ann,S.kp.ann,{inv:true})}${kpi('Attente médiane',fm(S.k.att),S.k.att,S.kp.att,{inv:true})}${kpi('Alertes vitales déclarées',nf(r.filter(x=>x.alerteVitale).length))}${kpi('Pris pour un proche',pct(r.filter(x=>x.pourQui==='proche').length,r.length))}</div>
+  const cl=c.filter(x=>x.statut!=='encours'),sr=serie(S,c,S.cd),tiers=c.filter(x=>x.pourQui==='proche').length,
+    dtr=c.filter(x=>x.statut==='transferee'&&S.cd(x)&&dt(x.transfereLe)).map(x=>(dt(x.transfereLe)-S.cd(x))/6e4).filter(v=>v>=0),
+    sp=[...new Set(c.map(x=>x.medecinSpecialite).filter(Boolean))].sort((a,b)=>c.filter(x=>x.medecinSpecialite===b).length-c.filter(x=>x.medecinSpecialite===a).length);
+  return`<div class="kpis">${kpi('Consultations',nf(c.length),c.length,S.kp.nC)}${kpi('Durée médiane',fm(med(dc)))}${kpi('Taux de transfert',pct(S.k.transf,c.length))}${kpi('RDV réservés',nf(r.length),r.length,S.kp.nR)}${kpi('RDV annulés',pct(S.k.ann,r.length),S.k.ann,S.kp.ann,{inv:true})}${kpi('Attente médiane',fm(S.k.att),S.k.att,S.kp.att,{inv:true})}${kpi('Alertes vitales déclarées',nf(r.filter(x=>x.alerteVitale).length))}${kpi('Pris pour un proche',pct(r.filter(x=>x.pourQui==='proche').length,r.length))}${kpi('Consultations clôturées',pct(tr.length,c.length))}${kpi('Délai médian avant transfert',fm(med(dtr)),null,null,{hint:'Début de consultation → transfert aux urgences'})}${kpi('Consultations pour un proche',pct(tiers,c.length))}${kpi('Diagnostic renseigné',pct(cl.filter(x=>norm(x.diagnostic)).length,cl.length))}</div>
   <div class="grid">
+  ${card('Consultations dans le temps',bars(sr.lab,[{n:'Consultations',v:counts(sr,c)}],{every:Math.ceil(sr.l.length/10)}),{w:true})}
   ${card('Consultations par statut',donut(grp(c,x=>L[x.statut]||x.statut)))}
+  ${card('Consultations pour soi / pour un proche',donut(grp(c,x=>x.pourQui==='proche'?'Pour un proche':'Pour le patient')))}
+  ${card('Consultations par jour de semaine',bars(JOURS,[{n:'Consultations',v:JOURS.map((_,i)=>c.filter(x=>S.cd(x)&&dow(S.cd(x))===i).length)}]))}
+  ${card('Consultations par heure',bars(hrs.map(h=>h+'h'),[{n:'Consultations',v:hrs.map(h=>c.filter(x=>S.cd(x)&&S.cd(x).getHours()===h).length)}],{every:2}))}
   ${card('Origine des consultations',donut(grp(c,x=>x.origine)))}
   ${card('Par médecin',hb(grp(c,x=>x.medecinNom),{n:12}))}
   ${card('Par spécialité',hb(grp(c,x=>x.medecinSpecialite),{n:10}))}
   ${card('Motifs de consultation',hb(grp(c,x=>cap(norm(x.motif))),{n:12}),{w:true})}
+  ${card('Diagnostics les plus fréquents',hb(grp(cl,x=>norm(x.diagnostic)&&cap(norm(x.diagnostic)).slice(0,70)),{n:12}),{sub:'Consultations clôturées ou transférées'})}
+  ${card('Conduites à tenir les plus fréquentes',hb(grp(cl,x=>norm(x.conduite)&&cap(norm(x.conduite)).slice(0,70)),{n:12}),{sub:'Consultations clôturées ou transférées'})}
+  ${card('Activité par spécialité',tbl(['Spécialité','Consultations','Clôturées','Transférées','Durée médiane'],sp.map(s=>{const a=c.filter(x=>x.medecinSpecialite===s),t2=a.filter(x=>x.statut==='terminee'),d2=t2.map(x=>S.cd(x)&&dt(x.clotureLe)?(dt(x.clotureLe)-S.cd(x))/6e4:null);return[esc(s),nf(a.length),pct(t2.length,a.length),pct(a.filter(x=>x.statut==='transferee').length,a.length),fm(med(d2))]})),{w:true})}
   ${card('Rendez-vous par statut',donut(grp(r,x=>LR[x.statut]||x.statut)))}
   ${card('RDV par jour de semaine',bars(JOURS,[{n:'RDV',v:JOURS.map((_,i)=>r.filter(x=>dow(S.rdt(x))===i).length)}]))}
   ${card('RDV par heure',bars(hrs.map(h=>h+'h'),[{n:'RDV',v:hrs.map(h=>r.filter(x=>+String(x.heure).split(':')[0]===h).length)}]),{every:2,w:true})}
@@ -292,6 +345,57 @@ con(S){const c=S.c,r=S.r,tr=c.filter(x=>x.statut==='terminee'),dc=tr.map(x=>S.cd
   ${card('Signes d’alerte',hb(grp(r,x=>x.symptomes?.signesAlerte),{n:8}))}
   ${card('Indicateurs symptômes',tbl(['Indicateur','Valeur'],[['Douleur moyenne déclarée',(()=>{const a=avg(r.map(x=>+x.symptomes?.douleur));return a==null?'—':nf(a)+' / 10'})()],['Fièvre déclarée',nf(r.filter(x=>x.symptomes?.fievre&&!/^non|aucune/i.test(x.symptomes.fievre)).length)],['Durée « depuis » la plus citée',grp(r,x=>x.symptomes?.depuis)[0]?.[0]||'—']]))}
   </div>`},
+
+samu(S){
+  const byId=S.aById,sel=(ds)=>reg?ds.filter(d=>byId[d.appelId]?.regulateur===reg||d.creePar===reg):ds;
+  const AP=reg?S.A.filter(a=>a.regulateur===reg):S.A,pAP=reg?S.pA.filter(a=>a.regulateur===reg):S.pA,DP=sel(S.D),pDP=sel(S.pD);
+  const K=S.samuK(AP,DP),P=S.R.ps?S.samuK(pAP,pDP):{};
+  MAPPTS=AP.filter(a=>a.lat!=null&&a.lng!=null);
+  const regs=[...new Set([...S.A,...S.pA].map(a=>a.regulateur).filter(Boolean))].sort();
+  const smurOK=DP.filter(d=>d.etape!=='annule'),appSet=new Set(smurOK.map(d=>d.appelId)),clos=AP.filter(a=>a.statut==='cloture'),transf=AP.filter(a=>a.decisionKey==='transfert'||a.transfert);
+  const pr=a=>(SPRIO[a.priorite??2]||SPRIO[2])[0],hrs=Array.from({length:24},(_,i)=>i);
+  const sr=serie(S,AP,a=>new Date(a.createdAt)),mat=Array.from({length:7},()=>Array(24).fill(0));
+  AP.forEach(a=>{const d=new Date(a.createdAt);mat[dow(d)][d.getHours()]++});
+  const bkt=(a,defs)=>bars(defs.map(d=>d[1]),[{n:'Dossiers',v:defs.map((d,i)=>a.filter(ms=>{const m=ms/6e4;return m<d[0]&&(i===0||m>=defs[i-1][0])}).length)}]);
+  const st=a=>a.length?`Médiane ${fm(mm(med(a)))} · moyenne ${fm(mm(avg(a)))} · p90 ${fm(mm(p90(a)))} · ${a.length} dossier(s)`:'Aucune donnée sur la période.';
+  const DEF=[[2,'< 2 min'],[5,'2–5 min'],[10,'5–10 min'],[1e9,'> 10 min']];
+  const paires=[['declenche','en_route','Déclenchement → en route'],['en_route','sur_place','En route → sur place'],['sur_place','transport','Sur place → départ transport'],['transport','termine','Transport → terminé']];
+  const eqs=[...new Set(DP.map(d=>d.equipeLabel).filter(Boolean))].sort();
+  const rgs=[...new Set(AP.map(a=>a.regulateur).filter(Boolean))].sort();
+  return`<div class="bar"><label for="regsel" class="per" style="margin:0">Régulateur</label><select id="regsel"><option value="">Tous les régulateurs</option>${regs.map(r=>`<option value="${esc(r)}"${r===reg?' selected':''}>${esc(r)}</option>`).join('')}</select><span class="per" style="margin:0">${AP.length} dossier(s) · ${DP.length} déclenchement(s)</span></div>
+  <div class="kpis">${kpi('Appels reçus',nf(K.n),K.n,P.n)}${kpi('Dossiers en cours',nf(K.ouv))}${kpi('Victimes / patients',nf(K.vict),K.vict,P.vict)}
+  ${kpi('Délai médian de décision',fm(K.mDec),K.mDec,P.mDec,{inv:true,hint:'Décroché → décision'})}${kpi('Durée médiane du dossier',fm(K.mTr),K.mTr,P.mTr,{inv:true,hint:'Création → clôture'})}
+  ${kpi('SMUR déclenchés',nf(K.smur),K.smur,P.smur)}${kpi('Appels avec SMUR',pct(K.appSmur,K.n))}
+  ${kpi('Délai médian appel → SMUR',fm(K.mSm),K.mSm,P.mSm,{inv:true,hint:'p90 : '+fm(mm(p90(K.dSm)))})}${kpi('Durée moyenne d’intervention',fm(K.mInt),K.mInt,P.mInt,{inv:true,hint:'Déclenchement → fin'})}
+  ${kpi('Transferts à un autre service',nf(K.transf),K.transf,P.transf)}${kpi('Déclenchements annulés',nf(K.annSm),K.annSm,P.annSm,{inv:true})}</div>
+  <h3 style="margin:6px 0 10px">Activité d’appels</h3>
+  <div class="grid">
+  ${card('Appels dans le temps',bars(sr.lab,[{n:'Appels',v:counts(sr,AP)},{n:'Avec SMUR',c:'var(--c5)',v:counts(sr,AP.filter(a=>appSet.has(a.id)))}],{every:Math.ceil(sr.l.length/10)}),{w:true,sub:'Par jour (par mois au-delà de 3 mois)'})}
+  ${card('Répartition par priorité',donut(grp(AP,pr)))}
+  ${card('Répartition horaire',bars(hrs.map(h=>h+'h'),[{n:'Appels',v:hrs.map(h=>AP.filter(a=>new Date(a.createdAt).getHours()===h).length)}],{every:2}))}
+  ${card('Affluence : jour × heure d’appel',heat(mat),{w:true,sub:'Plus c’est foncé, plus il y a d’appels'})}
+  ${card('Par motif',hb(grp(AP,a=>a.motif||'Non précisé'),{n:12}))}
+  ${card('Par qualité de l’appelant',hb(grp(AP,a=>a.qualite||'Non précisé'),{n:10}))}
+  ${card('Par type de lieu',hb(grp(AP,a=>a.lieu||'Non précisé'),{n:10}))}
+  ${card('Par commune',hb(grp(AP,a=>a.ville||'Non précisée'),{n:12}))}</div>
+  <h3 style="margin:18px 0 10px">Traitement des appels</h3>
+  <div class="grid">
+  ${card('Décisions de régulation',hb(grp(AP,a=>a.decision||'Aucune décision'),{n:10}))}
+  ${card('Transferts par service',hb(grp(transf,a=>a.transfert?.service||'Non précisé'),{n:10}))}
+  ${card('Motifs de clôture',hb(grp(clos,a=>a.motifCloture||'Non précisé'),{n:10}))}
+  ${card('Délais de décision',bkt(K.dDec,DEF),{sub:st(K.dDec)})}
+  ${card('Durée de traitement d’un dossier',bkt(K.dTr,[[5,'< 5 min'],[15,'5–15 min'],[30,'15–30 min'],[1e9,'> 30 min']]),{sub:st(K.dTr)})}
+  ${card('Par régulateur',tbl(['Régulateur','Appels','Clôturés','SMUR','Décision (méd.)'],rgs.map(r=>{const L=AP.filter(a=>a.regulateur===r);return[esc(r),nf(L.length),nf(L.filter(a=>a.statut==='cloture').length),nf(L.filter(a=>a.decisionKey==='smur').length),fm(mm(med(L.filter(a=>a.decisionAt).map(a=>a.decisionAt-a.createdAt))))]})))}</div>
+  <h3 style="margin:18px 0 10px">Interventions SMUR</h3>
+  <div class="grid">
+  ${card('Délai appel → déclenchement SMUR',bkt(K.dSm,DEF),{sub:st(K.dSm)})}
+  ${card('Délais par étape',tbl(['Étape','Médiane','Moyenne','p90','n'],paires.map(([a,b,l])=>{const v=smurOK.filter(d=>d.heures?.[a]&&d.heures?.[b]).map(d=>d.heures[b]-d.heures[a]).filter(x=>x>=0);return[l,fm(mm(med(v))),fm(mm(avg(v))),fm(mm(p90(v))),nf(v.length)]})))}
+  ${card('Par équipe',tbl(['Équipe','Interventions','Annulés','Durée moyenne'],eqs.map(e=>{const L=DP.filter(d=>d.equipeLabel===e),ok=L.filter(d=>d.etape!=='annule');return[esc(e),nf(ok.length),nf(L.length-ok.length),fm(mm(avg(ok.filter(d=>d.heures?.termine).map(d=>d.heures.termine-d.heures.declenche))))]})))}
+  ${card('Interventions par priorité',donut(grp(smurOK,d=>(SPRIO[d.priorite??2]||SPRIO[2])[0])))}
+  ${card('Interventions par motif',hb(grp(smurOK,d=>d.motif||'Non précisé'),{n:10}))}</div>
+  <h3 style="margin:18px 0 10px">Carte des appels</h3>
+  <div class="grid">${card('Localisation des appels','<div id="map"></div><div class="note" id="mapInfo"></div>',{w:true,sub:'Couleur selon la priorité'})}</div>
+  ${S.A.length||S.D.length?'':'<div class="note">Aucun appel SAMU sur la période (ou accès aux données SAMU non autorisé).</div>'}`},
 
 eq(S){const h=S.h,R=[['medecinReferent','Médecin'],['infirmierReferent','Infirmier(ère)'],['interneReferent','Interne'],['externeReferent','Externe']],ex=h.flatMap(x=>(x.examens||[]).map(e=>({...e,hid:x.id}))),his=h.flatMap(x=>x.historique||[]);
   const nm=(x,k)=>x.equipe?.[k]?.nom||null;
@@ -350,8 +454,9 @@ qual(S){const h=S.h,t=h.filter(S.termine),c=S.c,cl=c.filter(x=>x.statut!=='encou
   const long=h.filter(x=>!S.termine(x)&&S.hd(x)&&(now-S.hd(x))/36e5>24),inc=h.filter(x=>S.fin(x)&&S.hd(x)&&S.fin(x)<S.hd(x));
   return`<div class="grid">
   ${card('Complétude — passages aux urgences',tbl(['Champ','Renseignés','Taux'],[row('Motif d’entrée',h.filter(x=>norm(x.motif)).length,h.length),row('Gravité',h.filter(x=>x.gravite).length,h.length),row('Moyen d’entrée',h.filter(x=>x.moyen).length,h.length),row('Service idéal',h.filter(x=>x.service).length,h.length),row('Statut de prise en charge',h.filter(x=>x.pdcStatut).length,h.length),row('Position du patient',h.filter(x=>x.positionPatient).length,h.length),row('Médecin référent',h.filter(x=>x.equipe?.medecinReferent?.nom).length,h.length),row('Dossier médical (≥1 champ)',h.filter(x=>Object.values(x.dossierMedical||{}).some(Boolean)).length,h.length),row('Évolution aux urgences',h.filter(x=>norm(x.evolution)).length,h.length),row('Type de sortie (terminées)',t.filter(x=>x.sortie?.type).length,t.length),row('Signature à la clôture (terminées)',t.filter(x=>x.signatureStatut).length,t.length)]))}
-  ${card('Complétude — consultations',tbl(['Champ','Renseignés','Taux'],[row('Motif',c.filter(x=>norm(x.motif)).length,c.length),row('Examen clinique (clôturées)',cl.filter(x=>norm(x.examenClinique)).length,cl.length),row('Diagnostic (clôturées)',cl.filter(x=>norm(x.diagnostic)).length,cl.length),row('Conduite à tenir (clôturées)',cl.filter(x=>norm(x.conduite)).length,cl.length)]))}
-  ${card('Anomalies détectées',tbl(['Contrôle','Nombre'],[['Hospitalisations ouvertes depuis plus de 24 h',nf(long.length)],['Hospitalisations ouvertes depuis plus de 48 h',nf(long.filter(x=>(now-S.hd(x))/36e5>48).length)],['Date de fin antérieure à la date de début',nf(inc.length)],['Terminées sans type de sortie',nf(t.filter(x=>!x.sortie?.type).length)],['Consultations « en cours » de plus de 12 h',nf(c.filter(x=>x.statut==='encours'&&S.cd(x)&&(now-S.cd(x))/36e5>12).length)],['RDV « réservés » dépassés sans prise en charge',nf(S.r.filter(x=>x.statut==='pris'&&S.rdt(x)<now).length)]]))}
+  ${card('Complétude — consultations',tbl(['Champ','Renseignés','Taux'],[row('Motif',c.filter(x=>norm(x.motif)).length,c.length),row('Histoire de la maladie',c.filter(x=>norm(x.histoire)).length,c.length),row('Examen clinique (clôturées)',cl.filter(x=>norm(x.examenClinique)).length,cl.length),row('Diagnostic (clôturées)',cl.filter(x=>norm(x.diagnostic)).length,cl.length),row('Conduite à tenir (clôturées)',cl.filter(x=>norm(x.conduite)).length,cl.length)]))}
+  ${card('Complétude — appels SAMU',tbl(['Champ','Renseignés','Taux'],[row('Motif',S.A.filter(a=>norm(a.motif)).length,S.A.length),row('Qualité de l’appelant',S.A.filter(a=>a.qualite).length,S.A.length),row('Type de lieu',S.A.filter(a=>a.lieu).length,S.A.length),row('Commune',S.A.filter(a=>a.ville).length,S.A.length),row('Adresse géolocalisée',S.A.filter(a=>a.lat!=null&&a.lng!=null).length,S.A.length),row('Régulateur',S.A.filter(a=>a.regulateur).length,S.A.length),row('Décision de régulation',S.A.filter(a=>a.decision).length,S.A.length),row('Motif de clôture (clôturés)',S.A.filter(a=>a.statut==='cloture'&&a.motifCloture).length,S.A.filter(a=>a.statut==='cloture').length)]))}
+  ${card('Anomalies détectées',tbl(['Contrôle','Nombre'],[['Hospitalisations ouvertes depuis plus de 24 h',nf(long.length)],['Hospitalisations ouvertes depuis plus de 48 h',nf(long.filter(x=>(now-S.hd(x))/36e5>48).length)],['Date de fin antérieure à la date de début',nf(inc.length)],['Terminées sans type de sortie',nf(t.filter(x=>!x.sortie?.type).length)],['Consultations « en cours » de plus de 12 h',nf(c.filter(x=>x.statut==='encours'&&S.cd(x)&&(now-S.cd(x))/36e5>12).length)],['RDV « réservés » dépassés sans prise en charge',nf(S.r.filter(x=>x.statut==='pris'&&S.rdt(x)<now).length)],['Appels SAMU non clôturés depuis plus de 12 h',nf(S.A.filter(a=>a.statut!=='cloture'&&(now-a.createdAt)/36e5>12).length)],['Interventions SMUR sans heure de fin depuis plus de 12 h',nf(S.D.filter(d=>d.etape!=='annule'&&!d.heures?.termine&&(now-d.heures.declenche)/36e5>12).length)]]))}
   </div><div class="note">Les passages dépourvus de <b>dateDebutTS</b> (anciens enregistrements) ne sont pas comptés dans les statistiques par période. La page ne modifie jamais aucune donnée : elle est en lecture seule.</div>`}
 };
 
@@ -361,6 +466,7 @@ function rendre(){
   $('#tabs').innerHTML=Object.entries(TABS).map(([k,l])=>`<button class="tab ${k===tab?'on':''}" data-t="${k}">${l}</button>`).join('');
   $('#pers').innerHTML=PERS.map(([k,l])=>`<button class="b ${k===per?'on':''}" data-p="${k}">${l}</button>`).join('')+(per==='custom'?`<input type="date" id="d1" value="${$('#d1')?.value||iso(R.s)}"><input type="date" id="d2" value="${$('#d2')?.value||iso(R.e)}"><button class="b" id="ok">Appliquer</button>`:'');
   try{$('#view').innerHTML=T[tab](S)}catch(e){console.error(e);$('#view').innerHTML='<div class="msg">Erreur de calcul dans cet onglet (voir la console).</div>'}
+  if(tab==='samu'&&$('#regsel')){$('#regsel').onchange=e=>{reg=e.target.value;rendre()};carte()}
 }
 $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b){tab=b.dataset.t;rendre()}};
 $('#pers').onclick=e=>{const b=e.target.closest('[data-p]');if(b){per=b.dataset.p;per==='custom'?rendre():charger()}if(e.target.id==='ok')charger()};
@@ -369,8 +475,10 @@ $('#print').onclick=()=>print();
 $('#csv').onclick=()=>{
   const rows=[['type','id','date','heure','patientId','motif','gravite','statut','service','detail']];
   S.h.forEach(x=>{const d=S.hd(x);rows.push(['urgences',x.id,d&&iso(d),d&&d.toTimeString().slice(0,5),x.patientId,x.motif,x.gravite,S.termine(x)?'terminee':'en cours',x.service,[x.moyen,x.sortie?.type,S.dur(x)!=null?nf(S.dur(x))+' h':''].filter(Boolean).join(' | ')])});
-  S.c.forEach(x=>{const d=S.cd(x);rows.push(['consultation',x.id,d&&iso(d),x.heure,x.patientId,x.motif,'',x.statut,x.medecinSpecialite,x.medecinNom])});
+  S.c.forEach(x=>{const d=S.cd(x);rows.push(['consultation',x.id,d&&iso(d),x.heure,x.patientId,x.motif,'',x.statut,x.medecinSpecialite,[x.medecinNom,x.diagnostic,x.conduite].filter(Boolean).join(' | ')])});
   S.r.forEach(x=>rows.push(['rdv',x.id,x.date,x.heure,x.patientId||'',x.motif,'',x.statut,'',x.motifAnnulation||'']));
+  S.A.forEach(a=>{const d=new Date(a.createdAt);rows.push(['samu_appel',a.num||a.id,iso(d),d.toTimeString().slice(0,5),'',a.motif,(SPRIO[a.priorite??2]||SPRIO[2])[0],a.statut,a.transfert?.service||a.decision||'',[a.regulateur,a.ville,a.motifCloture].filter(Boolean).join(' | ')])});
+  S.D.forEach(x=>{const d=x.heures?.declenche?new Date(x.heures.declenche):null;rows.push(['samu_smur',x.id,d&&iso(d),d&&d.toTimeString().slice(0,5),'',x.motif,(SPRIO[x.priorite??2]||SPRIO[2])[0],x.etape,x.equipeLabel,x.appelId||''])});
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
   a.download='statistiques_'+iso(S.R.s)+'_'+iso(S.R.e)+'.csv';a.click();

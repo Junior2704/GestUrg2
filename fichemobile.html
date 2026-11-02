@@ -629,6 +629,42 @@ details.pd-section[open] > summary{ border-bottom:1px solid var(--line-soft); co
 .btn-ghost.danger{ color:var(--late); border-color:#f0c3c5; }
 .btn-ghost:disabled,.btn-primary:disabled{ opacity:.6; }
 
+/* ============ SMUR · DÉCLENCHEMENTS ============ */
+.sm-alert{ position:fixed; left:10px; right:10px; top:calc(8px + var(--safe-top)); z-index:4800; display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; background:var(--late); color:#fff; font-weight:700; font-size:.92rem; box-shadow:0 10px 30px rgba(185,42,48,.45); animation:smBl 1s infinite alternate; }
+.sm-alert button{ appearance:none; flex:none; min-height:38px; padding:0 14px; border:0; border-radius:10px; background:#fff; color:var(--late); font:700 14px var(--font); cursor:pointer; touch-action:manipulation; }
+.sm-alert button.x{ width:38px; padding:0; background:rgba(255,255,255,.2); color:#fff; display:grid; place-items:center; }
+@keyframes smBl{ to{ filter:brightness(1.25); } }
+.sm-big{ text-align:center; padding:36px 20px; border-radius:18px; border:1px solid var(--line); background:var(--field); }
+.sm-big.ok{ background:var(--ok-soft); border-color:#b9e2c9; }
+.sm-big .ic{ width:64px; height:64px; margin:0 auto 12px; border-radius:50%; display:grid; place-items:center; background:#fff; color:var(--plan); box-shadow:var(--shadow-sm); }
+.sm-big.ok .ic{ color:var(--ok); }
+.sm-big .ic .i{ width:30px; height:30px; }
+.sm-big h2{ font-size:1.25rem; font-weight:700; letter-spacing:-.01em; margin-bottom:8px; }
+.sm-big p{ color:var(--muted); font-size:.95rem; margin:6px auto; max-width:420px; }
+.sm-big p b{ color:var(--ink); }
+.sm-big .btn-ghost{ max-width:260px; margin:16px auto 0; }
+.sm-top{ padding:14px 16px; border-radius:16px; background:var(--late-soft); border:1px solid #f0c3c5; border-left:8px solid var(--late); margin-bottom:14px; }
+.sm-top-h{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:1.05rem; color:var(--late); }
+.sm-top-r{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; font-weight:600; }
+.sm-top small{ display:block; margin-top:6px; color:var(--muted); font-size:.8rem; }
+.sm-pill{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:.75rem; font-weight:700; color:#fff; background:var(--c,#586a7e); white-space:nowrap; }
+.sm-steps{ display:flex; gap:4px; }
+.sm-steps span{ flex:1; text-align:center; font-size:.68rem; font-weight:600; line-height:1.25; padding:8px 2px; border-radius:8px; background:var(--field); color:var(--muted); border:1px solid var(--line-soft); }
+.sm-steps span.ok{ background:var(--ok); border-color:var(--ok); color:#fff; }
+.sm-addr{ font-size:1.15rem; font-weight:700; line-height:1.3; }
+.sm-mt{ font-size:1.05rem; font-weight:600; }
+.sm-nav{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.sm-nav a{ text-decoration:none; }
+.sm-nav .row2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.sm-map{ height:300px; border-radius:14px; border:1px solid var(--line); overflow:hidden; }
+.sm-vic{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:8px; background:var(--field); }
+.sm-li{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line-soft); font-size:.9rem; }
+.sm-li:last-child{ border-bottom:none; }
+.sm-li small{ color:var(--muted); white-space:nowrap; }
+.sm-card-h{ font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+.sm-card-h:not(:first-child){ margin-top:14px; }
+@media (prefers-reduced-motion:reduce){ .sm-alert{ animation:none; } }
+
 @media (prefers-reduced-motion:reduce){
   .view,.sheet,.sheet-backdrop,#patientDetail,.scan-frame-overlay,.toast,.bar-fill{ transition:none !important; }
   .spinner,.icon-btn.spinning svg{ animation-duration:2s; }
@@ -885,9 +921,17 @@ details.pd-section[open] > summary{ border-bottom:1px solid var(--line-soft); co
 
     </section>
 
+    <!-- -------- SMUR (déclenchements) -------- -->
+    <section class="view" id="view-smur">
+      <div id="smurContent"></div>
+    </section>
+
   </main>
 
   <div class="tabbar" id="tabbarEl"></div>
+
+  <!-- Alerte nouveau déclenchement SMUR -->
+  <div class="sm-alert hidden" id="smurAlerte" role="alert"></div>
 
   <!-- ---- Bottom sheet "Plus" (onglets en débordement) ---- -->
   <div class="sheet-backdrop" id="moreSheetBackdrop"></div>
@@ -1138,6 +1182,7 @@ const TABS_CONFIG = [
   { id:"recherche",  icon:"🔍", label:"Recherche" },
   { id:"scan",       icon:"📷", label:"Scan" },
   { id:"agenda",     icon:"📅", label:"Agenda" },
+  { id:"smur",       icon:"🚨", label:"SMUR", pageKey:"declenchementsSAMU", badgeId:"tabBadgeSmur" },
   { id:"appels",     icon:"📣", label:"Appels", pageKey:"bureau" },
   { id:"stats",      icon:"📊", label:"Stats" },
   { id:"messagerie", icon:"💬", label:"Messages", badgeId:"tabBadgeMessagerie", overlay:true },
@@ -1702,6 +1747,7 @@ document.getElementById("btnLogout").addEventListener("click", async () => {
   stopScanner();
   stopMessagerieBadgeFrame();
   stopAgenda();
+  stopSmur();
   await signOut(auth);
 });
 
@@ -1781,6 +1827,9 @@ if (
     }
   await initApp();
   initAgenda();
+  if (state.pages.declenchementsSAMU === true){
+    initSmur();
+  }
   if (state.pages.bureau === true){
     await initAppels();
   }
@@ -1907,6 +1956,7 @@ function buildTabbar(){
   // ré-applique l'état visuel courant (badges compris)
   marquerOngletActif(state.currentTab);
   updateMessagerieBadges(dernierNombreNonLus);
+  smurMajBadge();
 }
 
 function onTabSelect(view){
@@ -1937,6 +1987,7 @@ function switchTab(view){
   }else{
     stopScanner();
   }
+  if (view === "smur") smurResize();
 }
 
 /* ---- sheet "Plus" ---- */
@@ -2763,7 +2814,7 @@ function updateMessagerieBadges(count){
   });
   if (plusBadge){
     plusBadge.textContent = "";
-    plusBadge.classList.toggle("hidden", n <= 0);
+    plusBadge.classList.toggle("hidden", n <= 0 && !smurEnCours);
   }
 }
 window.addEventListener("message", (event) => {
@@ -3630,6 +3681,7 @@ if (btnAppelerTicket) {
 
 }
 
+
 /* ---------- INITIALISATION ---------- */
 
 async function initAppels() {
@@ -3958,6 +4010,265 @@ function agRenderSync(token){
   });
 }
 
+
+
+/* =========================================================
+   SMUR — DÉCLENCHEMENTS (onglet visible uniquement si
+   state.pages.declenchementsSAMU === true)
+   - Intervention en cours : adresse, itinéraire, carte, motif,
+     appelant, victimes, avancement
+   - Sinon : disponible (équipe d'astreinte) ou non affecté
+   - Alerte (bannière + vibration + son) à chaque nouveau
+     déclenchement adressé à l'utilisateur
+========================================================= */
+const SM_PRIO = [["P0 · Vital","#b92a30"],["P1 · Urgent","#c2410c"],["P2 · Non urgent","#a35a00"],["P3 · Conseil","#16784a"]];
+const SM_ETAPES = [["declenche","Déclenché"],["en_route","En route"],["sur_place","Sur place"],["transport","Transport"],["termine","Terminé"]];
+const SM_LIB = {consultation:"en consultation",urgences:"aux Urgences",regul:"en régulation SAMU",radiologie:"en imagerie",uhcd:"en UHCD",garde:"de garde / astreinte",conge:"en repos / congé",autre:"sur une autre affectation"};
+const SM = { started:false, users:{}, affs:[], decls:[], loadedA:false, loadedD:false, unsubA:null, unsubD:null, timer:null, vus:new Set(), premier:true, cle:"", map:null };
+let smurEnCours = false;
+let smLeafPromise = null;
+
+const smEsc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const smTs = t => { if (!t) return 0; const d = t.toDate ? t.toDate() : new Date(t); const n = d.getTime(); return isNaN(n) ? 0 : n; };
+const smHm = t => { const n = smTs(t); return n ? new Date(n).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}) : ""; };
+const smNow = () => { const n = new Date(); return n.getHours()*60 + n.getMinutes(); };
+const smUid = () => auth.currentUser ? auth.currentUser.uid : null;
+const smMesAff = () => SM.affs.filter(a => a.uid === smUid());
+const smActives = () => smMesAff().filter(a => agApplique(a, agIso(new Date())) && agMin(a.start) <= smNow() && smNow() < agMin(a.end));
+const smActif = () => smActives().find(a => String(a.poste).startsWith("smur"));
+const smNoms = u => (u||[]).map(x => smEsc(SM.users[x] || x)).join(", ");
+
+function smMonInterv(){
+  const uid = smUid(), t = smActif();
+  return SM.decls
+    .filter(d => d.actif && ((d.uids||[]).includes(uid) || (t && d.equipe === t.poste)))
+    .sort((a,b) => smTs(b.heures?.declenche) - smTs(a.heures?.declenche))[0];
+}
+
+async function initSmur(){
+  if (SM.started) return;
+  SM.started = true;
+  try{
+    (await getDocs(collection(db,"medecins"))).docs.forEach(d => SM.users[d.id] = d.data().nom || d.id);
+  }catch(e){ console.warn("SMUR : liste des médecins indisponible", e); }
+  if (!SM.started) return;
+  SM.unsubA = onSnapshot(collection(db,"affectations"),
+    s => { SM.affs = s.docs.map(d => ({id:d.id, ...d.data()})); SM.loadedA = true; smRendre(); },
+    e => console.warn("SMUR : affectations indisponibles", e));
+  SM.unsubD = onSnapshot(collection(db,"declenchements"),
+    s => { SM.decls = s.docs.map(d => ({id:d.id, ...d.data()})); SM.loadedD = true; smDetecter(); smRendre(); },
+    e => { console.error("SMUR : déclenchements", e); toast("Chargement des déclenchements impossible","error"); });
+  SM.timer = setInterval(smRendre, 30000);
+  smRendre();
+}
+
+function stopSmur(){
+  if (SM.unsubA) SM.unsubA();
+  if (SM.unsubD) SM.unsubD();
+  clearInterval(SM.timer);
+  if (SM.map){ try{ SM.map.remove(); }catch(e){} }
+  Object.assign(SM, { started:false, users:{}, affs:[], decls:[], loadedA:false, loadedD:false, unsubA:null, unsubD:null, timer:null, vus:new Set(), premier:true, cle:"", map:null });
+  smurEnCours = false;
+  smurMajBadge();
+  const al = document.getElementById("smurAlerte"); if (al) al.classList.add("hidden");
+  const c = document.getElementById("smurContent"); if (c) c.innerHTML = "";
+}
+
+function smurMajBadge(){
+  document.querySelectorAll('[id="tabBadgeSmur"]').forEach(el => {
+    el.textContent = "!";
+    el.classList.toggle("hidden", !smurEnCours);
+  });
+  const plus = document.getElementById("tabBadgePlus");
+  if (plus){
+    plus.textContent = "";
+    plus.classList.toggle("hidden", !(smurEnCours || dernierNombreNonLus > 0));
+  }
+}
+
+/* ---- alerte nouveau déclenchement ---- */
+function smDetecter(){
+  const uid = smUid();
+  SM.decls.filter(d => d.actif && (d.uids||[]).includes(uid)).forEach(d => {
+    if (!SM.vus.has(d.id)){ SM.vus.add(d.id); if (!SM.premier) smAlerter(d); }
+  });
+  SM.premier = false;
+}
+
+function smAlerter(d){
+  const el = document.getElementById("smurAlerte");
+  if (el){
+    el.innerHTML = `${ICN("siren","i lg")}<span style="flex:1;min-width:0">Nouveau déclenchement — ${smEsc(d.equipeLabel)} · ${smEsc(d.motif)}</span><button type="button" id="smurAlerteVoir">Voir</button><button type="button" class="x" id="smurAlerteX" aria-label="Fermer">${ICN("x")}</button>`;
+    el.classList.remove("hidden");
+    document.getElementById("smurAlerteX").onclick = () => el.classList.add("hidden");
+    document.getElementById("smurAlerteVoir").onclick = () => {
+      el.classList.add("hidden");
+      closePatientDetail(); closeSalleSheet(); closeMoreSheet(); closeProfileSheet(); closeAgSheet();
+      if (scanFrameOverlay.classList.contains("open")) closeScanFrame();
+      switchTab("smur");
+    };
+  }
+  try{ navigator.vibrate && navigator.vibrate([300,150,300,150,300]); }catch(e){}
+  try{
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    [0,.3,.6].forEach(t => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(c.destination); g.gain.value = .2;
+      o.start(c.currentTime + t); o.stop(c.currentTime + t + .2);
+    });
+  }catch(e){}
+}
+
+/* ---- rendu ---- */
+function smPose(k, html){
+  if (SM.cle === k) return false;
+  SM.cle = k;
+  if (SM.map){ try{ SM.map.remove(); }catch(e){} SM.map = null; }
+  document.getElementById("smurContent").innerHTML = html;
+  return true;
+}
+
+function smRendre(){
+  if (!document.getElementById("smurContent")) return;
+  if (!SM.loadedA || !SM.loadedD){
+    smPose("load", `<div class="empty-state"><div class="ic">${ICN("clock","i")}</div><p>Chargement des déclenchements…</p></div>`);
+    return;
+  }
+  const d = smMonInterv();
+  smurEnCours = !!d;
+  smurMajBadge();
+  if (d) return smIntervention(d);
+  const t = smActif();
+  if (t) return smDisponible(t);
+  smNonAffecte();
+}
+
+function smNonAffecte(){
+  const a = smActives()[0], auj = agIso(new Date());
+  let nx = null;
+  for (let i = 0; i < 8 && !nx; i++){
+    const dt = new Date(); dt.setDate(dt.getDate() + i);
+    const k = agIso(dt);
+    nx = smMesAff()
+      .filter(x => String(x.poste).startsWith("smur") && agApplique(x,k) && (i > 0 || agMin(x.start) > smNow()))
+      .sort((x,y) => agMin(x.start) - agMin(y.start))
+      .map(x => ({...x, k}))[0];
+  }
+  const txt = a ? `Vous êtes actuellement ${smEsc(SM_LIB[a.poste] || "affecté(e) ailleurs")} jusqu’à ${smEsc(a.end)}.` : "Aucune affectation en cours sur le planning.";
+  const prochain = nx
+    ? `Prochaine affectation SMUR : <b>${smEsc(nx.posteLabel || nx.poste)}</b> ${nx.k === auj ? "aujourd’hui" : "le " + smEsc(new Date(nx.k + "T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}))} à ${smEsc(nx.start)}.`
+    : "Aucune affectation SMUR prévue dans les 7 prochains jours.";
+  const h = `<div class="sm-big"><div class="ic">${ICN("ban","i")}</div><h2>Vous n’êtes pas affecté(e) à un SMUR</h2><p>${txt}</p><p>${prochain}</p><p>Les déclenchements ne sont visibles que par les membres d’une équipe SMUR d’astreinte.</p><button class="btn-ghost" id="smurBtnAff" type="button">${ICN("calendar")} Voir mes affectations</button></div>`;
+  if (smPose("non|" + (a ? a.id : "") + "|" + (nx ? nx.id + nx.k : ""), h)){
+    document.getElementById("smurBtnAff").onclick = () => switchTab("agenda");
+  }
+}
+
+function smDisponible(t){
+  const k = t.poste, auj = agIso(new Date());
+  const eq = SM.affs.filter(a => a.poste === k && agApplique(a,auj) && agMin(a.start) <= smNow() && smNow() < agMin(a.end)).map(a => a.uid);
+  const fin = SM.decls
+    .filter(d => !d.actif && d.etape !== "annule" && d.jour === auj && d.equipe === k)
+    .sort((a,b) => smTs(b.heures?.declenche) - smTs(a.heures?.declenche));
+  const h = `<div class="sm-big ok"><div class="ic">${ICN("check","i")}</div><h2>Disponible — ${smEsc(t.posteLabel || k)}</h2>
+    <p>Équipe d’astreinte jusqu’à ${smEsc(t.end)}.</p>
+    <p><b>${[...new Set(eq)].map(u => smEsc(SM.users[u] || u)).join(" · ")}</b></p>
+    <p>Aucune intervention en cours. Cet écran s’actualise automatiquement dès qu’un déclenchement vous est adressé.</p></div>
+    <div class="section-title">Interventions de l’équipe aujourd’hui</div>
+    <div class="card pad">${fin.map(d => `<div class="sm-li"><span><b>${smEsc(d.num)}</b> · ${smEsc(d.motif)} — ${smEsc(d.adresse)}</span><small>${smHm(d.heures?.declenche)} → ${smHm(d.heures?.termine)}</small></div>`).join("") || `<div class="txt-block empty" style="padding-top:0">Aucune pour le moment.</div>`}</div>`;
+  smPose("dispo|" + k + "|" + fin.map(d => d.id).join(","), h);
+}
+
+function smIntervention(d){
+  const p = SM_PRIO[d.priorite ?? 2] || SM_PRIO[2];
+  const i = SM_ETAPES.findIndex(e => e[0] === d.etape);
+  const geo = d.lat != null && d.lng != null;
+  const q = geo ? `${d.lat},${d.lng}` : encodeURIComponent(d.adresse || "");
+  const vics = (d.victimes || []).filter(v => v && (v.nom || v.age || v.bilan || v.etat));
+  const nav = `<div class="sm-nav">
+    <a class="btn-primary" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving">${ICN("compass")} Itinéraire Google Maps</a>
+    ${geo ? `<div class="row2"><a class="btn-ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${q}&navigate=yes">Waze</a><a class="btn-ghost" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr=${q}">Plans</a></div>` : ""}
+  </div>`;
+
+  const key = ["int", d.id, d.priorite, d.equipeLabel, d.num, d.adresse, d.adresseRue, d.cp, d.ville, d.compl, d.lieu, d.motif, d.motifPrecision, d.synthese, d.appelant, d.tel, d.lat, d.lng, JSON.stringify(d.victimes || []), JSON.stringify(d.uids || [])].join("|");
+
+  const h = `<div class="sm-top" style="border-left-color:${p[1]}">
+      <div class="sm-top-h">${ICN("siren","i lg")} INTERVENTION EN COURS</div>
+      <div class="sm-top-r"><span class="sm-pill" style="--c:${p[1]}">${smEsc(p[0])}</span><span>${smEsc(d.equipeLabel)}</span><span>· Dossier ${smEsc(d.num)}</span></div>
+      <small>${smNoms(d.uids)}</small>
+    </div>
+
+    <div class="card pad" style="margin-bottom:14px"><div class="sm-card-h">Avancement</div><div class="sm-steps" id="smurSteps"></div></div>
+
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sm-card-h">Lieu d’intervention</div>
+      <div class="sm-addr">${smEsc(d.adresseRue || d.adresse)}</div>
+      <div>${smEsc([d.cp, d.ville].filter(Boolean).join(" "))}</div>
+      ${d.compl ? `<div style="margin-top:6px"><b>Complément :</b> ${smEsc(d.compl)}</div>` : ""}
+      ${d.lieu ? `<div style="color:var(--muted);font-size:.85rem;margin-top:4px">${smEsc(d.lieu)}</div>` : ""}
+      ${nav}
+    </div>
+
+    ${geo ? `<div class="sm-map" id="smurMap" style="margin-bottom:14px"></div>` : `<div class="ag-info">Adresse non localisée sur la carte. Utilisez l’adresse ci-dessus pour l’itinéraire.</div>`}
+
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sm-card-h">Motif</div>
+      <div class="sm-mt">${smEsc(d.motif)}</div>
+      ${d.motifPrecision ? `<div>${smEsc(d.motifPrecision)}</div>` : ""}
+      ${d.synthese ? `<div class="sm-card-h">Synthèse du régulateur</div><div style="white-space:pre-wrap">${smEsc(d.synthese)}</div>` : ""}
+    </div>
+
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sm-card-h">Appelant</div>
+      <div>${d.appelant ? smEsc(d.appelant) + " · " : ""}${d.tel ? `<a href="tel:${smEsc(d.tel)}" style="font-weight:700;color:var(--primary)">${smEsc(d.tel)}</a>` : `<span style="color:var(--muted)">Pas de numéro</span>`}</div>
+    </div>
+
+    <div class="card pad">
+      <div class="sm-card-h">Victimes (${(d.victimes || []).length || 1})</div>
+      ${vics.map(v => `<div class="sm-vic"><b>${smEsc(v.nom || "Victime")}</b> ${smEsc([v.age ? v.age + " ans" : "", v.sexe, v.etat].filter(Boolean).join(" · "))}<div>${smEsc(v.bilan || "")}</div></div>`).join("") || `<div class="txt-block empty" style="padding-top:0">Aucun détail transmis.</div>`}
+    </div>`;
+
+  const neuf = smPose(key, h);
+  const steps = document.getElementById("smurSteps");
+  if (steps) steps.innerHTML = SM_ETAPES.map((e,j) => `<span class="${j <= i ? "ok" : ""}">${e[1]}${d.heures?.[e[0]] ? "<br>" + smHm(d.heures[e[0]]) : ""}</span>`).join("");
+  if (neuf && geo) smCarte(d, key);
+}
+
+/* ---- carte (Leaflet chargé à la demande) ---- */
+function smLoadLeaflet(){
+  if (window.L) return Promise.resolve();
+  if (smLeafPromise) return smLeafPromise;
+  smLeafPromise = new Promise((resolve, reject) => {
+    const l = document.createElement("link");
+    l.rel = "stylesheet"; l.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(l);
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.onload = () => resolve();
+    s.onerror = () => { smLeafPromise = null; reject(new Error("leaflet-load-failed")); };
+    document.head.appendChild(s);
+  });
+  return smLeafPromise;
+}
+
+async function smCarte(d, key){
+  try{ await smLoadLeaflet(); }
+  catch(e){
+    const el = document.getElementById("smurMap");
+    if (el) el.innerHTML = `<div class="ag-empty" style="margin:12px">Carte indisponible.</div>`;
+    return;
+  }
+  const el = document.getElementById("smurMap");
+  if (!el || SM.cle !== key) return; // l'écran a changé pendant le chargement
+  if (SM.map){ try{ SM.map.remove(); }catch(e){} }
+  SM.map = L.map(el).setView([d.lat, d.lng], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(SM.map);
+  L.marker([d.lat, d.lng]).addTo(SM.map).bindPopup(smEsc(d.adresse)).openPopup();
+  smurResize();
+}
+function smurResize(){
+  setTimeout(() => { if (SM.map) SM.map.invalidateSize(); }, 300);
+}
 
 </script>
 </body>

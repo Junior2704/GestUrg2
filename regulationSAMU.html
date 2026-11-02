@@ -52,7 +52,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 #sugg button{display:block;width:100%;text-align:left;border:0;border-radius:0;color:var(--ink);font-weight:500;padding:8px 12px;min-height:0}
 #decSugg{position:absolute;left:0;right:0;top:100%;z-index:700;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(17,35,54,.18);max-height:300px;overflow:auto;margin-top:4px}
 #decSugg button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;border:0;border-radius:0;color:var(--ink);font-weight:500;padding:9px 12px;min-height:0}
-#decSugg button.hl,#decSugg button:hover{background:var(--soft)}#decSugg .lib{color:var(--primary);font-weight:700}
+#decSugg button.hl,#decSugg button:hover{background:var(--soft)}
 #map{height:260px;border-radius:12px;border:1px solid var(--line);margin-top:10px;z-index:0}
 .v{display:grid;grid-template-columns:2fr 60px 100px 1.3fr 2fr 40px;gap:6px;margin-bottom:6px}
 .nt{border:1px solid var(--line-soft);border-left:5px solid var(--c);border-radius:10px;padding:8px 12px;margin-top:8px;background:var(--field)}
@@ -114,7 +114,7 @@ dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow
      </div>
      <div class="col">
       <section class="sec"><h3>Décision de régulation</h3><div class="dl" id="delais"></div>
-       <div style="position:relative"><label>Ajouter un moyen / une décision</label><input id="decQ" type="search" autocomplete="off" placeholder="Rechercher… (police, gendarmerie, pompiers, hélico…) ou saisir librement"><div id="decSugg" hidden></div></div><div id="decPanel" style="margin-top:12px"></div></section>
+       <div style="position:relative"><label>Ajouter un moyen / une décision</label><input id="decQ" type="search" autocomplete="off" placeholder="Rechercher une décision… (police, pompiers, hélico, AVC, psy…)"><div id="decSugg" hidden></div></div><div id="decPanel" style="margin-top:12px"></div></section>
       <section class="sec"><h3>Décisions à finaliser <span id="nbPend"></span></h3><div id="decPend"></div></section>
       <section class="sec" id="secSmur" hidden><h3>Interventions SMUR</h3><div id="decSmur"></div></section>
       <section class="sec"><h3>Décisions finalisées</h3><div id="decDone"></div></section>
@@ -150,43 +150,77 @@ const dur=ms=>{const m=Math.max(0,Math.round(ms/6e4));return m<60?m+' min':Math.
 const PRIO=[['P0 · Vital','#b92a30'],['P1 · Urgent','#c2410c'],['P2 · Non urgent','#a35a00'],['P3 · Conseil','#16784a']];
 const STAT={nouveau:['En régulation','#0b6fa4'],a_declencher:['En régulation','#0b6fa4'],declenche:['SMUR engagé','#b92a30'],transfere:['Transféré','#6b3fc4'],cloture:['Clôturé','#586a7e']};
 const DEC=[
-['conseil','Conseil médical','avis telephone'],
-['mg','Médecin généraliste / SOS Médecins','sos medecin traitant visite domicile'],
-['ambulance','Ambulance privée','transport sanitaire asu'],
-['vsav','Pompiers (VSAV)','sapeurs pompiers secours a victimes 18'],
-['smur','SMUR','medicalise umh'],
-['transfert','Transfert à un autre service','autre samu crra'],
-['urgences','Orientation aux urgences','hopital service des urgences'],
-['sanssuite','Sans suite / non pertinent','annule erreur'],
-['pompiers_autres','Pompiers – autres moyens (FPT, échelle, GRIMP, plongeurs…)','sapeurs incendie feu desincarceration echelle grimp 18'],
-['police','Police nationale (17)','commissariat bac police secours'],
-['gendarmerie','Gendarmerie (17)','brigade peloton pghm'],
-['police_muni','Police municipale','mairie'],
-['opj','Officier de police judiciaire / Parquet','judiciaire justice plainte medecin legiste'],
-['deces','Constat de décès','deces mort medecin'],
-['helismur','Hélicoptère sanitaire (HéliSMUR)','helico helicoptere dragon heli'],
-['smur_ped','SMUR pédiatrique / néonatal','enfant nourrisson bebe'],
-['msp','Médecin / infirmier sapeur-pompier (SSSM)','isp sssm sapeur'],
-['mcs','Médecin correspondant du SAMU (MCS)','mcs medecin correspondant'],
-['asso','Association de secourisme (Croix-Rouge, Protection civile…)','secouristes poste de secours croix rouge'],
-['vsl','Taxi conventionné / VSL','transport assis'],
-['cap','Centre antipoison','intoxication toxicologie poison'],
-['psy','Psychiatrie / SAMU psy / CMP','urgence psychiatrique hospitalisation sous contrainte'],
-['pharmacie','Pharmacie de garde','medicament ordonnance'],
-['idel','Infirmier libéral (IDEL)','infirmiere soins domicile'],
-['maternite','Maternité / obstétrique','accouchement grossesse sage-femme'],
-['pediatrie','Urgences pédiatriques','enfant'],
-['hospdirect','Hospitalisation directe / admission en service','sans passer par les urgences'],
-['medtrait','Médecin traitant','generaliste'],
-['samu_social','SAMU social / 115','sans abri hebergement'],
-['reseaux','Gaz / électricité / eau (réseaux)','enedis grdf fuite coupure'],
-['serrurier','Serrurier / ouverture de porte','porte'],
-['mairie','Mairie / services techniques','voirie'],
-['cross','CROSS / secours en mer (196)','maritime plage noyade'],
-['montagne','Secours en montagne (PGHM, CRS)','alpin'],
-['transport','Exploitant de transport (SNCF, RATP…)','train metro tram'],
-['n112','Centre 112','europeen'],
-['rappel','Rappel / surveillance du patient à prévoir','recontacter reevaluation']
+['conseil','Conseil médical','avis telephone','Conseil / orientation simple'],
+['rappel','Rappel du patient / réévaluation à prévoir','recontacter surveillance','Conseil / orientation simple'],
+['medtrait','Contacter le médecin traitant','generaliste','Conseil / orientation simple'],
+['mg','Médecin généraliste / SOS Médecins','sos medecin visite domicile','Conseil / orientation simple'],
+['mdg','Maison médicale de garde / médecin de garde','permanence soins','Conseil / orientation simple'],
+['cabinet','Consultation en cabinet / centre de santé','rdv consultation','Conseil / orientation simple'],
+['pharmacie','Pharmacie de garde','medicament ordonnance','Conseil / orientation simple'],
+['idel','Infirmier libéral (IDEL)','infirmiere soins domicile','Conseil / orientation simple'],
+['refus','Refus de soins / refus de transport','decharge','Conseil / orientation simple'],
+['sanssuite','Sans suite / non pertinent','annule erreur canular','Conseil / orientation simple'],
+['injoignable','Appelant injoignable','rappel impossible','Conseil / orientation simple'],
+['smur','SMUR','medicalise umh','SMUR / moyens médicalisés'],
+['smur_ped','SMUR pédiatrique','enfant nourrisson','SMUR / moyens médicalisés'],
+['smur_neo','SMUR néonatal','bebe nouveau ne transport neonatal','SMUR / moyens médicalisés'],
+['helismur','Hélicoptère sanitaire (HéliSMUR)','helico helicoptere dragon','SMUR / moyens médicalisés'],
+['avion','Avion sanitaire / transfert aérien','medevac','SMUR / moyens médicalisés'],
+['mcs','Médecin correspondant du SAMU (MCS)','medecin correspondant','SMUR / moyens médicalisés'],
+['medvol','Médecin renfort sur place (régulateur ou volontaire)','renfort','SMUR / moyens médicalisés'],
+['vsav','Pompiers (VSAV)','sapeurs secours a victimes 18','Pompiers (18)'],
+['pomp_med','Pompiers – infirmier / médecin sapeur-pompier (SSSM)','isp ssSM','Pompiers (18)'],
+['pomp_fpt','Pompiers – incendie (FPT, lance)','feu fumee incendie','Pompiers (18)'],
+['pomp_ech','Pompiers – échelle / bras élévateur','hauteur','Pompiers (18)'],
+['pomp_des','Pompiers – désincarcération (VSR)','accident route coince','Pompiers (18)'],
+['pomp_grimp','Pompiers – GRIMP (milieu périlleux)','vertige falaise puits','Pompiers (18)'],
+['pomp_sd','Pompiers – sauvetage déblaiement','effondrement','Pompiers (18)'],
+['pomp_plong','Pompiers – plongeurs / sauvetage aquatique','noyade eau','Pompiers (18)'],
+['pomp_chim','Pompiers – risque chimique / radiologique (CMIC)','nrbc gaz produit','Pompiers (18)'],
+['pomp_ouv','Pompiers – ouverture de porte / mise en sécurité','porte','Pompiers (18)'],
+['pomp_anim','Pompiers – animaux (nid, capture)','abeille guepe','Pompiers (18)'],
+['police','Police nationale (17)','commissariat bac police secours','Forces de l’ordre / justice'],
+['gendarmerie','Gendarmerie (17)','brigade peloton','Forces de l’ordre / justice'],
+['police_muni','Police municipale','mairie','Forces de l’ordre / justice'],
+['opj','Officier de police judiciaire / Parquet','judiciaire justice plainte','Forces de l’ordre / justice'],
+['crs','CRS / unité spécialisée (RAID, BRI, GIGN)','intervention prise otage forcene','Forces de l’ordre / justice'],
+['umj','Unité médico-judiciaire (UMJ) / médecin légiste','violences viol medico legal','Forces de l’ordre / justice'],
+['deces','Constat de décès','mort decede','Forces de l’ordre / justice'],
+['pf','Pompes funèbres','decès corps','Forces de l’ordre / justice'],
+['violences','Dispositif violences conjugales / 3919','femme battue','Forces de l’ordre / justice'],
+['enfance','Protection de l’enfance / 119 / information préoccupante','mineur maltraitance','Forces de l’ordre / justice'],
+['ambulance','Ambulance privée','transport sanitaire asu','Ambulances / transport'],
+['vsl','Taxi conventionné / VSL','transport assis','Ambulances / transport'],
+['transp_med','Transport médicalisé inter-hospitalier','transfert medicalise','Ambulances / transport'],
+['transp_bar','Transport bariatrique','obese poids','Ambulances / transport'],
+['transp_mob','Transport PMR / fauteuil','handicap','Ambulances / transport'],
+['urgences','Orientation aux urgences (adultes)','hopital sau','Orientation hospitalière'],
+['urg_ped','Urgences pédiatriques','enfant','Orientation hospitalière'],
+['dechoc','Déchocage / salle de déchocage','vital reanimation','Orientation hospitalière'],
+['reanimation','Réanimation / soins intensifs','rea usi','Orientation hospitalière'],
+['stemi','Filière cardiologique – salle de coronarographie / USIC','infarctus sca stemi coeur','Orientation hospitalière'],
+['avc','Filière AVC – unité neuro-vasculaire (thrombolyse / thrombectomie)','unv neuro','Orientation hospitalière'],
+['trauma','Centre de traumatologie / trauma center','polytraumatise','Orientation hospitalière'],
+['brule','Centre de grands brûlés','brulure','Orientation hospitalière'],
+['maternite','Maternité / obstétrique','accouchement grossesse sage-femme','Orientation hospitalière'],
+['psy','Psychiatrie – urgences psychiatriques / CMP / SAMU psy','hospitalisation sous contrainte','Orientation hospitalière'],
+['chir','Chirurgie spécialisée (mains, ophtalmo, ORL, maxillo-facial)','sos mains oeil','Orientation hospitalière'],
+['hyperb','Caisson hyperbare','plongee co monoxyde','Orientation hospitalière'],
+['dialyse','Centre de dialyse','rein','Orientation hospitalière'],
+['hospdirect','Hospitalisation directe en service','sans passer par les urgences','Orientation hospitalière'],
+['had','Hospitalisation à domicile / équipe mobile (soins palliatifs, gériatrie)','palliatif geriatrie emg','Orientation hospitalière'],
+['ehpad','Retour / orientation EHPAD ou établissement médico-social','maison de retraite','Orientation hospitalière'],
+['transfert','Transfert à un autre service (formulaire dédié)','autre samu crra 112','Transfert à un autre service'],
+['cap','Centre antipoison','intoxication toxicologie poison','Transfert à un autre service'],
+['cross','CROSS / secours en mer (196)','maritime plage','Transfert à un autre service'],
+['montagne','Secours en montagne (PGHM, CRS montagne)','alpin','Transfert à un autre service'],
+['asso','Association de secourisme (Croix-Rouge, Protection civile…)','secouristes poste de secours','Transfert à un autre service'],
+['transport','Exploitant de transport (SNCF, RATP…)','train metro tram','Transfert à un autre service'],
+['samu_social','SAMU social / 115','sans abri hebergement','Transfert à un autre service'],
+['reseaux','Gaz / électricité / eau (gestionnaire de réseau)','enedis grdf fuite coupure','Transfert à un autre service'],
+['serrurier','Serrurier','porte ouverture','Transfert à un autre service'],
+['mairie','Mairie / services techniques / voirie','arbre route','Transfert à un autre service'],
+['prefecture','Préfecture / cellule de crise / plan ORSAN – plan blanc','nombreuses victimes nombreuse crise','Transfert à un autre service']
 ];
 const DECL=Object.fromEntries(DEC.map(x=>[x[0],x[1]])),lab=k=>DECL[k]||String(k).replace(/^lib:/,'');
 const SERVICES=['Pompiers (18)','Police / Gendarmerie (17)','112','Autre SAMU / CRRA','SOS Médecins','Centre antipoison','Autre service de secours'];
@@ -437,11 +471,10 @@ const nbDec=(a,k)=>decsOf(a).filter(d=>d.key===k).length;
 function suggDec(){
  const a=A();if(!a||closed(a)){$('#decSugg').hidden=true;return}
  const raw=$('#decQ').value.trim(),q=sans(raw),ws=q.split(/\s+/).filter(Boolean);
- sgL=DEC.filter(x=>{const t=sans(x[1]+' '+(x[2]||''));return ws.every(w=>t.includes(w))}).map(x=>({k:x[0],l:x[1]}));
- if(raw&&!DEC.some(x=>sans(x[1])===q))sgL.push({k:'lib:'+raw.slice(0,80),l:raw,lib:1});
+ sgL=DEC.filter(x=>{const t=sans(x[1]+' '+(x[2]||'')+' '+x[3]);return ws.every(w=>t.includes(w))}).map(x=>({k:x[0],l:x[1],g:x[3]}));
  hl=Math.max(0,Math.min(hl,sgL.length-1));
- $('#decSugg').innerHTML=sgL.map((s,i)=>`<button type="button" class="${i===hl?'hl':''}" data-i="${i}">${s.lib?`<span class="lib">+ Ajouter « ${esc(s.l)} » (saisie libre)</span>`:`<span>${esc(s.l)}</span>`}<span>${nbDec(a,s.k)?`<span class="bd" title="Déjà enregistrée(s)">${nbDec(a,s.k)}</span>`:''}${sel[s.k]?`<small> sélectionné ×${sel[s.k]}</small>`:''}</span></button>`).join('');
- $('#decSugg').hidden=!sgL.length}
+ $('#decSugg').innerHTML=sgL.map((s,i)=>`<button type="button" class="${i===hl?'hl':''}" data-i="${i}"><span>${esc(s.l)}<br><small>${esc(s.g)}</small></span><span>${nbDec(a,s.k)?`<span class="bd" title="Déjà enregistrée(s)">${nbDec(a,s.k)}</span>`:''}${sel[s.k]?`<small> sélectionné ×${sel[s.k]}</small>`:''}</span></button>`).join('');
+ if(!sgL.length){$('#decSugg').innerHTML='<div class="hint" style="padding:8px 12px">Aucune décision ne correspond. Essayez un autre mot (ex. police, pompiers, hôpital…).</div>';$('#decSugg').hidden=false}else $('#decSugg').hidden=false}
 function ajouterDec(i){const s=sgL[i];if(!s)return;sel[s.k]=Math.min(6,(sel[s.k]||0)+1);$('#decQ').value='';hl=0;$('#decSugg').hidden=true;sigDec='';majDos()}
 $('#decQ').addEventListener('input',()=>{hl=0;suggDec()});
 $('#decQ').addEventListener('focus',suggDec);$('#decQ').addEventListener('click',suggDec);
@@ -455,7 +488,7 @@ $('#decSugg').addEventListener('mousedown',e=>{e.preventDefault();const b=e.targ
 function panel(a){
  if(closed(a))return `<div class="box">Dossier clôturé — ${esc(a.motifCloture||'')}${a.clotureNote?' · '+esc(a.clotureNote):''}</div>`;
  const ks=Object.keys(sel).filter(k=>sel[k]>0);
- if(!ks.length)return '<p class="hint">Tapez dans la barre de recherche pour ajouter autant de moyens que nécessaire (police, gendarmerie, pompiers…), ou saisissez un moyen libre. Utilisez + pour en ajouter un second du même type (ex. 2 VSAV). Chaque décision enregistrée passe dans « Décisions à finaliser ».</p>';
+ if(!ks.length)return '<p class="hint">Cherchez dans la liste pour ajouter autant de décisions que nécessaire. Utilisez + pour en ajouter une seconde du même type (ex. 2 VSAV). Chaque décision enregistrée passe dans « Décisions à finaliser ».</p>';
  const n=ks.reduce((s,k)=>s+sel[k],0);
  return ks.map(k=>`<div class="sel"><b>${esc(lab(k))}</b><button type="button" data-act="qm" data-k="${esc(k)}">−</button><span class="q">${sel[k]}</span><button type="button" data-act="qp" data-k="${esc(k)}">+</button><button type="button" class="d" data-act="qx" data-k="${esc(k)}" title="Retirer">×</button></div>`).join('')
   +`<label>Précisions (facultatif)</label><textarea data-d="dDetail" rows="2" placeholder="Conseils donnés, motif de la demande…"></textarea>

@@ -69,8 +69,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .sel button{min-height:30px;padding:0 10px}.sel .q{min-width:22px;text-align:center;font-weight:700}
 .dn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--ok);background:var(--ok-soft);border-radius:10px;padding:6px 10px;margin-bottom:6px;font-size:14px}.dn small{margin-left:auto}.dn button{min-height:30px;padding:0 10px;font-size:13px}
 .cnt{display:inline-block;margin-left:6px;padding:0 8px;border-radius:99px;background:var(--warn);color:#fff;font-size:11px;line-height:18px}
-.hg{font-size:13px;font-weight:700;margin:14px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.hg:first-of-type{margin-top:0}
-.ht-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:8px}
+.ht-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}
 .ht{border:1px dashed var(--line);border-radius:10px;padding:6px 8px;background:var(--field)}.ht.f{border-style:solid;background:#fff}.ht.bad{border-color:var(--late);background:var(--late-soft)}
 .hl{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);min-height:22px}
 .hl button{min-height:22px;padding:0 7px;font-size:11px;border-radius:6px}
@@ -105,7 +104,6 @@ dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow
      <button id="bPrint">Imprimer</button><button id="bRo" hidden>Rouvrir</button><button id="bClo">Clôturer</button><button class="d" id="bDel">Supprimer</button>
     </div>
     <fieldset id="fs"><div class="dgrid">
-     <section class="sec" style="grid-column:1/-1"><h3>Bloc horaire</h3><div class="dl" id="delais"></div><div id="horaire"></div><div class="hint">Chaque heure se corrige à la main (Entrée ou clic ailleurs pour valider). « Maintenant » renseigne l’heure actuelle. Toute modification est tracée dans le journal.</div></section>
      <div class="col">
       <section class="sec"><h3>Appelant</h3>
        <div class="g2"><div><label>Nom</label><input data-k="appelant"></div><div><label>Téléphone</label><input data-k="tel" type="tel"></div></div>
@@ -121,7 +119,8 @@ dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow
       <section class="sec"><h3>Victimes / patients <span id="nbV"></span></h3><div id="vics"></div><button id="bAddV" type="button">+ Ajouter une victime</button></section>
      </div>
      <div class="col">
-      <section class="sec"><h3>Décision de régulation</h3><div style="position:relative"><label>Ajouter un moyen / une décision</label><input id="decQ" type="search" autocomplete="off" placeholder="Rechercher une décision… (police, pompiers, hélico, AVC, psy…)"><div id="decSugg" hidden></div></div><div id="decPanel" style="margin-top:12px"></div></section>
+      <section class="sec"><h3>Décision de régulation</h3><div class="dl" id="delais"></div>
+       <div style="position:relative"><label>Ajouter un moyen / une décision</label><input id="decQ" type="search" autocomplete="off" placeholder="Rechercher une décision… (police, pompiers, hélico, AVC, psy…)"><div id="decSugg" hidden></div></div><div id="decPanel" style="margin-top:12px"></div></section>
       <section class="sec"><h3>Décisions à finaliser <span id="nbPend"></span></h3><div id="decPend"></div></section>
       <section class="sec" id="secSmur" hidden><h3>Interventions SMUR</h3><div id="decSmur"></div></section>
       <section class="sec"><h3>Décisions finalisées</h3><div id="decDone"></div></section>
@@ -315,7 +314,7 @@ $('#bNew').onclick=async()=>{
 
 /* ---------- Dossier ---------- */
 function ouvrir(id){
- cur=id;const a=A()||{};sel={};$('#decQ').value='';draft={};sigDec='';geoSig='';sigHor='';
+ cur=id;const a=A()||{};sel={};$('#decQ').value='';draft={};sigDec='';geoSig='';
  document.querySelectorAll('#fs [data-k]').forEach(e=>e.value=a[e.dataset.k]??'');
  $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
  $('#vide').hidden=true;$('#dossier').hidden=false;$('#split').classList.add('open');$('#saved').textContent='';$('#nTxt').value='';
@@ -333,13 +332,19 @@ function majDos(){
  $('#fs').disabled=closed(a);$('#bClo').hidden=closed(a);$('#bRo').hidden=!closed(a);
  $('#bDel').hidden=closed(a)||decls.some(d=>d.appelId===a.id)||(a.notes||[]).length>0;
  $('#prio').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.p===(a.priorite??2)));
- horaire(a);
+ // délais
+ const dl=[['Reçu',hm(a.createdAt)]];
+ if(a.decisionAt)dl.push(['Décision','+'+dur(a.decisionAt-a.createdAt)]);
+ if(a.declencheAt)dl.push(['SMUR déclenché','+'+dur(a.declencheAt-a.createdAt)]);
+ if(a.transfert?.at)dl.push(['Transfert','+'+dur(a.transfert.at-a.createdAt)]);
+ if(a.clotureAt)dl.push(['Clôture','+'+dur(a.clotureAt-a.createdAt)]);
+ $('#delais').innerHTML=dl.map(x=>`<span>${x[0]} <b>${x[1]}</b></span>`).join('');
  // décisions
  const L=decsOf(a),nbK=k=>L.filter(d=>d.key===k).length;
- const ds=decls.filter(d=>d.appelId===a.id).map(d=>d.id+d.etape+d.actif).join(','),
+ const ds=decls.filter(d=>d.appelId===a.id).map(d=>d.id+d.etape+d.actif+JSON.stringify(d.heures)).join(','),
   eq=SMUR.map(([k])=>k+membres(k).length+(engagee(k)?1:0)).join(''),
   sig=[JSON.stringify(sel),L.map(d=>d.id+d.etat+JSON.stringify(d.fin||{})).join(','),a.statut,ds,eq,a.synthese,closed(a)].join('|');
- if(sig!==sigDec){
+ if(sig!==sigDec&&!(document.activeElement?.type==='time'&&$('#decSmur').contains(document.activeElement))){
   document.querySelectorAll('#fs [data-d]').forEach(e=>draft[e.dataset.d]=e.value);
   const pe=L.filter(d=>d.etat==='a_finaliser').sort((x,y)=>x.at-y.at),fi=L.filter(d=>d.etat!=='a_finaliser').sort((x,y)=>(y.finAt||y.at)-(x.finAt||x.at));
   $('#decPanel').innerHTML=panel(a);
@@ -355,67 +360,43 @@ function majDos(){
  $('#journal').innerHTML=[...(a.journal||[])].sort((x,y)=>y.at-x.at).map(j=>`<div class="jr"><small>${hm(j.at)} · ${esc(j.par)}</small>${esc(j.txt)}</div>`).join('');
  const g=a.lat+'|'+a.lng;if(g!==geoSig)carte();
 }
-/* ---------- Bloc horaire (modifiable à la main) ---------- */
-let sigHor='';
+/* ---------- Horaires des moyens SMUR (modifiables à la main) ---------- */
 const HM=t=>t?new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 const jd=(t,r)=>{const f=x=>new Date(x).setHours(0,0,0,0);return Math.round((f(t)-f(r))/864e5)};
 const STEPS=[['declenche','Déclenchement'],['en_route','Départ'],['sur_place','Sur les lieux'],['transport','Départ des lieux'],['destination','Arrivée destination'],['termine','Fin d’intervention']];
-const HL={createdAt:'Appel décroché',regulationAt:'Début de régulation',decisionAt:'Décision',finAppelAt:'Fin d’appel',...Object.fromEntries(STEPS)};
-function tile(sp,lab,ts,ref,o={}){
+const HL=Object.fromEntries(STEPS);
+function tile(sp,lab,ts,ref,fix){
  const bad=ts&&ref&&Math.floor(ts/6e4)<Math.floor(ref/6e4),j=ts?jd(ts,A().createdAt):0,
-  d=bad?'⚠ avant l’étape précédente':ts&&ref?'+'+dur(ts-ref)+(j?' · J+'+j:''):(j?'J+'+j:''),ed=!o.ro;
- return `<div class="ht ${ts?'f':''} ${bad?'bad':''}"><div class="hl"><span>${lab}</span>${ed&&!ts?`<button type="button" data-ha="now" data-h="${sp}">Maintenant</button>`:''}${ed&&ts&&!o.fix?`<button type="button" data-ha="clr" data-h="${sp}" title="Effacer">✕</button>`:''}</div>${ed?`<input type="time" data-h="${sp}" value="${HM(ts)}">`:`<div class="hv">${ts?HM(ts):'—'}</div>`}<small>${d||'&nbsp;'}</small></div>`}
-function horaire(a){
- const ds=decls.filter(d=>d.appelId===a.id).sort((x,y)=>(x.heures?.declenche||0)-(y.heures?.declenche||0));
- const sig=JSON.stringify([a.createdAt,a.regulationAt,a.decisionAt,a.finAppelAt,a.clotureAt,a.transfert?.at,ds.map(d=>[d.id,d.etape,d.heures,d.equipeLabel]),closed(a)]);
- if(sig===sigHor)return;
- const ae=document.activeElement;if(ae&&ae.tagName==='INPUT'&&$('#horaire').contains(ae))return;
- sigHor=sig;
- const H0=(ds.find(d=>d.etape!=='annule')||{}).heures||{},c=[];
- const add=(l,x,y)=>{if(x&&y&&y>=x)c.push(`<span>${l} <b>${dur(y-x)}</b></span>`)};
- add('Appel → décision',a.createdAt,a.decisionAt);add('Décision → déclenchement',a.decisionAt||a.createdAt,H0.declenche);
- add('Déclenchement → sur les lieux',H0.declenche,H0.sur_place);add('Sur place',H0.sur_place,H0.transport);add('Intervention SMUR',H0.declenche,H0.termine);
- if(a.transfert?.at)add('Appel → transfert',a.createdAt,a.transfert.at);add('Durée du dossier',a.createdAt,a.clotureAt);
- $('#delais').innerHTML=c.join('');
- let h=`<div class="hg">Régulation</div><div class="ht-g">`+
-  tile('a:createdAt',HL.createdAt,a.createdAt,null,{fix:1})+tile('a:regulationAt',HL.regulationAt,a.regulationAt,a.createdAt)+
-  tile('a:decisionAt',HL.decisionAt,a.decisionAt,a.regulationAt||a.createdAt)+tile('a:finAppelAt',HL.finAppelAt,a.finAppelAt,a.createdAt)+
-  (a.transfert?.at?tile('x','Transfert',a.transfert.at,a.createdAt,{ro:1}):'')+tile('x','Clôture du dossier',a.clotureAt,a.createdAt,{ro:1})+'</div>';
- ds.forEach(d=>{const H=d.heures||{},ann=d.etape==='annule';
-  h+=`<div class="hg">${esc(d.equipeLabel)} <span class="pill" style="--c:${ann?'#586a7e':d.actif?'#b92a30':'#16784a'}">${ann?'Annulé':d.actif?'En intervention':'Terminé'}</span> <small>${esc(noms(d.uids))}</small></div><div class="ht-g">`;
-  if(ann)h+=tile('x','Déclenchement',H.declenche,null,{ro:1})+tile('x','Annulé à',H.annule,H.declenche,{ro:1});
-  else{let ref=a.decisionAt||a.createdAt;STEPS.forEach(([k,l])=>{const t=H[k];h+=tile('d:'+d.id+':'+k,l,t,ref,{fix:k==='declenche'});if(t)ref=t})}
-  h+='</div>'});
- $('#horaire').innerHTML=h}
-const horSpec=s=>{const p=s.split(':');return p[0]==='a'?{t:'a',k:p[1]}:{t:'d',id:p[1],k:p[2]}};
-const horGet=(sp,a)=>sp.t==='a'?a[sp.k]:(decls.find(d=>d.id===sp.id)?.heures||{})[sp.k];
-function horTs(s,val){
- const a=A(),sp=horSpec(s),old=horGet(sp,a),[h,m]=val.split(':').map(Number);
- const ref=old||(sp.t==='d'?Math.max(a.createdAt,...Object.values(decls.find(d=>d.id===sp.id)?.heures||{})):a.createdAt),d=new Date(ref);d.setHours(h,m,0,0);
- let t=d.getTime();if(!old&&ref-t>432e5)t+=864e5;return t}
-async function horSet(s,ts){
- const a=A();if(!a||closed(a))return;const sp=horSpec(s),old=horGet(sp,a)||null;ts=ts||null;
- if(sp.k==='createdAt'&&!ts)return;
+  d=bad?'⚠ avant l’étape précédente':ts&&ref?'+'+dur(ts-ref)+(j?' · J+'+j:''):(j?'J+'+j:'');
+ return `<div class="ht ${ts?'f':''} ${bad?'bad':''}"><div class="hl"><span>${lab}</span>${!ts?`<button type="button" data-ha="now" data-h="${sp}">Maintenant</button>`:''}${ts&&!fix?`<button type="button" data-ha="clr" data-h="${sp}" title="Effacer">✕</button>`:''}</div><input type="time" data-h="${sp}" value="${HM(ts)}"><small>${d||'&nbsp;'}</small></div>`}
+function horSteps(a,d){const H=d.heures||{};let ref=a.decisionAt||a.createdAt,h='';
+ STEPS.forEach(([k,l])=>{const t=H[k];h+=tile('d:'+d.id+':'+k,l,t,ref,k==='declenche');if(t)ref=t});return h}
+async function horSet(id,k,ts){
+ const a=A(),d=decls.find(x=>x.id===id);if(!a||!d||closed(a))return;ts=ts||null;
+ const old=(d.heures||{})[k]||null;
  if(old===ts||(old&&ts&&Math.floor(old/6e4)===Math.floor(ts/6e4)))return;
- const d=sp.t==='d'?decls.find(x=>x.id===sp.id):null,
-  txt=(d?d.equipeLabel+' — ':'')+'Horaire modifié : '+HL[sp.k]+' '+(old?HM(old):'—')+' → '+(ts?HM(ts):'effacé');
+ if(k==='declenche'&&!ts)return;
+ const txt=d.equipeLabel+' — Horaire modifié : '+HL[k]+' '+(old?HM(old):'—')+' → '+(ts?HM(ts):'effacé');
  try{
-  if(!d)await maj(cur,{[sp.k]:ts==null?deleteField():ts},txt);
-  else{
-   const H={...d.heures};if(ts)H[sp.k]=ts;else delete H[sp.k];
-   const last=[...ETAPES].reverse().find(e=>H[e[0]]),u={['heures.'+sp.k]:ts==null?deleteField():ts};
-   if(d.etape!=='annule'&&last){u.etape=last[0];u.actif=last[0]!=='termine'}
-   await updateDoc(doc(db,'declenchements',d.id),u);
-   const mins=decls.filter(x=>x.appelId===cur&&x.etape!=='annule').map(x=>x.id===d.id?H.declenche:x.heures?.declenche).filter(Boolean);
-   await maj(cur,sp.k==='declenche'&&mins.length?{declencheAt:Math.min(...mins)}:{},txt)}
+  const H={...d.heures};if(ts)H[k]=ts;else delete H[k];
+  const last=[...ETAPES].reverse().find(e=>H[e[0]]),u={['heures.'+k]:ts?ts:deleteField()};
+  if(d.etape!=='annule'&&last){u.etape=last[0];u.actif=last[0]!=='termine'}
+  await updateDoc(doc(db,'declenchements',id),u);
+  const mins=decls.filter(x=>x.appelId===cur&&x.etape!=='annule').map(x=>x.id===id?H.declenche:x.heures?.declenche).filter(Boolean);
+  await maj(cur,k==='declenche'&&mins.length?{declencheAt:Math.min(...mins)}:{},txt)
  }catch(e){console.error(e);alert('Enregistrement impossible.')}
- sigHor='';majDos()}
-$('#horaire').addEventListener('click',e=>{const b=e.target.closest('[data-ha]');if(b)horSet(b.dataset.h,b.dataset.ha==='now'?Date.now():null)});
-$('#horaire').addEventListener('input',e=>{if(e.target.dataset.h)e.target.dataset.dirty=1});
-$('#horaire').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.h)e.target.blur()});
-$('#horaire').addEventListener('focusout',e=>{const i=e.target;
- if(i.tagName==='INPUT'&&i.dataset.dirty){delete i.dataset.dirty;if(i.value)horSet(i.dataset.h,horTs(i.dataset.h,i.value))}
- setTimeout(()=>{sigHor='';majDos()},0)});
+ sigDec='';majDos()}
+function horTs(id,k,val){
+ const a=A(),d=decls.find(x=>x.id===id),H=d.heures||{},old=H[k],[h,m]=val.split(':').map(Number);
+ const ref=old||Math.max(a.createdAt,...Object.values(H)),x=new Date(ref);x.setHours(h,m,0,0);
+ let t=x.getTime();if(!old&&ref-t>432e5)t+=864e5;return t}
+const hSp=el=>{const p=el.dataset.h.split(':');return [p[1],p[2]]};
+$('#decSmur').addEventListener('click',e=>{const b=e.target.closest('[data-ha]');if(!b)return;const[id,k]=hSp(b);horSet(id,k,b.dataset.ha==='now'?Date.now():null)});
+$('#decSmur').addEventListener('input',e=>{if(e.target.dataset.h)e.target.dataset.dirty=1});
+$('#decSmur').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.h)e.target.blur()});
+$('#decSmur').addEventListener('focusout',e=>{const i=e.target;
+ if(i.tagName==='INPUT'&&i.dataset.h&&i.dataset.dirty){delete i.dataset.dirty;if(i.value){const[id,k]=hSp(i);horSet(id,k,horTs(id,k,i.value))}}
+ setTimeout(()=>{sigDec='';majDos()},0)});
 function defDraft(a,k){
  if(k==='synthese')return a.synthese||'';
  if(k==='dDetail')return '';
@@ -597,7 +578,7 @@ function smurSect(a){
  let h='';
  ds.forEach(d=>{const i=ETAPES.findIndex(e=>e[0]===d.etape),nx=ETAPES[i+1],ann=d.etape==='annule';
   h+=`<div class="sv ${d.actif?'act':''}"><b>${esc(d.equipeLabel)}</b> <span class="pill" style="--c:${ann?'#586a7e':d.actif?'#b92a30':'#16784a'}">${ann?'Annulé':d.actif?'En intervention':'Terminé'}</span><br><small>${esc(noms(d.uids))}</small>
-  ${ann?`<div><small>Annulé à ${hm(d.heures.annule)}</small></div>`:`<div class="steps">${ETAPES.map((e,j)=>`<span class="${j<=i?'ok':''}">${e[1]}${d.heures?.[e[0]]?'<br>'+hm(d.heures[e[0]]):''}</span>`).join('')}</div>`}
+  ${ann?`<div><small>Annulé à ${hm(d.heures.annule)}</small></div>`:`<div class="ht-g" style="margin:8px 0">${horSteps(a,d)}</div>`}
   ${d.actif?`<div class="row" style="margin-top:0">${nx?`<button class="p" data-act="etape" data-id="${d.id}" data-n="${nx[0]}">→ ${nx[1]}</button>`:''}<button class="d" data-act="annul" data-id="${d.id}">Annuler le déclenchement</button></div>`:''}</div>`});
  if(ds.length&&!ds.some(d=>d.actif)&&ds.some(d=>d.etape!=='annule'))h+='<div class="box">Intervention(s) terminée(s) : pensez à clôturer le dossier.</div>';
  h+=`<label>Synthèse transmise à l’équipe</label><textarea data-d="synthese" rows="3" placeholder="Bilan et consignes affichés à l’équipe SMUR"></textarea>`;

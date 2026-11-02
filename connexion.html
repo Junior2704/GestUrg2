@@ -434,8 +434,46 @@ window.showSystemModal = function(title, text) {
   modal.style.display = "flex";
 };
 
+// 🔁 Reconnexion automatique (session déjà ouverte : "rester connecté" ou onglet encore actif)
+let reconnexionEnCours = false;
+
+async function reconnexionAuto(user) {
+  if (!user || systemeBloque || connexionManuelleEnCours || reconnexionEnCours) return;
+  reconnexionEnCours = true;
+
+  // Durée maximale de la session persistante (contrôle côté navigateur)
+  const exp = Number(localStorage.getItem(SESSION_EXPIRE_KEY) || 0);
+  if (exp && Date.now() > exp) {
+    localStorage.removeItem(SESSION_EXPIRE_KEY);
+    await signOut(auth);
+    reconnexionEnCours = false;
+    return;
+  }
+
+  // 2 essais : un incident réseau ponctuel ne doit pas laisser l'utilisateur sur le formulaire
+  for (let essai = 1; essai <= 2; essai++) {
+    try {
+      await finaliserConnexion(user);
+      return; // redirection lancée
+    } catch (e) {
+      console.warn("Reconnexion automatique, essai " + essai + " échoué :", e);
+      if (essai < 2) await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+
+  reconnexionEnCours = false;
+  const message = document.getElementById("message");
+  message.style.color = "red";
+  message.textContent = "Session détectée mais impossible à vérifier (réseau ?). Reconnectez-vous ou rechargez la page.";
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
-  await appliquerOngletParDefaut();
+  // ⏳ Attend que Firebase ait fini de restaurer la session enregistrée
+  // (sinon l'utilisateur peut apparaître "non connecté" à tort)
+  await auth.authStateReady();
+
+  // Onglet par défaut : non bloquant, pour ne pas retarder la reconnexion
+  appliquerOngletParDefaut();
 
   const ok = await checkFonctionnement();
 
@@ -453,20 +491,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 🔁 Reconnexion automatique (session déjà ouverte : "rester connecté" ou onglet encore actif)
-  onAuthStateChanged(auth, async (user) => {
-    if (!user || systemeBloque || connexionManuelleEnCours) return;
-
-    // Durée maximale de la session persistante (contrôle côté navigateur)
-    const exp = Number(localStorage.getItem(SESSION_EXPIRE_KEY) || 0);
-    if (exp && Date.now() > exp) {
-      localStorage.removeItem(SESSION_EXPIRE_KEY);
-      await signOut(auth);
-      return;
-    }
-
-    await finaliserConnexion(user);
-  });
+  onAuthStateChanged(auth, (user) => { reconnexionAuto(user); });
 });
 </script>
 

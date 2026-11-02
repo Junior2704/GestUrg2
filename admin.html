@@ -246,6 +246,31 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.modal,.modalna .card,.creation-loader-card,.badge-scan-img,.lock-icon{animation:none !important}.creation-loader{transition:none}}
 
+/* ---------- ONGLETS + COMPTES DE MESSAGERIE ---------- */
+.admin-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:12px var(--gutter);background:#fff;border-bottom:1px solid var(--line)}
+.admin-tab{appearance:none;display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;font:600 14px/1 var(--font);color:var(--muted);background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer;touch-action:manipulation;transition:background .15s,color .15s,border-color .15s}
+@media (hover:hover){.admin-tab:not(.on):hover{background:var(--field);color:var(--ink)}}
+.admin-tab.on{background:var(--primary-soft);color:var(--primary-d);border-color:#b5d6ea}
+.admin-tab:focus-visible{outline:3px solid rgba(11,111,164,.4);outline-offset:2px}
+.admin-vue{display:none}.admin-vue.on{display:block}
+.msg-wrap{max-width:900px;margin:0 auto}
+.msg-f{margin-top:14px}
+.msg-sub{font-weight:500;color:var(--muted);font-size:14px}
+.msg-info{margin-top:8px;font-size:14px;line-height:1.5;color:var(--muted)}.msg-info b{color:var(--ink)}
+.msg-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px}
+.msg-head h3{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.msg-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.msg-ck{display:flex;gap:10px;align-items:center;margin:16px 0 0;font-weight:500}
+.msg-pick{border:1px solid var(--line);border-radius:12px;max-height:230px;overflow:auto;margin-top:6px;background:#fff}
+.msg-pick label{display:flex;gap:10px;align-items:center;margin:0;padding:10px 14px;font-weight:500;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .15s}
+.msg-pick label:last-child{border-bottom:0}
+@media (hover:hover){.msg-pick label:hover{background:var(--field)}}
+.msg-pick label:has(input:checked){background:var(--primary-soft)}
+.msg-pick small{color:var(--muted)}
+.msg-vide{padding:32px 20px;color:var(--muted);text-align:center}
+.msg-tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;line-height:1;padding:5px 10px;margin-left:8px;border-radius:999px;background:var(--ok-soft);color:var(--ok);border:1px solid #b7dfc8}
+.msg-tag.off{background:var(--late-soft);color:var(--late);border-color:#f0c3c5}
+
 /* Barres de défilement */
 *{scrollbar-width:thin;scrollbar-color:rgba(11,111,164,.35) transparent}
 ::-webkit-scrollbar{width:8px;height:8px}
@@ -400,10 +425,16 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
 
   <div class="panel-head">
     <h1 class="panel-title"><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg></span> Gestion des comptes</h1>
-    <p class="hint">Créer des utilisateurs, modifier leurs informations et gérer leurs accès aux pages.</p>
+    <p class="hint">Créer des utilisateurs, modifier leurs informations et gérer leurs accès aux pages et les comptes de messagerie.</p>
   </div>
 
-  <div class="panel-body">
+  <div class="admin-tabs" id="adminTabs">
+    <button type="button" class="admin-tab on" data-vue="vueUsers"><svg class="i sm" aria-hidden="true"><use href="#i-users"/></svg> Utilisateurs et accès</button>
+    <button type="button" class="admin-tab" id="tabMsgGen" data-vue="vueMsgGen" hidden><svg class="i sm" aria-hidden="true"><use href="#i-mail"/></svg> Comptes généraux</button>
+    <button type="button" class="admin-tab" id="tabMsgAdm" data-vue="vueMsgAdm" hidden><svg class="i sm" aria-hidden="true"><use href="#i-arrow-right"/></svg> Comptes d'envoi</button>
+  </div>
+
+  <div class="panel-body admin-vue on" id="vueUsers">
 
     <section class="card-sec" id="creationBox">
       <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Créer un nouvel utilisateur</div>
@@ -525,6 +556,34 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
     </section>
   </div>
 
+<!-- COMPTES GÉNÉRAUX DE MESSAGERIE -->
+  <div class="panel-body admin-vue" id="vueMsgGen"><div class="msg-wrap">
+    <section class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-mail"/></svg> <span id="gT">Nouveau compte général</span></div>
+      <div class="field"><label for="gNom">Nom du compte</label><input type="text" id="gNom" maxlength="60" placeholder="Ex : Secrétariat, Planning, Informatique"></div>
+      <div class="field msg-f"><label for="gIcon">Icône (emoji)</label><input type="text" id="gIcon" maxlength="4" placeholder="📬"></div>
+      <div class="field msg-f"><label for="gDesc">Description, visible par tous les utilisateurs (facultatif)</label><input type="text" id="gDesc" maxlength="150"></div>
+      <div class="field msg-f"><label for="gQ">Personnes ayant accès à ce compte (voir, répondre, clôturer) <small class="msg-sub" id="gN"></small></label>
+        <input type="text" id="gQ" placeholder="Rechercher un utilisateur"><div class="msg-pick" id="gPick"></div></div>
+      <label class="msg-ck"><input type="checkbox" id="gActif" checked> Compte actif : les utilisateurs peuvent ouvrir de nouvelles discussions</label>
+      <div class="actions"><button type="button" class="btn-id btn-id-v" id="gOk" onclick="enregistrerGen()">Créer le compte</button><button type="button" class="btn-id" id="gNo" style="display:none" onclick="resetGen()">Annuler la modification</button></div>
+    </section>
+    <div id="gList"></div>
+  </div></div>
+
+  <!-- COMPTES D'ENVOI DE MESSAGERIE -->
+  <div class="panel-body admin-vue" id="vueMsgAdm"><div class="msg-wrap">
+    <section class="card-sec">
+      <div class="card-title"><svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg> Comptes d'envoi</div>
+      <div class="msg-info" style="margin:0 0 14px">Les personnes cochées pourront envoyer messages et sondages au nom du compte, depuis la messagerie.</div>
+      <div class="field"><label for="aSel">Compte</label><select id="aSel"></select></div>
+      <div class="field msg-f"><label for="aQ">Personnes autorisées <small class="msg-sub" id="aN"></small></label>
+        <input type="text" id="aQ" placeholder="Rechercher un utilisateur"><div class="msg-pick" id="aPick"></div></div>
+      <div class="actions"><button type="button" class="btn-id btn-id-v" onclick="enregistrerAdm()">Enregistrer les accès</button></div>
+    </section>
+    <div id="aList"></div>
+  </div></div>
+
 <!-- MODALE ÉDITION UTILISATEUR -->
 <div id="editModal" class="modal-overlay">
   <div class="modal">
@@ -617,7 +676,14 @@ input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px;margin:0
       updateDoc,
       deleteDoc,
       doc,
-      getDoc
+      getDoc,
+      query,
+      where,
+      onSnapshot,
+      addDoc,
+      serverTimestamp,
+      arrayUnion,
+      arrayRemove
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -640,6 +706,8 @@ function masquerAccessLockOverlay() {
   const overlay = document.getElementById("accessLockOverlay");
   if (overlay) overlay.style.display = "none";
 }
+
+let pagesAdmin = {};
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -664,6 +732,7 @@ onAuthStateChanged(auth, async (user) => {
 
     const data = docSnap.data();
     const pages = data.pages || {};
+    pagesAdmin = pages;
 
     // --- Vérification des droits d'accès à cette page ---
     if (pages.admin !== true) {
@@ -794,6 +863,7 @@ function identityCheckSuccess() {
   // des comptes) est révélé et chargé — jamais avant.
   document.getElementById("content").style.display = "block";
   chargerUtilisateurs();
+  msgAdmin.init(pagesAdmin);
 }
 
 async function identityCheckFail(message, errorDiv) {
@@ -890,6 +960,180 @@ document.getElementById("idcheckBadgeInput").addEventListener("keydown", functio
     e.preventDefault();
     identityCheckByBadge();
   }
+});
+
+// ==============================
+// 📬 COMPTES DE MESSAGERIE (ex messagerieadministration.html)
+// Onglets réservés aux administrateurs ayant aussi pages.messagerieadministration
+// ==============================
+const msgAdmin = (() => {
+  const DEFS = [
+    { id: "systeme", nom: "Système", icon: "⚙️", page: "adminsysteme" },
+    { id: "admin-medical", nom: "Administration médicale", icon: "🏥", page: "adminmed" },
+    { id: "rh", nom: "Ressources Humaines", icon: "🗂️", page: "adminrh" }
+  ];
+  const TYPES = { doc: "Médecin", infirmier: "Infirmier", AS: "Aide Soignant", Int: "Interne", Ext: "Externe" };
+  const $ = id => document.getElementById(id);
+  const esc = t => { const d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; };
+  const toast = (m, err) => afficherBulle(m, err ? "error" : "success");
+  let users = [], gens = [], convs = [], adm = [], eg = null, ea = null, sg = new Set(), sa = new Set(), demarre = false;
+  const nom = u => users.find(x => x.uid === u)?.nom || u;
+  const notifier = (uid, corps) => {
+    const u = users.find(x => x.uid === uid);
+    return envoyerMessageSysteme({ compteId: "systeme", texte: `Bonjour ${u?.prenom || u?.nom || "Bonjour"},\n\n${corps}`, destinataires: [uid] });
+  };
+  const chargerUsers = async () => { users = (await getDocs(collection(db, "medecins"))).docs.map(d => ({ uid: d.id, ...d.data() })); };
+
+  /* les 3 comptes d'envoi sont fixes ; première initialisation depuis les anciennes autorisations pages.admin* */
+  async function initAdmin() {
+    adm = [];
+    for (const d of DEFS) {
+      const ref = doc(db, "comptes-administrateurs", d.id), s = await getDoc(ref);
+      if (s.exists()) adm.push({ ...d, ...s.data(), id: d.id, membres: s.data().membres || [] });
+      else {
+        const m = users.filter(u => u.pages && u.pages[d.page] === true).map(u => u.uid);
+        try { await setDoc(ref, { nom: d.nom, icon: d.icon, membres: m, actif: true, createdAt: serverTimestamp(), initialiseDepuisPages: true }); } catch (e) { console.error(e); }
+        adm.push({ ...d, membres: m, actif: true });
+      }
+    }
+    ea = adm[0].id; sa = new Set(adm[0].membres);
+  }
+
+  function pick(w) {
+    const q = $(w + "Q").value.toLowerCase(), s = w === "g" ? sg : sa;
+    $(w + "Pick").innerHTML = users.filter(u => `${u.nom || ""} ${u.email || ""}`.toLowerCase().includes(q))
+      .map(u => `<label><input type="checkbox" value="${u.uid}" ${s.has(u.uid) ? "checked" : ""}><span>${esc(u.nom)} <small>${esc(TYPES[u.type] || u.type || "")}, ${esc(u.email)}</small></span></label>`).join("")
+      || '<div class="msg-vide">Aucun utilisateur.</div>';
+    cnt();
+  }
+  function cnt() {
+    $("gN").textContent = `(${sg.size} sélectionnée${sg.size > 1 ? "s" : ""})`;
+    $("aN").textContent = `(${sa.size} sélectionnée${sa.size > 1 ? "s" : ""})`;
+  }
+
+  /* comptes généraux */
+  window.resetGen = () => {
+    eg = null; sg.clear();
+    ["gNom", "gIcon", "gDesc", "gQ"].forEach(i => $(i).value = "");
+    $("gActif").checked = true; $("gT").textContent = "Nouveau compte général";
+    $("gOk").textContent = "Créer le compte"; $("gNo").style.display = "none"; pick("g");
+  };
+  window.modifierGen = id => {
+    const c = gens.find(x => x.id === id); if (!c) return;
+    eg = id; sg = new Set(c.membres || []);
+    $("gNom").value = c.nom || ""; $("gIcon").value = c.icon || ""; $("gDesc").value = c.description || ""; $("gActif").checked = c.actif !== false;
+    $("gT").textContent = "Modifier « " + c.nom + " »"; $("gOk").textContent = "Enregistrer les modifications"; $("gNo").style.display = "inline-flex";
+    pick("g"); $("gNom").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  window.enregistrerGen = async () => {
+    const nomC = $("gNom").value.trim(), icon = $("gIcon").value.trim() || "📬";
+    if (!nomC) return toast("Saisissez un nom pour le compte.", 1);
+    if (!sg.size) return toast("Désignez au moins une personne ayant accès.", 1);
+    if (gens.some(c => c.id !== eg && (c.nom || "").trim().toLowerCase() === nomC.toLowerCase())) return toast("Un compte général porte déjà ce nom.", 1);
+    const data = { nom: nomC, icon, description: $("gDesc").value.trim(), actif: $("gActif").checked, membres: [...sg] };
+    try {
+      if (eg) {
+        const id = eg, anc = gens.find(x => x.id === id)?.membres || [], cv = convs.filter(x => x.compteGeneriqueId === id);
+        await updateDoc(doc(db, "comptes-generiques", id), { ...data, updatedAt: serverTimestamp() });
+        await Promise.all(cv.map(x => updateDoc(doc(db, "messageries", x.id), { compteNom: nomC, icon, titre: nomC + (x.demandeurNom ? " · " + x.demandeurNom : "") + (x.objet ? " — " + x.objet : "") })));
+        const aj = data.membres.filter(u => !anc.includes(u)), re = anc.filter(u => !data.membres.includes(u));
+        // Participants des conversations existantes
+        await Promise.all(cv.map(async x => {
+          if (aj.length) await updateDoc(doc(db, "messageries", x.id), { participants: arrayUnion(...aj) });
+          if (re.length) await updateDoc(doc(db, "messageries", x.id), { participants: arrayRemove(...re) });
+        }));
+        // Notification uniquement des nouveaux membres
+        await Promise.all(aj.map(uid => notifier(uid,
+          `Vous avez été ajouté(e) au compte général « ${nomC} » dans GestUrg2.\n\n` +
+          `Vous pouvez désormais accéder aux discussions de ce compte depuis votre messagerie et, selon vos droits, y répondre ou les clôturer.\n\n` +
+          `Cette affectation a été effectuée par l'administration.`)));
+        toast("Compte modifié.");
+      } else {
+        await addDoc(collection(db, "comptes-generiques"), { ...data, creePar: auth.currentUser.uid, createdAt: serverTimestamp() });
+        await Promise.all(data.membres.map(uid => notifier(uid,
+          `Vous avez été affecté(e) au compte général « ${nomC} » dans GestUrg2.\n\n` +
+          `Vous pouvez désormais consulter les discussions associées à ce compte et, selon vos droits, y répondre ou les clôturer.\n\n` +
+          `Vous pouvez retrouver ce compte directement dans votre messagerie.`)));
+        toast("Compte général créé.");
+      }
+      window.resetGen();
+    } catch (e) { console.error(e); toast("Erreur lors de l'enregistrement du compte.", 1); }
+  };
+  window.basculerGen = async id => {
+    const c = gens.find(x => x.id === id); if (!c) return;
+    try { await updateDoc(doc(db, "comptes-generiques", id), { actif: c.actif === false, updatedAt: serverTimestamp() }); }
+    catch (e) { toast("Impossible de modifier le compte.", 1); }
+  };
+  function listeGen() {
+    const z = $("gList"); if (!z) return;
+    z.innerHTML = gens.map(c => {
+      const cv = convs.filter(x => x.compteGeneriqueId === c.id), o = cv.filter(x => x.statut !== "clos").length, a = c.actif !== false;
+      return `<section class="card-sec"><div class="msg-head"><h3>${esc(c.icon || "📬")} ${esc(c.nom)}<span class="msg-tag ${a ? "" : "off"}">${a ? "actif" : "désactivé"}</span></h3><small class="msg-sub">${o} ouverte(s), ${cv.length - o} clôturée(s)</small></div>
+      ${c.description ? `<div class="msg-info">${esc(c.description)}</div>` : ""}<div class="msg-info"><b>Accès (${(c.membres || []).length}) :</b> ${(c.membres || []).map(u => esc(nom(u))).join(", ") || "aucun"}</div>
+      <div class="msg-row"><button type="button" class="btn-id btn-sm" onclick="modifierGen('${c.id}')">Modifier</button><button type="button" class="btn-id btn-sm" onclick="basculerGen('${c.id}')">${a ? "Désactiver" : "Réactiver"}</button></div></section>`;
+    }).join("") || '<div class="msg-vide">Aucun compte général pour le moment.</div>';
+  }
+
+  /* comptes d'envoi */
+  window.enregistrerAdm = async () => {
+    const c = adm.find(x => x.id === ea); if (!c) return;
+    if (!sa.size) return toast("Désignez au moins une personne pour ce compte.", 1);
+    try {
+      const anciens = c.membres || [];
+      const ajoutes = [...sa].filter(uid => !anciens.includes(uid));
+      const retires = anciens.filter(uid => !sa.has(uid));
+      await updateDoc(doc(db, "comptes-administrateurs", c.id), { membres: [...sa], updatedAt: serverTimestamp() });
+      c.membres = [...sa];
+      await Promise.all(ajoutes.map(uid => notifier(uid,
+        `Vous avez été ajouté(e) au compte d'envoi « ${c.nom} » dans GestUrg2.\n\n` +
+        `Vous pouvez désormais envoyer des messages et des sondages au nom de ce compte depuis votre messagerie.\n\n` +
+        `Cette autorisation a été attribuée par l'administration.`)));
+      await Promise.all(retires.map(uid => notifier(uid,
+        `Votre autorisation d'utiliser le compte d'envoi « ${c.nom} » dans GestUrg2 a été retirée.\n\n` +
+        `Vous ne pouvez désormais plus envoyer de messages ou de sondages au nom de ce compte.\n\n` +
+        `Cette modification a été effectuée par l'administration.`)));
+      listeAdm();
+      toast("Accès au compte « " + c.nom + " » mis à jour.");
+    } catch (e) { console.error("Erreur attribution compte d'envoi :", e); toast("Impossible d'enregistrer les accès.", 1); }
+  };
+  function listeAdm() {
+    $("aList").innerHTML = adm.map(c => `<section class="card-sec"><div class="msg-head"><h3>${esc(c.icon + " " + c.nom)}</h3><small class="msg-sub">${c.membres.length} personne(s)</small></div><div class="msg-info">${c.membres.map(u => esc(nom(u))).join(", ") || "Aucune personne attribuée"}</div></section>`).join("");
+  }
+
+  async function init(pages) {
+    if (demarre || pages.messagerieadministration !== true) return;
+    demarre = true;
+    try {
+      await chargerUsers(); await initAdmin();
+      $("aSel").innerHTML = adm.map(c => `<option value="${c.id}">${esc(c.icon + " " + c.nom)}</option>`).join("");
+      $("aSel").onchange = () => { ea = $("aSel").value; sa = new Set(adm.find(c => c.id === ea).membres); pick("a"); };
+      $("gQ").oninput = () => pick("g"); $("aQ").oninput = () => pick("a");
+      ["gPick", "aPick"].forEach(i => $(i).onchange = e => {
+        const s = i === "gPick" ? sg : sa;
+        e.target.checked ? s.add(e.target.value) : s.delete(e.target.value); cnt();
+      });
+      pick("g"); pick("a"); listeAdm();
+      onSnapshot(collection(db, "comptes-generiques"), s => { gens = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr")); listeGen(); });
+      onSnapshot(query(collection(db, "messageries"), where("type", "==", "compte-generique")), s => { convs = s.docs.map(d => ({ id: d.id, ...d.data() })); listeGen(); });
+      $("tabMsgGen").hidden = false; $("tabMsgAdm").hidden = false;
+    } catch (e) {
+      console.error(e); demarre = false;
+      afficherBulle("❌ Impossible de charger les comptes de messagerie", "error");
+    }
+  }
+  // Liste des utilisateurs à jour (créations faites dans l'onglet Utilisateurs)
+  async function rafraichir() {
+    if (!demarre) return;
+    try { await chargerUsers(); pick("g"); pick("a"); listeGen(); listeAdm(); } catch (e) { console.error(e); }
+  }
+  return { init, rafraichir };
+})();
+
+document.getElementById("adminTabs").addEventListener("click", (e) => {
+  const b = e.target.closest(".admin-tab"); if (!b) return;
+  document.querySelectorAll(".admin-tab").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".admin-vue").forEach(x => x.classList.toggle("on", x.id === b.dataset.vue));
+  if (b.dataset.vue !== "vueUsers") msgAdmin.rafraichir();
 });
 
 window.ouvrirModale = (id, nom, email, specialite, lieu, type) => {

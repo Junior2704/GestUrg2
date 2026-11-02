@@ -1,141 +1,409 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Régulation SAMU</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--field:#f6f9fc;--primary:#0b6fa4;--soft:#e3f1f9;--late:#b92a30;--ok:#16784a}
+:root{--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--line-soft:#e9eff5;--field:#f6f9fc;--primary:#0b6fa4;--primary-d:#085a86;--soft:#e3f1f9;--late:#b92a30;--late-soft:#fdecec;--ok:#16784a;--ok-soft:#e1f4e9;--warn:#a35a00;--vio:#6b3fc4}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink)}
-header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line)}
-h1{font-size:18px;margin:0}small,.k{color:var(--muted);font-size:12px}.k{font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-#who{margin-left:auto;font-weight:600;color:var(--muted)}main{padding:16px 24px}
-.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
-input,select,textarea{width:100%;min-height:40px;padding:6px 10px;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:10px}
-.tools input,.tools select{width:auto}
-button{font:inherit;font-weight:600;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--primary);cursor:pointer}
-button.on,.p{background:var(--primary);color:#fff;border-color:var(--primary)}button.d{color:var(--late)}
-table{width:100%;border-collapse:collapse}th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;padding:8px;border-bottom:2px solid var(--line)}
-td{padding:9px 8px;border-bottom:1px solid var(--line)}tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--soft)}
-.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#586a7e);white-space:nowrap}
-dialog{width:min(720px,96vw);border:0;border-radius:14px;padding:0;box-shadow:0 10px 40px #0004}
-.db{padding:18px;display:grid;gap:12px;max-height:75vh;overflow:auto}.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.df{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
-label{font-size:13px;font-weight:600;display:block;margin-bottom:3px}
-.v{display:grid;grid-template-columns:2fr 70px 1.3fr 2fr 40px;gap:6px;margin-bottom:6px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.card{border:1px solid var(--line);border-radius:12px;padding:12px}.card b{font-size:26px;display:block}
-.bar{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;margin:5px 0;font-size:13px}.bar i{display:block;height:14px;border-radius:7px;background:var(--c,var(--primary))}
-.hrs{display:flex;align-items:flex-end;gap:3px;height:120px}.hrs div{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-height:2px}
+html,body{height:100%}
+body{margin:0;font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink);display:flex;flex-direction:column;background:#fff}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);flex:none}
+h1{font-size:18px;margin:0}h2{font-size:20px;margin:0}
+h3{font-size:12px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+small{color:var(--muted);font-size:12px}.k{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#who{margin-left:auto;font-weight:600;color:var(--muted)}
 .msg{padding:30px;text-align:center;color:var(--muted)}
+input,select,textarea{width:100%;min-height:40px;padding:6px 10px;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px}
+textarea{resize:vertical}input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(11,111,164,.15)}
+label{font-size:13px;font-weight:600;display:block;margin:10px 0 3px}label:first-child{margin-top:0}
+button{font:inherit;font-weight:600;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--primary);cursor:pointer}
+button:hover:not(:disabled){background:var(--soft)}button:disabled{opacity:.45;cursor:default}
+button.p{background:var(--primary);color:#fff;border-color:var(--primary)}button.p:hover:not(:disabled){background:var(--primary-d)}
+button.d{color:var(--late);border-color:#f0c3c5}button.d:hover:not(:disabled){background:var(--late-soft)}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#586a7e);white-space:nowrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.hint{color:var(--muted);font-size:13px;margin:6px 0}
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
+#strip{display:flex;gap:10px;padding:8px 16px;border-bottom:1px solid var(--line);overflow-x:auto;flex:none;align-items:stretch}
+.chip{flex:none;padding:6px 12px;border-radius:12px;background:var(--field);border:1px solid var(--line-soft);display:flex;flex-direction:column;justify-content:center}.chip b{font-size:20px;line-height:1}
+.tm{flex:none;min-width:190px;border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:6px 12px}
+.tm small{display:block;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#split{flex:1;min-height:0;display:grid;grid-template-columns:340px 1fr}
+#liste{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#tools{padding:10px;display:grid;gap:8px;border-bottom:1px solid var(--line-soft)}
+#cards{overflow:auto;padding:8px;display:grid;gap:8px;align-content:start;flex:1}
+.cd{border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:9px 12px;cursor:pointer;background:#fff}
+.cd:hover{background:var(--soft)}.cd.cur{background:var(--soft);border-color:var(--primary);border-left-color:var(--c)}.cd.cl{opacity:.65}
+.cd .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.cd .mt{font-weight:600;margin:3px 0 1px}
+#dos{overflow:auto;min-height:0;position:relative}
+.dh{position:sticky;top:0;z-index:600;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}
+#bBack{display:none}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;padding:14px 16px 40px;align-items:start}
+.col{display:grid;gap:14px;min-width:0}
+.sec{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{min-height:46px;padding:6px 10px;text-align:left;line-height:1.2;color:var(--ink)}
+.tile.on{border-color:var(--primary);background:var(--soft);box-shadow:0 0 0 2px rgba(11,111,164,.2)}
+.tile.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}.tile.on.ok{box-shadow:0 0 0 2px rgba(22,120,74,.25)}
+.pr{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.pr button{color:var(--ink);border-width:2px}.pr button.on{background:var(--c);color:#fff;border-color:var(--c)}
+#sugg{position:absolute;left:0;right:0;top:100%;z-index:700;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(17,35,54,.18);overflow:hidden}
+#sugg button{display:block;width:100%;text-align:left;border:0;border-radius:0;color:var(--ink);font-weight:500;padding:8px 12px;min-height:0}
+#map{height:260px;border-radius:12px;border:1px solid var(--line);margin-top:10px;z-index:0}
+.v{display:grid;grid-template-columns:2fr 60px 100px 1.3fr 2fr 40px;gap:6px;margin-bottom:6px}
+.nt{border:1px solid var(--line-soft);border-left:5px solid var(--c);border-radius:10px;padding:8px 12px;margin-top:8px;background:var(--field)}
+.nt .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.nt .x{white-space:pre-wrap;margin-top:4px}
+.sv{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}.sv.act{border-color:var(--late);background:#fff8f8}
+.steps{display:flex;gap:4px;margin:8px 0}.steps span{flex:1;text-align:center;font-size:11px;padding:4px 2px;border-radius:6px;background:var(--field);color:var(--muted)}.steps span.ok{background:var(--ok);color:#fff}
+.teams{display:grid;gap:8px}.tmb{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px}.tmb.free{border-color:var(--ok)}
+.box{border:1px solid #cfe5f2;background:var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:14px}
+.jr{font-size:13px;padding:3px 0;border-bottom:1px solid var(--line-soft)}.jr small{margin-right:6px}
+.dl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.dl span{background:var(--field);border:1px solid var(--line-soft);border-radius:8px;padding:3px 9px;font-size:12px;color:var(--muted)}.dl b{color:var(--ink)}
+dialog{width:min(480px,96vw);border:0;border-radius:14px;padding:18px;box-shadow:0 10px 40px #0004}
+@media(max-width:980px){#split{grid-template-columns:1fr}#dos{display:none}#split.open #liste{display:none}#split.open #dos{display:block}#bBack{display:inline-block}.dgrid{grid-template-columns:1fr}.v{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}}
+@media print{header,#strip,#liste,.dh button,#bAddV,#sugg,#note-compose{display:none!important}#split{display:block}#dos{overflow:visible}.dgrid{grid-template-columns:1fr}}
 </style></head><body>
-<header><b>🚑</b><div><div class="k">SAMU · Régulation</div><h1>Appels &amp; dossiers de régulation</h1></div><span id="who"></span></header>
-<main><div id="gate" class="msg">Connexion en cours…</div>
+<header><b>🚑</b><div><div class="k">SAMU · Régulation médicale</div><h1>Dossiers de régulation</h1></div><span id="who"></span></header>
+<div id="gate" class="msg">Connexion en cours…</div>
 <div id="app" hidden>
- <div class="tools">
-  <button id="tA" class="on">Appels</button><button id="tS">Statistiques</button>
-  <select id="fSt"><option value="">Tous les statuts</option></select>
-  <select id="fPer"><option value="0">Aujourd’hui</option><option value="7">7 jours</option><option value="30">30 jours</option><option value="9999">Tout</option></select>
-  <input id="q" type="search" placeholder="N°, adresse, motif, appelant…" style="margin-left:auto;min-width:240px">
-  <button class="p" id="bNew">+ Nouvel appel</button>
+ <div id="strip"></div>
+ <div id="split">
+  <aside id="liste">
+   <div id="tools">
+    <button class="p" id="bNew">+ Nouvel appel</button>
+    <div class="g2"><select id="fEt"><option value="ouverts">En cours</option><option value="tous">Tous</option><option value="clotures">Clôturés</option></select>
+     <select id="fPer"><option value="0">Aujourd’hui</option><option value="7">7 jours</option><option value="30">30 jours</option><option value="9999">Tout</option></select></div>
+    <input id="q" type="search" placeholder="N°, adresse, motif, appelant, tél…">
+   </div>
+   <div id="cards"></div>
+  </aside>
+  <section id="dos">
+   <div id="vide" class="msg">Sélectionnez un dossier ou créez un nouvel appel.</div>
+   <div id="dossier" hidden>
+    <div class="dh">
+     <button id="bBack">← Liste</button>
+     <div><div class="k">Dossier de régulation</div><h2 id="dNum"></h2></div>
+     <span id="dSt" class="pill"></span><span id="dPr" class="pill"></span><small id="dTimer"></small>
+     <span style="flex:1"></span><small id="saved"></small>
+     <button id="bPrint">Imprimer</button><button id="bRo" hidden>Rouvrir</button><button id="bClo">Clôturer</button><button class="d" id="bDel">Supprimer</button>
+    </div>
+    <fieldset id="fs"><div class="dgrid">
+     <div class="col">
+      <section class="sec"><h3>Appelant</h3>
+       <div class="g2"><div><label>Nom</label><input data-k="appelant"></div><div><label>Téléphone</label><input data-k="tel" type="tel"></div></div>
+       <label>Qualité de l’appelant</label><select data-k="qualite" id="sQual"></select></section>
+      <section class="sec"><h3>Motif & priorité</h3>
+       <div class="g2"><div><label>Motif de l’appel *</label><select data-k="motif" id="sMotif"></select></div><div><label>Précision</label><input data-k="motifPrecision" placeholder="ex. douleur irradiant bras gauche"></div></div>
+       <label>Priorité de régulation</label><div class="pr" id="prio"></div></section>
+      <section class="sec"><h3>Localisation de l’intervention</h3>
+       <div style="position:relative"><label>Adresse (recherche automatique) *</label><input data-k="adresse" id="aAdr" autocomplete="off" placeholder="N° et rue — tapez pour chercher"><div id="sugg" hidden></div></div>
+       <div class="g2"><div><label>Code postal</label><input data-k="cp"></div><div><label>Commune</label><input data-k="ville"></div></div>
+       <div class="g2"><div><label>Complément (bât., étage, code, repère)</label><input data-k="compl"></div><div><label>Type de lieu</label><select data-k="lieu" id="sLieu"></select></div></div>
+       <div class="hint" id="coords">Cliquez sur la carte ou déplacez le repère pour ajuster la position.</div><div id="map"></div></section>
+      <section class="sec"><h3>Victimes / patients <span id="nbV"></span></h3><div id="vics"></div><button id="bAddV" type="button">+ Ajouter une victime</button></section>
+     </div>
+     <div class="col">
+      <section class="sec"><h3>Décision de régulation</h3><div class="dl" id="delais"></div>
+       <div class="tiles" id="decTiles"></div><div id="decPanel" style="margin-top:12px"></div></section>
+      <section class="sec"><h3>Notes de régulation</h3>
+       <div id="note-compose"><div class="g2"><select id="nType"></select><span></span></div>
+        <textarea id="nTxt" rows="3" placeholder="Saisir une note… (Ctrl+Entrée pour ajouter)" style="margin-top:8px"></textarea>
+        <div class="row"><button class="p" id="bNote">Ajouter la note</button><small>Les notes sont horodatées, signées et non modifiables : pour corriger, ajoutez une nouvelle note.</small></div></div>
+       <div id="notes"></div></section>
+      <section class="sec"><h3>Journal d’activité</h3><div id="journal"></div></section>
+     </div>
+    </div></fieldset>
+   </div>
+  </section>
  </div>
- <div id="vA"></div><div id="vS" hidden></div>
-</div></main>
-
-<dialog id="dlg"><div class="db">
- <h2 id="dT" style="margin:0">Nouvel appel</h2>
- <div class="g2"><div><label>Appelant</label><input id="aNom"></div><div><label>Téléphone</label><input id="aTel" type="tel"></div></div>
- <div class="g2"><div><label>Adresse de l’intervention *</label><input id="aAdr" placeholder="N°, rue"></div><div><label>Commune / code postal</label><input id="aCp"></div></div>
- <div><label>Complément (bâtiment, étage, code, repère)</label><input id="aCompl"></div>
- <div class="g2"><div><label>Motif *</label><select id="aMotif"></select></div><div><label>Priorité</label><select id="aPrio"></select></div></div>
- <div><label>Victimes / patients <small id="nbV"></small></label><div id="vics"></div><button id="addV" type="button">+ Ajouter une victime</button></div>
- <div class="g2"><div><label>Décision de régulation</label><select id="aDec"></select></div><div><label>Statut</label><input id="aSt" disabled></div></div>
- <div><label>Notes / bilan téléphonique</label><textarea id="aNotes" rows="3"></textarea></div>
 </div>
-<div class="df"><button class="d" id="bDel">Supprimer</button><span style="flex:1"></span><button id="bX">Fermer</button><button id="bClo">Clôturer</button><button id="bSend">Envoyer au déclenchement SMUR</button><button class="p" id="bSave">Enregistrer</button></div></dialog>
+<dialog id="dClo"><h2 style="margin-bottom:10px">Clôturer le dossier</h2>
+ <label>Motif de clôture *</label><select id="cloMotif"></select>
+ <label>Commentaire</label><textarea id="cloNote" rows="3"></textarea>
+ <div class="row" style="justify-content:flex-end"><button id="cloX">Annuler</button><button class="p" id="cloOk">Clôturer</button></div></dialog>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, onSnapshot, runTransaction, arrayUnion, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app),$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sans=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const tmin=t=>{const[a,b]=String(t).split(':');return +a*60+ +b};
 const hm=t=>t?new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
+const dur=ms=>{const m=Math.max(0,Math.round(ms/6e4));return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')};
 const PRIO=[['P0 · Vital','#b92a30'],['P1 · Urgent','#c2410c'],['P2 · Non urgent','#a35a00'],['P3 · Conseil','#16784a']];
-const STAT={nouveau:'En régulation',a_declencher:'À déclencher',declenche:'SMUR engagé',cloture:'Clôturé'};
-const DEC=['Conseil médical','Médecin généraliste','Ambulance privée','Pompiers (VSAV)','SMUR','Orientation urgences','Autre'];
-const MOTIFS=['Douleur thoracique','Malaise / perte de connaissance','Arrêt cardio-respiratoire','Détresse respiratoire','AVC suspecté','Traumatisme / chute','Accident de la route','Intoxication','Hémorragie','Accouchement','Trouble psychiatrique','Autre'];
+const STAT={nouveau:['En régulation','#0b6fa4'],a_declencher:['En régulation','#0b6fa4'],declenche:['SMUR engagé','#b92a30'],transfere:['Transféré','#6b3fc4'],cloture:['Clôturé','#586a7e']};
+const DEC=[['conseil','Conseil médical'],['mg','Médecin généraliste / SOS Médecins'],['ambulance','Ambulance privée'],['vsav','Pompiers (VSAV)'],['smur','SMUR'],['transfert','Transfert à un autre service'],['urgences','Orientation aux urgences'],['sanssuite','Sans suite / non pertinent']];
+const DECL=Object.fromEntries(DEC);
+const SERVICES=['Pompiers (18)','Police / Gendarmerie (17)','112','Autre SAMU / CRRA','SOS Médecins','Centre antipoison','Autre service de secours'];
+const MOTIFS=['Douleur thoracique','Malaise / perte de connaissance','Arrêt cardio-respiratoire','Détresse respiratoire','AVC suspecté','Traumatisme / chute','Accident de la route','Intoxication','Hémorragie','Accouchement','Crise convulsive','Allergie / choc anaphylactique','Diabète / hypoglycémie','Brûlure','Noyade / pendaison','Fièvre / pédiatrie','Douleur abdominale','Trouble psychiatrique','Violences / agression','Avis médical','Autre'];
+const QUALITE=['Patient lui-même','Entourage / famille','Témoin','Professionnel de santé','Pompiers','Police / Gendarmerie','Établissement (EHPAD, école…)','Autre'];
+const LIEUX=['Domicile','Voie publique','Lieu public / commerce','Lieu de travail','Établissement de santé / médico-social','Établissement scolaire / sportif','Transport','Autre'];
 const ETAT=['Conscient','Conscient agité','Inconscient','Arrêt cardiaque','Décédé','Indéterminé'];
-let medecin={},appels=[],editId=null,vue='A';
-const sel=(el,a,f=x=>x)=>$(el).innerHTML=a.map((x,i)=>`<option value="${i}">${esc(f(x))}</option>`).join('');
-sel('#aMotif',MOTIFS);sel('#aPrio',PRIO,x=>x[0]);sel('#aDec',DEC);
-$('#aMotif').innerHTML=MOTIFS.map(m=>`<option>${esc(m)}</option>`).join('');$('#aDec').innerHTML=DEC.map(m=>`<option>${esc(m)}</option>`).join('');
-$('#fSt').innerHTML+=Object.entries(STAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+const CLOT=['Intervention terminée','Conseil donné','Transféré à un autre service','Orientation réalisée','Appel non pertinent / sans suite','Doublon','Appelant injoignable','Refus de soins'];
+const NT={note:['Note de régulation','#0b6fa4'],bilan:['Bilan appelant','#16784a'],conseil:['Conseil donné','#6b3fc4'],smur:['Échange avec le SMUR','#b92a30'],autre:['Information','#586a7e']};
+const SMUR=[['smur1','SMUR 1'],['smur2','SMUR 2'],['smur3','SMUR 3']];
+const ETAPES=[['declenche','Déclenché'],['en_route','En route'],['sur_place','Sur place'],['transport','Transport'],['termine','Terminé']];
+const opts=(a,ph)=>(ph?`<option value="">${ph}</option>`:'')+a.map(x=>`<option>${esc(x)}</option>`).join('');
+$('#sQual').innerHTML=opts(QUALITE,'— Choisir —');$('#sMotif').innerHTML=opts(MOTIFS,'— Choisir —');$('#sLieu').innerHTML=opts(LIEUX,'— Choisir —');
+$('#cloMotif').innerHTML=opts(CLOT,'— Choisir —');$('#nType').innerHTML=Object.entries(NT).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
+$('#prio').innerHTML=PRIO.map((p,i)=>`<button type="button" data-p="${i}" style="--c:${p[1]}">${p[0]}</button>`).join('');
 
+let medecin={},users={},affs=[],appels=[],decls=[],cur=null,pend=null,draft={},sigDec='',map=null,mk=null,geoSig='',suggT=0;
+const A=()=>appels.find(x=>x.id===cur),closed=a=>a&&a.statut==='cloture';
+const flash=()=>{$('#saved').textContent='Enregistré à '+hm(Date.now())};
+async function maj(id,f,txt){const u={...f};if(txt)u.journal=arrayUnion({at:Date.now(),par:medecin.nom||'',txt});
+ try{await updateDoc(doc(db,'appels',id),u);flash()}catch(e){console.error(e);alert('Enregistrement impossible.')}}
+
+/* ---------- Connexion / droits ---------- */
 onAuthStateChanged(auth,async u=>{
  if(!u){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
  try{const s=await getDoc(doc(db,'medecins',u.uid));if(!s.exists()){$('#gate').textContent='Utilisateur non trouvé, veuillez vous reconnecter.';return}
   medecin={...s.data(),uid:u.uid};$('#who').textContent=medecin.nom||'';
   const page=location.pathname.split('/').pop().replace('.html','');
   if(!(medecin.pages||{})[page]){$('#gate').textContent='Accès refusé : contactez un administrateur.';return}
+  (await getDocs(collection(db,'medecins'))).docs.forEach(d=>users[d.id]={nom:d.data().nom||d.id,role:d.data().specialite||''});
   $('#gate').hidden=true;$('#app').hidden=false;
-  onSnapshot(collection(db,'appels'),s=>{appels=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);rendre()});
+  onSnapshot(collection(db,'appels'),s=>{appels=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
+  onSnapshot(collection(db,'affectations'),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
+  onSnapshot(collection(db,'declenchements'),s=>{decls=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
+  setInterval(()=>{if($('#app').hidden)return;rendre()},30000);
  }catch(e){console.error(e);$('#gate').textContent='Une erreur est survenue, réessayez plus tard.'}
 });
-const filtrer=()=>{const lim=$('#fPer').value==='0'?new Date().setHours(0,0,0,0):Date.now()-(+$('#fPer').value)*864e5,q=$('#q').value.toLowerCase();
- return appels.filter(a=>a.createdAt>=lim&&(!$('#fSt').value||a.statut===$('#fSt').value)&&(!q||[a.num,a.adresse,a.cp,a.motif,a.appelant,a.tel].join(' ').toLowerCase().includes(q)))};
-const pill=(p)=>`<span class="pill" style="--c:${PRIO[p??2][1]}">${PRIO[p??2][0]}</span>`;
+
+/* ---------- SMUR : disponibilité (affectations) ---------- */
+const applique=(a,d)=>a.date?a.date===d:(a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
+const nowMin=()=>{const n=new Date();return n.getHours()*60+n.getMinutes()};
+const actives=()=>affs.filter(a=>applique(a,iso(new Date()))&&tmin(a.start)<=nowMin()&&nowMin()<tmin(a.end));
+const membres=k=>[...new Set(actives().filter(a=>a.poste===k).map(a=>a.uid))];
+const engagee=k=>decls.find(d=>d.actif&&d.equipe===k);
+const noms=u=>(u||[]).map(x=>users[x]?.nom||x).join(', ');
+
 function rendre(){
- $('#vA').hidden=vue!=='A';$('#vS').hidden=vue!=='S';$('#tA').classList.toggle('on',vue==='A');$('#tS').classList.toggle('on',vue==='S');
+ if($('#app').hidden)return;
+ strip();liste();
+ if(cur){if(!A())fermer();else majDos()}
+}
+function strip(){
+ const n1=appels.filter(a=>a.statut==='nouveau'||a.statut==='a_declencher').length,n2=decls.filter(d=>d.actif).length;
+ $('#strip').innerHTML=`<div class="chip"><b>${n1}</b><small>en régulation</small></div><div class="chip"><b>${n2}</b><small>SMUR engagé(s)</small></div>`+
+  SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k),c=e?'#b92a30':m.length?'#16784a':'#aab7c4';
+   return `<div class="tm" style="--c:${c}"><b>${l}</b> <span class="pill" style="--c:${c}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><small>${esc(noms(m))||'Personne affecté'}</small></div>`}).join('');
+}
+
+/* ---------- Liste ---------- */
+function filtrer(){
+ const q=sans($('#q').value),per=+$('#fPer').value,lim=per===0?new Date().setHours(0,0,0,0):Date.now()-per*864e5,e=$('#fEt').value;
+ const L=appels.filter(a=>{const cl=closed(a);if(e==='ouverts'&&cl)return false;if(e==='clotures'&&!cl)return false;if(cl&&a.createdAt<lim)return false;
+  return !q||sans([a.num,a.adresse,a.cp,a.ville,a.motif,a.appelant,a.tel].join(' ')).includes(q)});
+ return L.sort((a,b)=>(closed(a)-closed(b))||(closed(a)?b.createdAt-a.createdAt:((a.priorite??2)-(b.priorite??2)||a.createdAt-b.createdAt)));
+}
+function liste(){
  const L=filtrer();
- if(vue==='A')$('#vA').innerHTML=`<table><tr><th>N°</th><th>Heure</th><th>Priorité</th><th>Adresse</th><th>Motif</th><th>Victimes</th><th>Statut</th><th>Régulateur</th></tr>`+
-  (L.map(a=>`<tr data-id="${a.id}"><td><b>${esc(a.num)}</b></td><td>${hm(a.createdAt)}</td><td>${pill(a.priorite)}</td><td>${esc(a.adresse)}<br><small>${esc(a.cp)}</small></td><td>${esc(a.motif)}</td><td>${(a.victimes||[]).length||1}</td><td>${STAT[a.statut]||''}${a.equipe?'<br><small>'+esc(a.equipe)+'</small>':''}</td><td>${esc(a.regulateur)}</td></tr>`).join('')||'<tr><td colspan="8" class="msg">Aucun appel sur cette période.</td></tr>')+'</table>';
- else stats(L);
+ $('#cards').innerHTML=L.map(a=>{const p=PRIO[a.priorite??2],s=STAT[a.statut]||STAT.nouveau;
+  return `<div class="cd ${a.id===cur?'cur':''} ${closed(a)?'cl':''}" data-id="${a.id}" style="--c:${p[1]}"><div class="r"><b>${esc(a.num)}</b><span class="pill" style="--c:${p[1]}">${p[0]}</span><small>${hm(a.createdAt)}</small></div>
+  <div class="mt">${esc(a.motif||'Motif non précisé')}</div><small>${esc([a.adresse,a.ville].filter(Boolean).join(', ')||'Adresse non renseignée')}</small>
+  <div class="r" style="margin-top:4px"><span class="pill" style="--c:${s[1]}">${s[0]}${a.equipe&&a.statut==='declenche'?' · '+esc(a.equipe):''}</span><small>${closed(a)?dur(a.clotureAt-a.createdAt):dur(Date.now()-a.createdAt)}</small><small>${esc(a.regulateur||'')}</small></div></div>`}).join('')||'<div class="msg">Aucun dossier.</div>';
 }
-const bar=(l,n,max,c)=>`<div class="bar"><span>${esc(l)}</span><div><i style="width:${max?n/max*100:0}%;${c?'--c:'+c:''}"></i></div><b>${n}</b></div>`;
-function stats(L){
- const cnt=(f)=>L.reduce((m,a)=>{const k=f(a);m[k]=(m[k]||0)+1;return m},{}),vic=L.reduce((t,a)=>t+((a.victimes||[]).length||1),0),
-  dl=L.filter(a=>a.declencheAt).map(a=>(a.declencheAt-a.createdAt)/6e4),moy=dl.length?Math.round(dl.reduce((x,y)=>x+y,0)/dl.length*10)/10:null,
-  P=cnt(a=>a.priorite??2),D=cnt(a=>a.decision||'—'),M=cnt(a=>a.motif||'—'),H=Array(24).fill(0);L.forEach(a=>H[new Date(a.createdAt).getHours()]++);
- const bl=(o,c)=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e[0]?.[1]||0;return e.map(([k,v])=>bar(k,v,m,c)).join('')};
- $('#vS').innerHTML=`<div class="cards"><div class="card"><small>Appels</small><b>${L.length}</b></div><div class="card"><small>Victimes</small><b>${vic}</b></div>
-  <div class="card"><small>SMUR déclenchés</small><b>${L.filter(a=>a.declencheAt).length}</b></div><div class="card"><small>Délai moyen appel → SMUR</small><b>${moy??'—'}${moy!=null?' min':''}</b></div>
-  <div class="card"><small>En cours</small><b>${L.filter(a=>a.statut!=='cloture').length}</b></div></div>
-  <h3>Par priorité</h3>${PRIO.map((p,i)=>bar(p[0],P[i]||0,Math.max(1,...Object.values(P)),p[1])).join('')}
-  <h3>Par décision</h3>${bl(D)}<h3>Par motif</h3>${bl(M)}
-  <h3>Répartition horaire</h3><div class="hrs">${H.map((n,h)=>`<div title="${h}h : ${n}" style="height:${n/Math.max(1,...H)*100}%"></div>`).join('')}</div><small>0 h → 23 h</small>`;
-}
-/* ---- Dossier ---- */
-const vRow=(v={})=>`<div class="v"><input placeholder="Nom / description" value="${esc(v.nom)}"><input placeholder="Âge" value="${esc(v.age)}"><select>${ETAT.map(e=>`<option${e===v.etat?' selected':''}>${e}</option>`).join('')}</select><input placeholder="Bilan / plaintes" value="${esc(v.bilan)}"><button class="d" type="button" title="Retirer">×</button></div>`;
-const lireV=()=>[...$('#vics').children].map(r=>{const i=r.querySelectorAll('input,select');return{nom:i[0].value.trim(),age:i[1].value.trim(),etat:i[2].value,bilan:i[3].value.trim()}});
-const cnt=()=>$('#nbV').textContent=`(${$('#vics').children.length})`;
-function ouvrir(id){
- editId=id;const a=appels.find(x=>x.id===id)||{};
- $('#dT').textContent=id?'Dossier '+a.num:'Nouvel appel';
- $('#aNom').value=a.appelant||'';$('#aTel').value=a.tel||'';$('#aAdr').value=a.adresse||'';$('#aCp').value=a.cp||'';$('#aCompl').value=a.compl||'';
- $('#aMotif').value=a.motif||MOTIFS[0];$('#aPrio').innerHTML=PRIO.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');$('#aPrio').value=a.priorite??2;
- $('#aDec').value=a.decision||DEC[0];$('#aNotes').value=a.notes||'';$('#aSt').value=STAT[a.statut]||'Nouveau';
- $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
- $('#bDel').hidden=!id;$('#bClo').hidden=!id||a.statut==='cloture';$('#bSend').hidden=!!a.statut&&a.statut!=='nouveau';
- $('#dlg').showModal();
-}
+$('#cards').onclick=e=>{const c=e.target.closest('.cd');if(c)ouvrir(c.dataset.id)};
+['#fEt','#fPer','#q'].forEach(s=>$(s).oninput=liste);
+
+/* ---------- Création ---------- */
 async function numero(){const r=doc(db,'samu-config','compteur'),j=iso(new Date());
  return runTransaction(db,async t=>{const s=await t.get(r),n=s.exists()&&s.data().jour===j?s.data().n+1:1;t.set(r,{jour:j,n});return j.replace(/-/g,'').slice(2)+'-'+String(n).padStart(3,'0')})}
-async function save(extra={}){
- const d={appelant:$('#aNom').value.trim(),tel:$('#aTel').value.trim(),adresse:$('#aAdr').value.trim(),cp:$('#aCp').value.trim(),compl:$('#aCompl').value.trim(),
-  motif:$('#aMotif').value,priorite:+$('#aPrio').value,decision:$('#aDec').value,notes:$('#aNotes').value.trim(),victimes:lireV(),...extra};
- if(!d.adresse){alert('L’adresse est obligatoire.');return false}
- try{if(editId)await updateDoc(doc(db,'appels',editId),d);
-  else await addDoc(collection(db,'appels'),{...d,num:await numero(),statut:'nouveau',createdAt:Date.now(),regulateur:medecin.nom||'',regulateurUid:medecin.uid,...extra});
-  $('#dlg').close();return true}catch(e){console.error(e);alert('Enregistrement impossible.');return false}
+$('#bNew').onclick=async()=>{
+ try{const now=Date.now(),num=await numero();
+  const r=await addDoc(collection(db,'appels'),{num,statut:'nouveau',createdAt:now,regulateur:medecin.nom||'',regulateurUid:medecin.uid,priorite:2,motif:'',victimes:[{}],notes:[],journal:[{at:now,par:medecin.nom||'',txt:'Appel décroché — dossier créé'}]});
+  ouvrir(r.id)}catch(e){console.error(e);alert('Création du dossier impossible.')}
+};
+
+/* ---------- Dossier ---------- */
+function ouvrir(id){
+ cur=id;const a=A()||{};pend=a.decisionKey||null;draft={};sigDec='';geoSig='';
+ document.querySelectorAll('#fs [data-k]').forEach(e=>e.value=a[e.dataset.k]??'');
+ $('#vics').innerHTML=((a.victimes&&a.victimes.length)?a.victimes:[{}]).map(vRow).join('');cnt();
+ $('#vide').hidden=true;$('#dossier').hidden=false;$('#split').classList.add('open');$('#saved').textContent='';$('#nTxt').value='';
+ carte();majDos();liste();
 }
-$('#bNew').onclick=()=>ouvrir(null);$('#bX').onclick=()=>$('#dlg').close();
-$('#bSave').onclick=()=>save();
-$('#bSend').onclick=()=>save({statut:'a_declencher',decision:'SMUR'});
-$('#bClo').onclick=()=>save({statut:'cloture',clotureAt:Date.now()});
-$('#bDel').onclick=async()=>{if(confirm('Supprimer ce dossier ?')){await deleteDoc(doc(db,'appels',editId));$('#dlg').close()}};
-$('#addV').onclick=()=>{$('#vics').insertAdjacentHTML('beforeend',vRow());cnt()};
-$('#vics').onclick=e=>{if(e.target.tagName==='BUTTON'){e.target.parentElement.remove();cnt()}};
-$('#vA').onclick=e=>{const r=e.target.closest('tr[data-id]');if(r)ouvrir(r.dataset.id)};
-$('#tA').onclick=()=>{vue='A';rendre()};$('#tS').onclick=()=>{vue='S';rendre()};
-['#fSt','#fPer','#q'].forEach(s=>$(s).oninput=rendre);
+function fermer(){cur=null;$('#dossier').hidden=true;$('#vide').hidden=false;$('#split').classList.remove('open');liste()}
+$('#bBack').onclick=fermer;$('#bPrint').onclick=()=>window.print();
+
+function majDos(){
+ const a=A();if(!a)return;
+ const s=STAT[a.statut]||STAT.nouveau,p=PRIO[a.priorite??2];
+ $('#dNum').textContent=a.num;$('#dSt').textContent=s[0];$('#dSt').style.setProperty('--c',s[1]);
+ $('#dPr').textContent=p[0];$('#dPr').style.setProperty('--c',p[1]);
+ $('#dTimer').textContent=closed(a)?'Durée du dossier : '+dur(a.clotureAt-a.createdAt):'Ouvert depuis '+dur(Date.now()-a.createdAt);
+ $('#fs').disabled=closed(a);$('#bClo').hidden=closed(a);$('#bRo').hidden=!closed(a);
+ $('#bDel').hidden=closed(a)||decls.some(d=>d.appelId===a.id)||(a.notes||[]).length>0;
+ $('#prio').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.p===(a.priorite??2)));
+ // délais
+ const dl=[['Reçu',hm(a.createdAt)]];
+ if(a.decisionAt)dl.push(['Décision','+'+dur(a.decisionAt-a.createdAt)]);
+ if(a.declencheAt)dl.push(['SMUR déclenché','+'+dur(a.declencheAt-a.createdAt)]);
+ if(a.transfert?.at)dl.push(['Transfert','+'+dur(a.transfert.at-a.createdAt)]);
+ if(a.clotureAt)dl.push(['Clôture','+'+dur(a.clotureAt-a.createdAt)]);
+ $('#delais').innerHTML=dl.map(x=>`<span>${x[0]} <b>${x[1]}</b></span>`).join('');
+ // décision
+ $('#decTiles').innerHTML=DEC.map(([k,l])=>`<button type="button" class="tile ${pend===k?'on':''} ${a.decisionKey===k?'ok':''}" data-dec="${k}">${a.decisionKey===k?'✓ ':''}${l}</button>`).join('');
+ const ds=decls.filter(d=>d.appelId===a.id).map(d=>d.id+d.etape+d.actif).join(','),
+  eq=SMUR.map(([k])=>k+membres(k).length+(engagee(k)?1:0)).join(''),sig=[pend,a.decisionKey,a.statut,ds,eq,a.transfert?.at,closed(a)].join('|');
+ if(sig!==sigDec){
+  document.querySelectorAll('#decPanel [data-d]').forEach(e=>draft[e.dataset.d]=e.value);
+  $('#decPanel').innerHTML=panel(a);
+  document.querySelectorAll('#decPanel [data-d]').forEach(e=>{const v=draft[e.dataset.d];e.value=v!==undefined?v:defDraft(a,e.dataset.d)});
+  sigDec=sig}
+ // notes
+ $('#notes').innerHTML=[...(a.notes||[])].sort((x,y)=>y.at-x.at).map(n=>{const t=NT[n.type]||NT.note;
+  return `<div class="nt" style="--c:${t[1]}"><div class="h"><span class="pill" style="--c:${t[1]}">${t[0]}</span><b>${esc(n.par)}</b><small>${new Date(n.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</small></div><div class="x">${esc(n.texte)}</div></div>`}).join('')||'<p class="hint">Aucune note pour le moment.</p>';
+ $('#journal').innerHTML=[...(a.journal||[])].sort((x,y)=>y.at-x.at).map(j=>`<div class="jr"><small>${hm(j.at)} · ${esc(j.par)}</small>${esc(j.txt)}</div>`).join('');
+ const g=a.lat+'|'+a.lng;if(g!==geoSig)carte();
+}
+const defDraft=(a,k)=>({synthese:a.synthese,dDetail:a.decisionDetail,tService:a.transfert?.service,tInterloc:a.transfert?.interlocuteur,tRef:a.transfert?.reference,tDetail:a.transfert?.details})[k]??'';
+$('#decPanel').addEventListener('input',e=>{const k=e.target.dataset.d;if(k)draft[k]=e.target.value});
+$('#decPanel').addEventListener('change',e=>{if(e.target.dataset.d==='synthese'){const v=e.target.value.trim();maj(cur,{synthese:v});decls.filter(d=>d.appelId===cur&&d.actif).forEach(d=>updateDoc(doc(db,'declenchements',d.id),{synthese:v}).catch(()=>{}))}});
+
+/* ---------- Champs du dossier (enregistrement automatique) ---------- */
+$('#fs').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k||!cur)return;
+ const f={[k]:e.target.value.trim()};if(k==='adresse')f.adresseValidee=false;maj(cur,f)});
+$('#prio').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=A(),i=+b.dataset.p;if(i===(a.priorite??2))return;maj(cur,{priorite:i},'Priorité : '+PRIO[i][0])};
+
+/* ---------- Victimes ---------- */
+const vRow=(v={})=>`<div class="v"><input placeholder="Nom / description" value="${esc(v.nom)}"><input placeholder="Âge" value="${esc(v.age)}"><select><option value="">Sexe</option>${['Femme','Homme'].map(s=>`<option${s===v.sexe?' selected':''}>${s}</option>`).join('')}</select><select>${ETAT.map(e=>`<option${e===v.etat?' selected':''}>${e}</option>`).join('')}</select><input placeholder="Bilan / plaintes" value="${esc(v.bilan)}"><button class="d" type="button" title="Retirer">×</button></div>`;
+const lireV=()=>[...$('#vics').children].map(r=>{const i=r.querySelectorAll('input,select');return{nom:i[0].value.trim(),age:i[1].value.trim(),sexe:i[2].value,etat:i[3].value,bilan:i[4].value.trim()}});
+const cnt=()=>$('#nbV').textContent=`(${$('#vics').children.length})`;
+$('#bAddV').onclick=()=>{$('#vics').insertAdjacentHTML('beforeend',vRow());cnt();maj(cur,{victimes:lireV()})};
+$('#vics').addEventListener('change',()=>maj(cur,{victimes:lireV()}));
+$('#vics').addEventListener('click',e=>{if(e.target.tagName==='BUTTON'){e.target.parentElement.remove();cnt();maj(cur,{victimes:lireV()})}});
+
+/* ---------- Notes ---------- */
+async function ajouterNote(){const t=$('#nTxt').value.trim();if(!t||!cur)return;
+ await maj(cur,{notes:arrayUnion({id:Date.now().toString(36),at:Date.now(),par:medecin.nom||'',uid:medecin.uid,type:$('#nType').value,texte:t})});$('#nTxt').value=''}
+$('#bNote').onclick=ajouterNote;$('#nTxt').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ajouterNote()}});
+
+/* ---------- Adresse + carte (Base Adresse Nationale / OpenStreetMap) ---------- */
+function carte(){
+ const a=A();if(!a)return;
+ if(!window.L){$('#map').innerHTML='<div class="msg">Carte indisponible (bibliothèque non chargée).</div>';return}
+ if(!map){map=L.map('map').setView([46.6,2.4],5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  map.on('click',e=>{if(!$('#fs').disabled)placer(e.latlng.lat,e.latlng.lng,true)})}
+ geoSig=a.lat+'|'+a.lng;
+ setTimeout(()=>{map.invalidateSize();if(a.lat!=null)poser(a.lat,a.lng,true);else{if(mk){map.removeLayer(mk);mk=null}map.setView([46.6,2.4],5);$('#coords').textContent='Adresse non localisée. Cherchez une adresse ou cliquez sur la carte.'}},60);
+}
+function poser(lat,lng,zoom){
+ if(!mk){mk=L.marker([lat,lng],{draggable:true}).addTo(map);mk.on('dragend',()=>{if($('#fs').disabled)return;const p=mk.getLatLng();placer(p.lat,p.lng,true)})}else mk.setLatLng([lat,lng]);
+ if(zoom)map.setView([lat,lng],16);$('#coords').textContent=`Position : ${(+lat).toFixed(5)}, ${(+lng).toFixed(5)}`;
+}
+async function placer(lat,lng,rev){
+ lat=+lat.toFixed(6);lng=+lng.toFixed(6);poser(lat,lng,false);geoSig=lat+'|'+lng;
+ const f={lat,lng};let txt='Position ajustée sur la carte';
+ if(rev){try{const j=await(await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${lng}&lat=${lat}`)).json(),p=j.features?.[0]?.properties;
+  if(p){f.adresse=p.name||'';f.cp=p.postcode||'';f.ville=p.city||'';f.adresseValidee=true;txt='Adresse localisée : '+p.label;
+   [['adresse',f.adresse],['cp',f.cp],['ville',f.ville]].forEach(([k,v])=>$('#fs [data-k="'+k+'"]').value=v)}}catch(e){}}
+ maj(cur,f,txt);
+}
+$('#aAdr').addEventListener('input',()=>{
+ clearTimeout(suggT);const q=$('#aAdr').value.trim();if(q.length<3){$('#sugg').hidden=true;return}
+ suggT=setTimeout(async()=>{try{const j=await(await fetch('https://api-adresse.data.gouv.fr/search/?limit=6&autocomplete=1&q='+encodeURIComponent(q))).json();
+  const L=(j.features||[]).map(f=>({label:f.properties.label,name:f.properties.name,cp:f.properties.postcode||'',ville:f.properties.city||'',lng:f.geometry.coordinates[0],lat:f.geometry.coordinates[1]}));
+  window._sg=L;$('#sugg').innerHTML=L.map((s,i)=>`<button type="button" data-i="${i}">${esc(s.label)}</button>`).join('');$('#sugg').hidden=!L.length}catch(e){$('#sugg').hidden=true}},300)});
+function choisir(i){const s=(window._sg||[])[i];if(!s)return;$('#sugg').hidden=true;
+ [['adresse',s.name],['cp',s.cp],['ville',s.ville]].forEach(([k,v])=>$('#fs [data-k="'+k+'"]').value=v);
+ poser(s.lat,s.lng,true);geoSig=s.lat+'|'+s.lng;
+ maj(cur,{adresse:s.name,cp:s.cp,ville:s.ville,lat:+s.lat.toFixed(6),lng:+s.lng.toFixed(6),adresseValidee:true},'Adresse localisée : '+s.label)}
+$('#sugg').addEventListener('mousedown',e=>{e.preventDefault();const b=e.target.closest('button');if(b)choisir(+b.dataset.i)});
+$('#aAdr').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#sugg').hidden){e.preventDefault();choisir(0)}});
+$('#aAdr').addEventListener('blur',()=>setTimeout(()=>$('#sugg').hidden=true,150));
+
+/* ---------- Décision ---------- */
+$('#decTiles').onclick=e=>{const b=e.target.closest('[data-dec]');if(!b)return;pend=b.dataset.dec;draft={};sigDec='';majDos()};
+function panel(a){
+ if(closed(a))return `<div class="box">Dossier clôturé — ${esc(a.motifCloture||'')}${a.clotureNote?' · '+esc(a.clotureNote):''}</div>`;
+ if(!pend)return '<p class="hint">Choisissez une décision de régulation ci-dessus.</p>';
+ if(pend==='smur')return smurHTML(a);
+ if(pend==='transfert')return `<div class="hint">Indiquez à quel service l’appel est transféré. Le dossier restera consultable ici.</div>
+  ${a.transfert?`<div class="box">Transféré à <b>${esc(a.transfert.service)}</b> à ${hm(a.transfert.at)} par ${esc(a.transfert.par||'')}</div>`:''}
+  <label>Service destinataire *</label><select data-d="tService"><option value="">— Choisir —</option>${SERVICES.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+  <div class="g2"><div><label>Interlocuteur</label><input data-d="tInterloc" placeholder="Nom / fonction"></div><div><label>N° de dossier externe</label><input data-d="tRef"></div></div>
+  <label>Éléments transmis</label><textarea data-d="tDetail" rows="3" placeholder="Informations communiquées au service"></textarea>
+  <div class="row"><button class="p" data-act="transfert">${a.transfert?'Mettre à jour le transfert':'Enregistrer le transfert'}</button></div>`;
+ return `<label>Précisions sur la décision « ${esc(DECL[pend])} »</label><textarea data-d="dDetail" rows="3" placeholder="Conseils donnés, praticien contacté, orientation…"></textarea>
+  <div class="row"><button class="p" data-act="decider">Enregistrer la décision</button></div>`;
+}
+function smurHTML(a){
+ const ds=decls.filter(d=>d.appelId===a.id).sort((x,y)=>y.heures.declenche-x.heures.declenche);
+ let h='<div class="hint">Seuls les SMUR sont déclenchés depuis GestUrg2 ; les autres services (VSAV, ambulances…) utilisent leur propre logiciel.</div>';
+ ds.forEach(d=>{const i=ETAPES.findIndex(e=>e[0]===d.etape),nx=ETAPES[i+1],ann=d.etape==='annule';
+  h+=`<div class="sv ${d.actif?'act':''}"><b>${esc(d.equipeLabel)}</b> <span class="pill" style="--c:${ann?'#586a7e':d.actif?'#b92a30':'#16784a'}">${ann?'Annulé':d.actif?'En intervention':'Terminé'}</span><br><small>${esc(noms(d.uids))}</small>
+  ${ann?`<div><small>Annulé à ${hm(d.heures.annule)}</small></div>`:`<div class="steps">${ETAPES.map((e,j)=>`<span class="${j<=i?'ok':''}">${e[1]}${d.heures?.[e[0]]?'<br>'+hm(d.heures[e[0]]):''}</span>`).join('')}</div>`}
+  ${d.actif?`<div class="row" style="margin-top:0">${nx?`<button class="p" data-act="etape" data-id="${d.id}" data-n="${nx[0]}">→ ${nx[1]}</button>`:''}<button class="d" data-act="annul" data-id="${d.id}">Annuler le déclenchement</button></div>`:''}</div>`});
+ if(ds.length&&!ds.some(d=>d.actif))h+='<div class="box">Intervention terminée : pensez à clôturer le dossier.</div>';
+ h+=`<label>Synthèse transmise à l’équipe</label><textarea data-d="synthese" rows="3" placeholder="Bilan et consignes affichés à l’équipe SMUR"></textarea>
+  <label>${ds.some(d=>d.etape!=='annule')?'Engager une équipe supplémentaire (renfort)':'Équipe SMUR à déclencher'}</label><div class="teams">`
+  +SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k),ok=m.length&&!e;
+   return `<div class="tmb ${ok?'free':''}"><div><b>${l}</b> <span class="pill" style="--c:${e?'#b92a30':m.length?'#16784a':'#586a7e'}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span><br><small>${esc(noms(m))||'Personne d’affecté à cette heure'}</small></div><button class="p" data-act="smur" data-eq="${k}" ${ok?'':'disabled'}>Déclencher</button></div>`}).join('')+'</div>';
+ return h;
+}
+$('#decPanel').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;
+ ({decider,transfert,smur:()=>engager(b.dataset.eq),etape:()=>etape(b.dataset.id,b.dataset.n),annul:()=>annuler(b.dataset.id)})[b.dataset.act]()});
+const dd=k=>{const e=document.querySelector('#decPanel [data-d="'+k+'"]');return e?e.value.trim():(draft[k]||'')};
+function decActive(a){return decls.some(d=>d.appelId===a.id&&d.actif)}
+async function decider(){
+ const a=A(),now=Date.now();
+ if(a.decisionKey==='smur'&&pend!=='smur'&&decActive(a)){alert('Un SMUR est encore engagé : annulez ou terminez l’intervention avant de changer de décision.');return}
+ const detail=dd('dDetail');
+ await maj(cur,{decision:DECL[pend],decisionKey:pend,decisionDetail:detail,decisionAt:a.decisionAt||now,decisionPar:medecin.nom||'',statut:'nouveau'},'Décision : '+DECL[pend]+(detail?' — '+detail:''));
+ draft={};sigDec='';
+}
+async function transfert(){
+ const a=A(),now=Date.now(),service=dd('tService');
+ if(!service){alert('Choisissez le service destinataire.');return}
+ if(a.decisionKey==='smur'&&decActive(a)){alert('Un SMUR est encore engagé.');return}
+ const t={service,interlocuteur:dd('tInterloc'),reference:dd('tRef'),details:dd('tDetail'),at:a.transfert?.at||now,par:a.transfert?.par||medecin.nom||''};
+ await maj(cur,{decision:DECL.transfert,decisionKey:'transfert',decisionAt:a.decisionAt||now,decisionPar:medecin.nom||'',transfert:t,transfertAt:t.at,statut:'transfere'},'Appel transféré : '+service+(t.interlocuteur?' ('+t.interlocuteur+')':''));
+ draft={};sigDec='';
+}
+async function engager(k){
+ const a=A(),l=SMUR.find(x=>x[0]===k)[1],m=membres(k);
+ if(engagee(k)||!m.length)return;
+ if(!(a.adresse||'').trim()){alert('Renseignez l’adresse de l’intervention avant de déclencher.');return}
+ if(!a.motif){alert('Renseignez le motif de l’appel avant de déclencher.');return}
+ if(a.lat==null&&!confirm('L’adresse n’est pas localisée sur la carte. Déclencher quand même ?'))return;
+ if(!confirm(`Déclencher ${l} (${noms(m)}) pour le dossier ${a.num} ?`))return;
+ const now=Date.now(),syn=dd('synthese'),full=[a.adresse,[a.cp,a.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+ try{
+  const r=await addDoc(collection(db,'declenchements'),{appelId:a.id,appelAt:a.createdAt,num:a.num,motif:a.motif,motifPrecision:a.motifPrecision||'',priorite:a.priorite??2,adresse:full,adresseRue:a.adresse||'',cp:a.cp||'',ville:a.ville||'',compl:a.compl||'',lieu:a.lieu||'',lat:a.lat??null,lng:a.lng??null,appelant:a.appelant||'',tel:a.tel||'',victimes:a.victimes||[],synthese:syn,equipe:k,equipeLabel:l,uids:m,actif:true,etape:'declenche',heures:{declenche:now},jour:iso(new Date()),creePar:medecin.nom||'',creeParUid:medecin.uid});
+  await maj(cur,{statut:'declenche',decision:'SMUR',decisionKey:'smur',decisionAt:a.decisionAt||now,decisionPar:a.decisionPar||medecin.nom||'',declencheAt:a.declencheAt||now,equipe:l,equipeKey:k,declenchementId:r.id,synthese:syn},'SMUR déclenché : '+l+' ('+noms(m)+')');
+  sigDec='';
+ }catch(e){console.error(e);alert('Déclenchement impossible, réessayez.')}
+}
+async function etape(id,n){
+ const d=decls.find(x=>x.id===id);if(!d)return;
+ if(n==='termine'&&!confirm('Marquer l’intervention comme terminée ?'))return;
+ try{await updateDoc(doc(db,'declenchements',id),{etape:n,['heures.'+n]:Date.now(),actif:n!=='termine'});
+  await maj(cur,{},d.equipeLabel+' : '+ETAPES.find(e=>e[0]===n)[1])}catch(e){console.error(e);alert('Action impossible.')}
+}
+async function annuler(id){
+ const d=decls.find(x=>x.id===id);if(!d||!confirm('Annuler le déclenchement de '+d.equipeLabel+' ?'))return;
+ try{await updateDoc(doc(db,'declenchements',id),{actif:false,etape:'annule','heures.annule':Date.now()});
+  const reste=decls.some(x=>x.appelId===cur&&x.id!==id&&x.etape!=='annule');
+  await maj(cur,reste?{}:{statut:'nouveau',equipe:deleteField(),equipeKey:deleteField(),declenchementId:deleteField()},'Déclenchement annulé : '+d.equipeLabel)}catch(e){console.error(e);alert('Action impossible.')}
+}
+
+/* ---------- Clôture / réouverture / suppression ---------- */
+const MOTIF_PAR_DEC={conseil:'Conseil donné',mg:'Orientation réalisée',ambulance:'Orientation réalisée',vsav:'Orientation réalisée',smur:'Intervention terminée',transfert:'Transféré à un autre service',urgences:'Orientation réalisée',sanssuite:'Appel non pertinent / sans suite'};
+$('#bClo').onclick=()=>{const a=A();
+ if(!a.decisionKey){alert('Enregistrez une décision de régulation avant de clôturer.');return}
+ if(decActive(a)){alert('Un SMUR est encore engagé : terminez ou annulez l’intervention.');return}
+ $('#cloMotif').value=MOTIF_PAR_DEC[a.decisionKey]||'';$('#cloNote').value='';$('#dClo').showModal()};
+$('#cloX').onclick=()=>$('#dClo').close();
+$('#cloOk').onclick=async()=>{const m=$('#cloMotif').value;if(!m){alert('Choisissez un motif de clôture.');return}
+ await maj(cur,{statut:'cloture',clotureAt:Date.now(),motifCloture:m,clotureNote:$('#cloNote').value.trim(),cloturePar:medecin.nom||''},'Dossier clôturé : '+m);$('#dClo').close()};
+$('#bRo').onclick=()=>{const a=A();
+ maj(cur,{statut:decls.some(d=>d.appelId===a.id&&d.etape!=='annule')?'declenche':a.decisionKey==='transfert'?'transfere':'nouveau',clotureAt:deleteField(),motifCloture:deleteField(),clotureNote:deleteField()},'Dossier rouvert')};
+$('#bDel').onclick=async()=>{if(confirm('Supprimer définitivement ce dossier ?')){const id=cur;fermer();await deleteDoc(doc(db,'appels',id))}};
 </script></body></html>

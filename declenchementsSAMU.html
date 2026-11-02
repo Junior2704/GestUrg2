@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Déclenchements SMUR</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--field:#f6f9fc;--primary:#0b6fa4;--soft:#e3f1f9;--late:#b92a30;--ok:#16784a}
+:root{--ink:#112336;--muted:#586a7e;--line:#d8e1ea;--field:#f6f9fc;--primary:#0b6fa4;--soft:#e3f1f9;--late:#b92a30;--late-soft:#fdecec;--ok:#16784a;--ok-soft:#e1f4e9}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink)}
 header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line)}
-h1{font-size:18px;margin:0}h2{font-size:15px;margin:22px 0 10px}small{color:var(--muted);font-size:12px}.k{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-#who{margin-left:auto;font-weight:600;color:var(--muted)}main{padding:16px 24px;max-width:1200px;margin:auto}
-select{min-height:40px;padding:6px 10px;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:10px}
-button{font:inherit;font-weight:600;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--primary);background:#fff;color:var(--primary);cursor:pointer}button.p{background:var(--primary);color:#fff}button:disabled{opacity:.45;cursor:default}
-.me{padding:16px 20px;border-radius:14px;border-left:8px solid var(--c);background:var(--bg);margin-bottom:6px}.me b{font-size:19px;display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
-.card{border:1px solid var(--line);border-left:6px solid var(--c,var(--line));border-radius:12px;padding:12px 14px}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
-.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#586a7e)}
-.steps{display:flex;gap:4px;margin:8px 0}.steps span{flex:1;text-align:center;font-size:11px;padding:4px 2px;border-radius:6px;background:var(--field);color:var(--muted)}.steps span.ok{background:var(--ok);color:#fff}
+h1{font-size:18px;margin:0}h2{margin:0 0 8px;font-size:22px}h3{font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+small{color:var(--muted);font-size:12px}.k{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+#who{margin-left:auto;font-weight:600;color:var(--muted)}main{padding:16px 24px;max-width:1300px;margin:auto}
 .msg{padding:30px;text-align:center;color:var(--muted)}
+button,a.btn{font:inherit;font-weight:600;min-height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--primary);background:#fff;color:var(--primary);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button.p,a.btn.p{background:var(--primary);color:#fff}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#586a7e);white-space:nowrap}
+.big{text-align:center;padding:48px 20px;border-radius:18px;border:1px solid var(--line);background:var(--field)}
+.big .ic{font-size:54px}.big h2{font-size:26px}.big p{max-width:560px;margin:8px auto;color:var(--muted)}
+.big.ok{background:var(--ok-soft);border-color:#b9e2c9}.big.no{background:#f1f5f9}
+.alert{display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:12px;background:var(--late);color:#fff;font-weight:700;margin-bottom:12px;animation:bl 1s infinite alternate}
+.alert button{margin-left:auto;background:#fff;color:var(--late);border-color:#fff}
+@keyframes bl{to{filter:brightness(1.25)}}
+.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-radius:14px;background:var(--late-soft);border-left:8px solid var(--late);margin-bottom:14px}
+.top b{font-size:20px}
+.grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(320px,1.2fr);gap:14px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.sec{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;background:#fff}
+.addr{font-size:19px;font-weight:700}.mt{font-size:17px;font-weight:600}
+.steps{display:flex;gap:4px}.steps span{flex:1;text-align:center;font-size:11px;padding:6px 2px;border-radius:6px;background:var(--field);color:var(--muted)}.steps span.ok{background:var(--ok);color:#fff}
+.vic{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#map{height:460px;border-radius:12px;border:1px solid var(--line)}
+.li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 </style></head><body>
 <header><b>🚨</b><div><div class="k">SAMU · SMUR</div><h1>Déclenchements</h1></div><span id="who"></span></header>
 <main><div id="gate" class="msg">Connexion en cours…</div>
-<div id="app" hidden>
- <div class="k" style="margin-bottom:6px">Ma situation</div><div id="me"></div>
- <h2>Dossiers à déclencher</h2><div class="grid" id="todo"></div>
- <h2>Interventions en cours</h2><div class="grid" id="live"></div>
- <h2>Équipes SMUR</h2><div class="grid" id="teams"></div>
- <h2>Terminées aujourd’hui</h2><div class="grid" id="done"></div>
-</div></main>
+<div id="app" hidden><div id="alerte"></div><div id="vue"></div></div></main>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBKp5-7NNy0Gyl0tNbDgD-BxucYdg8ArWo",authDomain:"urgences-a8ed4.firebaseapp.com",projectId:"urgences-a8ed4"});
 const auth=getAuth(app),db=getFirestore(app),$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -37,75 +46,95 @@ const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const tmin=t=>{const[a,b]=String(t).split(':');return +a*60+ +b};
 const hm=t=>t?new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 const PRIO=[['P0 · Vital','#b92a30'],['P1 · Urgent','#c2410c'],['P2 · Non urgent','#a35a00'],['P3 · Conseil','#16784a']];
-const SMUR=[['smur1','SMUR 1'],['smur2','SMUR 2'],['smur3','SMUR 3']];
 const ETAPES=[['declenche','Déclenché'],['en_route','En route'],['sur_place','Sur place'],['transport','Transport'],['termine','Terminé']];
 const LIB={consultation:'en consultation',urgences:'aux Urgences',regul:'en régulation SAMU',radiologie:'en imagerie',uhcd:'en UHCD',garde:'de garde / astreinte',conge:'en repos / congé',autre:'sur une autre affectation'};
-let medecin={},users={},affs=[],appels=[],decls=[];
-// Même règle que affectations.html : une affectation s'applique-t-elle à une date ?
+let uid=null,users={},affs=[],decls=[],map=null,mk=null,cle='',premier=true;const vus=new Set();
 const applique=(a,d)=>a.date?a.date===d:(a.jours||[]).includes(new Date(d+'T00:00').getDay())&&(!a.depuis||d>=a.depuis)&&(!a.jusqu||d<=a.jusqu);
 const nowMin=()=>{const n=new Date();return n.getHours()*60+n.getMinutes()};
-const actives=()=>affs.filter(a=>applique(a,iso(new Date()))&&tmin(a.start)<=nowMin()&&nowMin()<tmin(a.end));
+const mesAff=()=>affs.filter(a=>a.uid===uid);
+const actives=()=>mesAff().filter(a=>applique(a,iso(new Date()))&&tmin(a.start)<=nowMin()&&nowMin()<tmin(a.end));
+const smurActif=()=>actives().find(a=>String(a.poste).startsWith('smur'));
+const noms=u=>(u||[]).map(x=>esc(users[x]||x)).join(', ');
 
 onAuthStateChanged(auth,async u=>{
  if(!u){$('#gate').textContent='Vous devez être connecté pour accéder à cette page.';return}
  try{const s=await getDoc(doc(db,'medecins',u.uid));if(!s.exists()){$('#gate').textContent='Utilisateur non trouvé, veuillez vous reconnecter.';return}
-  medecin={...s.data(),uid:u.uid};$('#who').textContent=medecin.nom||'';
+  const m=s.data();uid=u.uid;$('#who').textContent=m.nom||'';
   const page=location.pathname.split('/').pop().replace('.html','');
-  if(!(medecin.pages||{})[page]){$('#gate').textContent='Accès refusé : contactez un administrateur.';return}
-  (await getDocs(collection(db,'medecins'))).docs.forEach(d=>users[d.id]={nom:d.data().nom||d.id,role:d.data().specialite||''});
+  if(!(m.pages||{})[page]){$('#gate').textContent='Accès refusé : contactez un administrateur.';return}
+  (await getDocs(collection(db,'medecins'))).docs.forEach(d=>users[d.id]=d.data().nom||d.id);
   $('#gate').hidden=true;$('#app').hidden=false;
   onSnapshot(collection(db,'affectations'),s=>{affs=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
-  onSnapshot(collection(db,'appels'),s=>{appels=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
-  onSnapshot(collection(db,'declenchements'),s=>{decls=s.docs.map(d=>({id:d.id,...d.data()}));rendre()});
+  onSnapshot(collection(db,'declenchements'),s=>{decls=s.docs.map(d=>({id:d.id,...d.data()}));detecter();rendre()});
   setInterval(rendre,30000);
  }catch(e){console.error(e);$('#gate').textContent='Une erreur est survenue, réessayez plus tard.'}
 });
-const membres=k=>[...new Set(actives().filter(a=>a.poste===k).map(a=>a.uid))];
-const engagee=k=>decls.find(d=>d.actif&&d.equipe===k);
-const pill=p=>`<span class="pill" style="--c:${PRIO[p??2][1]}">${PRIO[p??2][0]}</span>`;
 
-function maSituation(){
- const mine=decls.find(d=>d.actif&&(d.uids||[]).includes(medecin.uid));
- let c='#586a7e',bg='#f1f5f9',t,s='';
- if(mine){c='#b92a30';bg='#fdecec';t=`En intervention · ${esc(mine.equipeLabel)}`;s=`Dossier ${esc(mine.num)} — ${esc(mine.motif)} — ${esc(mine.adresse)} · étape : ${ETAPES.find(e=>e[0]===mine.etape)[1]}`}
- else{const a=actives().filter(x=>x.uid===medecin.uid).sort((x,y)=>tmin(x.end)-tmin(y.end))[0];
-  if(a&&String(a.poste).startsWith('smur')){c='#16784a';bg='#e1f4e9';t=`Disponible · ${esc(a.posteLabel)}`;s=`Équipe d’astreinte SMUR jusqu’à ${a.end}. Aucune intervention en cours.`}
-  else if(a){c='#0b6fa4';bg='#e3f1f9';t=`Non disponible pour le SMUR`;s=`Vous êtes ${LIB[a.poste]||'affecté(e) ailleurs'} jusqu’à ${a.end}.`}
-  else{const nx=affs.filter(x=>x.uid===medecin.uid&&applique(x,iso(new Date()))&&tmin(x.start)>nowMin()).sort((x,y)=>tmin(x.start)-tmin(y.start))[0];
-   t='Aucune affectation en ce moment';s=nx?`Prochaine affectation à ${nx.start} : ${esc(nx.posteLabel)}.`:'Rien de prévu aujourd’hui sur le planning.'}}
- $('#me').innerHTML=`<div class="me" style="--c:${c};--bg:${bg}"><b>${t}</b>${s}</div>`;
+const monInterv=()=>{const t=smurActif();return decls.filter(d=>d.actif&&((d.uids||[]).includes(uid)||(t&&d.equipe===t.poste))).sort((a,b)=>b.heures.declenche-a.heures.declenche)[0]};
+function detecter(){
+ decls.filter(d=>d.actif&&(d.uids||[]).includes(uid)).forEach(d=>{
+  if(!vus.has(d.id)){vus.add(d.id);if(!premier)alerter(d)}});
+ premier=false;
 }
+function alerter(d){
+ $('#alerte').innerHTML=`<div class="alert"><span>🚨 Nouveau déclenchement — ${esc(d.equipeLabel)} · ${esc(d.motif)}</span><button id="okA">Compris</button></div>`;
+ $('#okA').onclick=()=>$('#alerte').innerHTML='';
+ try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300])}catch(e){}
+ try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.value=.2;o.start(c.currentTime+t);o.stop(c.currentTime+t+.2)})}catch(e){}
+}
+
 function rendre(){
- if($('#app').hidden)return;maSituation();
- const jour=iso(new Date());
- $('#todo').innerHTML=appels.filter(a=>a.statut==='a_declencher').sort((a,b)=>(a.priorite??2)-(b.priorite??2)||a.createdAt-b.createdAt).map(a=>{
-  const libres=SMUR.filter(([k])=>membres(k).length&&!engagee(k));
-  return `<div class="card" style="--c:${PRIO[a.priorite??2][1]}">${pill(a.priorite)} <b>${esc(a.num)}</b> <small>${hm(a.createdAt)}</small>
-  <div><b>${esc(a.motif)}</b></div><div>${esc(a.adresse)} ${esc(a.cp)}</div><small>${(a.victimes||[]).length||1} victime(s) ${a.compl?'· '+esc(a.compl):''}</small>
-  <div class="row"><select id="eq${a.id}">${libres.map(([k,l])=>`<option value="${k}">${l} (${membres(k).length})</option>`).join('')||'<option value="">Aucune équipe disponible</option>'}</select>
-  <button class="p" data-go="${a.id}" ${libres.length?'':'disabled'}>Déclencher</button></div></div>`}).join('')||'<div class="msg">Aucun dossier en attente.</div>';
- const act=decls.filter(d=>d.actif);
- $('#live').innerHTML=act.map(d=>{const i=ETAPES.findIndex(e=>e[0]===d.etape),nx=ETAPES[i+1];
-  return `<div class="card" style="--c:#b92a30"><b>${esc(d.equipeLabel)}</b> · ${esc(d.num)} ${pill(d.priorite)}
-  <div>${esc(d.motif)} — ${esc(d.adresse)}</div><small>${(d.uids||[]).map(u=>esc(users[u]?.nom||u)).join(', ')}</small>
-  <div class="steps">${ETAPES.map((e,j)=>`<span class="${j<=i?'ok':''}" title="${hm(d.heures?.[e[0]])}">${e[1]}${d.heures?.[e[0]]?'<br>'+hm(d.heures[e[0]]):''}</span>`).join('')}</div>
-  ${nx?`<button class="p" data-step="${d.id}" data-n="${nx[0]}">→ ${nx[1]}</button>`:''}</div>`}).join('')||'<div class="msg">Aucune intervention en cours.</div>';
- $('#teams').innerHTML=SMUR.map(([k,l])=>{const m=membres(k),e=engagee(k);
-  return `<div class="card" style="--c:${e?'#b92a30':m.length?'#16784a':'#aab7c4'}"><b>${l}</b> <span class="pill" style="--c:${e?'#b92a30':m.length?'#16784a':'#586a7e'}">${e?'Engagée':m.length?'Disponible':'Hors planning'}</span>
-  <div style="margin-top:6px">${m.map(u=>`${esc(users[u]?.nom||u)} <small>${esc(users[u]?.role||'')}</small>`).join('<br>')||'<small>Personne d’affecté à cette heure (voir affectations.html)</small>'}</div>
-  ${e?`<small>Dossier ${esc(e.num)} · ${esc(e.adresse)}</small>`:''}</div>`}).join('');
- $('#done').innerHTML=decls.filter(d=>!d.actif&&d.jour===jour).sort((a,b)=>b.heures.declenche-a.heures.declenche).map(d=>`<div class="card"><b>${esc(d.equipeLabel)}</b> · ${esc(d.num)}<div>${esc(d.motif)} — ${esc(d.adresse)}</div><small>${hm(d.heures.declenche)} → ${hm(d.heures.termine)}</small></div>`).join('')||'<div class="msg">Rien pour le moment.</div>';
+ if($('#app').hidden)return;
+ const d=monInterv();
+ if(d)return intervention(d);
+ const t=smurActif();
+ if(t)return disponible(t);
+ nonAffecte();
 }
-document.addEventListener('click',async e=>{
- const g=e.target.dataset.go,s=e.target.dataset.step;
- try{
- if(g){const k=$('#eq'+g).value,a=appels.find(x=>x.id===g);if(!k||engagee(k))return;
-  const l=SMUR.find(x=>x[0]===k)[1],now=Date.now();
-  await addDoc(collection(db,'declenchements'),{appelId:g,num:a.num,motif:a.motif,adresse:a.adresse+(a.cp?', '+a.cp:''),priorite:a.priorite??2,equipe:k,equipeLabel:l,uids:membres(k),actif:true,etape:'declenche',heures:{declenche:now},jour:iso(new Date()),creePar:medecin.nom||''});
-  await updateDoc(doc(db,'appels',g),{statut:'declenche',declencheAt:now,equipe:l});}
- if(s){const n=e.target.dataset.n,d=decls.find(x=>x.id===s);
-  await updateDoc(doc(db,'declenchements',s),{etape:n,['heures.'+n]:Date.now(),actif:n!=='termine'});
-  if(n==='termine')await updateDoc(doc(db,'appels',d.appelId),{statut:'cloture',clotureAt:Date.now()});}
- }catch(err){console.error(err);alert('Action impossible, réessayez.')}
-});
+function pose(k,html){ if(cle!==k){cle=k;if(map){map.remove();map=null;mk=null}$('#vue').innerHTML=html;return true}return false}
+
+function nonAffecte(){
+ const a=actives()[0],auj=iso(new Date());let nx=null;
+ for(let i=0;i<8&&!nx;i++){const d=new Date();d.setDate(d.getDate()+i);const k=iso(d);
+  nx=mesAff().filter(x=>String(x.poste).startsWith('smur')&&applique(x,k)&&(i>0||tmin(x.start)>nowMin())).sort((x,y)=>tmin(x.start)-tmin(y.start)).map(x=>({...x,k}))[0]}
+ const txt=a?`Vous êtes actuellement ${LIB[a.poste]||'affecté(e) ailleurs'} jusqu’à ${esc(a.end)}.`:'Aucune affectation en cours sur le planning.';
+ const prochain=nx?`Prochaine affectation SMUR : <b>${esc(nx.posteLabel||nx.poste)}</b> ${nx.k===auj?'aujourd’hui':'le '+new Date(nx.k+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${esc(nx.start)}.`:'Aucune affectation SMUR prévue dans les 7 prochains jours.';
+ const h=`<div class="big no"><div class="ic">🚫</div><h2>Vous n’êtes pas affecté(e) à un SMUR</h2><p>${txt}</p><p>${prochain}</p><p>Les déclenchements ne sont visibles que par les membres d’une équipe SMUR d’astreinte.</p>
+ <div class="row" style="justify-content:center"><button id="bAff">Voir mes affectations</button></div></div>`;
+ if(pose('non|'+(a?a.id:'')+'|'+(nx?nx.id+nx.k:''),h))$('#bAff').onclick=()=>parent.postMessage({type:'OPEN_TAB',title:'Affectations',url:'affectations.html'},'*');
+}
+
+function disponible(t){
+ const k=t.poste,eq=affs.filter(a=>a.poste===k&&applique(a,iso(new Date()))&&tmin(a.start)<=nowMin()&&nowMin()<tmin(a.end)).map(a=>a.uid);
+ const fin=decls.filter(d=>!d.actif&&d.etape!=='annule'&&d.jour===iso(new Date())&&d.equipe===k).sort((a,b)=>b.heures.declenche-a.heures.declenche);
+ const h=`<div class="big ok"><div class="ic">✅</div><h2>Disponible — ${esc(t.posteLabel||k)}</h2><p>Équipe d’astreinte jusqu’à ${esc(t.end)}.</p><p><b>${[...new Set(eq)].map(u=>esc(users[u]||u)).join(' · ')}</b></p><p>Aucune intervention en cours. Cette page s’actualise automatiquement dès qu’un déclenchement vous est adressé.</p></div>
+ <div class="sec" style="margin-top:14px"><h3>Interventions de l’équipe aujourd’hui</h3>${fin.map(d=>`<div class="li"><span><b>${esc(d.num)}</b> · ${esc(d.motif)} — ${esc(d.adresse)}</span><small>${hm(d.heures.declenche)} → ${hm(d.heures.termine)}</small></div>`).join('')||'<small>Aucune pour le moment.</small>'}</div>`;
+ pose('dispo|'+k+'|'+fin.map(d=>d.id).join(','),h);
+}
+
+function intervention(d){
+ const p=PRIO[d.priorite??2],i=ETAPES.findIndex(e=>e[0]===d.etape),geo=d.lat!=null&&d.lng!=null;
+ const q=geo?`${d.lat},${d.lng}`:encodeURIComponent(d.adresse||'');
+ const nav=`<div class="row"><a class="btn p" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving">Itinéraire Google Maps</a>
+  ${geo?`<a class="btn" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${q}&navigate=yes">Waze</a><a class="btn" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr=${q}">Plans</a>`:''}</div>`;
+ const h=`<div class="top" style="border-left-color:${p[1]}"><b>🚨 INTERVENTION EN COURS</b><span class="pill" style="--c:${p[1]}">${p[0]}</span><b>${esc(d.equipeLabel)}</b><span>Dossier ${esc(d.num)}</span><small>${noms(d.uids)}</small></div>
+ <div class="grid"><div>
+  <div class="sec"><h3>Lieu d’intervention</h3><div class="addr">${esc(d.adresseRue||d.adresse)}</div><div>${esc([d.cp,d.ville].filter(Boolean).join(' '))}</div>
+   ${d.compl?`<div><b>Complément :</b> ${esc(d.compl)}</div>`:''}${d.lieu?`<small>${esc(d.lieu)}</small>`:''}${nav}</div>
+  <div class="sec"><h3>Motif</h3><div class="mt">${esc(d.motif)}</div>${d.motifPrecision?`<div>${esc(d.motifPrecision)}</div>`:''}
+   ${d.synthese?`<h3 style="margin-top:12px">Synthèse du régulateur</h3><div style="white-space:pre-wrap" id="syn">${esc(d.synthese)}</div>`:'<span id="syn"></span>'}</div>
+  <div class="sec"><h3>Appelant</h3>${d.appelant?esc(d.appelant)+' · ':''}${d.tel?`<a href="tel:${esc(d.tel)}">${esc(d.tel)}</a>`:'<small>Pas de numéro</small>'}</div>
+  <div class="sec"><h3>Victimes (${(d.victimes||[]).length||1})</h3>${(d.victimes||[]).filter(v=>v&&(v.nom||v.age||v.bilan||v.etat)).map(v=>`<div class="vic"><b>${esc(v.nom||'Victime')}</b> ${esc([v.age?v.age+' ans':'',v.sexe,v.etat].filter(Boolean).join(' · '))}<div>${esc(v.bilan||'')}</div></div>`).join('')||'<small>Aucun détail transmis.</small>'}</div>
+  <div class="sec"><h3>Avancement</h3><div class="steps" id="steps"></div></div>
+ </div>
+ <div class="sec"><h3>Carte</h3>${geo?'<div id="map"></div>':'<div class="msg">Adresse non localisée sur la carte.<br>Utilisez l’adresse ci-contre pour l’itinéraire.</div>'}</div></div>`;
+ const neuf=pose('int|'+d.id,h);
+ $('#steps').innerHTML=ETAPES.map((e,j)=>`<span class="${j<=i?'ok':''}">${e[1]}${d.heures?.[e[0]]?'<br>'+hm(d.heures[e[0]]):''}</span>`).join('');
+ const syn=$('#syn');if(syn&&d.synthese)syn.textContent=d.synthese;
+ if(neuf&&geo){
+  if(!window.L){$('#map').innerHTML='<div class="msg">Carte indisponible.</div>';return}
+  map=L.map('map').setView([d.lat,d.lng],15);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  mk=L.marker([d.lat,d.lng]).addTo(map).bindPopup(esc(d.adresse)).openPopup();setTimeout(()=>map&&map.invalidateSize(),100);
+ }
+}
 </script></body></html>

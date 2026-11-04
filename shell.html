@@ -2614,6 +2614,48 @@ function openTab(title, url){
 
     return;
   }
+  else {
+    if(existing){
+    setActive(existing.id);
+    return;
+  }
+
+  // 🔍 Test de place AVANT ouverture
+  const tempTab = document.createElement("div");
+  tempTab.className = "tab";
+  tempTab.style.visibility = "hidden";
+  tempTab.innerHTML = title;
+  document.getElementById("tabs").appendChild(tempTab);
+
+  const overflow = tabsOverflow();
+  tempTab.remove();
+
+  if (overflow) {
+    showOverflowModal();
+    return;
+  }
+  const id = Date.now();
+  tabs.push({id,title,url});
+
+  const tab = document.createElement('div');
+  tab.className='tab';tab.dataset.id=id;
+  tab.innerHTML=`${title} <span class="close">✕</span>`;
+  tab.onclick=()=>setActive(id);
+  tab.querySelector('.close').onclick=(e)=>{e.stopPropagation();closeTab(id)};
+  enableTabDrag(tab);
+  document.getElementById('tabs').appendChild(tab);
+
+  const iframe=document.createElement('iframe');
+  iframe.src=url;iframe.dataset.id=id;
+  document.getElementById('content').appendChild(iframe);
+  pinnedOpen = false;
+document.getElementById('menuOutils').classList.remove("open");
+  document.getElementById('home').style.display='none';
+  setActive(id);
+  if (window.logAction) window.logAction("ouverture_module", { titre: title, url });
+
+
+  }
 }
   let existing = tabs.find(t=>t.url===url);
 function setActive(id){
